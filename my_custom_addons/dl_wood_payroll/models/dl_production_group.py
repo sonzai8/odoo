@@ -14,6 +14,12 @@ class ProductionGroup(models.Model):
         required=True, 
         tracking=True
     )
+    x_workshop_id = fields.Many2one(
+        related='work_center_id.x_workshop_id',
+        string='Xưởng',
+        store=True,
+        readonly=True
+    )
     leader_id = fields.Many2one(
         'hr.employee', 
         string='Tổ trưởng', 

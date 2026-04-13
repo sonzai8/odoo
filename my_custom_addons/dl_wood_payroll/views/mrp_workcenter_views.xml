@@ -34,7 +34,7 @@
                 <field name="name"/>
                 <field name="code"/>
                 <field name="x_workshop_id"/>
-                <field name="x_production_group_ids" string="Số lượng tổ" widget="handle"/>
+                <field name="x_production_group_ids" string="Số lượng tổ"/>
             </list>
         </field>
     </record>

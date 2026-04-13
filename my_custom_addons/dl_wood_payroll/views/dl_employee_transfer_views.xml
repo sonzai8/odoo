@@ -21,8 +21,9 @@
         <field name="arch" type="xml">
             <form string="Lệnh điều chuyển">
                 <header>
-                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_cancel" string="Hủy" type="object" invisible="state not in ('draft', 'scheduled')"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary btn-lg" invisible="state != 'draft'"/>
+                    <button name="action_cancel" string="Hủy" type="object" class="btn-secondary" invisible="state not in ('draft', 'scheduled')"/>
+                    <button string="Lưu" class="btn-success btn-lg o_form_button_save" Special="save" type="action"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,done"/>
                 </header>
                 <sheet>

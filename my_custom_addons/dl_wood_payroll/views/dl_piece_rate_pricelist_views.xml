@@ -19,9 +19,10 @@
         <field name="arch" type="xml">
             <form string="Bảng giá đơn giá">
                 <header>
-                    <button name="action_clone_pricelist" string="Sao chép từ tháng trước" type="object" class="btn-primary" invisible="state == 'confirmed'"/>
-                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state == 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
-                    <button name="action_draft" string="Chuyển về dự thảo" type="object" invisible="state == 'draft'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_clone_pricelist" string="Sao chép từ tháng trước" type="object" class="btn-primary btn-lg" invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary btn-lg" invisible="state == 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_draft" string="Chuyển về dự thảo" type="object" class="btn-secondary" invisible="state == 'draft'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button string="Lưu" class="btn-success btn-lg o_form_button_save" Special="save" type="action"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
                 </header>
                 <sheet>
@@ -44,6 +45,7 @@
                                     <field name="thickness_id" domain="[('attribute_id.name', 'ilike', 'Độ dày')]"/>
                                     <field name="size_id" domain="[('attribute_id.name', 'ilike', 'Kích thước')]"/>
                                     <field name="film_type_id" domain="[('attribute_id.name', 'ilike', 'Loại Phim')]"/>
+                                    <field name="wood_grade_id" domain="[('attribute_id.name', 'ilike', 'Chất lượng gỗ')]"/>
                                     <field name="surface_id" domain="[('attribute_id.name', 'ilike', 'Bề mặt')]"/>
                                     <field name="price"/>
                                     <field name="extra_price"/>
@@ -59,6 +61,7 @@
                                             <field name="thickness_id" domain="[('attribute_id.name', 'ilike', 'Độ dày')]"/>
                                             <field name="size_id" domain="[('attribute_id.name', 'ilike', 'Kích thước')]"/>
                                             <field name="film_type_id" domain="[('attribute_id.name', 'ilike', 'Loại Phim')]"/>
+                                            <field name="wood_grade_id" domain="[('attribute_id.name', 'ilike', 'Chất lượng gỗ')]"/>
                                             <field name="surface_id" domain="[('attribute_id.name', 'ilike', 'Bề mặt')]"/>
                                         </group>
                                     </group>
@@ -75,6 +78,7 @@
         <field name="name">Bảng giá đơn giá</field>
         <field name="res_model">dl.piece.rate.pricelist</field>
         <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_dl_piece_rate_pricelist_tree"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Tạo bảng giá đơn giá đầu tiên!

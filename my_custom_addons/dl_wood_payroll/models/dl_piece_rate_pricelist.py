@@ -113,6 +113,45 @@ class PieceRatePricelist(models.Model):
             domain.append(('size_id', '=', size_id.id))
         if film_type_id:
             domain.append(('film_type_id', '=', film_type_id.id))
+        if wood_grade_id:
+            domain.append(('wood_grade_id', '=', wood_grade_id.id))
+        if surface_id:
+            domain.append(('surface_id', '=', surface_id.id))
+
+        line = self.env['dl.piece.rate.pricelist.line'].search(domain, limit=1)
+        if line:
+            return line.price, line.extra_price
+        return 0.0, 0.0
+
+    @api.model
+    def _get_active_price(self, date, work_center, thickness_id=None, size_id=None, film_type_id=None, surface_id=None, wood_grade_id=None):
+        """
+        Tra cứu đơn giá chính xác tại một thời điểm.
+        """
+        if not date or not work_center:
+            return 0.0, 0.0
+
+        pricelist = self.search([
+            ('month', '=', date.month),
+            ('year', '=', date.year),
+            ('state', '=', 'confirmed')
+        ], limit=1)
+
+        if not pricelist:
+            return 0.0, 0.0
+
+        domain = [
+            ('pricelist_id', '=', pricelist.id),
+            ('work_center_id', '=', work_center.id),
+        ]
+        if thickness_id:
+            domain.append(('thickness_id', '=', thickness_id.id))
+        if size_id:
+            domain.append(('size_id', '=', size_id.id))
+        if film_type_id:
+            domain.append(('film_type_id', '=', film_type_id.id))
+        if wood_grade_id:
+            domain.append(('wood_grade_id', '=', wood_grade_id.id))
         if surface_id:
             domain.append(('surface_id', '=', surface_id.id))
 
@@ -148,6 +187,7 @@ class PieceRatePricelistLine(models.Model):
     thickness_id = fields.Many2one('product.attribute.value', string='Độ dày')
     size_id = fields.Many2one('product.attribute.value', string='Kích thước')
     film_type_id = fields.Many2one('product.attribute.value', string='Loại Phim')
+    wood_grade_id = fields.Many2one('product.attribute.value', string='Chất lượng gỗ')
     surface_id = fields.Many2one('product.attribute.value', string='Bề mặt')
     
     price = fields.Float(string='Đơn giá', required=True)

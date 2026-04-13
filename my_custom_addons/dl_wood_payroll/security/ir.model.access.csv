@@ -5,6 +5,8 @@ access_dl_piece_rate_pricelist_line_user,dl.piece.rate.pricelist.line.user,model
 access_dl_piece_rate_pricelist_line_manager,dl.piece.rate.pricelist.line.manager,model_dl_piece_rate_pricelist_line,group_dl_payroll_manager,1,1,1,1
 access_dl_production_log_user,dl.production.log.user,model_dl_production_log,group_dl_payroll_user,1,1,1,1
 access_dl_production_log_manager,dl.production.log.manager,model_dl_production_log,group_dl_payroll_manager,1,1,1,1
+access_dl_production_log_product_line_user,dl.production.log.product.line.user,model_dl_production_log_product_line,group_dl_payroll_user,1,1,1,1
+access_dl_production_log_product_line_manager,dl.production.log.product.line.manager,model_dl_production_log_product_line,group_dl_payroll_manager,1,1,1,1
 access_dl_worker_log_line_user,dl.worker.log.line.user,model_dl_worker_log_line,group_dl_payroll_user,1,1,1,1
 access_dl_worker_log_line_manager,dl.worker.log.line.manager,model_dl_worker_log_line,group_dl_payroll_manager,1,1,1,1
 access_dl_daily_pooling_result_user,dl.daily.pooling.result.user,model_dl_daily_pooling_result,group_dl_payroll_user,1,1,1,1

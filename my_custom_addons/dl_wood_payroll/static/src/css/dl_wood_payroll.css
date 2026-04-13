@@ -1,0 +1,17 @@
+/* Custom styles for DL Wood Payroll buttons */
+.o_form_button_save.btn-lg {
+    padding: 10px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.o_form_button_save.btn-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-primary.btn-lg {
+    font-weight: 600;
+}

@@ -4,12 +4,11 @@
         <field name="name">dl.production.log.tree</field>
         <field name="model">dl.production.log</field>
         <field name="arch" type="xml">
-            <list string="Nhập sản lượng">
+            <list string="Nhập sản lượng" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'" decoration-muted="state == 'locked'">
                 <field name="date"/>
+                <field name="production_group_id"/>
                 <field name="work_center_id"/>
-                <field name="product_id"/>
-                <field name="quantity"/>
-                <field name="is_re_ep_film" optional="hide"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
             </list>
         </field>
     </record>
@@ -19,33 +18,64 @@
         <field name="model">dl.production.log</field>
         <field name="arch" type="xml">
             <form string="Nhập sản lượng">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary btn-lg" invisible="state != 'draft'"/>
+                    <button name="action_lock" string="Khóa sổ" type="object" class="btn-secondary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_draft" string="Chuyển về dự thảo" type="object" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_unlock" string="Mở khóa" type="object" invisible="state != 'locked'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button string="Lưu" class="btn-success btn-lg o_form_button_save" Special="save" type="action" invisible="state == 'locked'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,locked"/>
+                </header>
                 <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="production_group_id" placeholder="Chọn Tổ sản xuất" readonly="state != 'draft'"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
-                            <field name="date"/>
+                            <field name="date" readonly="state != 'draft'"/>
                             <field name="work_center_id"/>
-                        </group>
-                        <group>
-                            <field name="product_id"/>
-                            <field name="thickness_id"/>
-                            <field name="size_id"/>
-                            <field name="film_type_id"/>
-                            <field name="surface_id"/>
-                            <field name="quantity"/>
-                            <field name="is_re_ep_film"/>
-                            <label for="price"/>
-                            <div class="o_row">
-                                <field name="price"/>
-                                <span invisible="not extra_price"> (+ <field name="extra_price" class="oe_inline"/>)</span>
-                            </div>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Phân bổ công nhân" name="workers">
-                            <field name="worker_line_ids">
+                        <page string="Sản lượng sản xuất" name="products">
+                            <field name="product_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="thickness_id"/>
+                                    <field name="size_id"/>
+                                    <field name="film_type_id"/>
+                                    <field name="wood_grade_id"/>
+                                    <field name="surface_id" optional="hide"/>
+                                    <field name="is_re_ep_film"/>
+                                    <field name="quantity" sum="Total Quantity"/>
+                                    <field name="price" readonly="1"/>
+                                    <field name="extra_price" readonly="1" optional="hide"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="product_id"/>
+                                            <field name="thickness_id"/>
+                                            <field name="size_id"/>
+                                            <field name="quantity"/>
+                                        </group>
+                                        <group>
+                                            <field name="film_type_id"/>
+                                            <field name="wood_grade_id"/>
+                                            <field name="surface_id"/>
+                                            <field name="is_re_ep_film"/>
+                                        </group>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Nhân sự thực hiện" name="workers">
+                            <field name="worker_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="employee_id"/>
-                                    <field name="worked_hours"/>
+                                    <field name="worked_hours" sum="Total Hours"/>
                                     <field name="source_group_id"/>
                                     <field name="is_borrowed" widget="boolean_toggle" readonly="1"/>
                                 </list>
@@ -53,6 +83,7 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

@@ -29,6 +29,11 @@
         'views/menus.xml',
         'data/ir_cron_data.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'dl_wood_payroll/static/src/css/dl_wood_payroll.css',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
