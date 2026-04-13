@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dl_wood_payroll_root" 
+              name="Lương Gỗ" 
+              web_icon="dl_wood_payroll,static/description/icon.png"
+              sequence="20"/>
+
+    <!-- Pricelist Group -->
+    <menuitem id="menu_dl_piece_rate_pricelist"
+              name="Bảng giá"
+              parent="menu_dl_wood_payroll_root"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_piece_rate_pricelist_action"
+              name="Bảng giá đơn giá"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_piece_rate_pricelist"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_production_log_action"
+              name="Nhập sản lượng"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_production_log"
+              sequence="20"/>
+
+    <!-- Calculation Group -->
+    <menuitem id="menu_dl_pooling_calculation_root"
+              name="Tính toán lương"
+              parent="menu_dl_wood_payroll_root"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_pooling_wizard_action"
+              name="Tính lương cào bằng"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_pooling_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_daily_pooling_result_action"
+              name="Kết quả cào bằng"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_daily_pooling_result"
+              sequence="20"/>
+
+    <!-- HR Group -->
+    <menuitem id="menu_dl_payroll_employee_root"
+              name="Nhân sự gỗ"
+              parent="menu_dl_wood_payroll_root"
+              sequence="40"/>
+
+    <menuitem id="menu_dl_payroll_employee_action"
+              name="Hồ sơ nhân viên"
+              parent="menu_dl_payroll_employee_root"
+              action="hr.open_view_employee_list_my"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_production_group_action"
+              name="Tổ sản xuất"
+              parent="menu_dl_payroll_employee_root"
+              action="action_dl_production_group"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_employee_transfer_action"
+              name="Lệnh điều chuyển"
+              parent="menu_dl_payroll_employee_root"
+              action="action_dl_employee_transfer"
+              sequence="30"/>
+
+    <!-- Cấu hình tổ chức -->
+    <menuitem id="menu_dl_org_config_root"
+              name="Cấu hình tổ chức"
+              parent="menu_dl_wood_payroll_root"
+              sequence="90"/>
+
+    <menuitem id="menu_dl_workshop_action"
+              name="Xưởng sản xuất"
+              parent="menu_dl_org_config_root"
+              action="action_dl_workshop"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_workcenter_action"
+              name="Công đoạn (Work Center)"
+              parent="menu_dl_org_config_root"
+              action="action_dl_workcenter"
+              sequence="20"/>
+</odoo>

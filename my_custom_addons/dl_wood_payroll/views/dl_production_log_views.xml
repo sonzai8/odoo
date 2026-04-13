@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_production_log_tree" model="ir.ui.view">
+        <field name="name">dl.production.log.tree</field>
+        <field name="model">dl.production.log</field>
+        <field name="arch" type="xml">
+            <list string="Nhập sản lượng">
+                <field name="date"/>
+                <field name="work_center_id"/>
+                <field name="product_id"/>
+                <field name="quantity"/>
+                <field name="is_re_ep_film" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_production_log_form" model="ir.ui.view">
+        <field name="name">dl.production.log.form</field>
+        <field name="model">dl.production.log</field>
+        <field name="arch" type="xml">
+            <form string="Nhập sản lượng">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="work_center_id"/>
+                        </group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="thickness_id"/>
+                            <field name="size_id"/>
+                            <field name="film_type_id"/>
+                            <field name="surface_id"/>
+                            <field name="quantity"/>
+                            <field name="is_re_ep_film"/>
+                            <label for="price"/>
+                            <div class="o_row">
+                                <field name="price"/>
+                                <span invisible="not extra_price"> (+ <field name="extra_price" class="oe_inline"/>)</span>
+                            </div>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Phân bổ công nhân" name="workers">
+                            <field name="worker_line_ids">
+                                <list editable="bottom">
+                                    <field name="employee_id"/>
+                                    <field name="worked_hours"/>
+                                    <field name="source_group_id"/>
+                                    <field name="is_borrowed" widget="boolean_toggle" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_production_log" model="ir.actions.act_window">
+        <field name="name">Nhập sản lượng</field>
+        <field name="res_model">dl.production.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bắt đầu nhập sản lượng hàng ngày!
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_pooling_wizard_form" model="ir.ui.view">
+        <field name="name">dl.pooling.wizard.form</field>
+        <field name="model">dl.pooling.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tính toán cào bằng lương tổ">
+                <group>
+                    <field name="date"/>
+                </group>
+                <footer>
+                    <button name="action_calculate" string="Tính toán" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_pooling_wizard" model="ir.actions.act_window">
+        <field name="name">Tính toán cào bằng lương</field>
+        <field name="res_model">dl.pooling.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

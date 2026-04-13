@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_dl_payroll" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.dl.payroll</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Thông tin sản xuất" name="production_info">
+                    <header>
+                        <button name="%(action_dl_employee_transfer)d" 
+                                string="Yêu cầu điều chuyển" 
+                                type="action" 
+                                class="btn-secondary"
+                                context="{'default_employee_id': id, 'default_from_group_id': x_source_group_id}"/>
+                    </header>
+                    <group>
+                        <group name="source_group" string="Định danh biên chế">
+                            <field name="x_source_group_id" readonly="x_source_group_id"/>
+                            <field name="x_is_daily_worker"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

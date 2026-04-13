@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Category -->
+        <record id="module_category_dl_payroll" model="ir.module.category">
+            <field name="name">DL Wood Payroll</field>
+            <field name="description">Quản lý lương và đơn giá ngành gỗ</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- Privilege for Odoo 19 -->
+        <record id="privilege_dl_payroll" model="res.groups.privilege">
+            <field name="name">DL Wood Payroll</field>
+            <field name="category_id" ref="module_category_dl_payroll"/>
+        </record>
+
+        <!-- User group -->
+        <record id="group_dl_payroll_user" model="res.groups">
+            <field name="name">User</field>
+            <field name="privilege_id" ref="privilege_dl_payroll"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Administrative group -->
+        <record id="group_dl_payroll_admin" model="res.groups">
+            <field name="name">Hành chính (Nhân sự)</field>
+            <field name="privilege_id" ref="privilege_dl_payroll"/>
+            <field name="implied_ids" eval="[(4, ref('group_dl_payroll_user'))]"/>
+        </record>
+
+        <!-- Manager group -->
+        <record id="group_dl_payroll_manager" model="res.groups">
+            <field name="name">Manager</field>
+            <field name="privilege_id" ref="privilege_dl_payroll"/>
+            <field name="implied_ids" eval="[(4, ref('group_dl_payroll_admin'))]"/>
+            <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

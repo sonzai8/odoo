@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_inherit_dl_payroll" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.dl.payroll</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Thuộc tính sản xuất" name="production_attributes">
+                    <group>
+                        <group string="Cấu hình chung">
+                            <field name="x_is_wood_product"/>
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        Sử dụng Tab <b>Attributes &amp; Variants</b> để thiết lập các thông số kỹ thuật (Độ dày, Kích thước, Loại Phim...).
+                    </p>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

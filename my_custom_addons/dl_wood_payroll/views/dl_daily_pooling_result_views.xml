@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_daily_pooling_result_tree" model="ir.ui.view">
+        <field name="name">dl.daily.pooling.result.tree</field>
+        <field name="model">dl.daily.pooling.result</field>
+        <field name="arch" type="xml">
+            <list string="Kết quả cào bằng lương" create="false" edit="false">
+                <field name="date"/>
+                <field name="employee_id"/>
+                <field name="source_group_id"/>
+                <field name="actual_work_days" sum="Tổng công"/>
+                <field name="contribution_amount" sum="Tổng tiền làm ra"/>
+                <field name="pool_unit_price"/>
+                <field name="final_salary" sum="Tổng lương thực nhận"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_daily_pooling_result_search" model="ir.ui.view">
+        <field name="name">dl.daily.pooling.result.search</field>
+        <field name="model">dl.daily.pooling.result</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="date"/>
+                <field name="employee_id"/>
+                <field name="source_group_id"/>
+                <filter string="Tổ gốc" name="group_by_source_group" context="{'group_by': 'source_group_id'}"/>
+                <filter string="Ngày" name="group_by_date" context="{'group_by': 'date'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_daily_pooling_result" model="ir.actions.act_window">
+        <field name="name">Kết quả cào bằng lương</field>
+        <field name="res_model">dl.daily.pooling.result</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dl_daily_pooling_result_search"/>
+        <field name="context">{'search_default_group_by_date': 1, 'search_default_group_by_source_group': 1}</field>
+    </record>
+</odoo>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_piece_rate_pricelist_tree" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.tree</field>
+        <field name="model">dl.piece.rate.pricelist</field>
+        <field name="arch" type="xml">
+            <list string="Bảng giá đơn giá">
+                <field name="name"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_piece_rate_pricelist_form" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.form</field>
+        <field name="model">dl.piece.rate.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Bảng giá đơn giá">
+                <header>
+                    <button name="action_clone_pricelist" string="Sao chép từ tháng trước" type="object" class="btn-primary" invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state == 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_draft" string="Chuyển về dự thảo" type="object" invisible="state == 'draft'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month" readonly="state == 'confirmed'"/>
+                            <field name="year" readonly="state == 'confirmed'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết đơn giá" name="lines">
+                            <field name="line_ids" readonly="state == 'confirmed'">
+                                <list editable="bottom">
+                                    <field name="work_center_id"/>
+                                    <field name="thickness_id" domain="[('attribute_id.name', 'ilike', 'Độ dày')]"/>
+                                    <field name="size_id" domain="[('attribute_id.name', 'ilike', 'Kích thước')]"/>
+                                    <field name="film_type_id" domain="[('attribute_id.name', 'ilike', 'Loại Phim')]"/>
+                                    <field name="surface_id" domain="[('attribute_id.name', 'ilike', 'Bề mặt')]"/>
+                                    <field name="price"/>
+                                    <field name="extra_price"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="work_center_id"/>
+                                            <field name="price"/>
+                                            <field name="extra_price"/>
+                                        </group>
+                                        <group>
+                                            <field name="thickness_id" domain="[('attribute_id.name', 'ilike', 'Độ dày')]"/>
+                                            <field name="size_id" domain="[('attribute_id.name', 'ilike', 'Kích thước')]"/>
+                                            <field name="film_type_id" domain="[('attribute_id.name', 'ilike', 'Loại Phim')]"/>
+                                            <field name="surface_id" domain="[('attribute_id.name', 'ilike', 'Bề mặt')]"/>
+                                        </group>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_piece_rate_pricelist" model="ir.actions.act_window">
+        <field name="name">Bảng giá đơn giá</field>
+        <field name="res_model">dl.piece.rate.pricelist</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo bảng giá đơn giá đầu tiên!
+            </p>
+        </field>
+    </record>
+</odoo>

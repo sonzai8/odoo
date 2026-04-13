@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+{
+    'name': 'DL Wood Payroll',
+    'version': '1.0',
+    'category': 'Human Resources',
+    'summary': 'Quản lý đơn giá và bảng giá nhân công ngành gỗ',
+    'description': """
+        Module quản lý đơn giá sản phẩm và tính lương theo sản phẩm.
+        Các tính năng chính:
+        - Thêm tổ gốc và phân loại lao động thời vụ cho nhân viên.
+        - Quản lý bảng giá đơn giá công đoạn.
+        - Tính năng sao chép bảng giá từ tháng trước.
+    """,
+    'author': 'Antigravity',
+    'depends': ['hr', 'mrp', 'mail', 'product'],
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'views/dl_workshop_views.xml',
+        'views/dl_employee_transfer_views.xml',
+        'views/hr_employee_views.xml',
+        'views/product_template_views.xml',
+        'views/mrp_workcenter_views.xml',
+        'views/dl_production_group_views.xml',
+        'views/dl_piece_rate_pricelist_views.xml',
+        'views/dl_production_log_views.xml',
+        'views/dl_daily_pooling_result_views.xml',
+        'wizard/dl_pooling_wizard_views.xml',
+        'views/menus.xml',
+        'data/ir_cron_data.xml',
+    ],
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}

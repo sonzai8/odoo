@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_employee_transfer_tree" model="ir.ui.view">
+        <field name="name">dl.employee.transfer.tree</field>
+        <field name="model">dl.employee.transfer</field>
+        <field name="arch" type="xml">
+            <list string="Lệnh điều chuyển" decoration-info="state == 'scheduled'" decoration-success="state == 'done'" decoration-muted="state == 'cancel'">
+                <field name="date_request"/>
+                <field name="employee_id"/>
+                <field name="from_group_id"/>
+                <field name="to_group_id"/>
+                <field name="date_effective"/>
+                <field name="state" widget="badge" decoration-info="state == 'scheduled'" decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_employee_transfer_form" model="ir.ui.view">
+        <field name="name">dl.employee.transfer.form</field>
+        <field name="model">dl.employee.transfer</field>
+        <field name="arch" type="xml">
+            <form string="Lệnh điều chuyển">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_cancel" string="Hủy" type="object" invisible="state not in ('draft', 'scheduled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            Lệnh điều chuyển nhân sự
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="from_group_id"/>
+                            <field name="to_group_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="date_request"/>
+                            <field name="transfer_type" widget="radio" readonly="state != 'draft'"/>
+                            <field name="custom_date" invisible="transfer_type != 'custom'" required="transfer_type == 'custom'" readonly="state != 'draft'"/>
+                            <field name="date_effective"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_employee_transfer" model="ir.actions.act_window">
+        <field name="name">Lệnh điều chuyển</field>
+        <field name="res_model">dl.employee.transfer</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo lệnh điều chuyển mới!
+            </p>
+        </field>
+    </record>
+</odoo>
