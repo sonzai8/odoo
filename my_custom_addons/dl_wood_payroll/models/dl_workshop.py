@@ -11,10 +11,10 @@ class DlWorkshop(models.Model):
     manager_id = fields.Many2one('hr.employee', string='Quản đốc')
     active = fields.Boolean(default=True)
     
-    work_center_ids = fields.One2many(
-        'mrp.workcenter', 
+    x_department_ids = fields.One2many(
+        'hr.department', 
         'x_workshop_id', 
-        string='Các công đoạn (Work Centers)'
+        string='Các bộ phận/Công đoạn'
     )
     
     description = fields.Text(string='Ghi chú')

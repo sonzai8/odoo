@@ -1,0 +1,222 @@
+/* DL Wood Payroll - Premium Pine Green Design System */
+:root {
+    --dl-primary: #1b4d3e;              /* Deep Pine Green */
+    --dl-primary-light: #2c7a62;
+    --dl-primary-soft: #eef5f2;         /* Soft Pine Green Background */
+    --dl-secondary: #f8f9fa;
+    --dl-accent: #d4a373;               /* Wood Earth brown accent */
+    --dl-focus-shadow: 0 0 0 0.25rem rgba(27, 77, 62, 0.2);
+    --dl-card-bg: #ffffff;
+    --dl-card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 8px rgba(0, 0, 0, 0.02);
+    --dl-radius: 12px;
+}
+
+/* Global Form Padding & Background */
+.o_form_view_container {
+    background-color: #f3f4f6 !important;
+    overflow-x: hidden !important;
+}
+
+.o_form_view {
+    padding: 0.5rem !important;
+    background: transparent !important;
+    
+    .o_form_sheet_bg {
+        background: transparent !important;
+        border: none !important;
+    }
+    
+    .o_form_sheet {
+        background: white !important;
+        border-radius: var(--dl-radius) !important;
+        box-shadow: var(--dl-card-shadow) !important;
+        border: 1px solid rgba(0,0,0,0.05) !important;
+        padding: 1.5rem 2rem !important; /* Reduced from 2.5rem */
+    }
+}
+
+/* Rounded Inputs & Clean Focus */
+.o_form_view .o_input {
+    border-radius: 8px !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 0.6rem 0.9rem !important;
+    background-color: #fdfdfd !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    
+    &:focus {
+        border-color: var(--dl-primary) !important;
+        box-shadow: var(--dl-focus-shadow) !important;
+        background-color: #fff !important;
+    }
+}
+
+/* Premium DL Card Layout */
+.dl_card {
+    background: #ffffff !important;
+    border: 1px solid #f1f1f1 !important;
+    border-radius: var(--dl-radius) !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    
+    header, .o_horizontal_separator {
+        color: var(--dl-primary) !important;
+        font-weight: 700 !important;
+        text-transform: none !important;
+        letter-spacing: -0.02em !important;
+        font-size: 1.1rem !important;
+        border-bottom: 2px solid var(--dl-primary) !important;
+        display: inline-block !important;
+        padding-bottom: 4px !important;
+        margin-bottom: 1.5rem !important;
+    }
+}
+
+/* Button Standardization */
+.o_control_panel {
+    .btn-primary, .btn-secondary, .btn-link {
+        border-radius: 8px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        font-weight: 500 !important;
+    }
+}
+
+.o_form_header, .o_form_statusbar {
+    background: white !important;
+    border-bottom: 1px solid #f1f1f1 !important;
+    padding: 0.75rem 1rem !important;
+    
+    .btn {
+        margin-right: 8px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1.25rem !important;
+        text-transform: none !important;
+        min-height: 40px !important;
+        transition: all 0.2s ease !important;
+        
+        &.btn-primary {
+            background-color: var(--dl-primary) !important;
+            border-color: var(--dl-primary) !important;
+            box-shadow: 0 4px 12px rgba(27, 77, 62, 0.2) !important;
+            
+            &:hover {
+                background-color: var(--dl-primary-light) !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0 6px 16px rgba(27, 77, 62, 0.3) !important;
+            }
+        }
+        
+        &.btn-secondary {
+            background: #fff !important;
+            border-color: #e5e7eb !important;
+            color: #374151 !important;
+            
+            &:hover {
+                background: #f9fafb !important;
+                border-color: #d1d5db !important;
+            }
+        }
+    }
+}
+
+/* Unit Badge Styling */
+.dl_row_units {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    
+    .dl_unit_badge {
+        background-color: #f3f4f6 !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 6px !important;
+        padding: 4px 8px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        color: #6b7280 !important;
+        min-width: 40px !important;
+        text-align: center !important;
+    }
+}
+
+/* Custom Highlighting */
+.text-pine-green {
+    color: var(--dl-primary) !important;
+}
+
+.bg-info-light {
+    background-color: #e0f2fe !important;
+}
+
+.text-info {
+    color: var(--dl-primary-light) !important;
+}
+
+.border-primary-light {
+    border: 1px solid var(--dl-primary-light) !important;
+    background-color: var(--dl-primary-soft) !important;
+}
+
+.dl_highlight {
+    color: var(--dl-primary) !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.05em !important;
+}
+
+.dl_chatter_collapsible {
+    margin-top: 3rem !important;
+    border-top: 1px solid #e5e7eb !important;
+    background: #fff !important;
+    
+    details {
+        summary {
+            list-style: none !important;
+            padding: 12px 24px !important;
+            background: #f9fafb !important;
+            cursor: pointer !important;
+            color: var(--dl-primary) !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            border-bottom: 1px solid #f1f1f1 !important;
+            transition: all 0.2s ease !important;
+            
+            &::-webkit-details-marker {
+                display: none !important;
+            }
+            
+            &:hover {
+                background: #f3f4f6 !important;
+            }
+            
+            &:after {
+                content: '\f107'; /* fa-chevron-down */
+                font-family: 'FontAwesome' !important;
+                font-size: 1.1rem !important;
+                transition: transform 0.3s ease !important;
+            }
+        }
+        
+        &[open] {
+            summary {
+                background: #fff !important;
+                border-bottom: 2px solid var(--dl-primary) !important;
+                
+                &:after {
+                    transform: rotate(180deg) !important;
+                }
+            }
+        }
+    }
+    
+    .o_chatter {
+        padding: 2rem !important;
+        background-size: cover !important;
+        max-width: 100% !important;
+    }
+}

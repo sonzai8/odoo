@@ -27,25 +27,26 @@
                         </h1>
                     </div>
                     <group>
-                        <group>
+                        <group class="dl_card" string="Thông tin quản lý">
                             <field name="code"/>
-                            <field name="manager_id"/>
+                            <field name="manager_id" widget="many2one_avatar_user"/>
                         </group>
-                        <group>
-                            <field name="active" invisible="1"/>
+                        <group class="dl_card" string="Trạng thái">
+                            <field name="active" widget="boolean_toggle"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Công đoạn trong xưởng" name="work_centers">
-                            <field name="work_center_ids" readonly="1">
+                        <page string="Công đoạn sản xuất (Bộ phận)" name="departments">
+                            <field name="x_department_ids">
                                 <list>
-                                    <field name="name"/>
-                                    <field name="code"/>
+                                    <field name="name" string="Tên công đoạn"/>
+                                    <field name="manager_id"/>
+                                    <field name="total_employee"/>
                                 </list>
                             </field>
                         </page>
                         <page string="Ghi chú" name="notes">
-                            <field name="description"/>
+                            <field name="description" placeholder="Mô tả chi tiết về xưởng..."/>
                         </page>
                     </notebook>
                 </sheet>

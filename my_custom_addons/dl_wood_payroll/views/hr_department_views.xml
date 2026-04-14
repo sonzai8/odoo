@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_department_form_inherit_dl_wood" model="ir.ui.view">
+        <field name="name">hr.department.form.inherit.dl.wood</field>
+        <field name="model">hr.department</field>
+        <field name="inherit_id" ref="hr.view_department_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="o_horizontal_separator text-primary mt-4 mb-3">
+                    <i class="fa fa-industry me-1"/> CẤU HÌNH SẢN XUẤT (WOOD)
+                </div>
+                <group>
+                    <group class="dl_card" string="Phân cấp tổ chức">
+                        <field name="x_is_production_stage" widget="boolean_toggle"/>
+                        <field name="x_workshop_id" options="{'no_create': True}"/>
+                        <field name="parent_id" string="Bộ phận cấp trên"/>
+                    </group>
+                    <group class="dl_card" string="Thống kê">
+                        <field name="total_employee" string="Tổng nhân sự"/>
+                        <field name="manager_id" widget="many2one_avatar_user"/>
+                    </group>
+                </group>
+                <notebook invisible="not x_is_production_stage">
+                    <page string="Danh sách Tổ sản xuất" name="production_groups">
+                        <field name="x_production_group_ids">
+                            <list>
+                                <field name="name"/>
+                                <field name="leader_id"/>
+                                <field name="member_count"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dl_production_stage" model="ir.actions.act_window">
+        <field name="name">Công đoạn sản xuất</field>
+        <field name="res_model">hr.department</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('x_is_production_stage', '=', True)]</field>
+        <field name="context">{'default_x_is_production_stage': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thiết lập công đoạn sản xuất đầu tiên!
+            </p>
+            <p>
+                Công đoạn (Department) là cấp quản lý trung gian giữa Xưởng và các Tổ sản xuất.
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -26,3 +26,9 @@ access_dl_workshop_manager,dl.workshop.manager,model_dl_workshop,group_dl_payrol
 access_dl_film_type_user,dl.film.type.user,model_dl_film_type,group_dl_payroll_user,1,0,0,0
 access_dl_film_type_admin,dl.film.type.admin,model_dl_film_type,group_dl_payroll_admin,1,1,1,1
 access_dl_film_type_manager,dl.film.type.manager,model_dl_film_type,group_dl_payroll_manager,1,1,1,1
+access_dl_attendance_type_user,dl.attendance.type.user,model_dl_attendance_type,group_dl_payroll_user,1,0,0,0
+access_dl_attendance_type_manager,dl.attendance.type.manager,model_dl_attendance_type,group_dl_payroll_manager,1,1,1,1
+access_dl_daily_attendance_user,dl.daily.attendance.user,model_dl_daily_attendance,group_dl_payroll_user,1,1,1,1
+access_dl_daily_attendance_manager,dl.daily.attendance.manager,model_dl_daily_attendance,group_dl_payroll_manager,1,1,1,1
+access_dl_daily_attendance_line_user,dl.daily.attendance.line.user,model_dl_daily_attendance_line,group_dl_payroll_user,1,1,1,1
+access_dl_daily_attendance_line_manager,dl.daily.attendance.line.manager,model_dl_daily_attendance_line,group_dl_payroll_manager,1,1,1,1

@@ -5,21 +5,33 @@ class ProductionGroup(models.Model):
     _name = 'dl.production.group'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = 'Tổ sản xuất'
-    _order = 'work_center_id, name'
+    _order = 'department_id, name'
 
     name = fields.Char(string='Tên tổ', required=True, tracking=True)
-    work_center_id = fields.Many2one(
-        'mrp.workcenter', 
-        string='Công đoạn', 
+    department_id = fields.Many2one(
+        'hr.department', 
+        string='Công đoạn sản xuất', 
         required=True, 
-        tracking=True
+        tracking=True,
+        domain=[('x_is_production_stage', '=', True)]
     )
     x_workshop_id = fields.Many2one(
-        related='work_center_id.x_workshop_id',
+        'dl.workshop',
         string='Xưởng',
         store=True,
-        readonly=True
+        tracking=True
     )
+
+    @api.onchange('department_id')
+    def _onchange_department_id(self):
+        if self.department_id and self.department_id.x_workshop_id:
+            self.x_workshop_id = self.department_id.x_workshop_id
+
+    @api.onchange('x_workshop_id')
+    def _onchange_x_workshop_id(self):
+        # Clear department if it doesn't match the new workshop
+        if self.department_id and self.department_id.x_workshop_id != self.x_workshop_id:
+            self.department_id = False
     leader_id = fields.Many2one(
         'hr.employee', 
         string='Tổ trưởng', 
@@ -31,7 +43,6 @@ class ProductionGroup(models.Model):
         string='Danh sách nhân viên'
     )
     
-    # Virtual field for selection UI
     x_employee_ids = fields.Many2many(
         'hr.employee', 
         string='Thành viên', 
@@ -54,12 +65,13 @@ class ProductionGroup(models.Model):
 
     def _inverse_x_employee_ids(self):
         for group in self:
-            # Employees being added to this group
             added = group.x_employee_ids - group.member_ids
             if added:
-                added.write({'x_source_group_id': group.id})
+                added.write({
+                    'x_source_group_id': group.id,
+                    'department_id': group.department_id.id
+                })
             
-            # Employees being removed from this group
             removed = group.member_ids - group.x_employee_ids
             if removed:
                 removed.write({'x_source_group_id': False})

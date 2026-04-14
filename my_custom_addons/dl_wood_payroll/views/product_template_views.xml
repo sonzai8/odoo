@@ -6,41 +6,87 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
+            <!-- 1. Thêm Wood Toggle vào phần options trên cùng -->
+            <xpath expr="//div[@name='options']" position="inside">
+                <div class="o_row">
+                    <field name="x_is_wood_product" class="oe_inline"/>
+                    <label for="x_is_wood_product" class="fw-bold text-primary"/>
+                </div>
+            </xpath>
+
+            <!-- 2. Thêm Tab Thông tin Gỗ vào notebook -->
             <xpath expr="//notebook" position="inside">
-                <page string="Thông số kỹ thuật (Wood)" name="wood_technical_specs">
-                    <group>
-                        <group string="Kích thước &amp; Độ dày">
-                            <field name="x_is_wood_product"/>
-                            <label for="x_thickness" invisible="not x_is_wood_product"/>
-                            <div class="o_row" invisible="not x_is_wood_product">
-                                <field name="x_thickness"/> mm
-                            </div>
-                            <label for="x_length" invisible="not x_is_wood_product"/>
-                            <div class="o_row" invisible="not x_is_wood_product">
-                                <field name="x_length"/> cm  x  <field name="x_width"/> cm
-                            </div>
-                            <field name="x_dimension_id" options="{'no_create': True}" invisible="not x_is_wood_product"/>
-                        </group>
-                        <group string="Cấu trúc lõi" invisible="not x_is_wood_product">
-                            <field name="x_layer_a_count"/>
-                            <field name="x_layer_b_count"/>
-                            <field name="x_layer_c_count"/>
-                        </group>
-                    </group>
-                    <group invisible="not x_is_wood_product">
-                        <group string="Phủ Film (Coating)">
-                            <field name="x_coating_type" widget="radio" options="{'horizontal': true}"/>
-                            <field name="x_film_id" options="{'no_create': True}" invisible="x_coating_type == 'none'"/>
-                        </group>
-                        <group string="Quy đổi &amp; Tóm tắt">
-                            <field name="x_area_m2" readonly="1"/>
-                            <field name="x_volume_m3" readonly="1"/>
-                            <field name="x_structure_summary" class="text-primary font-weight-bold" readonly="1"/>
-                        </group>
-                    </group>
-                    <div class="alert alert-info mt-3" role="alert" invisible="not x_is_wood_product">
-                        <b>Quy tắc đặt tên:</b> Tên sản phẩm sẽ tự động được ghép thêm thông số kỹ thuật dạng: [Tên] [Độ dày]x[Dài]x[Rộng] [Phim] [Phủ].
+                <page string="Thông tin Gỗ" name="wood_info_tab" invisible="not x_is_wood_product">
+                    <!-- Alert gợi ý đặt tên -->
+                    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                        <i class="fa fa-magic me-3 fs-3" title="Gợi ý đặt tên"/>
+                        <div>
+                            <b>Quy tắc đặt tên sản phẩm tự động:</b> 
+                            <span class="badge bg-primary ms-1">[Tên] [Độ dày]x[Dài]x[Rộng] [Phim] [Phủ]</span>
+                        </div>
                     </div>
+
+                    <!-- 1. Kích thước (Dimensions) -->
+                    <group string="Kích thước cơ bản" class="dl_card mb-3">
+                        <label for="x_thickness" string="Kích thước"/>
+                        <div class="dl_row_units">
+                            <i class="fa fa-arrows-h dl_field_icon text-muted me-1" title="Độ dày"/>
+                            <field name="x_thickness" placeholder="Dày (mm)" title="Độ dày (mm)" class="fw-bold o_field_number"/>
+                            <span class="dl_unit_badge me-2">mm</span>
+                            
+                            <span class="text-muted opacity-50 mx-2">|</span>
+                            
+                            <i class="fa fa-arrows-v dl_field_icon text-muted me-1" title="Chiều dài"/>
+                            <field name="x_length" placeholder="Dài (cm)" title="Chiều dài (cm)" class="o_field_number"/>
+                            <span class="dl_unit_badge me-2">cm</span>
+                            
+                            <span class="text-muted opacity-50 mx-1">x</span>
+                            
+                            <i class="fa fa-expand dl_field_icon text-muted me-1" title="Chiều rộng"/>
+                            <field name="x_width" placeholder="Rộng (cm)" title="Chiều rộng (cm)" class="o_field_number"/>
+                            <span class="dl_unit_badge">cm</span>
+                        </div>
+                    </group>
+
+                    <!-- 2. Thông số lớp gỗ (Layers) -->
+                    <group string="Cấu tạo &amp; Số lớp" class="dl_card mb-3">
+                        <field name="x_layer_a_count" placeholder="0"/>
+                        <field name="x_layer_b_count" placeholder="0"/>
+                        <field name="x_layer_c_count" placeholder="0"/>
+                        <label for="x_structure_summary" string="Kết cấu"/>
+                        <div class="o_row">
+                            <field name="x_structure_summary" class="text-primary fw-bold" readonly="1"/>
+                            <span class="badge rounded-pill bg-info-light text-info ms-2 px-2" invisible="not x_is_wood_product">
+                                <i class="fa fa-info-circle me-1"/>Tự động
+                            </span>
+                        </div>
+                    </group>
+
+                    <!-- 3. Thông tin phủ phim (Coating) -->
+                    <group string="Xử lý bề mặt &amp; Phủ phim" class="dl_card mb-3">
+                        <field name="x_coating_type" widget="radio" options="{'horizontal': true}"/>
+                        <field name="x_film_id" invisible="x_coating_type == 'none'" options="{'no_create': True, 'no_open': True}" placeholder="Chọn loại Film..."/>
+                    </group>
+                    
+                    <!-- 4. Kết quả quy đổi (Results Dashboard) -->
+                    <group string="Kết quả tính toán" class="dl_card mb-3 border-primary-light">
+                        <div class="d-flex align-items-center justify-content-start py-2">
+                            <div class="me-5 text-center px-4 border-end">
+                                <div class="text-muted small text-uppercase mb-1">Diện tích</div>
+                                <div class="d-flex align-items-baseline justify-content-center">
+                                    <field name="x_area_m2" readonly="1" class="h3 fw-bold mb-0 text-pine-green"/>
+                                    <span class="ms-1 text-muted">m²</span>
+                                </div>
+                            </div>
+                            <div class="text-center px-4">
+                                <div class="text-muted small text-uppercase mb-1">Khối lượng</div>
+                                <div class="d-flex align-items-baseline justify-content-center">
+                                    <field name="x_volume_m3" readonly="1" class="dl_highlight mb-0"/>
+                                    <span class="ms-2 text-muted fw-bold">m³</span>
+                                </div>
+                            </div>
+                        </div>
+                    </group>
                 </page>
             </xpath>
         </field>
@@ -53,11 +99,10 @@
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="x_thickness" optional="show"/>
+                <field name="x_thickness" optional="show" decoration-bf="1"/>
                 <field name="x_length" string="Dài (cm)" optional="show"/>
                 <field name="x_width" string="Rộng (cm)" optional="show"/>
-                <field name="x_film_id" optional="hide"/>
-                <field name="x_structure_summary" optional="show"/>
+                <field name="x_structure_summary" optional="show" widget="badge" decoration-info="1"/>
             </xpath>
         </field>
     </record>
@@ -69,28 +114,21 @@
         <field name="inherit_id" ref="product.product_template_search_view"/>
         <field name="arch" type="xml">
             <xpath expr="//filter[@name='filter_to_sell']" position="after">
-                <separator/>
                 <filter string="Sản phẩm gỗ" name="wood_products" domain="[('x_is_wood_product', '=', True)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Độ dày" name="group_by_thickness" context="{'group_by': 'x_thickness'}"/>
-                    <filter string="Loại Film" name="group_by_film" context="{'group_by': 'x_film_id'}"/>
-                </group>
+            </xpath>
+            <xpath expr="//search/group" position="inside">
+                <filter string="Độ dày" name="group_by_thickness" context="{'group_by': 'x_thickness'}"/>
+                <filter string="Loại Film" name="group_by_film" context="{'group_by': 'x_film_id'}"/>
             </xpath>
         </field>
     </record>
 
-    <!-- Actions -->
     <record id="action_dl_wood_products" model="ir.actions.act_window">
         <field name="name">Sản phẩm ngành gỗ</field>
-        <field name="res_model">product.template</field>
+        <field name="res_model" >product.template</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="context">{'default_x_is_wood_product': True, 'search_default_wood_products': 1}</field>
         <field name="domain">[('x_is_wood_product', '=', True)]</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Tạo sản phẩm gỗ mới (Ván ép, Ván lõi...)!
-            </p>
-        </field>
     </record>
 
     <record id="action_dl_product_attribute" model="ir.actions.act_window">
@@ -98,5 +136,4 @@
         <field name="res_model">product.attribute</field>
         <field name="view_mode">list,form</field>
     </record>
-
 </odoo>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_dl_wood_payroll_root" 
-              name="Lương Gỗ" 
+              name="Chấm Công - Tính Lương" 
               web_icon="dl_wood_payroll,static/description/icon.png"
               sequence="20"/>
 
@@ -23,6 +23,12 @@
               action="action_dl_production_log"
               sequence="20"/>
 
+    <menuitem id="menu_dl_piece_rate_matrix_action"
+              name="Ma trận đơn giá"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_piece_rate_matrix"
+              sequence="30"/>
+
     <!-- Calculation Group -->
     <menuitem id="menu_dl_pooling_calculation_root"
               name="Tính toán lương"
@@ -41,9 +47,46 @@
               action="action_dl_daily_pooling_result"
               sequence="20"/>
 
+    <menuitem id="menu_dl_payroll_matrix_report_action"
+              name="Ma trận Lương ngày"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_payroll_matrix_report"
+              sequence="30"/>
+
+    <!-- Attendance Group -->
+    <menuitem id="menu_dl_attendance_root"
+              name="Chấm công"
+              parent="menu_dl_wood_payroll_root"
+              sequence="35"/>
+
+    <menuitem id="menu_dl_daily_attendance_line_action"
+              name="Bảng công chi tiết"
+              parent="menu_dl_attendance_root"
+              action="action_dl_daily_attendance_line"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_daily_attendance_action"
+              name="Chấm công theo tổ"
+              parent="menu_dl_attendance_root"
+              action="action_dl_daily_attendance"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_attendance_matrix_report_action"
+              name="Báo cáo Ma trận Chấm công"
+              parent="menu_dl_attendance_root"
+              action="action_dl_matrix_attendance_report"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_attendance_config_action"
+              name="Loại hình chấm công"
+              parent="menu_dl_attendance_root"
+              action="action_dl_attendance_type"
+              sequence="90"
+              groups="dl_wood_payroll.group_dl_payroll_manager"/>
+
     <!-- HR Group -->
     <menuitem id="menu_dl_payroll_employee_root"
-              name="Nhân sự gỗ"
+              name="Quản lý nhân sự"
               parent="menu_dl_wood_payroll_root"
               sequence="40"/>
 
@@ -77,11 +120,6 @@
               action="action_dl_wood_products"
               sequence="10"/>
 
-    <menuitem id="menu_dl_product_dimension_action"
-              name="Quản lý Kích thước"
-              parent="menu_dl_product_mgmt_root"
-              action="action_dl_product_dimension"
-              sequence="15"/>
 
     <menuitem id="menu_dl_product_film_action"
               name="Quản lý loại Film"
@@ -95,11 +133,6 @@
               action="action_dl_product_attribute"
               sequence="90"/>
 
-    <menuitem id="menu_dl_product_attribute_value_action"
-              name="Giá trị thuộc tính"
-              parent="menu_dl_product_mgmt_root"
-              action="action_dl_product_attribute_value"
-              sequence="30"/>
 
     <!-- Cấu hình tổ chức -->
     <menuitem id="menu_dl_org_config_root"
@@ -113,9 +146,9 @@
               action="action_dl_workshop"
               sequence="10"/>
 
-    <menuitem id="menu_dl_workcenter_action"
-              name="Công đoạn (Work Center)"
+    <menuitem id="menu_dl_department_stage_action"
+              name="Công đoạn sản xuất"
               parent="menu_dl_org_config_root"
-              action="action_dl_workcenter"
+              action="action_dl_production_stage"
               sequence="20"/>
 </odoo>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="attendance_type_n" model="dl.attendance.type">
+            <field name="name">Đi làm (Ngày)</field>
+            <field name="code">N</field>
+            <field name="work_value">1.0</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="attendance_type_d" model="dl.attendance.type">
+            <field name="name">Đi làm (Đêm)</field>
+            <field name="code">D</field>
+            <field name="work_value">1.0</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="attendance_type_n12" model="dl.attendance.type">
+            <field name="name">Nửa công</field>
+            <field name="code">N/1</field>
+            <field name="work_value">0.5</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <record id="attendance_type_p" model="dl.attendance.type">
+            <field name="name">Nghỉ phép</field>
+            <field name="code">P</field>
+            <field name="work_value">0.0</field>
+            <field name="sequence">40</field>
+        </record>
+
+        <record id="attendance_type_k" model="dl.attendance.type">
+            <field name="name">Nghỉ không phép</field>
+            <field name="code">K</field>
+            <field name="work_value">0.0</field>
+            <field name="sequence">50</field>
+        </record>
+    </data>
+</odoo>

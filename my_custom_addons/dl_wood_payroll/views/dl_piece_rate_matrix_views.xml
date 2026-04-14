@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Matrix (Pivot) View -->
+    <record id="view_dl_piece_rate_line_pivot" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.line.pivot</field>
+        <field name="model">dl.piece.rate.pricelist.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Ma trận đơn giá" display_quantity="0" sample="1">
+                <field name="product_id" type="row"/>
+                <field name="department_id" type="col"/>
+                <field name="price" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- List View for Import/Export -->
+    <record id="view_dl_piece_rate_line_tree" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.line.list</field>
+        <field name="model">dl.piece.rate.pricelist.line</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách đơn giá (Chi tiết)" editable="bottom" multi_edit="1">
+                <field name="pricelist_id" invisible="1"/>
+                <field name="department_id"/>
+                <field name="product_id"/>
+                <field name="price"/>
+                <field name="extra_price" optional="show"/>
+                <field name="month" optional="show"/>
+                <field name="year" optional="show"/>
+                <field name="state" widget="badge" optional="show" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_dl_piece_rate_line_search" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.line.search</field>
+        <field name="model">dl.piece.rate.pricelist.line</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm đơn giá">
+                <field name="product_id"/>
+                <field name="department_id"/>
+                <field name="month"/>
+                <field name="year"/>
+                
+                <separator/>
+                <filter string="Đã xác nhận" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter string="Bản nháp" name="draft" domain="[('state', '=', 'draft')]"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Sản phẩm" name="group_by_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Công đoạn" name="group_by_department" context="{'group_by': 'department_id'}"/>
+                    <filter string="Xưởng" name="group_by_workshop" context="{'group_by': 'workshop_id'}"/>
+                    <filter string="Năm" name="group_by_year" context="{'group_by': 'year'}"/>
+                    <filter string="Tháng" name="group_by_month" context="{'group_by': 'month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_piece_rate_matrix" model="ir.actions.act_window">
+        <field name="name">Ma trận đơn giá</field>
+        <field name="res_model">dl.piece.rate.pricelist.line</field>
+        <field name="view_mode">pivot,list,form</field>
+        <field name="search_view_id" ref="view_dl_piece_rate_line_search"/>
+        <field name="context">{'search_default_confirmed': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Xem ma trận đơn giá sản phẩm!
+            </p>
+            <p>
+                Ma trận này cho phép bạn so sánh đơn giá của các sản phẩm trên tất cả các công đoạn sản xuất.
+                Sử dụng 'Danh sách' để nhập dữ liệu hàng loạt từ Excel.
+            </p>
+        </field>
+    </record>
+</odoo>

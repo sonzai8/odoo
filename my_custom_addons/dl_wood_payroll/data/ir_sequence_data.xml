@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequence for Daily Attendance -->
+        <record id="seq_dl_daily_attendance" model="ir.sequence">
+            <field name="name">Daily Attendance</field>
+            <field name="code">dl.daily.attendance</field>
+            <field name="prefix">AT/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

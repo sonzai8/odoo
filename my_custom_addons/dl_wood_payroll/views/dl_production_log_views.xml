@@ -7,7 +7,7 @@
             <list string="Nhập sản lượng" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'" decoration-muted="state == 'locked'">
                 <field name="date"/>
                 <field name="production_group_id"/>
-                <field name="work_center_id"/>
+                <field name="department_id" string="Công đoạn"/>
                 <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
             </list>
         </field>
@@ -19,51 +19,52 @@
         <field name="arch" type="xml">
             <form string="Nhập sản lượng">
                 <header>
-                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary btn-lg" invisible="state != 'draft'"/>
-                    <button name="action_lock" string="Khóa sổ" type="object" class="btn-secondary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
-                    <button name="action_draft" string="Chuyển về dự thảo" type="object" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
-                    <button name="action_unlock" string="Mở khóa" type="object" invisible="state != 'locked'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
-                    <button string="Lưu" class="btn-success btn-lg o_form_button_save" Special="save" type="action" invisible="state == 'locked'"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_lock" string="Khóa sổ" type="object" class="btn-primary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" class="btn-secondary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button name="action_unlock" string="Mở khóa sổ" type="object" class="btn-secondary" invisible="state != 'locked'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <button string="Lưu phiếu" name="action_save" class="btn-primary" type="object" invisible="state == 'locked'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,locked"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
+                        <label for="production_group_id" string="Tổ sản xuất thực hiện"/>
                         <h1>
                             <field name="production_group_id" placeholder="Chọn Tổ sản xuất" readonly="state != 'draft'"/>
                         </h1>
                     </div>
                     <group>
-                        <group>
+                        <group class="dl_card" string="Thông tin chung">
                             <field name="date" readonly="state != 'draft'"/>
-                            <field name="work_center_id"/>
+                            <field name="department_id"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Sản lượng sản xuất" name="products">
                             <field name="product_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
-                                    <field name="product_id"/>
-                                    <field name="x_thickness"/>
+                                    <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
+                                    <!-- <field name="x_thickness"/>
+                                    <field name="x_length" optional="show"/>
+                                    <field name="x_width" optional="show"/> -->
                                     <field name="layer_info"/>
-                                    <field name="film_type_id" optional="hide"/>
-                                    <field name="surface_type" optional="hide"/>
                                     <field name="is_re_ep_film"/>
-                                    <field name="quantity" sum="Total Quantity"/>
-                                    <field name="price" readonly="1"/>
-                                    <field name="extra_price" readonly="1" optional="hide"/>
+                                    <field name="quantity" sum="Tổng số tấm"/>
+                                    <field name="price" readonly="1" widget="monetary" decoration-info="1" title="Đơn giá tự động lấy từ bảng giá tháng"/>
+                                    <field name="extra_price" optional="hide" widget="monetary" readonly="1" title="Đơn giá lũy tiến nếu có"/>
                                 </list>
                                 <form>
                                     <group>
-                                        <group>
-                                            <field name="product_id"/>
+                                        <group string="Sản lượng">
+                                            <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
                                             <field name="quantity"/>
                                             <field name="is_re_ep_film"/>
                                         </group>
-                                        <group string="Chi tiết kỹ thuật (RO)">
+                                        <group string="Kỹ thuật">
                                             <field name="x_thickness"/>
+                                            <field name="x_length"/>
+                                            <field name="x_width"/>
                                             <field name="layer_info"/>
-                                            <field name="film_type_id"/>
-                                            <field name="surface_type"/>
                                         </group>
                                     </group>
                                 </form>
@@ -72,10 +73,10 @@
                         <page string="Nhân sự thực hiện" name="workers">
                             <field name="worker_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
-                                    <field name="employee_id"/>
-                                    <field name="worked_hours" sum="Total Hours"/>
-                                    <field name="source_group_id"/>
-                                    <field name="is_borrowed" widget="boolean_toggle" readonly="1"/>
+                                    <field name="employee_id" widget="many2one_avatar_user"/>
+                                    <field name="worked_hours" sum="Tổng công"/>
+                                    <field name="source_group_id" string="Tổ gốc"/>
+                                    <field name="is_borrowed" widget="boolean_toggle" readonly="1" string="Mượn người"/>
                                 </list>
                             </field>
                         </page>

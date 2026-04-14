@@ -16,7 +16,11 @@
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
+        'data/ir_cron_data.xml',
+        'data/ir_sequence_data.xml',
+        'data/dl_attendance_type_data.xml',
         'views/dl_workshop_views.xml',
+        'views/hr_department_views.xml',
         'views/dl_employee_transfer_views.xml',
         'views/hr_employee_views.xml',
         'views/film_type_views.xml',
@@ -24,7 +28,9 @@
         'views/mrp_workcenter_views.xml',
         'views/dl_production_group_views.xml',
         'views/dl_piece_rate_pricelist_views.xml',
+        'views/dl_attendance_type_views.xml',
         'views/dl_production_log_views.xml',
+        'views/dl_daily_attendance_views.xml',
         'views/dl_daily_pooling_result_views.xml',
         'wizard/dl_pooling_wizard_views.xml',
         'views/integration_views.xml',
@@ -33,7 +39,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'dl_wood_payroll/static/src/css/dl_wood_payroll.css',
+            'dl_wood_payroll/static/src/scss/wood_ui.scss',
         ],
     },
     'installable': True,

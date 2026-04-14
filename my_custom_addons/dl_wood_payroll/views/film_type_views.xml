@@ -5,10 +5,10 @@
         <field name="model">dl.film.type</field>
         <field name="arch" type="xml">
             <list string="Danh mục Loại Film" editable="bottom">
-                <field name="code"/>
+                <field name="code" decoration-bf="1"/>
                 <field name="name"/>
-                <field name="thickness"/>
-                <field name="note"/>
+                <field name="thickness" widget="float" digits="[16,2]"/>
+                <field name="note" optional="show"/>
             </list>
         </field>
     </record>
@@ -19,14 +19,23 @@
         <field name="arch" type="xml">
             <form string="Loại Film">
                 <sheet>
-                    <group>
-                        <group>
-                            <field name="name"/>
+                    <div class="oe_title">
+                        <label for="name" string="Tên loại Film"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Film Việt Nam, Film Nâu Đen..."/>
+                        </h1>
+                    </div>
+                    <group class="dl_card" string="Thông số cơ bản">
+                        <group shadow="1">
                             <field name="code"/>
+                            <div class="dl_row_units">
+                                <label for="thickness"/>
+                                <field name="thickness"/>
+                                <span class="dl_unit_badge">mm</span>
+                            </div>
                         </group>
                         <group>
-                            <field name="thickness"/>
-                            <field name="note"/>
+                            <field name="note" placeholder="Ghi chú thêm..."/>
                         </group>
                     </group>
                 </sheet>

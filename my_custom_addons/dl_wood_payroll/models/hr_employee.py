@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
@@ -15,3 +15,8 @@ class HrEmployee(models.Model):
         tracking=True,
         default=False
     )
+
+    @api.onchange('x_source_group_id')
+    def _onchange_x_source_group_id(self):
+        if self.x_source_group_id and self.x_source_group_id.department_id:
+            self.department_id = self.x_source_group_id.department_id

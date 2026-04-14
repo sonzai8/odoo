@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Daily Attendance List -->
+    <record id="view_dl_daily_attendance_tree" model="ir.ui.view">
+        <field name="name">dl.daily.attendance.tree</field>
+        <field name="model">dl.daily.attendance</field>
+        <field name="arch" type="xml">
+            <list string="Chấm công theo tổ" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="production_group_id"/>
+                <field name="department_id" string="Công đoạn"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Daily Attendance Form -->
+    <record id="view_dl_daily_attendance_form" model="ir.ui.view">
+        <field name="name">dl.daily.attendance.form</field>
+        <field name="model">dl.daily.attendance</field>
+        <field name="arch" type="xml">
+            <form string="Chấm công nhanh">
+                <header>
+                    <button name="action_confirm" string="Xác nhận &amp; Khóa" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" class="btn-secondary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_payroll_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Mã phiếu"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="production_group_id" placeholder="Chọn Tổ sản xuất..." readonly="state != 'draft'"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh sách nhân viên" name="lines">
+                            <field name="attendance_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="employee_id" widget="many2one_avatar"/>
+                                    <field name="attendance_type_id" widget="selection"/>
+                                    <field name="actual_work" sum="Tổng công"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Individual Attendance List -->
+    <record id="view_dl_daily_attendance_line_tree" model="ir.ui.view">
+        <field name="name">dl.daily.attendance.line.tree</field>
+        <field name="model">dl.daily.attendance.line</field>
+        <field name="arch" type="xml">
+            <list string="Chi tiết chấm công" decoration-warning="actual_work == 0">
+                <field name="date"/>
+                <field name="employee_id" widget="many2one_avatar"/>
+                <field name="production_group_id"/>
+                <field name="attendance_type_id" widget="badge"/>
+                <field name="actual_work" sum="Tổng công"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Matrix Report (Pivot View) -->
+    <record id="view_dl_daily_attendance_line_pivot" model="ir.ui.view">
+        <field name="name">dl.daily.attendance.line.pivot</field>
+        <field name="model">dl.daily.attendance.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Ma trận Chấm công">
+                <field name="production_group_id" type="row"/>
+                <field name="employee_id" type="row"/>
+                <field name="date" interval="day" type="col"/>
+                <field name="actual_work" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_dl_daily_attendance_line" model="ir.actions.act_window">
+        <field name="name">Bảng công chi tiết</field>
+        <field name="res_model">dl.daily.attendance.line</field>
+        <field name="view_mode">list,pivot</field>
+    </record>
+
+    <record id="action_dl_daily_attendance" model="ir.actions.act_window">
+        <field name="name">Chấm công theo tổ</field>
+        <field name="res_model">dl.daily.attendance</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_dl_matrix_attendance_report" model="ir.actions.act_window">
+        <field name="name">Báo cáo Ma trận Chấm công</field>
+        <field name="res_model">dl.daily.attendance.line</field>
+        <field name="view_mode">pivot,list</field>
+    </record>
+</odoo>

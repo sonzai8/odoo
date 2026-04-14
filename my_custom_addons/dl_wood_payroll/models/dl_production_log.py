@@ -14,9 +14,9 @@ class ProductionLog(models.Model):
         required=True, 
         tracking=True
     )
-    work_center_id = fields.Many2one(
-        related='production_group_id.work_center_id', 
-        string='Tổ thực hiện (Công đoạn)', 
+    department_id = fields.Many2one(
+        related='production_group_id.department_id', 
+        string='Công đoạn sản xuất', 
         store=True, 
         readonly=True
     )
@@ -42,7 +42,6 @@ class ProductionLog(models.Model):
     @api.onchange('production_group_id')
     def _onchange_production_group_id(self):
         if self.production_group_id:
-            # Gợi ý toàn bộ nhân viên thuộc tổ vào tab nhân sự
             lines = []
             for employee in self.production_group_id.member_ids:
                 lines.append((0, 0, {
@@ -63,6 +62,10 @@ class ProductionLog(models.Model):
     def action_unlock(self):
         self.write({'state': 'confirmed'})
 
+    def action_save(self):
+        """Dummy action to trigger form save via header button"""
+        return True
+
 
 class ProductionLogProductLine(models.Model):
     _name = 'dl.production.log.product.line'
@@ -70,15 +73,17 @@ class ProductionLogProductLine(models.Model):
 
     production_log_id = fields.Many2one('dl.production.log', string='Bản ghi sản lượng', ondelete='cascade')
     date = fields.Date(related='production_log_id.date', store=True)
-    work_center_id = fields.Many2one(related='production_log_id.work_center_id', store=True)
+    department_id = fields.Many2one(related='production_log_id.department_id', store=True)
     
     product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
     
     # Thông số từ sản phẩm (Read-only)
     x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)
-    layer_info = fields.Char(related='product_id.x_structure_summary', string='Cấu trúc', readonly=True)
+    x_length = fields.Float(related='product_id.x_length', string='Dài (cm)', readonly=True)
+    x_width = fields.Float(related='product_id.x_width', string='Rộng (cm)', readonly=True)
+    layer_info = fields.Char(related='product_id.x_structure_summary', string='Thông số kỹ thuật', readonly=True)
     film_type_id = fields.Many2one(related='product_id.x_film_id', string='Loại Phim', readonly=True)
-    surface_type = fields.Selection(related='product_id.x_surface_type', string='Quy cách phủ', readonly=True)
+    coating_type = fields.Selection(related='product_id.x_coating_type', string='Hình thức phủ', readonly=True)
     
     quantity = fields.Float(string='Số lượng', default=1.0, required=True)
     is_re_ep_film = fields.Boolean(string='Ép lại 1 mặt')
@@ -86,18 +91,22 @@ class ProductionLogProductLine(models.Model):
     price = fields.Float(string='Đơn giá', compute='_compute_price', store=True)
     extra_price = fields.Float(string='Đơn giá lũy tiến', compute='_compute_price', store=True)
 
-    @api.depends('production_log_id.date', 'production_log_id.work_center_id', 'product_id', 'is_re_ep_film')
+    @api.depends('production_log_id.date', 'production_log_id.department_id', 'product_id', 'is_re_ep_film')
     def _compute_price(self):
         for rec in self:
-            # Nếu ép lại 1 mặt, thông thường giá sẽ tra cứu theo Sản phẩm hoặc có logic riêng.
-            # Với mô hình mới, ta tra cứu theo Product ID.
-            price, extra = self.env['dl.piece.rate.pricelist']._get_active_price(
+            if not rec.production_log_id.date or not rec.production_log_id.department_id or not rec.product_id:
+                rec.price = 0.0
+                rec.extra_price = 0.0
+                continue
+                
+            res = self.env['dl.piece.rate.pricelist']._get_active_price(
                 rec.production_log_id.date, 
-                rec.production_log_id.work_center_id, 
+                rec.production_log_id.department_id, 
                 rec.product_id
             )
-            rec.price = price
-            rec.extra_price = extra
+            # Mặc định lấy giá cao cho hiển thị hàng ngày (kỳ vọng)
+            rec.price = res.get('price_high', 0.0)
+            rec.extra_price = res.get('extra_price', 0.0)
 
 
 class WorkerLogLine(models.Model):
@@ -108,7 +117,6 @@ class WorkerLogLine(models.Model):
     employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
     worked_hours = fields.Float(string='Số công (h)', default=1.0, required=True)
     
-    # Related fields
     source_group_id = fields.Many2one(
         related='employee_id.x_source_group_id', 
         string='Tổ gốc', 
@@ -116,7 +124,6 @@ class WorkerLogLine(models.Model):
         store=True
     )
     
-    # Logic mượn người
     is_borrowed = fields.Boolean(
         string='Mượn người', 
         compute='_compute_is_borrowed', 
@@ -127,7 +134,6 @@ class WorkerLogLine(models.Model):
     def _compute_is_borrowed(self):
         for line in self:
             if line.employee_id and line.production_log_id.production_group_id and line.source_group_id:
-                # Nếu Tổ gốc khác với Tổ sản xuất đang thực hiện phiếu
                 line.is_borrowed = line.source_group_id.id != line.production_log_id.production_group_id.id
             else:
                 line.is_borrowed = False

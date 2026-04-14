@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_attendance_type_tree" model="ir.ui.view">
+        <field name="name">dl.attendance.type.tree</field>
+        <field name="model">dl.attendance.type</field>
+        <field name="arch" type="xml">
+            <list string="Loại hình chấm công" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="work_value"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_attendance_type" model="ir.actions.act_window">
+        <field name="name">Cấu hình Loại công</field>
+        <field name="res_model">dl.attendance.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thiết lập các ký hiệu chấm công (N, D, P, K...).
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -2,8 +2,11 @@ from . import hr_employee
 from . import product_template
 from . import dl_piece_rate_pricelist
 from . import dl_production_log
+from . import dl_attendance_type
+from . import dl_daily_attendance
 from . import dl_production_group
 from . import dl_workshop
+from . import hr_department
 from . import mrp_workcenter
 from . import dl_daily_pooling_result
 from . import dl_employee_transfer
