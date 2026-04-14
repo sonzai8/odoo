@@ -42,27 +42,28 @@
                             <field name="line_ids" readonly="state == 'confirmed'">
                                 <list editable="bottom">
                                     <field name="work_center_id"/>
-                                    <field name="thickness_id" domain="[('attribute_id.name', 'ilike', 'Độ dày')]"/>
-                                    <field name="size_id" domain="[('attribute_id.name', 'ilike', 'Kích thước')]"/>
-                                    <field name="film_type_id" domain="[('attribute_id.name', 'ilike', 'Loại Phim')]"/>
-                                    <field name="wood_grade_id" domain="[('attribute_id.name', 'ilike', 'Chất lượng gỗ')]"/>
-                                    <field name="surface_id" domain="[('attribute_id.name', 'ilike', 'Bề mặt')]"/>
+                                    <field name="product_id"/>
+                                    <field name="x_thickness"/>
+                                    <field name="layer_info"/>
+                                    <field name="film_type_id" optional="hide"/>
+                                    <field name="surface_type" optional="hide"/>
                                     <field name="price"/>
                                     <field name="extra_price"/>
                                 </list>
                                 <form>
                                     <group>
-                                        <group>
+                                        <group string="Cốt lõi">
                                             <field name="work_center_id"/>
+                                            <field name="product_id"/>
                                             <field name="price"/>
                                             <field name="extra_price"/>
                                         </group>
-                                        <group>
-                                            <field name="thickness_id" domain="[('attribute_id.name', 'ilike', 'Độ dày')]"/>
-                                            <field name="size_id" domain="[('attribute_id.name', 'ilike', 'Kích thước')]"/>
-                                            <field name="film_type_id" domain="[('attribute_id.name', 'ilike', 'Loại Phim')]"/>
-                                            <field name="wood_grade_id" domain="[('attribute_id.name', 'ilike', 'Chất lượng gỗ')]"/>
-                                            <field name="surface_id" domain="[('attribute_id.name', 'ilike', 'Bề mặt')]"/>
+                                        <group string="Thông số kỹ thuật (Read-only từ Sản phẩm)">
+                                            <field name="x_thickness"/>
+                                            <field name="size_id" optional="show"/>
+                                            <field name="layer_info"/>
+                                            <field name="film_type_id"/>
+                                            <field name="surface_type"/>
                                         </group>
                                     </group>
                                 </form>

@@ -1,22 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Product Template Form Inheritance -->
     <record id="product_template_form_view_inherit_dl_payroll" model="ir.ui.view">
         <field name="name">product.template.form.inherit.dl.payroll</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page string="Thuộc tính sản xuất" name="production_attributes">
+                <page string="Thông số kỹ thuật (Wood)" name="wood_technical_specs">
                     <group>
-                        <group string="Cấu hình chung">
+                        <group string="Kích thước &amp; Độ dày">
                             <field name="x_is_wood_product"/>
+                            <label for="x_thickness" invisible="not x_is_wood_product"/>
+                            <div class="o_row" invisible="not x_is_wood_product">
+                                <field name="x_thickness"/> mm
+                            </div>
+                            <label for="x_length" invisible="not x_is_wood_product"/>
+                            <div class="o_row" invisible="not x_is_wood_product">
+                                <field name="x_length"/> cm  x  <field name="x_width"/> cm
+                            </div>
+                            <field name="x_dimension_id" options="{'no_create': True}" invisible="not x_is_wood_product"/>
+                        </group>
+                        <group string="Cấu trúc lõi" invisible="not x_is_wood_product">
+                            <field name="x_layer_a_count"/>
+                            <field name="x_layer_b_count"/>
+                            <field name="x_layer_c_count"/>
                         </group>
                     </group>
-                    <p class="text-muted">
-                        Sử dụng Tab <b>Attributes &amp; Variants</b> để thiết lập các thông số kỹ thuật (Độ dày, Kích thước, Loại Phim...).
-                    </p>
+                    <group invisible="not x_is_wood_product">
+                        <group string="Phủ Film (Coating)">
+                            <field name="x_coating_type" widget="radio" options="{'horizontal': true}"/>
+                            <field name="x_film_id" options="{'no_create': True}" invisible="x_coating_type == 'none'"/>
+                        </group>
+                        <group string="Quy đổi &amp; Tóm tắt">
+                            <field name="x_area_m2" readonly="1"/>
+                            <field name="x_volume_m3" readonly="1"/>
+                            <field name="x_structure_summary" class="text-primary font-weight-bold" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info mt-3" role="alert" invisible="not x_is_wood_product">
+                        <b>Quy tắc đặt tên:</b> Tên sản phẩm sẽ tự động được ghép thêm thông số kỹ thuật dạng: [Tên] [Độ dày]x[Dài]x[Rộng] [Phim] [Phủ].
+                    </div>
                 </page>
             </xpath>
         </field>
     </record>
+
+    <!-- Product Template List Inheritance -->
+    <record id="product_template_tree_view_inherit_dl_payroll" model="ir.ui.view">
+        <field name="name">product.template.tree.inherit.dl.payroll</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="x_thickness" optional="show"/>
+                <field name="x_length" string="Dài (cm)" optional="show"/>
+                <field name="x_width" string="Rộng (cm)" optional="show"/>
+                <field name="x_film_id" optional="hide"/>
+                <field name="x_structure_summary" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product Template Search Inheritance -->
+    <record id="product_template_search_view_inherit_dl_payroll" model="ir.ui.view">
+        <field name="name">product.template.search.inherit.dl.payroll</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_to_sell']" position="after">
+                <separator/>
+                <filter string="Sản phẩm gỗ" name="wood_products" domain="[('x_is_wood_product', '=', True)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Độ dày" name="group_by_thickness" context="{'group_by': 'x_thickness'}"/>
+                    <filter string="Loại Film" name="group_by_film" context="{'group_by': 'x_film_id'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_dl_wood_products" model="ir.actions.act_window">
+        <field name="name">Sản phẩm ngành gỗ</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'default_x_is_wood_product': True, 'search_default_wood_products': 1}</field>
+        <field name="domain">[('x_is_wood_product', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo sản phẩm gỗ mới (Ván ép, Ván lõi...)!
+            </p>
+        </field>
+    </record>
+
+    <record id="action_dl_product_attribute" model="ir.actions.act_window">
+        <field name="name">Cấu hình Thuộc tính</field>
+        <field name="res_model">product.attribute</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
 </odoo>

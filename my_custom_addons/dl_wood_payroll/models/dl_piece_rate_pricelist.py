@@ -124,11 +124,11 @@ class PieceRatePricelist(models.Model):
         return 0.0, 0.0
 
     @api.model
-    def _get_active_price(self, date, work_center, thickness_id=None, size_id=None, film_type_id=None, surface_id=None, wood_grade_id=None):
+    def _get_active_price(self, date, work_center, product_id):
         """
-        Tra cứu đơn giá chính xác tại một thời điểm.
+        Tra cứu đơn giá chính xác dựa trên sản phẩm cố định.
         """
-        if not date or not work_center:
+        if not date or not work_center or not product_id:
             return 0.0, 0.0
 
         pricelist = self.search([
@@ -140,22 +140,12 @@ class PieceRatePricelist(models.Model):
         if not pricelist:
             return 0.0, 0.0
 
-        domain = [
+        line = self.env['dl.piece.rate.pricelist.line'].search([
             ('pricelist_id', '=', pricelist.id),
             ('work_center_id', '=', work_center.id),
-        ]
-        if thickness_id:
-            domain.append(('thickness_id', '=', thickness_id.id))
-        if size_id:
-            domain.append(('size_id', '=', size_id.id))
-        if film_type_id:
-            domain.append(('film_type_id', '=', film_type_id.id))
-        if wood_grade_id:
-            domain.append(('wood_grade_id', '=', wood_grade_id.id))
-        if surface_id:
-            domain.append(('surface_id', '=', surface_id.id))
-
-        line = self.env['dl.piece.rate.pricelist.line'].search(domain, limit=1)
+            ('product_id', '=', product_id.id)
+        ], limit=1)
+        
         if line:
             return line.price, line.extra_price
         return 0.0, 0.0
@@ -183,12 +173,14 @@ class PieceRatePricelistLine(models.Model):
     pricelist_id = fields.Many2one('dl.piece.rate.pricelist', string='Bảng giá', ondelete='cascade')
     work_center_id = fields.Many2one('mrp.workcenter', string='Công đoạn', required=True)
     
-    # Many2one tới các thuộc tính sản phẩm
-    thickness_id = fields.Many2one('product.attribute.value', string='Độ dày')
-    size_id = fields.Many2one('product.attribute.value', string='Kích thước')
-    film_type_id = fields.Many2one('product.attribute.value', string='Loại Phim')
-    wood_grade_id = fields.Many2one('product.attribute.value', string='Chất lượng gỗ')
-    surface_id = fields.Many2one('product.attribute.value', string='Bề mặt')
+    product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
+    
+    # Related fields từ sản phẩm (Read-only)
+    x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)
+    size_id = fields.Many2one(related='product_id.x_dimension_id', string='Kích thước', readonly=True)
+    layer_info = fields.Char(related='product_id.x_structure_summary', string='Cấu trúc thực tế', readonly=True)
+    film_type_id = fields.Many2one(related='product_id.x_film_id', string='Loại Phim', readonly=True)
+    surface_type = fields.Selection(related='product_id.x_surface_type', string='Quy cách phủ', readonly=True)
     
     price = fields.Float(string='Đơn giá', required=True)
     extra_price = fields.Float(string='Đơn giá lũy tiến', help='Dùng cho Nhặt ván khi vượt 280 tấm')

@@ -65,6 +65,42 @@
               action="action_dl_employee_transfer"
               sequence="30"/>
 
+    <!-- Product Management Group -->
+    <menuitem id="menu_dl_product_mgmt_root"
+              name="Quản lý sản phẩm"
+              parent="menu_dl_wood_payroll_root"
+              sequence="50"/>
+
+    <menuitem id="menu_dl_wood_products_action"
+              name="Sản phẩm gỗ"
+              parent="menu_dl_product_mgmt_root"
+              action="action_dl_wood_products"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_product_dimension_action"
+              name="Quản lý Kích thước"
+              parent="menu_dl_product_mgmt_root"
+              action="action_dl_product_dimension"
+              sequence="15"/>
+
+    <menuitem id="menu_dl_product_film_action"
+              name="Quản lý loại Film"
+              parent="menu_dl_product_mgmt_root"
+              action="action_dl_film_type"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_product_attribute_action"
+              name="Cấu hình Thuộc tính (Nâng cao)"
+              parent="menu_dl_product_mgmt_root"
+              action="action_dl_product_attribute"
+              sequence="90"/>
+
+    <menuitem id="menu_dl_product_attribute_value_action"
+              name="Giá trị thuộc tính"
+              parent="menu_dl_product_mgmt_root"
+              action="action_dl_product_attribute_value"
+              sequence="30"/>
+
     <!-- Cấu hình tổ chức -->
     <menuitem id="menu_dl_org_config_root"
               name="Cấu hình tổ chức"

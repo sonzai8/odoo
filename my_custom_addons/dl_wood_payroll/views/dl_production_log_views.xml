@@ -43,11 +43,10 @@
                             <field name="product_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="product_id"/>
-                                    <field name="thickness_id"/>
-                                    <field name="size_id"/>
-                                    <field name="film_type_id"/>
-                                    <field name="wood_grade_id"/>
-                                    <field name="surface_id" optional="hide"/>
+                                    <field name="x_thickness"/>
+                                    <field name="layer_info"/>
+                                    <field name="film_type_id" optional="hide"/>
+                                    <field name="surface_type" optional="hide"/>
                                     <field name="is_re_ep_film"/>
                                     <field name="quantity" sum="Total Quantity"/>
                                     <field name="price" readonly="1"/>
@@ -57,15 +56,14 @@
                                     <group>
                                         <group>
                                             <field name="product_id"/>
-                                            <field name="thickness_id"/>
-                                            <field name="size_id"/>
                                             <field name="quantity"/>
-                                        </group>
-                                        <group>
-                                            <field name="film_type_id"/>
-                                            <field name="wood_grade_id"/>
-                                            <field name="surface_id"/>
                                             <field name="is_re_ep_film"/>
+                                        </group>
+                                        <group string="Chi tiết kỹ thuật (RO)">
+                                            <field name="x_thickness"/>
+                                            <field name="layer_info"/>
+                                            <field name="film_type_id"/>
+                                            <field name="surface_type"/>
                                         </group>
                                     </group>
                                 </form>

@@ -74,39 +74,27 @@ class ProductionLogProductLine(models.Model):
     
     product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
     
-    thickness_id = fields.Many2one('product.attribute.value', string='Độ dày', domain="[('attribute_id.name', 'ilike', 'Độ dày')]")
-    size_id = fields.Many2one('product.attribute.value', string='Kích thước', domain="[('attribute_id.name', 'ilike', 'Kích thước')]")
-    film_type_id = fields.Many2one('product.attribute.value', string='Loại Phim', domain="[('attribute_id.name', 'ilike', 'Loại Phim')]")
-    wood_grade_id = fields.Many2one('product.attribute.value', string='Chất lượng gỗ', domain="[('attribute_id.name', 'ilike', 'Chất lượng gỗ')]")
-    surface_id = fields.Many2one('product.attribute.value', string='Bề mặt', domain="[('attribute_id.name', 'ilike', 'Bề mặt')]")
+    # Thông số từ sản phẩm (Read-only)
+    x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)
+    layer_info = fields.Char(related='product_id.x_structure_summary', string='Cấu trúc', readonly=True)
+    film_type_id = fields.Many2one(related='product_id.x_film_id', string='Loại Phim', readonly=True)
+    surface_type = fields.Selection(related='product_id.x_surface_type', string='Quy cách phủ', readonly=True)
     
     quantity = fields.Float(string='Số lượng', default=1.0, required=True)
-    is_re_ep_film = fields.Boolean(string='Ép 1 mặt')
+    is_re_ep_film = fields.Boolean(string='Ép lại 1 mặt')
     
     price = fields.Float(string='Đơn giá', compute='_compute_price', store=True)
     extra_price = fields.Float(string='Đơn giá lũy tiến', compute='_compute_price', store=True)
 
-    @api.depends('production_log_id.date', 'production_log_id.work_center_id', 'thickness_id', 'size_id', 'film_type_id', 'wood_grade_id', 'surface_id', 'is_re_ep_film')
+    @api.depends('production_log_id.date', 'production_log_id.work_center_id', 'product_id', 'is_re_ep_film')
     def _compute_price(self):
         for rec in self:
-            surface = rec.surface_id
-            # Logic: Nếu Ép 1 mặt, tự động tra cứu giá cho thuộc tính Bề mặt: 1 mặt
-            if rec.is_re_ep_film:
-                surface_1_mat = self.env['product.attribute.value'].search([
-                    ('attribute_id.name', 'ilike', 'Bề mặt'),
-                    ('name', 'ilike', '1 mặt')
-                ], limit=1)
-                if surface_1_mat:
-                    surface = surface_1_mat
-
+            # Nếu ép lại 1 mặt, thông thường giá sẽ tra cứu theo Sản phẩm hoặc có logic riêng.
+            # Với mô hình mới, ta tra cứu theo Product ID.
             price, extra = self.env['dl.piece.rate.pricelist']._get_active_price(
                 rec.production_log_id.date, 
                 rec.production_log_id.work_center_id, 
-                rec.thickness_id, 
-                rec.size_id, 
-                rec.film_type_id, 
-                surface,
-                rec.wood_grade_id
+                rec.product_id
             )
             rec.price = price
             rec.extra_price = extra

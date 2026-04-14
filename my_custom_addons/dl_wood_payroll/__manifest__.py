@@ -12,13 +12,14 @@
         - Tính năng sao chép bảng giá từ tháng trước.
     """,
     'author': 'Antigravity',
-    'depends': ['hr', 'mrp', 'mail', 'product'],
+    'depends': ['hr', 'mrp', 'mail', 'product', 'sale', 'stock', 'account'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/dl_workshop_views.xml',
         'views/dl_employee_transfer_views.xml',
         'views/hr_employee_views.xml',
+        'views/film_type_views.xml',
         'views/product_template_views.xml',
         'views/mrp_workcenter_views.xml',
         'views/dl_production_group_views.xml',
@@ -26,6 +27,7 @@
         'views/dl_production_log_views.xml',
         'views/dl_daily_pooling_result_views.xml',
         'wizard/dl_pooling_wizard_views.xml',
+        'views/integration_views.xml',
         'views/menus.xml',
         'data/ir_cron_data.xml',
     ],
