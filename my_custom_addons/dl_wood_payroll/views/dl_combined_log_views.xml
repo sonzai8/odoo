@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Combined Log Tree View -->
+    <record id="view_dl_combined_log_tree" model="ir.ui.view">
+        <field name="name">dl.combined.log.tree</field>
+        <field name="model">dl.combined.log</field>
+        <field name="arch" type="xml">
+            <list string="Cộng Công Lượng" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="production_group_id"/>
+                <field name="department_id"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Combined Log Form View -->
+    <record id="view_dl_combined_log_form" model="ir.ui.view">
+        <field name="name">dl.combined.log.form</field>
+        <field name="model">dl.combined.log</field>
+        <field name="arch" type="xml">
+            <form string="Cộng Công Lượng">
+                <header>
+                    <button name="action_confirm" string="Xác nhận &amp; Chốt dữ liệu" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" class="btn-secondary" invisible="state != 'confirmed'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="production_group_id" string="Tổ sản xuất thực hiện"/>
+                        <h1>
+                            <field name="production_group_id" placeholder="Chọn Tổ sản xuất" readonly="state != 'draft'"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group class="dl_card" string="Thông tin chung">
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                        </group>
+                        <group class="dl_card" string="Tiện ích nhanh">
+                            <field name="batch_attendance_type_id" options="{'no_create': True, 'no_open': True}" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="1. Sản lượng sản xuất" name="products">
+                            <field name="product_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="is_re_ep_film"/>
+                                    <field name="quantity" sum="Tổng số tấm"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="2. Chấm công &amp; Nhân sự" name="workers">
+                            <field name="worker_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" decoration-warning="is_borrowed">
+                                    <field name="employee_id" widget="many2one_avatar_user" options="{'no_create': True}"/>
+                                    <field name="attendance_type_id" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="worked_hours" sum="Tổng công"/>
+                                    <field name="is_borrowed" invisible="1"/>
+                                    <field name="borrowed_badge" string="Trạng thái" widget="badge" decoration-warning="is_borrowed" decoration-info="not is_borrowed"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Thông tin hệ thống" name="system" invisible="not attendance_id and not production_log_id">
+                            <group>
+                                <field name="attendance_id"/>
+                                <field name="production_log_id"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Combined Log Action -->
+    <record id="action_dl_combined_log" model="ir.actions.act_window">
+        <field name="name">Cộng Công Lượng</field>
+        <field name="res_model">dl.combined.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bắt đầu một ngày làm việc mới bằng cách tích hợp Chấm công và Sản lượng.
+            </p>
+        </field>
+    </record>
+</odoo>

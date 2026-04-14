@@ -17,7 +17,11 @@ class DailyPoolingResult(models.Model):
     )
     
     actual_work_days = fields.Float(string='Số công thực tế')
-    contribution_amount = fields.Float(string='Tiền làm ra (Yield)')
+    contribution_amount = fields.Float(string='Tổng tiền làm ra (Yield)')
+    
+    native_contribution = fields.Float(string='Tiền tại tổ')
+    borrowed_contribution = fields.Float(string='Tiền mang về')
+    is_loaned_worker = fields.Boolean(string='Đi làm thuê', index=True)
     
     # Pooling info
     pool_unit_price = fields.Float(string='Đơn giá 1 công (Tổ)')

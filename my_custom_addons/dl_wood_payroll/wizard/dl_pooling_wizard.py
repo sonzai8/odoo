@@ -45,11 +45,28 @@ class PoolingWizard(models.TransientModel):
         logs = self.env['dl.production.log'].search([('date', '=', self.date)])
         
         # Dictionary lưu trữ thông tin theo nhân viên: 
-        # { employee_id: { money_contribution: 0.0, work_days: 0.0, source_group_id: ID } }
         worker_data = {}
+        
+        # 1.1 Khởi tạo dữ liệu từ Chấm công (Đảm bảo có mặt là có trong bảng lương)
+        attendance_lines = self.env['dl.daily.attendance.line'].search([('date', '=', self.date)])
+        for att in attendance_lines:
+            emp_id = att.employee_id.id
+            if emp_id not in worker_data:
+                worker_data[emp_id] = {
+                    'money': 0.0, 
+                    'native_money': 0.0,
+                    'borrowed_money': 0.0,
+                    'hours': att.actual_work, 
+                    'source_group_id': att.production_group_id.id,
+                    'is_nhat_van': False,
+                    'output_share': 0.0
+                }
+            else:
+                # Nếu một người làm 2 nơi (trường hợp bất thường hoặc bổ trợ)
+                worker_data[emp_id]['hours'] += att.actual_work
 
-        # 1.5 Tính toán chuyên cần tháng cho tất cả nhân viên liên quan
-        employee_ids = logs.mapped('worker_line_ids.employee_id.id')
+        # 1.5 Tính toán chuyên cần tháng cho tất cả nhân viên đã khởi tạo
+        employee_ids = list(worker_data.keys())
         attendance_map = {}
         for emp_id in set(employee_ids):
             attendance_map[emp_id] = self._get_monthly_attendance(emp_id, self.date)
@@ -94,15 +111,26 @@ class PoolingWizard(models.TransientModel):
                     log_revenue_person += prod_revenue * share_factor
 
                 if emp_id not in worker_data:
+                    # Trường hợp: Có sản lượng nhưng QUÊN chấm công (Sẽ bị cảnh báo đỏ)
                     worker_data[emp_id] = {
                         'money': 0.0, 
+                        'native_money': 0.0,
+                        'borrowed_money': 0.0,
                         'hours': 0.0, 
                         'source_group_id': line.source_group_id.id,
-                        'is_nhat_van': False # Sẽ xử lý sau nếu cần
+                        'is_nhat_van': False,
+                        'output_share': 0.0
                     }
                 
+                # Cộng tiền sản lượng vào dữ liệu nhân viên
+                if worker_data[emp_id]['source_group_id'] == log.production_group_id.id:
+                    worker_data[emp_id]['native_money'] += log_revenue_person
+                else:
+                    worker_data[emp_id]['borrowed_money'] += log_revenue_person
+
                 worker_data[emp_id]['money'] += log_revenue_person
-                worker_data[emp_id]['hours'] += line.worked_hours
+                # Lưu ý: Không cộng data['hours'] ở đây vì 'hours' lấy từ Chấm công là chuẩn nhất
+                # Nhưng nếu họ không có chấm công (hours=0), ta vẫn ghi nhận sản lượng cho họ
 
         # Bước đặc thù: Xử lý Nhặt ván cho các nhân viên đã tích lũy sản lượng
         for emp_id, data in worker_data.items():
@@ -144,7 +172,17 @@ class PoolingWizard(models.TransientModel):
             pool = group_pools[gid]
             
             unit_price = pool['money'] / pool['hours'] if pool['hours'] > 0 else 0
-            final_salary = unit_price * data['hours']
+            
+            # Calculate Base Salary
+            base_salary = unit_price * data['hours']
+            
+            # Subtract Fines for this day
+            fines = self.env['dl.employee.fine'].search([
+                ('employee_id', '=', emp_id),
+                ('date', '=', self.date)
+            ])
+            total_fine = sum(fines.mapped('amount'))
+            final_salary = base_salary - total_fine
             
             result_vals.append({
                 'date': self.date,
@@ -152,18 +190,56 @@ class PoolingWizard(models.TransientModel):
                 'source_group_id': gid,
                 'actual_work_days': data['hours'],
                 'contribution_amount': data['money'],
+                'native_contribution': data['native_money'],
+                'borrowed_contribution': data['borrowed_money'],
+                'is_loaned_worker': data['borrowed_money'] > 0,
                 'pool_unit_price': unit_price,
                 'final_salary': final_salary,
             })
         
+        # Bước 6: Tập hợp cảnh báo và thực hiện tính toán
+        warning_summary = []
+        for emp_id, data in worker_data.items():
+            emp_name = self.env['hr.employee'].browse(emp_id).name
+            # Cảnh báo 1: Tổng công vượt quá 1.0
+            if data['hours'] > 1.0:
+                warning_summary.append(_("Nhân viên %s: Tổng công trong ngày là %.2f ( > 1.0)") % (emp_name, data['hours']))
+            
+            # Cảnh báo thì đã xử lý ở bước tạo dữ liệu, ở đây ta chỉ cần thực hiện ghi log hoặc hiển thị
+            # Cảnh báo 2: Có chấm công nhưng tiền contribution = 0
+            if data['hours'] > 0 and data['money'] == 0:
+                warning_summary.append(_("Nhân viên %s: Có chấm công đi làm nhưng chưa có sản lượng/không tham gia tổ nào.") % emp_name)
+
+            # Cảnh báo 3: Có sản lượng nhưng không có chấm công
+            if data['money'] > 0 and data['hours'] == 0:
+                warning_summary.append(_("Nhân viên %s: Đã có sản lượng ghi nhận nhưng CHƯA ĐƯỢC CHẤM CÔNG.") % emp_name)
+
         if result_vals:
             self.env['dl.daily.pooling.result'].create(result_vals)
+
+        # Hiển thị thông báo kết quả
+        message = _("Đã tính toán xong lương cho %d nhân viên.") % len(result_vals)
+        if warning_summary:
+            message += "\n\n" + _("CẢNH BÁO DỮ LIÊU BẤT THƯỜNG:") + "\n- " + "\n- ".join(warning_summary[:15])
+            if len(warning_summary) > 15:
+                message += "\n..."
             
         return {
-            'type': 'ir.actions.act_window',
-            'name': _('Kết quả cào bằng lương'),
-            'res_model': 'dl.daily.pooling.result',
-            'view_mode': 'list,form',
-            'domain': [('date', '=', self.date)],
-            'target': 'current',
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Kết quả tính toán'),
+                'message': message,
+                'sticky': True,
+                'type': 'warning' if warning_summary else 'success',
+                'next': {
+                    'type': 'ir.actions.act_window',
+                    'name': _('Kết quả cào bằng lương'),
+                    'res_model': 'dl.daily.pooling.result',
+                    'view_mode': 'list,form',
+                    'views': [[False, 'list'], [False, 'form']],
+                    'domain': [('date', '=', self.date)],
+                    'target': 'current',
+                }
+            }
         }

@@ -44,39 +44,21 @@
                             <field name="product_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
-                                    <!-- <field name="x_thickness"/>
-                                    <field name="x_length" optional="show"/>
-                                    <field name="x_width" optional="show"/> -->
                                     <field name="layer_info"/>
                                     <field name="is_re_ep_film"/>
                                     <field name="quantity" sum="Tổng số tấm"/>
-                                    <field name="price" readonly="1" widget="monetary" decoration-info="1" title="Đơn giá tự động lấy từ bảng giá tháng"/>
-                                    <field name="extra_price" optional="hide" widget="monetary" readonly="1" title="Đơn giá lũy tiến nếu có"/>
+                                    <field name="price" readonly="1" widget="monetary" decoration-info="1"/>
                                 </list>
-                                <form>
-                                    <group>
-                                        <group string="Sản lượng">
-                                            <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
-                                            <field name="quantity"/>
-                                            <field name="is_re_ep_film"/>
-                                        </group>
-                                        <group string="Kỹ thuật">
-                                            <field name="x_thickness"/>
-                                            <field name="x_length"/>
-                                            <field name="x_width"/>
-                                            <field name="layer_info"/>
-                                        </group>
-                                    </group>
-                                </form>
                             </field>
                         </page>
                         <page string="Nhân sự thực hiện" name="workers">
                             <field name="worker_line_ids" readonly="state != 'draft'">
-                                <list editable="bottom">
+                                <list editable="bottom" decoration-danger="is_attendance_missing">
                                     <field name="employee_id" widget="many2one_avatar_user"/>
                                     <field name="worked_hours" sum="Tổng công"/>
                                     <field name="source_group_id" string="Tổ gốc"/>
                                     <field name="is_borrowed" widget="boolean_toggle" readonly="1" string="Mượn người"/>
+                                    <field name="is_attendance_missing" string="Dữ liệu ảo" widget="boolean_toggle" decoration-danger="is_attendance_missing"/>
                                 </list>
                             </field>
                         </page>
@@ -91,9 +73,41 @@
         <field name="name">Nhập sản lượng</field>
         <field name="res_model">dl.production.log</field>
         <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Matrix Report Views -->
+    <record id="view_dl_production_log_product_line_pivot" model="ir.ui.view">
+        <field name="name">dl.production.log.product.line.pivot</field>
+        <field name="model">dl.production.log.product.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Ma trận Sản lượng ngày" sample="1">
+                <field name="production_group_id" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="date" interval="day" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_dl_production_log_product_line_search_new" model="ir.ui.view">
+        <field name="name">dl.production.log.product.line.search.new</field>
+        <field name="model">dl.production.log.product.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="production_group_id"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_production_matrix_report" model="ir.actions.act_window">
+        <field name="name">Ma trận Sản lượng ngày</field>
+        <field name="res_model">dl.production.log.product.line</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="search_view_id" ref="view_dl_production_log_product_line_search_new"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Bắt đầu nhập sản lượng hàng ngày!
+                Báo cáo ma trận chưa có dữ liệu.
             </p>
         </field>
     </record>

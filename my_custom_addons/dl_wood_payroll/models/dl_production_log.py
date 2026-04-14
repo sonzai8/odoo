@@ -72,8 +72,20 @@ class ProductionLogProductLine(models.Model):
     _description = 'Chi tiết sản phẩm sản xuất'
 
     production_log_id = fields.Many2one('dl.production.log', string='Bản ghi sản lượng', ondelete='cascade')
-    date = fields.Date(related='production_log_id.date', store=True)
-    department_id = fields.Many2one(related='production_log_id.department_id', store=True)
+    date = fields.Date(related='production_log_id.date', store=True, index=True)
+    production_group_id = fields.Many2one(
+        related='production_log_id.production_group_id', 
+        string='Tổ sản xuất', 
+        store=True, 
+        index=True
+    )
+    workshop_id = fields.Many2one(
+        related='production_log_id.production_group_id.x_workshop_id', 
+        string='Xưởng', 
+        store=True, 
+        index=True
+    )
+    department_id = fields.Many2one(related='production_log_id.department_id', store=True, index=True)
     
     product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
     
@@ -129,6 +141,22 @@ class WorkerLogLine(models.Model):
         compute='_compute_is_borrowed', 
         store=True
     )
+    
+    is_attendance_missing = fields.Boolean(
+        string='Thiếu chấm công', 
+        compute='_compute_is_attendance_missing'
+    )
+
+    def _compute_is_attendance_missing(self):
+        for line in self:
+            if line.employee_id and line.production_log_id.date:
+                att_count = self.env['dl.daily.attendance.line'].search_count([
+                    ('employee_id', '=', line.employee_id.id),
+                    ('date', '=', line.production_log_id.date)
+                ])
+                line.is_attendance_missing = att_count == 0
+            else:
+                line.is_attendance_missing = False
 
     @api.depends('employee_id', 'production_log_id.production_group_id', 'source_group_id')
     def _compute_is_borrowed(self):

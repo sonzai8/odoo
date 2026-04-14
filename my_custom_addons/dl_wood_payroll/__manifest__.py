@@ -33,9 +33,12 @@
         'views/dl_daily_attendance_views.xml',
         'views/dl_daily_pooling_result_views.xml',
         'wizard/dl_pooling_wizard_views.xml',
+        'views/dl_fine_views.xml',
+        'data/dl_fine_data.xml',
+        'data/dl_combined_log_data.xml',
+        'views/dl_combined_log_views.xml',
         'views/integration_views.xml',
         'views/menus.xml',
-        'data/ir_cron_data.xml',
     ],
     'assets': {
         'web.assets_backend': [

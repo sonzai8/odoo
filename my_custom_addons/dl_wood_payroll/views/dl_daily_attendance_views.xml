@@ -35,6 +35,10 @@
                         <group>
                             <field name="production_group_id" placeholder="Chọn Tổ sản xuất..." readonly="state != 'draft'"/>
                             <field name="date" readonly="state != 'draft'"/>
+                            <field name="batch_attendance_type_id" 
+                                   options="{'no_create': True, 'no_open': True}"
+                                   invisible="not production_group_id"
+                                   readonly="state != 'draft'"/>
                         </group>
                     </group>
                     <notebook>
@@ -63,12 +67,18 @@
         <field name="name">dl.daily.attendance.line.tree</field>
         <field name="model">dl.daily.attendance.line</field>
         <field name="arch" type="xml">
-            <list string="Chi tiết chấm công" decoration-warning="actual_work == 0">
+            <list string="Chi tiết chấm công"
+                  decoration-danger="audit_state == 'missing_output'"
+                  decoration-warning="audit_state == 'over_worked'"
+                  decoration-muted="actual_work == 0">
                 <field name="date"/>
                 <field name="employee_id" widget="many2one_avatar"/>
                 <field name="production_group_id"/>
                 <field name="attendance_type_id" widget="badge"/>
                 <field name="actual_work" sum="Tổng công"/>
+                <field name="audit_state" widget="badge" 
+                       decoration-danger="audit_state == 'missing_output'"
+                       decoration-warning="audit_state == 'over_worked'"/>
             </list>
         </field>
     </record>

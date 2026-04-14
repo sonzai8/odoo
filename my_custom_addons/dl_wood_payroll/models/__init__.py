@@ -1,5 +1,6 @@
 from . import hr_employee
 from . import product_template
+from . import dl_combined_log
 from . import dl_piece_rate_pricelist
 from . import dl_production_log
 from . import dl_attendance_type
@@ -13,3 +14,4 @@ from . import dl_employee_transfer
 from . import product_attribute
 from . import film_type
 from . import wood_integration
+from . import dl_fine

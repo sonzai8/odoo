@@ -29,6 +29,12 @@
               action="action_dl_piece_rate_matrix"
               sequence="30"/>
 
+    <menuitem id="menu_dl_production_matrix_report_action"
+              name="Ma trận Sản lượng ngày"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_production_matrix_report"
+              sequence="40"/>
+
     <!-- Calculation Group -->
     <menuitem id="menu_dl_pooling_calculation_root"
               name="Tính toán lương"
@@ -65,11 +71,23 @@
               action="action_dl_daily_attendance_line"
               sequence="10"/>
 
-    <menuitem id="menu_dl_daily_attendance_action"
+    <menuitem id="menu_dl_attendance_action"
               name="Chấm công theo tổ"
               parent="menu_dl_attendance_root"
               action="action_dl_daily_attendance"
               sequence="20"/>
+
+    <menuitem id="menu_dl_combined_log_action"
+              name="Cộng Công Lượng (Tất cả trong một)"
+              parent="menu_dl_attendance_root"
+              action="action_dl_combined_log"
+              sequence="5"/>
+
+    <menuitem id="menu_dl_employee_missing_attendance"
+              name="Nhân viên thiếu công hôm nay"
+              parent="menu_dl_attendance_root"
+              action="action_dl_employee_missing_attendance"
+              sequence="25"/>
 
     <menuitem id="menu_dl_attendance_matrix_report_action"
               name="Báo cáo Ma trận Chấm công"
@@ -83,6 +101,24 @@
               action="action_dl_attendance_type"
               sequence="90"
               groups="dl_wood_payroll.group_dl_payroll_manager"/>
+
+    <!-- Discipline Group -->
+    <menuitem id="menu_dl_discipline_root"
+              name="Quản lý kỷ luật"
+              parent="menu_dl_wood_payroll_root"
+              sequence="55"/>
+
+    <menuitem id="menu_dl_employee_fine_action"
+              name="Danh sách phạt"
+              parent="menu_dl_discipline_root"
+              action="action_dl_employee_fine"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_fine_reason_action"
+              name="Cấu hình lý do phạt"
+              parent="menu_dl_discipline_root"
+              action="action_dl_fine_reason"
+              sequence="20"/>
 
     <!-- HR Group -->
     <menuitem id="menu_dl_payroll_employee_root"

@@ -167,6 +167,15 @@
     letter-spacing: -0.05em !important;
 }
 
+/* Audit States */
+.dl-bg-missing-attendance {
+    background-color: #fee2e2 !important; /* Light Red */
+}
+
+.dl-bg-missing-output {
+    background-color: #f3e8ff !important; /* Light Purple */
+}
+
 .dl_chatter_collapsible {
     margin-top: 3rem !important;
     border-top: 1px solid #e5e7eb !important;

@@ -7,6 +7,12 @@
             <field name="work_value">1.0</field>
             <field name="sequence">10</field>
         </record>
+        <record id="attendance_type_n12" model="dl.attendance.type">
+            <field name="name">Nửa công ngày</field>
+            <field name="code">N/2</field>
+            <field name="work_value">0.5</field>
+            <field name="sequence">30</field>
+        </record>
 
         <record id="attendance_type_d" model="dl.attendance.type">
             <field name="name">Đi làm (Đêm)</field>
@@ -14,13 +20,13 @@
             <field name="work_value">1.0</field>
             <field name="sequence">20</field>
         </record>
-
-        <record id="attendance_type_n12" model="dl.attendance.type">
-            <field name="name">Nửa công</field>
-            <field name="code">N/1</field>
+        <record id="attendance_type_d12" model="dl.attendance.type">
+            <field name="name">Nửa công đêm</field>
+            <field name="code">D/2</field>
             <field name="work_value">0.5</field>
             <field name="sequence">30</field>
         </record>
+        
 
         <record id="attendance_type_p" model="dl.attendance.type">
             <field name="name">Nghỉ phép</field>

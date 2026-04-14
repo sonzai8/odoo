@@ -37,4 +37,24 @@
             </xpath>
         </field>
     </record>
+    <record id="action_dl_employee_missing_attendance" model="ir.actions.server">
+        <field name="name">Nhân viên thiếu công hôm nay</field>
+        <field name="model_id" ref="model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = model.action_view_missing_attendance()
+        </field>
+    </record>
+
+    <!-- Update Employee Search View for easier grouping -->
+    <record id="view_hr_employee_search_inherit_wood" model="ir.ui.view">
+        <field name="name">hr.employee.search.inherit.wood</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='group_department']" position="after">
+                <filter string="Tổ biên chế" name="group_by_source_group" context="{'group_by': 'x_source_group_id'}"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

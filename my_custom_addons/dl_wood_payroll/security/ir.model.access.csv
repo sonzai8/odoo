@@ -32,3 +32,12 @@ access_dl_daily_attendance_user,dl.daily.attendance.user,model_dl_daily_attendan
 access_dl_daily_attendance_manager,dl.daily.attendance.manager,model_dl_daily_attendance,group_dl_payroll_manager,1,1,1,1
 access_dl_daily_attendance_line_user,dl.daily.attendance.line.user,model_dl_daily_attendance_line,group_dl_payroll_user,1,1,1,1
 access_dl_daily_attendance_line_manager,dl.daily.attendance.line.manager,model_dl_daily_attendance_line,group_dl_payroll_manager,1,1,1,1
+access_dl_fine_reason_manager,dl.fine.reason.manager,model_dl_fine_reason,group_dl_payroll_manager,1,1,1,1
+access_dl_employee_fine_user,dl.employee.fine.user,model_dl_employee_fine,group_dl_payroll_user,1,1,1,1
+access_dl_employee_fine_manager,dl.employee.fine.manager,model_dl_employee_fine,group_dl_payroll_manager,1,1,1,1
+access_dl_combined_log_user,dl.combined.log.user,model_dl_combined_log,group_dl_payroll_user,1,1,1,1
+access_dl_combined_log_manager,dl.combined.log.manager,model_dl_combined_log,group_dl_payroll_manager,1,1,1,1
+access_dl_combined_product_line_user,dl.combined.product.line.user,model_dl_combined_product_line,group_dl_payroll_user,1,1,1,1
+access_dl_combined_product_line_manager,dl.combined.product.line.manager,model_dl_combined_product_line,group_dl_payroll_manager,1,1,1,1
+access_dl_combined_worker_line_user,dl.combined.worker.line.user,model_dl_combined_worker_line,group_dl_payroll_user,1,1,1,1
+access_dl_combined_worker_line_manager,dl.combined.worker.line.manager,model_dl_combined_worker_line,group_dl_payroll_manager,1,1,1,1
