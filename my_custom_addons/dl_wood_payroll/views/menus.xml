@@ -29,9 +29,21 @@
               action="action_dl_piece_rate_matrix"
               sequence="30"/>
 
+    <menuitem id="menu_dl_film_pricelist_action"
+              name="Đơn giá Ép Film"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_film_pricelist"
+              sequence="35"/>
+
+    <menuitem id="menu_dl_film_pricelist_matrix_action"
+              name="Ma trận đơn giá Ép Film"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_film_pricelist_matrix"
+              sequence="37"/>
+
     <menuitem id="menu_dl_production_matrix_report_action"
               name="Ma trận Sản lượng ngày"
-              parent="menu_dl_piece_rate_pricelist"
+              parent="menu_dl_pooling_calculation_root"
               action="action_dl_production_matrix_report"
               sequence="40"/>
 
@@ -157,11 +169,12 @@
               sequence="10"/>
 
 
-    <menuitem id="menu_dl_product_film_action"
-              name="Quản lý loại Film"
+
+    <menuitem id="menu_dl_film_brand_action"
+              name="Thương hiệu Film (Ép)"
               parent="menu_dl_product_mgmt_root"
-              action="action_dl_film_type"
-              sequence="20"/>
+              action="action_dl_film_brand"
+              sequence="25"/>
 
     <menuitem id="menu_dl_product_attribute_action"
               name="Cấu hình Thuộc tính (Nâng cao)"

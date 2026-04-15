@@ -56,8 +56,11 @@
                             <field name="product_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
-                                    <field name="layer_info"/>
-                                    <field name="is_re_ep_film"/>
+                                    <field name="x_quality" widget="badge" decoration-info="1" optional="show"/>
+                                    <field name="layer_info" optional="show"/>
+                                    <field name="x_film_brand_id" placeholder="Thương hiệu Film" optional="show"/>
+                                    <field name="x_surface_type" placeholder="Số mặt" optional="show"/>
+                                    <field name="is_re_ep_film" optional="show" string="Ép lại" widget="boolean_toggle"/>
                                     <field name="quantity" sum="Tổng số tấm"/>
                                     <field name="price" readonly="1" widget="monetary" decoration-info="1"/>
                                 </list>

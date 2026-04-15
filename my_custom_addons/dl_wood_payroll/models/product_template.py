@@ -19,8 +19,17 @@ class ProductTemplate(models.Model):
         ('2_side', 'Phủ 2 mặt')
     ], string='Hình thức phủ', default='none')
     
-    x_film_id = fields.Many2one('dl.film.type', string='Loại Film')
+    x_film_id = fields.Many2one('dl.film.brand', string='Thương hiệu Film')
     
+    x_quality = fields.Selection([
+        ('a', 'Loại A'),
+        ('b', 'Loại B'),
+        ('c', 'Loại C'),
+        ('ab', 'Loại A/B'),
+        ('bc', 'Loại B/C'),
+        ('full_a', 'Full A'),
+    ], string='Chất lượng ván', default='a')
+
     # Cấu trúc lớp gỗ (Veneer)
     x_layer_a_count = fields.Integer(string='Số lớp A')
     x_layer_b_count = fields.Integer(string='Số lớp B')
@@ -39,7 +48,7 @@ class ProductTemplate(models.Model):
             product.x_area_m2 = area
             product.x_volume_m3 = (area * product.x_thickness) / 1000.0
 
-    @api.depends('x_thickness', 'x_length', 'x_width', 'x_layer_a_count', 'x_layer_b_count', 'x_layer_c_count', 'x_film_id', 'x_coating_type')
+    @api.depends('x_thickness', 'x_length', 'x_width', 'x_layer_a_count', 'x_layer_b_count', 'x_layer_c_count', 'x_film_id', 'x_coating_type', 'x_quality')
     def _compute_structure_summary(self):
         for product in self:
             parts = []
@@ -50,6 +59,11 @@ class ProductTemplate(models.Model):
             if product.x_length and product.x_width:
                 parts.append(f"{int(product.x_length)}x{int(product.x_width)}")
             
+            # Chất lượng
+            if product.x_quality:
+                quality_map = dict(self._fields['x_quality'].selection)
+                parts.append(quality_map.get(product.x_quality, product.x_quality).replace('Loại ', ''))
+
             # Cấu trúc ván
             layers = []
             if product.x_layer_a_count: layers.append(f"{product.x_layer_a_count}A")
@@ -58,11 +72,11 @@ class ProductTemplate(models.Model):
             if layers:
                 parts.append("-".join(layers))
             
-            # Film & Phủ
+            # Film & Phủ (Chỉ hiện nếu có phủ)
             if product.x_coating_type != 'none':
                 film_name = product.x_film_id.name or 'N/A'
-                side_text = "1 mặt" if product.x_coating_type == '1_side' else "2 mặt"
-                parts.append(f"Film {film_name} ({side_text})")
+                side_text = "1M" if product.x_coating_type == '1_side' else "2M"
+                parts.append(f"Film {film_name} {side_text}")
             
             product.x_structure_summary = " | ".join(parts)
 

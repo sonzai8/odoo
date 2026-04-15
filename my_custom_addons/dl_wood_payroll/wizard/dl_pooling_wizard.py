@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from markupsafe import Markup
 
 class PoolingWizard(models.TransientModel):
     _name = 'dl.pooling.wizard'
@@ -87,7 +87,6 @@ class PoolingWizard(models.TransientModel):
                 emp_id = line.employee_id.id
                 
                 # Tìm đơn giá cho sản phẩm/công đoạn
-                # (Lưu ý: log có thể có nhiều sản phẩm, ta lặp qua từng sản phẩm trong log)
                 log_revenue_person = 0.0
                 
                 # Kiểm tra chuyên cần của nhân viên này
@@ -129,19 +128,10 @@ class PoolingWizard(models.TransientModel):
                     worker_data[emp_id]['borrowed_money'] += log_revenue_person
 
                 worker_data[emp_id]['money'] += log_revenue_person
-                # Lưu ý: Không cộng data['hours'] ở đây vì 'hours' lấy từ Chấm công là chuẩn nhất
-                # Nhưng nếu họ không có chấm công (hours=0), ta vẫn ghi nhận sản lượng cho họ
 
-        # Bước đặc thù: Xử lý Nhặt ván cho các nhân viên đã tích lũy sản lượng
+        # Bước đặc thù: Xử lý Nhặt ván
         for emp_id, data in worker_data.items():
             if data['is_nhat_van'] and data['output_share'] > 0:
-                # Tìm lại đơn giá lũy tiến cho tổ Nhặt ván của nhân viên này 
-                # (Giả định nhân viên làm ở tổ Nhặt ván nào đó trong ngày)
-                # Để đơn giản, lấy Price Line từ pricelist tương ứng
-                # (Trong thực tế có thể cần tìm chính xác tổ họ đã làm)
-                # Ở đây ta sử dụng thông tin từ vòng lặp trước hoặc tìm lại
-                
-                # Tìm bất kỳ line nào của tổ Nhặt ván trong pricelist
                 nhat_van_line = pricelist.line_ids.filtered(lambda l: l.workcenter_id.x_is_nhat_van)
                 if nhat_van_line:
                     nvl = nhat_van_line[0]
@@ -156,7 +146,7 @@ class PoolingWizard(models.TransientModel):
                         data['money'] = (threshold * p_base) + ((output - threshold) * p_prog)
 
         # Bước 3 & 4: Gom quỹ lương theo Tổ Gốc (Source Group)
-        group_pools = {} # { group_id: { total_money: 0.0, total_hours: 0.0 } }
+        group_pools = {} 
         for emp_id, data in worker_data.items():
             gid = data['source_group_id']
             if gid not in group_pools:
@@ -172,11 +162,8 @@ class PoolingWizard(models.TransientModel):
             pool = group_pools[gid]
             
             unit_price = pool['money'] / pool['hours'] if pool['hours'] > 0 else 0
-            
-            # Calculate Base Salary
             base_salary = unit_price * data['hours']
             
-            # Subtract Fines for this day
             fines = self.env['dl.employee.fine'].search([
                 ('employee_id', '=', emp_id),
                 ('date', '=', self.date)
@@ -197,49 +184,71 @@ class PoolingWizard(models.TransientModel):
                 'final_salary': final_salary,
             })
         
-        # Bước 6: Tập hợp cảnh báo và thực hiện tính toán
-        warning_summary = []
+        # Bước 6: Tập hợp cảnh báo
+        warnings = {
+            'over_hours': [],
+            'missing_output': [],
+            'missing_attendance': []
+        }
         for emp_id, data in worker_data.items():
             emp_name = self.env['hr.employee'].browse(emp_id).name
-            # Cảnh báo 1: Tổng công vượt quá 1.0
             if data['hours'] > 1.0:
-                warning_summary.append(_("Nhân viên %s: Tổng công trong ngày là %.2f ( > 1.0)") % (emp_name, data['hours']))
-            
-            # Cảnh báo thì đã xử lý ở bước tạo dữ liệu, ở đây ta chỉ cần thực hiện ghi log hoặc hiển thị
-            # Cảnh báo 2: Có chấm công nhưng tiền contribution = 0
+                warnings['over_hours'].append(emp_name)
             if data['hours'] > 0 and data['money'] == 0:
-                warning_summary.append(_("Nhân viên %s: Có chấm công đi làm nhưng chưa có sản lượng/không tham gia tổ nào.") % emp_name)
-
-            # Cảnh báo 3: Có sản lượng nhưng không có chấm công
+                warnings['missing_output'].append(emp_name)
             if data['money'] > 0 and data['hours'] == 0:
-                warning_summary.append(_("Nhân viên %s: Đã có sản lượng ghi nhận nhưng CHƯA ĐƯỢC CHẤM CÔNG.") % emp_name)
+                warnings['missing_attendance'].append(emp_name)
+
+        warning_summary = []
+        if warnings['over_hours']:
+            warning_summary.append("⚠️ TỔNG CÔNG > 1.0: " + ", ".join(warnings['over_hours']))
+        if warnings['missing_output']:
+            warning_summary.append("⚠️ CÓ CÔNG - THIẾU SẢN LƯỢNG: " + ", ".join(warnings['missing_output']))
+        if warnings['missing_attendance']:
+            warning_summary.append("❌ CÓ SẢN LƯỢNG - CHƯA CHẤM CÔNG: " + ", ".join(warnings['missing_attendance']))
 
         if result_vals:
             self.env['dl.daily.pooling.result'].create(result_vals)
 
-        # Hiển thị thông báo kết quả
-        message = _("Đã tính toán xong lương cho %d nhân viên.") % len(result_vals)
+        # Hiển thị thông báo kết quả qua Wizard Summary
+        message = Markup(_("<div style='font-size:16px; margin-bottom:15px;'>✅ <b>Đã tính toán xong lương cho %d nhân viên.</b></div>")) % len(result_vals)
         if warning_summary:
-            message += "\n\n" + _("CẢNH BÁO DỮ LIÊU BẤT THƯỜNG:") + "\n- " + "\n- ".join(warning_summary[:15])
-            if len(warning_summary) > 15:
-                message += "\n..."
-            
+            warn_html = Markup("").join(Markup("<div style='border-left: 4px solid #f0ad4e; background: #fcf8e3; padding: 10px; margin-bottom: 15px;'>%s</div>") % w for w in warning_summary)
+            message += Markup("<b style='color:#a94442; font-size:15px; display:block; margin-bottom:10px;'>🚨 %s</b>%s") % (
+                _("CẢNH BÁO DỮ LIỆU BẤT THƯỜNG:"),
+                warn_html
+            )
+        
+        summary_wizard = self.env['dl.pooling.summary.wizard'].create({
+            'message': message,
+            'date': self.date
+        })
+
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Kết quả tính toán'),
-                'message': message,
-                'sticky': True,
-                'type': 'warning' if warning_summary else 'success',
-                'next': {
-                    'type': 'ir.actions.act_window',
-                    'name': _('Kết quả cào bằng lương'),
-                    'res_model': 'dl.daily.pooling.result',
-                    'view_mode': 'list,form',
-                    'views': [[False, 'list'], [False, 'form']],
-                    'domain': [('date', '=', self.date)],
-                    'target': 'current',
-                }
-            }
+            'name': _('Tóm tắt kết quả tính toán'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.pooling.summary.wizard',
+            'view_mode': 'form',
+            'res_id': summary_wizard.id,
+            'target': 'new',
+        }
+
+class PoolingSummaryWizard(models.TransientModel):
+    _name = 'dl.pooling.summary.wizard'
+    _description = 'Wizard hiển thị tóm tắt kết quả tính toán'
+
+    message = fields.Html(string='Thông báo')
+    date = fields.Date(string='Ngày')
+
+    def action_view_results(self):
+        """Action for the button in Summary Wizard"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Kết quả cào bằng lương'),
+            'res_model': 'dl.daily.pooling.result',
+            'view_mode': 'list,form',
+            'views': [[False, 'list'], [False, 'form']],
+            'domain': [('date', '=', self.date)],
+            'context': {'search_default_group_by_source_group': 1},
+            'target': 'current',
         }

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Clone Wizard View -->
+    <record id="view_dl_film_clone_wizard_form" model="ir.ui.view">
+        <field name="name">dl.film.clone.wizard.form</field>
+        <field name="model">dl.film.clone.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Sao chép Bảng giá Ép Film">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <p>Thao tác này sẽ <strong>xóa toàn bộ dữ liệu hiện tại</strong> của bảng giá đích và thay thế bằng dữ liệu từ bảng nguồn được chọn.</p>
+                    </div>
+                    <group>
+                        <field name="target_pricelist_id" readonly="1"/>
+                        <field name="source_pricelist_id"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_clone" string="Bắt đầu sao chép" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Excel Import/Export Wizard View -->
+    <record id="view_dl_film_pricelist_excel_wizard_form" model="ir.ui.view">
+        <field name="name">dl.film.pricelist.excel.wizard.form</field>
+        <field name="model">dl.film.pricelist.excel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập/Xuất Excel Đơn giá Ép Film">
+                <header>
+                    <field name="state" widget="statusbar" invisible="1"/>
+                </header>
+                <sheet>
+                    <group invisible="state == 'verified'">
+                        <group>
+                            <field name="pricelist_id" readonly="1" force_save="1"/>
+                            <field name="import_mode" widget="radio" options="{'horizontal': true}"/>
+                            <field name="file_data" filename="file_name" widget="binary" string="Chọn file Excel"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert" invisible="state == 'verified' or file_data">
+                        <p class="mb-0">
+                            <strong>Hướng dẫn:</strong><br/>
+                            1. Bấm <strong>"Xuất dữ liệu / Tải mẫu"</strong> để lấy file mẫu với các cột: Alias, Thương hiệu, Số mặt, Giá Mới, Giá Cũ, Giá Ép Lại.<br/>
+                            2. Điền/sửa giá trong file Excel.<br/>
+                            3. Tải lên và bấm <strong>"Kiểm tra dữ liệu"</strong>.
+                        </p>
+                    </div>
+                    <notebook invisible="state == 'draft'">
+                        <page string="Xem trước dữ liệu" name="preview">
+                            <field name="line_ids" readonly="1">
+                                <list decoration-danger="status == 'error'"
+                                      decoration-success="status == 'ready'">
+                                    <field name="status" widget="badge"
+                                        decoration-danger="status == 'error'"
+                                        decoration-success="status == 'ready'"/>
+                                    <field name="thickness_alias"/>
+                                    <field name="brand_name"/>
+                                    <field name="surface_type"/>
+                                    <field name="price_high"/>
+                                    <field name="price_low" optional="hide"/>
+                                    <field name="price_re_ep" decoration-info="1"/>
+                                    <field name="message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_export" string="Xuất dữ liệu / Tải mẫu"
+                        type="object" class="btn-secondary"
+                        invisible="state == 'verified'"/>
+                    <button name="action_verify" string="Kiểm tra dữ liệu"
+                        type="object" class="btn-primary"
+                        invisible="not file_data or state == 'verified'"/>
+                    <button name="action_import" string="Thực hiện Nhập"
+                        type="object" class="btn-primary"
+                        invisible="state == 'draft'"/>
+                    <button name="action_verify" string="Kiểm tra lại"
+                        type="object" class="btn-secondary"
+                        invisible="state == 'draft'"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

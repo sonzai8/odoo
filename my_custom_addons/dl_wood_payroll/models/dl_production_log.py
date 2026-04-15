@@ -105,9 +105,16 @@ class ProductionLogProductLine(models.Model):
     x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)
     x_length = fields.Float(related='product_id.x_length', string='Dài (cm)', readonly=True)
     x_width = fields.Float(related='product_id.x_width', string='Rộng (cm)', readonly=True)
+    
+    # Các trường mở rộng cho bước Ép Film
+    x_film_brand_id = fields.Many2one('dl.film.brand', string='Thương hiệu Film')
+    x_surface_type = fields.Selection([
+        ('1m', 'Phủ 1 mặt (1M)'),
+        ('2m', 'Phủ 2 mặt (2M)'),
+    ], string='Số mặt phủ')
+    
+    x_quality = fields.Selection(related='product_id.x_quality', string='Chất lượng', readonly=True)
     layer_info = fields.Char(related='product_id.x_structure_summary', string='Thông số kỹ thuật', readonly=True)
-    film_type_id = fields.Many2one(related='product_id.x_film_id', string='Loại Phim', readonly=True)
-    coating_type = fields.Selection(related='product_id.x_coating_type', string='Hình thức phủ', readonly=True)
     
     quantity = fields.Float(string='Số lượng', default=1.0, required=True)
     is_re_ep_film = fields.Boolean(string='Ép lại 1 mặt')
@@ -115,22 +122,45 @@ class ProductionLogProductLine(models.Model):
     price = fields.Float(string='Đơn giá', compute='_compute_price', store=True)
     extra_price = fields.Float(string='Đơn giá lũy tiến', compute='_compute_price', store=True)
 
-    @api.depends('production_log_id.date', 'production_log_id.department_id', 'product_id', 'is_re_ep_film')
+    @api.depends(
+        'production_log_id.date', 'production_log_id.department_id', 
+        'product_id', 'is_re_ep_film', 
+        'x_film_brand_id', 'x_surface_type'
+    )
     def _compute_price(self):
         for rec in self:
             if not rec.production_log_id.date or not rec.production_log_id.department_id or not rec.product_id:
                 rec.price = 0.0
                 rec.extra_price = 0.0
                 continue
-                
-            res = self.env['dl.piece.rate.pricelist']._get_active_price(
-                rec.production_log_id.date, 
-                rec.production_log_id.department_id, 
-                rec.product_id
-            )
-            # Mặc định lấy giá cao cho hiển thị hàng ngày (kỳ vọng)
-            rec.price = res.get('price_high', 0.0)
-            rec.extra_price = res.get('extra_price', 0.0)
+            
+            # Kiểm tra xem có phải công đoạn Ép Film không
+            dept_name = rec.department_id.name.upper() if rec.department_id else ''
+            if 'ÉP FILM' in dept_name or 'EP FILM' in dept_name:
+                # Dùng ma trận giá Ép Film
+                # Ưu tiên lấy alias từ thickness của sản phẩm (ví dụ 11.5, 14...)
+                thickness_alias = str(rec.x_thickness).replace('.0', '')
+                res = rec.env['dl.film.pricelist']._get_film_active_price(
+                    rec.date, 
+                    thickness_alias, 
+                    rec.x_film_brand_id.id, 
+                    rec.x_surface_type
+                )
+                # Cho Ép Film, check xem có phải ép lại không
+                if rec.is_re_ep_film:
+                    rec.price = res.get('price_re_ep', 0.0)
+                else:
+                    rec.price = res.get('price_high', 0.0)
+                rec.extra_price = 0.0
+            else:
+                # Dùng bảng giá công đoạn thông thường
+                res = self.env['dl.piece.rate.pricelist']._get_active_price(
+                    rec.production_log_id.date, 
+                    rec.production_log_id.department_id, 
+                    rec.product_id
+                )
+                rec.price = res.get('price_high', 0.0)
+                rec.extra_price = res.get('extra_price', 0.0)
 
 
 class WorkerLogLine(models.Model):

@@ -12,6 +12,7 @@ from . import mrp_workcenter
 from . import dl_daily_pooling_result
 from . import dl_employee_transfer
 from . import product_attribute
-from . import film_type
 from . import wood_integration
 from . import dl_fine
+from . import dl_film_brand
+from . import dl_film_pricelist

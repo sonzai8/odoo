@@ -16,6 +16,20 @@
         </field>
     </record>
 
+    <record id="view_dl_pooling_summary_wizard_form" model="ir.ui.view">
+        <field name="name">dl.pooling.summary.wizard.form</field>
+        <field name="model">dl.pooling.summary.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tóm tắt kết quả">
+                <field name="message" readonly="1" widget="html"/>
+                <footer>
+                    <button name="action_view_results" string="Xem chi tiết bảng lương" type="object" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="action_dl_pooling_wizard" model="ir.actions.act_window">
         <field name="name">Tính toán cào bằng lương</field>
         <field name="res_model">dl.pooling.wizard</field>

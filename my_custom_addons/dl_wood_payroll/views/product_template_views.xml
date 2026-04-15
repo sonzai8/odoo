@@ -50,6 +50,7 @@
 
                     <!-- 2. Thông số lớp gỗ (Layers) -->
                     <group string="Cấu tạo &amp; Số lớp" class="dl_card mb-3">
+                        <field name="x_quality" widget="radio" options="{'horizontal': true}"/>
                         <field name="x_layer_a_count" placeholder="0"/>
                         <field name="x_layer_b_count" placeholder="0"/>
                         <field name="x_layer_c_count" placeholder="0"/>
@@ -65,7 +66,7 @@
                     <!-- 3. Thông tin phủ phim (Coating) -->
                     <group string="Xử lý bề mặt &amp; Phủ phim" class="dl_card mb-3">
                         <field name="x_coating_type" widget="radio" options="{'horizontal': true}"/>
-                        <field name="x_film_id" invisible="x_coating_type == 'none'" options="{'no_create': True, 'no_open': True}" placeholder="Chọn loại Film..."/>
+                        <field name="x_film_id" invisible="x_coating_type == 'none'" options="{'no_create': True, 'no_open': True}" placeholder="Chọn thương hiệu Film..."/>
                     </group>
                     
                     <!-- 4. Kết quả quy đổi (Results Dashboard) -->

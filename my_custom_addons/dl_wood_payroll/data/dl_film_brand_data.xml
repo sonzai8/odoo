@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Thương hiệu Film - Dữ liệu Khởi tạo -->
+    <record id="film_brand_lanna_save" model="dl.film.brand">
+        <field name="name">Lanna Save</field>
+    </record>
+    <record id="film_brand_lanna_one" model="dl.film.brand">
+        <field name="name">Lanna One</field>
+    </record>
+    <record id="film_brand_lanna_two" model="dl.film.brand">
+        <field name="name">Lanna Two</field>
+    </record>
+    <record id="film_brand_meva" model="dl.film.brand">
+        <field name="name">Meva</field>
+    </record>
+    <record id="film_brand_thanh_hung" model="dl.film.brand">
+        <field name="name">Thanh Hùng</field>
+    </record>
+    <record id="film_brand_nau_den" model="dl.film.brand">
+        <field name="name">Nâu đen</field>
+    </record>
+    <record id="film_brand_treeway" model="dl.film.brand">
+        <field name="name">Treeway</field>
+    </record>
+    <record id="film_brand_viet_nam_ply" model="dl.film.brand">
+        <field name="name">Việt Nam Ply</field>
+    </record>
+    <record id="film_brand_ke_o" model="dl.film.brand">
+        <field name="name">Kẻ Ô</field>
+    </record>
+    <record id="film_brand_cgis_dbr" model="dl.film.brand">
+        <field name="name">CGIS DBR</field>
+    </record>
+    <record id="film_brand_cgis_standard" model="dl.film.brand">
+        <field name="name">CGIS Standard</field>
+    </record>
+    <record id="film_brand_leader" model="dl.film.brand">
+        <field name="name">Leader</field>
+    </record>
+    <record id="film_brand_sao_rong" model="dl.film.brand">
+        <field name="name">Sao rồng</field>
+    </record>
+    <record id="film_brand_duc_lam" model="dl.film.brand">
+        <field name="name">Đức Lâm</field>
+    </record>
+    <record id="film_brand_victory" model="dl.film.brand">
+        <field name="name">Victory</field>
+    </record>
+    <record id="film_brand_cgis" model="dl.film.brand">
+        <field name="name">CGIS</field>
+    </record>
+    <record id="film_brand_cossmo" model="dl.film.brand">
+        <field name="name">Cossmo</field>
+    </record>
+</odoo>

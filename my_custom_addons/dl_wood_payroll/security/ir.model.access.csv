@@ -22,9 +22,6 @@ access_dl_employee_transfer_manager,dl.employee.transfer.manager,model_dl_employ
 access_dl_workshop_user,dl.workshop.user,model_dl_workshop,group_dl_payroll_user,1,0,0,0
 access_dl_workshop_admin,dl.workshop.admin,model_dl_workshop,group_dl_payroll_admin,1,1,1,1
 access_dl_workshop_manager,dl.workshop.manager,model_dl_workshop,group_dl_payroll_manager,1,1,1,1
-access_dl_film_type_user,dl.film.type.user,model_dl_film_type,group_dl_payroll_user,1,0,0,0
-access_dl_film_type_admin,dl.film.type.admin,model_dl_film_type,group_dl_payroll_admin,1,1,1,1
-access_dl_film_type_manager,dl.film.type.manager,model_dl_film_type,group_dl_payroll_manager,1,1,1,1
 access_dl_attendance_type_user,dl.attendance.type.user,model_dl_attendance_type,group_dl_payroll_user,1,0,0,0
 access_dl_attendance_type_manager,dl.attendance.type.manager,model_dl_attendance_type,group_dl_payroll_manager,1,1,1,1
 access_dl_daily_attendance_user,dl.daily.attendance.user,model_dl_daily_attendance,group_dl_payroll_user,1,1,1,1
@@ -46,3 +43,17 @@ access_dl_pricelist_excel_wizard_user,dl.pricelist.excel.wizard.user,model_dl_pr
 access_dl_pricelist_excel_wizard_manager,dl.pricelist.excel.wizard.manager,model_dl_pricelist_excel_wizard,group_dl_payroll_manager,1,1,1,1
 access_dl_pricelist_excel_line_user,dl.pricelist.excel.line.user,model_dl_pricelist_excel_line,group_dl_payroll_user,1,1,1,1
 access_dl_pricelist_excel_line_manager,dl.pricelist.excel.line.manager,model_dl_pricelist_excel_line,group_dl_payroll_manager,1,1,1,1
+access_dl_film_brand_user,dl.film.brand.user,model_dl_film_brand,group_dl_payroll_user,1,0,0,0
+access_dl_film_brand_manager,dl.film.brand.manager,model_dl_film_brand,group_dl_payroll_manager,1,1,1,1
+access_dl_film_pricelist_user,dl.film.pricelist.user,model_dl_film_pricelist,group_dl_payroll_user,1,0,0,0
+access_dl_film_pricelist_manager,dl.film.pricelist.manager,model_dl_film_pricelist,group_dl_payroll_manager,1,1,1,1
+access_dl_film_pricelist_line_user,dl.film.pricelist.line.user,model_dl_film_pricelist_line,group_dl_payroll_user,1,1,0,0
+access_dl_film_pricelist_line_manager,dl.film.pricelist.line.manager,model_dl_film_pricelist_line,group_dl_payroll_manager,1,1,1,1
+access_dl_film_clone_wizard_user,dl.film.clone.wizard.user,model_dl_film_clone_wizard,group_dl_payroll_user,1,1,1,1
+access_dl_film_clone_wizard_manager,dl.film.clone.wizard.manager,model_dl_film_clone_wizard,group_dl_payroll_manager,1,1,1,1
+access_dl_film_pricelist_excel_wizard_user,dl.film.pricelist.excel.wizard.user,model_dl_film_pricelist_excel_wizard,group_dl_payroll_user,1,1,1,1
+access_dl_film_pricelist_excel_wizard_manager,dl.film.pricelist.excel.wizard.manager,model_dl_film_pricelist_excel_wizard,group_dl_payroll_manager,1,1,1,1
+access_dl_film_pricelist_excel_line_user,dl.film.pricelist.excel.line.user,model_dl_film_pricelist_excel_line,group_dl_payroll_user,1,1,1,1
+access_dl_film_pricelist_excel_line_manager,dl.film.pricelist.excel.line.manager,model_dl_film_pricelist_excel_line,group_dl_payroll_manager,1,1,1,1
+access_dl_pooling_summary_wizard_user,dl.pooling.summary.wizard.user,model_dl_pooling_summary_wizard,group_dl_payroll_user,1,1,1,1
+access_dl_pooling_summary_wizard_manager,dl.pooling.summary.wizard.manager,model_dl_pooling_summary_wizard,group_dl_payroll_manager,1,1,1,1
