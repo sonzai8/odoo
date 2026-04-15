@@ -17,15 +17,16 @@ class DailyPoolingResult(models.Model):
     )
     
     actual_work_days = fields.Float(string='Số công thực tế')
-    contribution_amount = fields.Float(string='Tổng tiền làm ra (Yield)')
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', default=lambda self: self.env.company.currency_id)
+    contribution_amount = fields.Monetary(string='Tổng tiền làm ra (Yield)', currency_field='currency_id')
     
-    native_contribution = fields.Float(string='Tiền tại tổ')
-    borrowed_contribution = fields.Float(string='Tiền mang về')
+    native_contribution = fields.Monetary(string='Tiền tại tổ', currency_field='currency_id')
+    borrowed_contribution = fields.Monetary(string='Tiền mang về', currency_field='currency_id')
     is_loaned_worker = fields.Boolean(string='Đi làm thuê', index=True)
     
     # Pooling info
-    pool_unit_price = fields.Float(string='Đơn giá 1 công (Tổ)')
-    final_salary = fields.Float(string='Lương thực nhận')
+    pool_unit_price = fields.Monetary(string='Đơn giá 1 công (Tổ)', currency_field='currency_id')
+    final_salary = fields.Monetary(string='Lương thực nhận', currency_field='currency_id')
 
     _sql_constraints = [
         ('date_employee_unique', 'unique(date, employee_id)', 'Kết quả của nhân viên này trong ngày này đã tồn tại!')

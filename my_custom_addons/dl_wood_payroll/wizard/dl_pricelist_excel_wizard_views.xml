@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_pricelist_excel_wizard_form" model="ir.ui.view">
+        <field name="name">dl.pricelist.excel.wizard.form</field>
+        <field name="model">dl.pricelist.excel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập/Xuất Excel Bảng giá">
+                <header>
+                    <field name="state" widget="statusbar" invisible="1"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="state == 'verified'">
+                        <p class="mb-0">
+                            <strong>Lưu ý:</strong> Chế độ <strong>Ma trận</strong> cho phép nhập giá nhiều công đoạn trên cùng 1 hàng sản phẩm (Dàn hàng ngang).
+                        </p>
+                    </div>
+                    <group invisible="state == 'verified'">
+                        <group>
+                            <field name="pricelist_id" readonly="1" force_save="1"/>
+                            <field name="import_mode" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                        <group>
+                            <field name="file_data" filename="file_name" widget="binary" string="Chọn file Excel"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <div class="alert alert-info" role="alert" invisible="state == 'verified' or file_data">
+                        <p class="mb-0">
+                            <strong>Hướng dẫn:</strong><br/>
+                            1. Bấm <strong>"Xuất dữ liệu / Tải mẫu"</strong> để lấy file mẫu.<br/>
+                            2. Chỉnh sửa và tải lên file.<br/>
+                            3. Bấm <strong>"Kiểm tra dữ liệu"</strong> để xem trước kết quả.
+                        </p>
+                    </div>
+
+                    <notebook invisible="state == 'draft'">
+                        <page string="Xem trước dữ liệu Nhập" name="preview">
+                            <field name="line_ids" readonly="1">
+                                <list decoration-danger="status == 'error'" decoration-warning="status == 'warning'" decoration-success="status == 'ready'">
+                                    <field name="status" widget="badge" decoration-danger="status == 'error'" decoration-warning="status == 'warning'" decoration-success="status == 'ready'"/>
+                                    <field name="dept_name"/>
+                                    <field name="product_ref"/>
+                                    <field name="product_name"/>
+                                    <field name="price_low"/>
+                                    <field name="price_high"/>
+                                    <field name="extra_price"/>
+                                    <field name="message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_export" string="Tải mẫu / Xuất dữ liệu" type="object" class="btn-secondary" invisible="state == 'verified'"/>
+                    <button name="action_verify" string="Kiểm tra dữ liệu" type="object" class="btn-primary" invisible="not file_data or state == 'verified'"/>
+                    <button name="action_import" string="Thực hiện Nhập" type="object" class="btn-primary" invisible="state == 'draft'"/>
+                    <button name="action_verify" string="Kiểm tra lại" type="object" class="btn-secondary" invisible="state == 'draft'"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_pricelist_excel_wizard" model="ir.actions.act_window">
+        <field name="name">Nhập/Xuất Excel Bảng giá</field>
+        <field name="res_model">dl.pricelist.excel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

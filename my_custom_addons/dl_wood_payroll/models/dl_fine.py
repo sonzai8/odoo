@@ -7,7 +7,8 @@ class FineReason(models.Model):
     _order = 'sequence, id'
 
     name = fields.Char(string='Lý do', required=True)
-    default_amount = fields.Float(string='Mức phạt mặc định', default=0.0)
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', default=lambda self: self.env.company.currency_id)
+    default_amount = fields.Monetary(string='Mức phạt mặc định', currency_field='currency_id', default=0.0)
     sequence = fields.Integer(default=10)
 
 class EmployeeFine(models.Model):
@@ -21,7 +22,8 @@ class EmployeeFine(models.Model):
     employee_id = fields.Many2one('hr.employee', string='Nhân viên bị phạt', required=True, tracking=True)
     reason_id = fields.Many2one('dl.fine.reason', string='Lý do phạt', tracking=True)
     description = fields.Text(string='Mô tả chi tiết', tracking=True)
-    amount = fields.Float(string='Số tiền phạt', required=True, tracking=True)
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', default=lambda self: self.env.company.currency_id)
+    amount = fields.Monetary(string='Số tiền phạt', required=True, currency_field='currency_id', tracking=True)
 
     @api.onchange('reason_id')
     def _onchange_reason_id(self):

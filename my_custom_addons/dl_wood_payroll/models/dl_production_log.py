@@ -21,11 +21,23 @@ class ProductionLog(models.Model):
         readonly=True
     )
     
+    is_kcs_stage = fields.Boolean(string='Là KCS', compute='_compute_is_kcs_stage')
+
+    def _compute_is_kcs_stage(self):
+        for rec in self:
+            rec.is_kcs_stage = rec.department_id and 'KCS' in rec.department_id.name.upper()
+    
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('confirmed', 'Đã xác nhận'),
         ('locked', 'Đã khóa')
     ], string='Trạng thái', default='draft', tracking=True)
+    
+    # Packaging Materials (KCS only)
+    x_plastic_belt_qty = fields.Float(string='Dây đai nhựa (cuộn)', tracking=True)
+    x_steel_belt_qty = fields.Float(string='Dây đai sắt (cuộn)', tracking=True)
+    x_paper_qty = fields.Float(string='Giấy (kg)', tracking=True)
+    x_cardboard_qty = fields.Float(string='Bìa (tấm)', tracking=True)
 
     product_line_ids = fields.One2many(
         'dl.production.log.product.line', 

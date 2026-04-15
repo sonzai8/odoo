@@ -18,6 +18,12 @@ class PieceRatePricelist(models.Model):
     
     x_required_days = fields.Float(string='Số công tối thiểu', default=26.0, help='Số công tối thiểu trong tháng để được tính đơn giá cao.')
     
+    currency_id = fields.Many2one(
+        'res.currency', 
+        string='Tiền tệ', 
+        default=lambda self: self.env.company.currency_id
+    )
+
     line_ids = fields.One2many(
         'dl.piece.rate.pricelist.line', 
         'pricelist_id', 
@@ -142,6 +148,19 @@ class PieceRatePricelist(models.Model):
         """Dummy action to trigger form save via header button"""
         return True
 
+    def action_open_excel_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _('Nhập/Xuất Excel Bảng giá'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.pricelist.excel.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_pricelist_id': self.id,
+            }
+        }
+
 
 class PieceRatePricelistLine(models.Model):
     _name = 'dl.piece.rate.pricelist.line'
@@ -165,18 +184,20 @@ class PieceRatePricelistLine(models.Model):
     film_type_id = fields.Many2one(related='product_id.x_film_id', string='Loại Phim', readonly=True)
     coating_type = fields.Selection(related='product_id.x_coating_type', string='Hình thức phủ', readonly=True)
     
-    price_low = fields.Float(string='Giá thấp (Thiếu công)', required=True, default=0.0)
-    price_high = fields.Float(string='Giá cao (Đủ công)', required=True, default=0.0)
+    currency_id = fields.Many2one(related='pricelist_id.currency_id', string='Tiền tệ', store=True)
+
+    price_low = fields.Monetary(string='Giá thấp (Thiếu công)', required=True, currency_field='currency_id', default=0.0)
+    price_high = fields.Monetary(string='Giá cao (Đủ công)', required=True, currency_field='currency_id', default=0.0)
     
     # Backward compatibility / Display only
-    price = fields.Float(string='Đơn giá (High)', compute='_compute_legacy_price', store=True)
+    price = fields.Monetary(string='Đơn giá (High)', compute='_compute_legacy_price', currency_field='currency_id', store=True)
 
     @api.depends('price_high')
     def _compute_legacy_price(self):
         for rec in self:
             rec.price = rec.price_high
 
-    extra_price = fields.Float(string='Đơn giá lũy tiến', help='Dùng cho Nhặt ván khi vượt 280 tấm')
+    extra_price = fields.Monetary(string='Đơn giá lũy tiến', currency_field='currency_id', help='Dùng cho Nhặt ván khi vượt 280 tấm')
 
     # Fields for Matrix/Report Filtering (Store=True for Pivot performance)
     month = fields.Integer(related='pricelist_id.month', store=True, index=True, readonly=True)

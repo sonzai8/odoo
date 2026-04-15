@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_missing_attendance_wizard_form" model="ir.ui.view">
+        <field name="name">dl.missing.attendance.wizard.form</field>
+        <field name="model">dl.missing.attendance.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Kiểm tra thiếu chấm công">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="department_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        Hệ thống sẽ liệt kê các nhân viên thuộc biên chế sản xuất nhưng chưa có bản ghi chấm công trong ngày đã chọn.
+                    </p>
+                </sheet>
+                <footer>
+                    <button name="action_view" string="Xem danh sách" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_missing_attendance_wizard" model="ir.actions.act_window">
+        <field name="name">Kiểm tra thiếu chấm công</field>
+        <field name="res_model">dl.missing.attendance.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Client Action: Nhân viên thiếu công
+        Gắn với OWL component 'dl_missing_attendance_view' đã đăng ký trong JS.
+        Không cần wizard — mở thẳng trang với mặc định ngày hôm qua.
+    -->
+    <record id="action_dl_missing_attendance_client" model="ir.actions.client">
+        <field name="name">Nhân viên thiếu công</field>
+        <field name="tag">dl_missing_attendance_view</field>
+    </record>
+</odoo>

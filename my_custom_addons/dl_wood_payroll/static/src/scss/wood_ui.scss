@@ -36,17 +36,52 @@
 }
 
 /* Rounded Inputs & Clean Focus */
-.o_form_view .o_input {
+.o_form_view .o_input:not(span) {
     border-radius: 8px !important;
     border: 1px solid #e5e7eb !important;
     padding: 0.6rem 0.9rem !important;
     background-color: #fdfdfd !important;
+    color: #1f2937 !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     
     &:focus {
         border-color: var(--dl-primary) !important;
         box-shadow: var(--dl-focus-shadow) !important;
         background-color: #fff !important;
+        color: #000 !important;
+    }
+}
+
+/* Fix for monetary fields: Odoo uses absolute spans that can block text if they have background */
+.o_field_monetary, .o_field_float, .o_field_number {
+    &, span, input {
+        color: #1f2937 !important;
+    }
+    
+    span.o_input {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: flex !important;
+        justify-content: flex-end !important; /* Push symbol to far right */
+        padding-right: 1.25rem !important;    /* Comfort space from right edge */
+        
+        span:not(.o_monetary_ghost_value) {
+            margin-left: auto !important;
+        }
+    }
+    
+    input {
+        text-align: right !important; /* Ensure numbers also align to right */
+        padding-right: 3rem !important; /* Leave space for the absolute symbol */
+    }
+    
+    .o_input {
+        color: #1f2937 !important;
+        
+        &.o_monetary_ghost_value {
+             color: transparent !important;
+        }
     }
 }
 

@@ -42,6 +42,18 @@
                             <field name="batch_attendance_type_id" options="{'no_create': True, 'no_open': True}" readonly="state != 'draft'"/>
                         </group>
                     </group>
+                    
+                    <field name="is_kcs_stage" invisible="1"/>
+                    <group class="dl_card" string="Vật tư đóng gói (Chỉ dành cho KCS)" invisible="not is_kcs_stage">
+                        <group>
+                            <field name="x_plastic_belt_qty" readonly="state != 'draft'"/>
+                            <field name="x_steel_belt_qty" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="x_paper_qty" readonly="state != 'draft'"/>
+                            <field name="x_cardboard_qty" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
                     <notebook>
                         <page string="1. Sản lượng sản xuất" name="products">
                             <field name="product_line_ids" readonly="state != 'draft'">

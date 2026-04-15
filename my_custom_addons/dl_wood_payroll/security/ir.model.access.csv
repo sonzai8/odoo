@@ -15,7 +15,6 @@ access_dl_production_group_user,dl.production.group.user,model_dl_production_gro
 access_dl_production_group_admin,dl.production.group.admin,model_dl_production_group,group_dl_payroll_admin,1,1,1,0
 access_dl_production_group_manager,dl.production.group.manager,model_dl_production_group,group_dl_payroll_manager,1,1,1,1
 access_dl_pooling_wizard_user,dl.pooling.wizard.user,model_dl_pooling_wizard,group_dl_payroll_user,1,1,1,1
-access_dl_pooling_wizard_user,dl.pooling.wizard.user,model_dl_pooling_wizard,group_dl_payroll_user,1,1,1,1
 access_dl_pooling_wizard_manager,dl.pooling.wizard.manager,model_dl_pooling_wizard,group_dl_payroll_manager,1,1,1,1
 access_dl_employee_transfer_user,dl.employee.transfer.user,model_dl_employee_transfer,group_dl_payroll_user,1,0,0,0
 access_dl_employee_transfer_admin,dl.employee.transfer.admin,model_dl_employee_transfer,group_dl_payroll_admin,1,1,1,1
@@ -41,3 +40,9 @@ access_dl_combined_product_line_user,dl.combined.product.line.user,model_dl_comb
 access_dl_combined_product_line_manager,dl.combined.product.line.manager,model_dl_combined_product_line,group_dl_payroll_manager,1,1,1,1
 access_dl_combined_worker_line_user,dl.combined.worker.line.user,model_dl_combined_worker_line,group_dl_payroll_user,1,1,1,1
 access_dl_combined_worker_line_manager,dl.combined.worker.line.manager,model_dl_combined_worker_line,group_dl_payroll_manager,1,1,1,1
+access_dl_missing_attendance_wizard_user,dl.missing.attendance.wizard.user,model_dl_missing_attendance_wizard,group_dl_payroll_user,1,1,1,1
+access_dl_missing_attendance_wizard_manager,dl.missing.attendance.wizard.manager,model_dl_missing_attendance_wizard,group_dl_payroll_manager,1,1,1,1
+access_dl_pricelist_excel_wizard_user,dl.pricelist.excel.wizard.user,model_dl_pricelist_excel_wizard,group_dl_payroll_user,1,1,1,1
+access_dl_pricelist_excel_wizard_manager,dl.pricelist.excel.wizard.manager,model_dl_pricelist_excel_wizard,group_dl_payroll_manager,1,1,1,1
+access_dl_pricelist_excel_line_user,dl.pricelist.excel.line.user,model_dl_pricelist_excel_line,group_dl_payroll_user,1,1,1,1
+access_dl_pricelist_excel_line_manager,dl.pricelist.excel.line.manager,model_dl_pricelist_excel_line,group_dl_payroll_manager,1,1,1,1

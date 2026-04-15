@@ -84,9 +84,9 @@
               sequence="5"/>
 
     <menuitem id="menu_dl_employee_missing_attendance"
-              name="Nhân viên thiếu công hôm nay"
+              name="Nhân viên thiếu công"
               parent="menu_dl_attendance_root"
-              action="action_dl_employee_missing_attendance"
+              action="action_dl_missing_attendance_client"
               sequence="25"/>
 
     <menuitem id="menu_dl_attendance_matrix_report_action"

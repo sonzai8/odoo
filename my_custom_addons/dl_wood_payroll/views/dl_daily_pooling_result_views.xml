@@ -5,15 +5,16 @@
         <field name="model">dl.daily.pooling.result</field>
         <field name="arch" type="xml">
             <list string="Kết quả cào bằng lương" create="false" edit="false">
+                <field name="currency_id" column_invisible="True"/>
                 <field name="date"/>
                 <field name="employee_id"/>
                 <field name="source_group_id"/>
                 <field name="actual_work_days" sum="Tổng công"/>
-                <field name="native_contribution" sum="Tổng tại tổ" optional="show"/>
-                <field name="borrowed_contribution" sum="Tổng mang về" optional="show"/>
-                <field name="contribution_amount" sum="Tổng Yield"/>
-                <field name="pool_unit_price"/>
-                <field name="final_salary" sum="Tổng lương thực nhận"/>
+                <field name="native_contribution" sum="Tổng tại tổ" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="borrowed_contribution" sum="Tổng mang về" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="contribution_amount" sum="Tổng Yield" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="pool_unit_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="final_salary" sum="Tổng lương thực nhận" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="is_loaned_worker" widget="boolean_toggle" optional="hide"/>
             </list>
         </field>

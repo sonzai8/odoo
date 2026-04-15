@@ -7,8 +7,9 @@
         <field name="arch" type="xml">
             <list string="Lý do phạt" editable="bottom">
                 <field name="sequence" widget="handle"/>
+                <field name="currency_id" column_invisible="True"/>
                 <field name="name"/>
-                <field name="default_amount" widget="monetary"/>
+                <field name="default_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
             </list>
         </field>
     </record>
@@ -19,11 +20,12 @@
         <field name="model">dl.employee.fine</field>
         <field name="arch" type="xml">
             <list string="Danh sách phạt">
+                <field name="currency_id" column_invisible="True"/>
                 <field name="name"/>
                 <field name="date"/>
                 <field name="employee_id" widget="many2one_avatar"/>
                 <field name="reason_id"/>
-                <field name="amount" sum="Tổng tiền phạt"/>
+                <field name="amount" sum="Tổng tiền phạt" widget="monetary" options="{'currency_field': 'currency_id'}"/>
             </list>
         </field>
     </record>
@@ -44,8 +46,9 @@
                             <field name="date"/>
                         </group>
                         <group>
+                            <field name="currency_id" invisible="1"/>
                             <field name="reason_id" placeholder="Chọn lý do hoặc để trống nếu tự nhập..."/>
-                            <field name="amount" widget="monetary"/>
+                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                         </group>
                     </group>
                     <group string="Chi tiết vi phạm">

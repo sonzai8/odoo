@@ -38,6 +38,18 @@
                             <field name="date" readonly="state != 'draft'"/>
                             <field name="department_id"/>
                         </group>
+                        
+                        <field name="is_kcs_stage" invisible="1"/>
+                        <group class="dl_card" string="Vật tư đóng gói (KCS)" invisible="not is_kcs_stage">
+                            <group>
+                                <field name="x_plastic_belt_qty" readonly="state == 'locked'"/>
+                                <field name="x_steel_belt_qty" readonly="state == 'locked'"/>
+                            </group>
+                            <group>
+                                <field name="x_paper_qty" readonly="state == 'locked'"/>
+                                <field name="x_cardboard_qty" readonly="state == 'locked'"/>
+                            </group>
+                        </group>
                     </group>
                     <notebook>
                         <page string="Sản lượng sản xuất" name="products">

@@ -1,0 +1,303 @@
+// ============================================================
+//  Missing Attendance View — Styles
+// ============================================================
+
+.dl-missing-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #f0f2f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    animation: dl-fade-in 0.4s ease-out;
+
+    // ── Header ──────────────────────────────────────────────
+    .dl-missing-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        flex-wrap: wrap;
+        gap: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+
+        .dl-missing-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--dl-primary, #1b4d3e);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+
+            i {
+                color: #dc3545; // Keep danger color for icon
+            }
+        }
+
+        .dl-missing-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        // Date Navigation
+        .dl-date-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            .dl-nav-btn {
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                border: 1px solid #d1d5db;
+                background: #fff;
+                color: #374151;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+                &:hover:not(:disabled) {
+                    background: var(--dl-primary, #1b4d3e);
+                    border-color: var(--dl-primary, #1b4d3e);
+                    color: #fff;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(27, 77, 62, 0.2);
+                }
+
+                &:disabled {
+                    opacity: 0.4;
+                    cursor: not-allowed;
+                }
+            }
+
+            .dl-date-wrapper {
+                position: relative;
+
+                .dl-date-input {
+                    width: 140px;
+                    text-align: center;
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                    border-radius: 8px;
+                    border: 1px solid #d1d5db;
+                    cursor: pointer;
+                    transition: all 0.2s;
+
+                    &:focus {
+                        border-color: var(--dl-primary, #1b4d3e);
+                        box-shadow: 0 0 0 3px rgba(27, 77, 62, 0.15);
+                        outline: none;
+                    }
+                }
+            }
+        }
+
+        // Group Filter
+        .dl-group-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            .dl-group-icon {
+                color: #6b7280;
+                font-size: 0.9rem;
+            }
+
+            .dl-group-select {
+                min-width: 190px;
+                border-radius: 8px;
+                border: 1px solid #d1d5db;
+                font-size: 0.875rem;
+                cursor: pointer;
+                transition: all 0.2s;
+
+                &:focus {
+                    border-color: var(--dl-primary, #1b4d3e);
+                    box-shadow: 0 0 0 3px rgba(27, 77, 62, 0.15);
+                    outline: none;
+                }
+            }
+        }
+
+        // Export Button
+        .dl-export-btn {
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            background: #fff;
+            border: 1px solid var(--dl-primary, #1b4d3e);
+            color: var(--dl-primary, #1b4d3e);
+
+            &:hover {
+                background: var(--dl-primary-soft, #eef5f2);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(27, 77, 62, 0.1);
+            }
+        }
+    }
+
+    // ── Content Area ─────────────────────────────────────────
+    .dl-missing-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+
+        // Loading / Empty states
+        .dl-state-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            text-align: center;
+            animation: dl-fade-in 0.5s ease-out;
+
+            .dl-empty-icon {
+                width: 80px;
+                height: 80px;
+                background: #d1fae5;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+        }
+
+        // Table wrapper card
+        .dl-table-wrapper {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--dl-card-shadow, 0 10px 30px rgba(0, 0, 0, 0.04));
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .dl-missing-table {
+            margin-bottom: 0;
+
+            thead tr {
+                background: #f8fafc;
+                border-bottom: 2px solid #e5e7eb;
+
+                th {
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.6px;
+                    color: #6b7280;
+                    padding: 14px 16px;
+                    border: none;
+                    white-space: nowrap;
+                }
+            }
+
+            tbody {
+                .dl-emp-row {
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    border-bottom: 1px solid #f3f4f6;
+
+                    td {
+                        padding: 12px 16px;
+                        vertical-align: middle;
+                    }
+
+                    &:hover {
+                        background: var(--dl-primary-soft, #eef5f2);
+
+                        .dl-avatar {
+                            background: var(--dl-primary, #1b4d3e);
+                            transform: scale(1.1);
+                        }
+
+                        .fw-semibold {
+                            color: var(--dl-primary, #1b4d3e);
+                        }
+                    }
+
+                    &:last-child {
+                        border-bottom: none;
+                    }
+                }
+            }
+
+            // Avatar circle
+            .dl-avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: var(--dl-primary-light, #2c7a62);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.82rem;
+                font-weight: 700;
+                flex-shrink: 0;
+                transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+
+            // Group badge
+            .dl-badge-group {
+                background: #e0f2fe;
+                color: #0369a1;
+                font-size: 0.75rem;
+                font-weight: 600;
+                border-radius: 6px;
+                padding: 4px 10px;
+                transition: all 0.2s;
+
+                &:hover {
+                    filter: brightness(0.95);
+                }
+            }
+
+            // Column widths
+            .dl-col-stt {
+                width: 50px;
+            }
+
+            .dl-col-name {
+                min-width: 200px;
+            }
+
+            .dl-col-group {
+                min-width: 150px;
+            }
+
+            .dl-col-dept {
+                min-width: 150px;
+            }
+
+            .dl-col-job {
+                min-width: 150px;
+            }
+        }
+    }
+}
+
+@keyframes dl-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

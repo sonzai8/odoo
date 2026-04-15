@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="dl_wood_payroll.MissingAttendanceView" owl="1">
+        <div class="dl-missing-view">
+
+            <!-- ═══ HEADER / CONTROLS ═══════════════════════════════════════ -->
+            <div class="dl-missing-header">
+                <div class="dl-missing-title">
+                    <i class="fa fa-user-times me-2 text-danger"/>
+                    <span>Nhân viên thiếu công</span>
+                    <t t-if="!state.loading">
+                        <span t-if="state.employees.length > 0"
+                              class="badge rounded-pill bg-danger ms-2">
+                            <t t-esc="state.employees.length"/>
+                        </span>
+                        <span t-else="" class="badge rounded-pill bg-success ms-2">0</span>
+                    </t>
+                </div>
+
+                <div class="dl-missing-controls">
+                    <!-- Date Navigation -->
+                    <div class="dl-date-nav" role="group">
+                        <button class="btn btn-outline-secondary btn-sm dl-nav-btn"
+                                t-on-click="prevDay"
+                                title="Ngày trước">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <div class="dl-date-wrapper">
+                            <input type="date"
+                                   class="form-control form-control-sm dl-date-input"
+                                   t-att-value="state.date"
+                                   t-on-change="onDateChange"/>
+                            <span class="dl-date-label"><t t-esc="formattedDate"/></span>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm dl-nav-btn"
+                                t-on-click="nextDay"
+                                t-att-disabled="isFuture ? 'disabled' : false"
+                                title="Ngày tiếp theo">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+
+                    <!-- Group Filter -->
+                    <div class="dl-group-wrapper">
+                        <i class="fa fa-users dl-group-icon"/>
+                        <select class="form-select form-select-sm dl-group-select"
+                                t-on-change="onGroupChange">
+                            <option value="">Tất cả tổ sản xuất</option>
+                            <t t-foreach="state.groups" t-as="group" t-key="group.id">
+                                <option t-att-value="group.id"
+                                        t-att-selected="state.groupId === group.id">
+                                    <t t-esc="group.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <!-- Export -->
+                    <button class="btn dl-export-btn btn-sm"
+                            t-on-click="exportToExcel"
+                            t-att-disabled="state.employees.length === 0 || state.loading ? 'disabled' : false"
+                            title="Xuất danh sách ra Excel">
+                        <i class="fa fa-file-excel-o"/>
+                        <span>Xuất Excel</span>
+                    </button>
+
+                    <!-- Refresh -->
+                    <button class="btn btn-outline-primary btn-sm"
+                            t-on-click="_loadMissingEmployees"
+                            title="Làm mới">
+                        <i class="fa fa-refresh" t-att-class="state.loading ? 'fa-spin' : ''"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ═══ CONTENT ══════════════════════════════════════════════════ -->
+            <div class="dl-missing-content">
+
+                <!-- Loading -->
+                <div t-if="state.loading" class="dl-state-box">
+                    <i class="fa fa-spinner fa-spin fa-2x text-primary"/>
+                    <p class="text-muted mt-3 mb-0">Đang tải dữ liệu...</p>
+                </div>
+
+                <!-- Empty: tất cả đã chấm công -->
+                <div t-elif="state.employees.length === 0" class="dl-state-box">
+                    <div class="dl-empty-icon">
+                        <i class="fa fa-check-circle fa-3x text-success"/>
+                    </div>
+                    <h5 class="mt-3 text-success fw-semibold">Tất cả đã chấm công!</h5>
+                    <p class="text-muted mb-0">
+                        Không có nhân viên nào thiếu công ngày
+                        <strong><t t-esc="formattedDate"/></strong>
+                    </p>
+                </div>
+
+                <!-- Employee Table -->
+                <div t-else="" class="dl-table-wrapper">
+                    <table class="table table-hover dl-missing-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="dl-col-stt">#</th>
+                                <th class="dl-col-name">Tên nhân viên</th>
+                                <th class="dl-col-group">Tổ biên chế</th>
+                                <th class="dl-col-dept">Công đoạn</th>
+                                <th class="dl-col-job">Chức vụ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="state.employees" t-as="emp" t-key="emp.id">
+                                <tr class="dl-emp-row" t-on-click="() => this.openEmployee(emp.id)">
+                                    <td class="dl-col-stt text-muted">
+                                        <t t-esc="emp_index + 1"/>
+                                    </td>
+                                    <td class="dl-col-name">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="dl-avatar">
+                                                <t t-esc="emp.name[0].toUpperCase()"/>
+                                            </div>
+                                            <span class="fw-semibold"><t t-esc="emp.name"/></span>
+                                        </div>
+                                    </td>
+                                    <td class="dl-col-group">
+                                        <span t-if="emp.x_source_group_id"
+                                              class="badge dl-badge-group">
+                                            <t t-esc="emp.x_source_group_id[1]"/>
+                                        </span>
+                                        <span t-else="" class="text-muted">—</span>
+                                    </td>
+                                    <td class="dl-col-dept text-muted">
+                                        <t t-esc="emp.department_id ? emp.department_id[1] : '—'"/>
+                                    </td>
+                                    <td class="dl-col-job text-muted small">
+                                        <t t-esc="emp.job_id ? emp.job_id[1] : '—'"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div><!-- /dl-missing-content -->
+        </div>
+    </t>
+</templates>

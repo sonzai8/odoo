@@ -23,6 +23,12 @@ class CombinedLog(models.Model):
         readonly=True
     )
     
+    is_kcs_stage = fields.Boolean(string='Là KCS', compute='_compute_is_kcs_stage')
+
+    def _compute_is_kcs_stage(self):
+        for rec in self:
+            rec.is_kcs_stage = rec.department_id and 'KCS' in rec.department_id.name.upper()
+    
     batch_attendance_type_id = fields.Many2one(
         'dl.attendance.type', 
         string='Loại công mặc định',
@@ -49,6 +55,12 @@ class CombinedLog(models.Model):
     # Links to standard models
     attendance_id = fields.Many2one('dl.daily.attendance', string='Phiếu chấm công gốc', readonly=True)
     production_log_id = fields.Many2one('dl.production.log', string='Bản ghi sản lượng gốc', readonly=True)
+
+    # Packaging Materials (KCS only)
+    x_plastic_belt_qty = fields.Float(string='Dây đai nhựa (cuộn)', tracking=True)
+    x_steel_belt_qty = fields.Float(string='Dây đai sắt (cuộn)', tracking=True)
+    x_paper_qty = fields.Float(string='Giấy (kg)', tracking=True)
+    x_cardboard_qty = fields.Float(string='Bìa (tấm)', tracking=True)
 
     _sql_constraints = [
         ('group_date_unique', 'unique(production_group_id, date)', 'Tổ này đã có phiếu Cộng Công Lượng cho ngày này!')
@@ -139,7 +151,11 @@ class CombinedLog(models.Model):
             'worker_line_ids': [(0, 0, {
                 'employee_id': w.employee_id.id,
                 'worked_hours': w.worked_hours,
-            }) for w in self.worker_line_ids]
+            }) for w in self.worker_line_ids],
+            'x_plastic_belt_qty': self.x_plastic_belt_qty,
+            'x_steel_belt_qty': self.x_steel_belt_qty,
+            'x_paper_qty': self.x_paper_qty,
+            'x_cardboard_qty': self.x_cardboard_qty,
         }
         
         existing_prod = self.env['dl.production.log'].search([
