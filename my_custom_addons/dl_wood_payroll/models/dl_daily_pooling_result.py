@@ -27,6 +27,11 @@ class DailyPoolingResult(models.Model):
     # Pooling info
     pool_unit_price = fields.Monetary(string='Đơn giá 1 công (Tổ)', currency_field='currency_id')
     final_salary = fields.Monetary(string='Lương thực nhận', currency_field='currency_id')
+    
+    # Báo cáo tổng hợp
+    group_revenue_low = fields.Monetary(string='Doanh thu tổ (Thấp)', currency_field='currency_id')
+    group_revenue_high = fields.Monetary(string='Doanh thu tổ (Cao)', currency_field='currency_id')
+    group_production_summary = fields.Char(string='Sản lượng tổ (Summary)')
 
     _sql_constraints = [
         ('date_employee_unique', 'unique(date, employee_id)', 'Kết quả của nhân viên này trong ngày này đã tồn tại!')

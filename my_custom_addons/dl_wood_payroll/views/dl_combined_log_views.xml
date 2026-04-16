@@ -44,6 +44,7 @@
                     </group>
                     
                     <field name="is_kcs_stage" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
                     <group class="dl_card" string="Vật tư đóng gói (Chỉ dành cho KCS)" invisible="not is_kcs_stage">
                         <group>
                             <field name="x_plastic_belt_qty" readonly="state != 'draft'"/>
@@ -54,6 +55,21 @@
                             <field name="x_cardboard_qty" readonly="state != 'draft'"/>
                         </group>
                     </group>
+                    
+                    <group class="dl_card" string="Tạm tính Thực tế (Dự kiến)">
+                        <group>
+                            <field name="total_revenue_low" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="avg_salary_low" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="1" decoration-bf="1"/>
+                        </group>
+                        <group>
+                            <field name="total_revenue_high" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="avg_salary_high" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" decoration-bf="1"/>
+                        </group>
+                        <group>
+                            <field name="total_worked_hours" decoration-info="1" decoration-bf="1"/>
+                        </group>
+                    </group>
+                    
                     <notebook>
                         <page string="1. Sản lượng sản xuất" name="products">
                             <field name="product_line_ids" readonly="state != 'draft'">
@@ -61,6 +77,8 @@
                                     <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="is_re_ep_film"/>
                                     <field name="quantity" sum="Tổng số tấm"/>
+                                    <field name="price_high" readonly="1" force_save="1"/>
+                                    <field name="price_low" readonly="1" force_save="1"/>
                                 </list>
                             </field>
                         </page>

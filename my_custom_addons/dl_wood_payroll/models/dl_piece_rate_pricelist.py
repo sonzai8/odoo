@@ -186,8 +186,8 @@ class PieceRatePricelistLine(models.Model):
     
     currency_id = fields.Many2one(related='pricelist_id.currency_id', string='Tiền tệ', store=True)
 
-    price_low = fields.Monetary(string='Giá thấp (Thiếu công)', required=True, currency_field='currency_id', default=0.0)
-    price_high = fields.Monetary(string='Giá cao (Đủ công)', required=True, currency_field='currency_id', default=0.0)
+    price_low = fields.Monetary(string='ĐG cũ', required=True, currency_field='currency_id', default=0.0)
+    price_high = fields.Monetary(string='ĐG mới', required=True, currency_field='currency_id', default=0.0)
     
     # Backward compatibility / Display only
     price = fields.Monetary(string='Đơn giá (High)', compute='_compute_legacy_price', currency_field='currency_id', store=True)

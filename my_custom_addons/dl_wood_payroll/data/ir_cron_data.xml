@@ -11,5 +11,15 @@
             <field name="active" eval="True"/>
             <field name="priority">5</field>
         </record>
+        <record id="ir_cron_auto_recalculate_pooling" model="ir.cron">
+            <field name="name">DL Wood Payroll: Tự động chạy lại lương tháng cũ (Mùng 1 &amp; 2)</field>
+            <field name="model_id" ref="model_dl_pooling_wizard"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_recalculate_previous_month()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+            <field name="priority">6</field>
+        </record>
     </data>
 </odoo>

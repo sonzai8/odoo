@@ -26,7 +26,7 @@ class DailyAttendance(models.Model):
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('confirmed', 'Đã xác nhận'),
-    ], string='Trạng thái', default='draft', tracking=True)
+    ], string='Trạng thái', default='confirmed', tracking=True)
 
     attendance_line_ids = fields.One2many(
         'dl.daily.attendance.line', 

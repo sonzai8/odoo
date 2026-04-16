@@ -62,6 +62,35 @@ class CombinedLog(models.Model):
     x_paper_qty = fields.Float(string='Giấy (kg)', tracking=True)
     x_cardboard_qty = fields.Float(string='Bìa (tấm)', tracking=True)
 
+    # Realtime Estimates
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', default=lambda self: self.env.company.currency_id, readonly=True)
+    total_revenue_low = fields.Float(string='Tổng thu nhập (Thấp)', compute='_compute_estimates', store=False)
+    total_revenue_high = fields.Float(string='Tổng thu nhập (Cao)', compute='_compute_estimates', store=False)
+    total_worked_hours = fields.Float(string='Tổng số công', compute='_compute_estimates', store=False)
+    avg_salary_low = fields.Float(string='Lương bình quân (Thấp)', compute='_compute_estimates', store=False)
+    avg_salary_high = fields.Float(string='Lương bình quân (Cao)', compute='_compute_estimates', store=False)
+
+    @api.depends(
+        'product_line_ids.quantity', 'product_line_ids.price_low', 'product_line_ids.price_high',
+        'worker_line_ids.worked_hours'
+    )
+    def _compute_estimates(self):
+        for rec in self:
+            rev_low = sum((p.quantity * p.price_low) for p in rec.product_line_ids)
+            rev_high = sum((p.quantity * p.price_high) for p in rec.product_line_ids)
+            hours = sum(w.worked_hours for w in rec.worker_line_ids)
+            
+            rec.total_revenue_low = rev_low
+            rec.total_revenue_high = rev_high
+            rec.total_worked_hours = hours
+            
+            if hours > 0:
+                rec.avg_salary_low = rev_low / hours
+                rec.avg_salary_high = rev_high / hours
+            else:
+                rec.avg_salary_low = 0.0
+                rec.avg_salary_high = 0.0
+
     _sql_constraints = [
         ('group_date_unique', 'unique(production_group_id, date)', 'Tổ này đã có phiếu Cộng Công Lượng cho ngày này!')
     ]
@@ -72,6 +101,31 @@ class CombinedLog(models.Model):
             if vals.get('name', _('Mới')) == _('Mới'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('dl.combined.log') or '/'
         return super().create(vals_list)
+
+    def unlink(self):
+        dates_to_recalc = set()
+        for rec in self:
+            if rec.state != 'draft':
+                raise ValidationError(_("Chỉ có thể xóa các bản ghi ở trạng thái Dự thảo. Vui lòng chọn 'Mở lại dự thảo' trước."))
+            
+            dates_to_recalc.add(rec.date)
+            
+            # Xoá bảng chấm công và sản lượng gốc liên quan
+            if rec.attendance_id and rec.attendance_id.state == 'draft':
+                rec.attendance_id.unlink()
+            if rec.production_log_id and rec.production_log_id.state == 'draft':
+                rec.production_log_id.unlink()
+                
+        res = super(CombinedLog, self).unlink()
+        
+        # Tự động tính lại lương cào bằng cho các ngày bị ảnh hưởng
+        if dates_to_recalc:
+            pooling_wizard = self.env['dl.pooling.wizard']
+            for d in dates_to_recalc:
+                wiz = pooling_wizard.create({'date': d, 'calc_type': 'daily'})
+                wiz._calculate_for_day(d)
+                
+        return res
 
     @api.onchange('production_group_id')
     def _onchange_production_group_id(self):
@@ -188,7 +242,61 @@ class CombinedProductLine(models.Model):
     combined_log_id = fields.Many2one('dl.combined.log', ondelete='cascade')
     product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
     quantity = fields.Float(string='Số lượng', default=1.0)
-    is_re_ep_film = fields.Boolean(string='Ép lại 1 mặt')
+    is_re_ep_film = fields.Boolean(string='Ép lại')
+    
+    price_low = fields.Float(string='ĐG cũ', compute='_compute_prices', store=False)
+    price_high = fields.Float(string='ĐG mới', compute='_compute_prices', store=False)
+
+    @api.depends('combined_log_id.date', 'product_id', 'combined_log_id.department_id', 'is_re_ep_film')
+    def _compute_prices(self):
+        for rec in self:
+            rec.price_low = 0.0
+            rec.price_high = 0.0
+            log = rec.combined_log_id
+            if not log or not log.date or not log.department_id or not rec.product_id:
+                continue
+                
+            # 1. Check Standard Piece Rate Pricelist
+            pricelist = self.env['dl.piece.rate.pricelist'].search([
+                ('month', '=', log.date.month),
+                ('year', '=', log.date.year),
+                ('state', '=', 'confirmed')
+            ], limit=1)
+            
+            if pricelist:
+                price_line = pricelist.line_ids.filtered(
+                    lambda l: l.department_id.id == log.department_id.id and l.product_id.id == rec.product_id.id
+                )
+                if price_line:
+                    rec.price_low = price_line[0].price_low
+                    rec.price_high = price_line[0].price_high
+                    continue
+            
+            # 2. Check Film Pricelist if Product has Film attributes
+            if hasattr(rec.product_id, 'x_thickness_alias') and getattr(rec.product_id, 'x_thickness_alias', False):
+                film_pricelist = self.env['dl.film.pricelist'].search([
+                    ('month', '=', log.date.month),
+                    ('year', '=', log.date.year),
+                    ('state', '=', 'confirmed')
+                ], limit=1)
+                
+                if film_pricelist:
+                    alias = rec.product_id.x_thickness_alias
+                    brand_id = rec.product_id.x_film_brand_id.id if hasattr(rec.product_id, 'x_film_brand_id') else False
+                    surface = rec.product_id.x_surface_type if hasattr(rec.product_id, 'x_surface_type') else False
+                    
+                    f_line = film_pricelist.line_ids.filtered(
+                        lambda l: str(l.x_thickness_alias or '') == str(alias or '') and 
+                                  l.x_film_brand_id.id == brand_id and 
+                                  str(l.x_surface_type or '') == str(surface or '')
+                    )
+                    if f_line:
+                        if rec.is_re_ep_film:
+                            rec.price_low = f_line[0].price_re_ep
+                            rec.price_high = f_line[0].price_re_ep
+                        else:
+                            rec.price_low = f_line[0].price_low
+                            rec.price_high = f_line[0].price_high
 
 class CombinedWorkerLine(models.Model):
     _name = 'dl.combined.worker.line'

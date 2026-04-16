@@ -57,3 +57,5 @@ access_dl_film_pricelist_excel_line_user,dl.film.pricelist.excel.line.user,model
 access_dl_film_pricelist_excel_line_manager,dl.film.pricelist.excel.line.manager,model_dl_film_pricelist_excel_line,group_dl_payroll_manager,1,1,1,1
 access_dl_pooling_summary_wizard_user,dl.pooling.summary.wizard.user,model_dl_pooling_summary_wizard,group_dl_payroll_user,1,1,1,1
 access_dl_pooling_summary_wizard_manager,dl.pooling.summary.wizard.manager,model_dl_pooling_summary_wizard,group_dl_payroll_manager,1,1,1,1
+access_dl_comprehensive_excel_wizard,dl_comprehensive_excel_wizard,model_dl_comprehensive_excel_wizard,,1,1,1,1
+access_dl_film_matrix_viewer,dl.film.matrix.viewer,model_dl_film_matrix_viewer,base.group_user,1,1,1,1

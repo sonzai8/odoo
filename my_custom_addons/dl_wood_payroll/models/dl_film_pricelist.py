@@ -148,25 +148,25 @@ class FilmPricelistLine(models.Model):
                                     help='Ví dụ: 11M, 14D, 17M, 19D...')
     x_film_brand_id = fields.Many2one('dl.film.brand', string='Thương hiệu Film', required=True)
     x_surface_type = fields.Selection([
-        ('1m', 'Phủ 1 mặt (1M)'),
-        ('2m', 'Phủ 2 mặt (2M)'),
+        ('1m', '1M'),
+        ('2m', '2M'),
     ], string='Số mặt phủ', required=True)
 
     currency_id = fields.Many2one(related='pricelist_id.currency_id', string='Tiền tệ', store=True)
     price_low = fields.Monetary(
-        string='Đơn giá Cũ (Thiếu công)',
+        string='DG Cũ',
         currency_field='currency_id',
         default=0.0,
         help='Áp dụng khi nhân viên không đủ số công yêu cầu trong tháng.'
     )
     price_high = fields.Monetary(
-        string='Đơn giá Mới (Đủ công)',
+        string='DG Mới',
         currency_field='currency_id',
         default=0.0,
         help='Áp dụng khi nhân viên đủ hoặc vượt số công yêu cầu trong tháng.'
     )
     price_re_ep = fields.Monetary(
-        string='Đơn giá Ép lại',
+        string='Lại',
         currency_field='currency_id',
         default=0.0,
         help='Áp dụng khi sản phẩm được tích là Ép lại 1 mặt.'

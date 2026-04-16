@@ -12,46 +12,42 @@
               sequence="10"/>
 
     <menuitem id="menu_dl_piece_rate_pricelist_action"
-              name="Bảng giá đơn giá"
+              name="Đơn giá"
               parent="menu_dl_piece_rate_pricelist"
               action="action_dl_piece_rate_pricelist"
               sequence="10"/>
-
-    <menuitem id="menu_dl_production_log_action"
-              name="Nhập sản lượng"
-              parent="menu_dl_piece_rate_pricelist"
-              action="action_dl_production_log"
-              sequence="20"/>
-
-    <menuitem id="menu_dl_piece_rate_matrix_action"
-              name="Ma trận đơn giá"
-              parent="menu_dl_piece_rate_pricelist"
-              action="action_dl_piece_rate_matrix"
-              sequence="30"/>
 
     <menuitem id="menu_dl_film_pricelist_action"
               name="Đơn giá Ép Film"
               parent="menu_dl_piece_rate_pricelist"
               action="action_dl_film_pricelist"
-              sequence="35"/>
+              sequence="11"/>
+              
+    <menuitem id="menu_dl_piece_rate_matrix_action"
+              name="Ma trận đơn giá"
+              parent="menu_dl_piece_rate_pricelist"
+              action="action_dl_piece_rate_matrix"
+              sequence="12"/>
 
     <menuitem id="menu_dl_film_pricelist_matrix_action"
-              name="Ma trận đơn giá Ép Film"
+              name="Ma trận Đơn giá Ép Film"
               parent="menu_dl_piece_rate_pricelist"
-              action="action_dl_film_pricelist_matrix"
-              sequence="37"/>
+              action="action_dl_film_matrix_viewer"
+              sequence="13"/>
 
-    <menuitem id="menu_dl_production_matrix_report_action"
-              name="Ma trận Sản lượng ngày"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_production_matrix_report"
-              sequence="40"/>
+    
 
     <!-- Calculation Group -->
     <menuitem id="menu_dl_pooling_calculation_root"
               name="Tính toán lương"
               parent="menu_dl_wood_payroll_root"
               sequence="30"/>
+
+    <menuitem id="menu_dl_production_matrix_report_action"
+              name="Ma trận Sản lượng ngày"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_production_matrix_report"
+              sequence="40"/>
 
     <menuitem id="menu_dl_pooling_wizard_action"
               name="Tính lương cào bằng"
@@ -71,11 +67,23 @@
               action="action_dl_payroll_matrix_report"
               sequence="30"/>
 
+    <menuitem id="menu_dl_comprehensive_matrix_report_action"
+              name="Báo cáo Tổng hợp (Sản lượng &amp; Lương)"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_comprehensive_matrix_report"
+              sequence="35"/>
+
+    <menuitem id="menu_dl_comprehensive_excel_wizard_action"
+              name="Xuất Báo cáo Tổng hợp (Excel)"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_comprehensive_excel_wizard"
+              sequence="36"/>
+
     <!-- Attendance Group -->
     <menuitem id="menu_dl_attendance_root"
               name="Chấm công"
               parent="menu_dl_wood_payroll_root"
-              sequence="35"/>
+              sequence="29"/>
 
     <menuitem id="menu_dl_daily_attendance_line_action"
               name="Bảng công chi tiết"

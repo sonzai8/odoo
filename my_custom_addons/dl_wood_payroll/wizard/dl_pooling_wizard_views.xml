@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <form string="Tính toán cào bằng lương tổ">
                 <group>
+                    <field name="calc_type" widget="radio"/>
                     <field name="date"/>
                 </group>
                 <footer>

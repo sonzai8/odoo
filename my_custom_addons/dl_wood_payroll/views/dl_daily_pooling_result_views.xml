@@ -9,11 +9,14 @@
                 <field name="date"/>
                 <field name="employee_id"/>
                 <field name="source_group_id"/>
+                <field name="group_production_summary" optional="show"/>
                 <field name="actual_work_days" sum="Tổng công"/>
-                <field name="native_contribution" sum="Tổng tại tổ" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
-                <field name="borrowed_contribution" sum="Tổng mang về" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="native_contribution" sum="Tổng tại tổ" widget="monetary" options="{'currency_field': 'currency_id'}" optional="hide"/>
+                <field name="borrowed_contribution" sum="Tổng mang về" widget="monetary" options="{'currency_field': 'currency_id'}" optional="hide"/>
                 <field name="contribution_amount" sum="Tổng Yield" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="pool_unit_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="group_revenue_low" optional="hide"/>
+                <field name="group_revenue_high" optional="hide"/>
                 <field name="final_salary" sum="Tổng lương thực nhận" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="is_loaned_worker" widget="boolean_toggle" optional="hide"/>
             </list>
@@ -26,10 +29,12 @@
         <field name="arch" type="xml">
             <pivot string="Ma trận Lương ngày" sample="1">
                 <field name="source_group_id" type="row"/>
+                <field name="group_production_summary" type="row"/>
                 <field name="employee_id" type="row"/>
                 <field name="date" interval="day" type="col"/>
                 <field name="final_salary" type="measure"/>
-                <field name="borrowed_contribution" type="measure"/>
+                <field name="group_revenue_low" type="measure"/>
+                <field name="group_revenue_high" type="measure"/>
             </pivot>
         </field>
     </record>
@@ -41,6 +46,10 @@
             <search>
                 <field name="employee_id"/>
                 <field name="source_group_id"/>
+                <field name="group_production_summary"/>
+                
+                <filter string="Tổ gốc" name="group_by_source_group" context="{'group_by':'source_group_id'}"/>
+                <filter string="Sản lượng tổ" name="group_by_production_summary" context="{'group_by':'group_production_summary'}"/>
             </search>
         </field>
     </record>
@@ -57,5 +66,13 @@
         <field name="res_model">dl.daily.pooling.result</field>
         <field name="view_mode">pivot,list</field>
         <field name="search_view_id" ref="view_dl_daily_pooling_result_search"/>
+    </record>
+
+    <record id="action_dl_comprehensive_matrix_report" model="ir.actions.act_window">
+        <field name="name">Báo cáo Tổng hợp (Sản lượng &amp; Lương)</field>
+        <field name="res_model">dl.daily.pooling.result</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="search_view_id" ref="view_dl_daily_pooling_result_search"/>
+        <field name="context">{'search_default_group_by_source_group': 1, 'search_default_group_by_production_summary': 1}</field>
     </record>
 </odoo>

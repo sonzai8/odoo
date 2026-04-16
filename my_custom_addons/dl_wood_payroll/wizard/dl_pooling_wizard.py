@@ -6,17 +6,32 @@ class PoolingWizard(models.TransientModel):
     _name = 'dl.pooling.wizard'
     _description = 'Wizard tính toán cào bằng lương tổ'
 
-    date = fields.Date(string='Ngày tính toán', default=fields.Date.today(), required=True)
+    calc_type = fields.Selection([
+        ('daily', 'Tính 1 ngày'),
+        ('month_to_date', 'Từ đầu tháng đến ngày chọn')
+    ], string='Kiểu tính toán', default='daily', required=True)
+    
+    date = fields.Date(string='Ngày (mốc)', default=fields.Date.today(), required=True)
+
+    @api.model
+    def cron_recalculate_previous_month(self):
+        """Cronjob chạy vào mùng 1, 2 hàng tháng"""
+        today = fields.Date.today()
+        if today.day in [1, 2]:
+            from datetime import timedelta
+            first_day_of_current = today.replace(day=1)
+            last_day_of_prev = first_day_of_current - timedelta(days=1)
+            first_day_of_prev = last_day_of_prev.replace(day=1)
+            
+            self._execute_calculation_range(first_day_of_prev, last_day_of_prev)
 
     def _get_monthly_attendance(self, employee_id, date):
-        """Tính tổng số công của nhân viên trong tháng"""
+        """Tính tổng số công của nhân viên trong tháng chứa date"""
         start_date = date.replace(day=1)
-        # Tìm ngày cuối tháng
         import calendar
         _, last_day = calendar.monthrange(date.year, date.month)
         end_date = date.replace(day=last_day)
         
-        # Truy vấn tất cả các log line trong tháng
         logs = self.env['dl.worker.log.line'].search([
             ('employee_id', '=', employee_id),
             ('production_log_id.date', '>=', start_date),
@@ -25,197 +40,236 @@ class PoolingWizard(models.TransientModel):
         ])
         return sum(logs.mapped('worked_hours'))
 
-    def action_calculate(self):
-        self.ensure_one()
+    def _execute_calculation_range(self, start_date, end_date):
+        """Thực thi tính toán cho một khoảng ngày"""
+        from datetime import timedelta
         
-        # 1. Lấy bảng giá đã xác nhận cho tháng của ngày này
+        all_warnings = {
+            'over_hours': set(),
+            'missing_output': set(),
+            'missing_attendance': set(),
+            'missing_source_group': set()
+        }
+        total_created = 0
+        
+        current_date = start_date
+        while current_date <= end_date:
+            created_count, daily_warnings = self._calculate_for_day(current_date)
+            total_created += created_count
+            all_warnings['over_hours'].update(daily_warnings['over_hours'])
+            all_warnings['missing_output'].update(daily_warnings['missing_output'])
+            all_warnings['missing_attendance'].update(daily_warnings['missing_attendance'])
+            if 'missing_source_group' in daily_warnings:
+                all_warnings['missing_source_group'].update(daily_warnings['missing_source_group'])
+            
+            current_date += timedelta(days=1)
+            
+        warning_summary = []
+        if all_warnings['missing_source_group']:
+            warning_summary.append("<b>🚫 LỖI THIẾU DỮ LIỆU TỔ GỐC (BỎ QUA KHÔNG TÍNH):</b> " + ", ".join(list(all_warnings['missing_source_group'])[:10]) + ("..." if len(all_warnings['missing_source_group'])>10 else ""))
+        if all_warnings['over_hours']:
+            warning_summary.append("⚠️ TỔNG CÔNG > 1.0: " + ", ".join(list(all_warnings['over_hours'])[:10]) + ("..." if len(all_warnings['over_hours'])>10 else ""))
+        if all_warnings['missing_output']:
+            warning_summary.append("⚠️ CÓ CÔNG - THIẾU SẢN LƯỢNG: " + ", ".join(list(all_warnings['missing_output'])[:10]) + ("..." if len(all_warnings['missing_output'])>10 else ""))
+        if all_warnings['missing_attendance']:
+            warning_summary.append("❌ CÓ SẢN LƯỢNG - CHƯA CHẤM CÔNG: " + ", ".join(list(all_warnings['missing_attendance'])[:10]) + ("..." if len(all_warnings['missing_attendance'])>10 else ""))
+            
+        return total_created, warning_summary
+
+    def _calculate_for_day(self, calc_date):
         pricelist = self.env['dl.piece.rate.pricelist'].search([
-            ('month', '=', self.date.month),
-            ('year', '=', self.date.year),
+            ('month', '=', calc_date.month),
+            ('year', '=', calc_date.year),
             ('state', '=', 'confirmed')
         ], limit=1)
         
+        daily_warnings = {'over_hours': [], 'missing_output': [], 'missing_attendance': [], 'missing_source_group': []}
+
         if not pricelist:
-            raise UserError(_("Không tìm thấy bảng giá xác nhận cho tháng %s/%s") % (self.date.month, self.date.year))
+            # Ngầm bỏ qua nếu không có bảng giá. Khi cron chạy sẽ không bị lỗi crash.
+            return 0, daily_warnings
 
-        # Xóa kết quả cũ nếu có
-        self.env['dl.daily.pooling.result'].search([('date', '=', self.date)]).unlink()
+        # Xóa kết quả cũ của ngày này
+        self.env['dl.daily.pooling.result'].search([('date', '=', calc_date)]).unlink()
 
-        # 2. Lấy tất cả các bản ghi sản lượng trong ngày
-        logs = self.env['dl.production.log'].search([('date', '=', self.date)])
+        logs = self.env['dl.production.log'].search([('date', '=', calc_date)])
         
-        # Dictionary lưu trữ thông tin theo nhân viên: 
         worker_data = {}
-        
-        # 1.1 Khởi tạo dữ liệu từ Chấm công (Đảm bảo có mặt là có trong bảng lương)
-        attendance_lines = self.env['dl.daily.attendance.line'].search([('date', '=', self.date)])
+        attendance_lines = self.env['dl.daily.attendance.line'].search([('date', '=', calc_date)])
         for att in attendance_lines:
             emp_id = att.employee_id.id
+            gid = att.employee_id.x_source_group_id.id
             if emp_id not in worker_data:
                 worker_data[emp_id] = {
-                    'money': 0.0, 
-                    'native_money': 0.0,
-                    'borrowed_money': 0.0,
                     'hours': att.actual_work, 
-                    'source_group_id': att.production_group_id.id,
-                    'is_nhat_van': False,
-                    'output_share': 0.0
+                    'source_group_id': gid,
+                    'earned_native_low': 0.0,
+                    'earned_native_high': 0.0,
+                    'earned_borrowed_low': 0.0,
+                    'earned_borrowed_high': 0.0,
                 }
             else:
-                # Nếu một người làm 2 nơi (trường hợp bất thường hoặc bổ trợ)
                 worker_data[emp_id]['hours'] += att.actual_work
 
-        # 1.5 Tính toán chuyên cần tháng cho tất cả nhân viên đã khởi tạo
         employee_ids = list(worker_data.keys())
         attendance_map = {}
         for emp_id in set(employee_ids):
-            attendance_map[emp_id] = self._get_monthly_attendance(emp_id, self.date)
+            attendance_map[emp_id] = self._get_monthly_attendance(emp_id, calc_date)
 
-        # Bước 1 & 2: Tính doanh thu từng log và phân bổ cho nhân viên
+        # Dictionary theo dõi tổng doanh thu và sản lượng theo Working Group (log.production_group_id)
+        # Chỉ dùng cái này để update trường báo cáo "Doanh thu tổ" cho từng người
+        group_daily_summary = {}
+
         for log in logs:
             dept = log.department_id
-            if not dept:
-                continue
+            if not dept: continue
 
-            # Bước 1 & 2: Tính doanh thu từng log và phân bổ cho nhân viên
-            # Tính tổng công trong log
             total_log_hours = sum(log.worker_line_ids.mapped('worked_hours'))
-            if total_log_hours == 0:
-                continue
+            if total_log_hours == 0: continue
+
+            log_revenue_low = 0.0
+            log_revenue_high = 0.0
+            product_strings = []
+
+            for prod_line in log.product_line_ids:
+                price_line = pricelist.line_ids.filtered(
+                    lambda l: l.department_id.id == dept.id and l.product_id.id == prod_line.product_id.id
+                )
+                if not price_line: continue
+                price_line = price_line[0]
+                
+                log_revenue_low += prod_line.quantity * price_line.price_low
+                log_revenue_high += prod_line.quantity * price_line.price_high
+                
+                # Format: Tên SP: Số lượng
+                product_strings.append(f"{prod_line.product_id.name}: {prod_line.quantity}")
+
+            # Lưu lại summary của tổ làm việc trong hôm nay
+            wg_id = log.production_group_id.id
+            if wg_id not in group_daily_summary:
+                group_daily_summary[wg_id] = {'low': 0.0, 'high': 0.0, 'summary_list': []}
+            group_daily_summary[wg_id]['low'] += log_revenue_low
+            group_daily_summary[wg_id]['high'] += log_revenue_high
+            group_daily_summary[wg_id]['summary_list'].extend(product_strings)
 
             for line in log.worker_line_ids:
                 emp_id = line.employee_id.id
-                
-                # Tìm đơn giá cho sản phẩm/công đoạn
-                log_revenue_person = 0.0
-                
-                # Kiểm tra chuyên cần của nhân viên này
-                is_high_diligent = attendance_map.get(emp_id, 0.0) >= pricelist.x_required_days
-                
-                for prod_line in log.product_line_ids:
-                    # Lấy đơn giá từ pricelist
-                    price_line = pricelist.line_ids.filtered(
-                        lambda l: l.department_id.id == dept.id and l.product_id.id == prod_line.product_id.id
-                    )
-                    if not price_line:
-                        continue
-                    
-                    price_line = price_line[0]
-                    # CHỌN GIÁ CAO HOẶC THẤP
-                    unit_price = price_line.price_high if is_high_diligent else price_line.price_low
-                    
-                    # Phân bổ sản lượng và giờ công cho sản phẩm này
-                    share_factor = line.worked_hours / total_log_hours
-                    prod_revenue = prod_line.quantity * unit_price
-                    log_revenue_person += prod_revenue * share_factor
+                share_factor = line.worked_hours / total_log_hours
+                w_earned_low = log_revenue_low * share_factor
+                w_earned_high = log_revenue_high * share_factor
 
                 if emp_id not in worker_data:
-                    # Trường hợp: Có sản lượng nhưng QUÊN chấm công (Sẽ bị cảnh báo đỏ)
+                    gid = line.source_group_id.id or line.employee_id.x_source_group_id.id
                     worker_data[emp_id] = {
-                        'money': 0.0, 
-                        'native_money': 0.0,
-                        'borrowed_money': 0.0,
                         'hours': 0.0, 
-                        'source_group_id': line.source_group_id.id,
-                        'is_nhat_van': False,
-                        'output_share': 0.0
+                        'source_group_id': gid,
+                        'earned_native_low': 0.0,
+                        'earned_native_high': 0.0,
+                        'earned_borrowed_low': 0.0,
+                        'earned_borrowed_high': 0.0,
                     }
                 
-                # Cộng tiền sản lượng vào dữ liệu nhân viên
                 if worker_data[emp_id]['source_group_id'] == log.production_group_id.id:
-                    worker_data[emp_id]['native_money'] += log_revenue_person
+                    worker_data[emp_id]['earned_native_low'] += w_earned_low
+                    worker_data[emp_id]['earned_native_high'] += w_earned_high
                 else:
-                    worker_data[emp_id]['borrowed_money'] += log_revenue_person
+                    worker_data[emp_id]['earned_borrowed_low'] += w_earned_low
+                    worker_data[emp_id]['earned_borrowed_high'] += w_earned_high
 
-                worker_data[emp_id]['money'] += log_revenue_person
-
-        # Bước đặc thù: Xử lý Nhặt ván
-        for emp_id, data in worker_data.items():
-            if data['is_nhat_van'] and data['output_share'] > 0:
-                nhat_van_line = pricelist.line_ids.filtered(lambda l: l.workcenter_id.x_is_nhat_van)
-                if nhat_van_line:
-                    nvl = nhat_van_line[0]
-                    threshold = nvl.x_threshold or 280
-                    p_base = nvl.price
-                    p_prog = nvl.x_progressive_price or p_base
-                    
-                    output = data['output_share']
-                    if output <= threshold:
-                        data['money'] = output * p_base
-                    else:
-                        data['money'] = (threshold * p_base) + ((output - threshold) * p_prog)
-
-        # Bước 3 & 4: Gom quỹ lương theo Tổ Gốc (Source Group)
+        # Gom Quỹ
         group_pools = {} 
+        valid_worker_data = {}  # Filter out missing gid
         for emp_id, data in worker_data.items():
             gid = data['source_group_id']
+            if not gid:
+                emp_name = self.env['hr.employee'].browse(emp_id).name
+                daily_warnings['missing_source_group'].append(f"{emp_name} ({calc_date.strftime('%d/%m')})")
+                continue
+                
+            valid_worker_data[emp_id] = data
             if gid not in group_pools:
-                group_pools[gid] = {'money': 0.0, 'hours': 0.0}
+                group_pools[gid] = {'pool_low': 0.0, 'pool_high': 0.0, 'hours': 0.0}
             
-            group_pools[gid]['money'] += data['money']
+            group_pools[gid]['pool_low'] += data['earned_native_low'] + data['earned_borrowed_low']
+            group_pools[gid]['pool_high'] += data['earned_native_high'] + data['earned_borrowed_high']
             group_pools[gid]['hours'] += data['hours']
 
-        # Bước 5: Tính đơn giá 1 công và tạo kết quả
         result_vals = []
-        for emp_id, data in worker_data.items():
+        for emp_id, data in valid_worker_data.items():
             gid = data['source_group_id']
             pool = group_pools[gid]
             
-            unit_price = pool['money'] / pool['hours'] if pool['hours'] > 0 else 0
-            base_salary = unit_price * data['hours']
+            unit_price_low = pool['pool_low'] / pool['hours'] if pool['hours'] > 0 else 0.0
+            unit_price_high = pool['pool_high'] / pool['hours'] if pool['hours'] > 0 else 0.0
+            
+            is_high_diligence = attendance_map.get(emp_id, 0.0) >= pricelist.x_required_days
+            final_unit_price = unit_price_high if is_high_diligence else unit_price_low
+            
+            base_salary = final_unit_price * data['hours']
             
             fines = self.env['dl.employee.fine'].search([
                 ('employee_id', '=', emp_id),
-                ('date', '=', self.date)
+                ('date', '=', calc_date)
             ])
             total_fine = sum(fines.mapped('amount'))
             final_salary = base_salary - total_fine
             
+            display_total_contribution = data['earned_native_high'] + data['earned_borrowed_high']
+            
+            # Lấy Production Summary của tổ nguồn
+            wg_summary = group_daily_summary.get(gid, {'low': 0.0, 'high': 0.0, 'summary_list': []})
+            wg_summary_str = ", ".join(wg_summary['summary_list']) if wg_summary['summary_list'] else ""
+            
             result_vals.append({
-                'date': self.date,
+                'date': calc_date,
                 'employee_id': emp_id,
                 'source_group_id': gid,
                 'actual_work_days': data['hours'],
-                'contribution_amount': data['money'],
-                'native_contribution': data['native_money'],
-                'borrowed_contribution': data['borrowed_money'],
-                'is_loaned_worker': data['borrowed_money'] > 0,
-                'pool_unit_price': unit_price,
+                'contribution_amount': display_total_contribution,
+                'native_contribution': data['earned_native_high'],
+                'borrowed_contribution': data['earned_borrowed_high'],
+                'is_loaned_worker': data['earned_borrowed_high'] > 0,
+                'pool_unit_price': final_unit_price,
                 'final_salary': final_salary,
+                'group_revenue_low': wg_summary['low'],
+                'group_revenue_high': wg_summary['high'],
+                'group_production_summary': wg_summary_str
             })
         
-        # Bước 6: Tập hợp cảnh báo
-        warnings = {
-            'over_hours': [],
-            'missing_output': [],
-            'missing_attendance': []
-        }
-        for emp_id, data in worker_data.items():
+        for emp_id, data in valid_worker_data.items():
             emp_name = self.env['hr.employee'].browse(emp_id).name
             if data['hours'] > 1.0:
-                warnings['over_hours'].append(emp_name)
-            if data['hours'] > 0 and data['money'] == 0:
-                warnings['missing_output'].append(emp_name)
-            if data['money'] > 0 and data['hours'] == 0:
-                warnings['missing_attendance'].append(emp_name)
-
-        warning_summary = []
-        if warnings['over_hours']:
-            warning_summary.append("⚠️ TỔNG CÔNG > 1.0: " + ", ".join(warnings['over_hours']))
-        if warnings['missing_output']:
-            warning_summary.append("⚠️ CÓ CÔNG - THIẾU SẢN LƯỢNG: " + ", ".join(warnings['missing_output']))
-        if warnings['missing_attendance']:
-            warning_summary.append("❌ CÓ SẢN LƯỢNG - CHƯA CHẤM CÔNG: " + ", ".join(warnings['missing_attendance']))
+                daily_warnings['over_hours'].append(emp_name)
+            if data['hours'] > 0 and (data['earned_native_high'] + data['earned_borrowed_high']) == 0:
+                daily_warnings['missing_output'].append(emp_name)
+            if (data['earned_native_high'] + data['earned_borrowed_high']) > 0 and data['hours'] == 0:
+                daily_warnings['missing_attendance'].append(emp_name)
 
         if result_vals:
             self.env['dl.daily.pooling.result'].create(result_vals)
 
-        # Hiển thị thông báo kết quả qua Wizard Summary
-        message = Markup(_("<div style='font-size:16px; margin-bottom:15px;'>✅ <b>Đã tính toán xong lương cho %d nhân viên.</b></div>")) % len(result_vals)
+        return len(result_vals), daily_warnings
+
+    def action_calculate(self):
+        self.ensure_one()
+        
+        if self.calc_type == 'daily':
+            start_date = self.date
+            end_date = self.date
+        else:
+            start_date = self.date.replace(day=1)
+            end_date = self.date
+
+        total_records, warning_summary = self._execute_calculation_range(start_date, end_date)
+        
+        if total_records == 0:
+            raise UserError(_("Không có dữ liệu hợp lệ (hoặc thiếu Bảng giá xác nhận) để tính toán trong khoảng thời gian này."))
+
+        message = Markup(_("<div style='font-size:16px; margin-bottom:15px;'>✅ <b>Đã tính toán xong lương cho tổng cộng %d bản ghi (ngày x nhân sự).</b></div>")) % total_records
         if warning_summary:
             warn_html = Markup("").join(Markup("<div style='border-left: 4px solid #f0ad4e; background: #fcf8e3; padding: 10px; margin-bottom: 15px;'>%s</div>") % w for w in warning_summary)
             message += Markup("<b style='color:#a94442; font-size:15px; display:block; margin-bottom:10px;'>🚨 %s</b>%s") % (
-                _("CẢNH BÁO DỮ LIỆU BẤT THƯỜNG:"),
+                _("TỔNG HỢP CẢNH BÁO:"),
                 warn_html
             )
         
@@ -234,6 +288,7 @@ class PoolingWizard(models.TransientModel):
         }
 
 class PoolingSummaryWizard(models.TransientModel):
+
     _name = 'dl.pooling.summary.wizard'
     _description = 'Wizard hiển thị tóm tắt kết quả tính toán'
 

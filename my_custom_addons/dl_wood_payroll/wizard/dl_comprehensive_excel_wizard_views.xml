@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_comprehensive_excel_wizard_form" model="ir.ui.view">
+        <field name="name">dl.comprehensive.excel.wizard.form</field>
+        <field name="model">dl.comprehensive.excel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Báo cáo Tổng hợp (Excel)">
+                <group invisible="file_data != False">
+                    <group>
+                        <field name="month"/>
+                        <field name="year"/>
+                    </group>
+                </group>
+                <div invisible="file_data == False" class="alert alert-success text-center" role="alert">
+                    <p>Báo cáo đã tạo thành công với TẤT CẢ các tổ. Bấm vào link bên dưới để tải về!</p>
+                    <h2>
+                        <field name="file_name" invisible="1"/>
+                        <field name="file_data" filename="file_name" readonly="1" widget="binary"/>
+                    </h2>
+                </div>
+                <footer>
+                    <button name="action_export" string="Tạo Báo Cáo" type="object" class="btn-primary" invisible="file_data != False"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_dl_comprehensive_excel_wizard_warning_form" model="ir.ui.view">
+        <field name="name">dl.comprehensive.excel.wizard.warning.form</field>
+        <field name="model">dl.comprehensive.excel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cảnh báo: Dữ liệu chưa duyệt">
+                <div class="alert alert-warning text-center" role="alert">
+                    <h3 class="mt-2 text-danger">⚠️ LƯU Ý PHÒNG BAN: TỒN TẠI DỮ LIỆU NHÁP!</h3>
+                    <p class="mb-2">Có thông tin <strong>Phiếu sản lượng</strong> trong tháng <strong>chưa được xác nhận</strong>.</p>
+                    <p>Hệ thống Odoo đòi hỏi số liệu sản lượng phải ở trạng thái đã xác nhận (Confirmed) mới được phép xuất.</p>
+                    <p class="text-muted">Nếu bạn bỏ qua và in Excel, những dữ liệu này sẽ <strong>không được cộng</strong> vào Báo cáo Matrix!</p>
+                </div>
+                <group>
+                    <group string="Dữ liệu chưa duyệt ('Dự Thảo')">
+                        <label for="draft_log_count" string="Số phiếu Sản Lượng"/>
+                        <div class="o_row">
+                            <field name="draft_log_count" readonly="1" class="fw-bold"/> bản ghi
+                            <button name="action_view_draft_logs" type="object" string="Mở ra duyệt ngay ➔" class="btn-link" invisible="draft_log_count == 0"/>
+                        </div>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_force_export" type="object" string="Vẫn Bỏ Qua &amp; Xuất Excel" class="btn-danger"/>
+                    <button string="Hủy &amp; Quay Lại" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_comprehensive_excel_wizard" model="ir.actions.act_window">
+        <field name="name">Xuất Excel Tổng Hợp</field>
+        <field name="res_model">dl.comprehensive.excel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
