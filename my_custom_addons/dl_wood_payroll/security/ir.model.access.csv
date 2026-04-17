@@ -65,10 +65,10 @@ access_dl_stevedore_log_user,dl.stevedore.log.user,model_dl_stevedore_log,group_
 access_dl_stevedore_log_manager,dl.stevedore.log.manager,model_dl_stevedore_log,group_dl_wood_manager,1,1,1,1
 access_dl_stevedore_log_line_user,dl.stevedore.log.line.user,model_dl_stevedore_log_line,group_dl_wood_staff,1,1,1,1
 access_dl_stevedore_log_line_manager,dl.stevedore.log.line.manager,model_dl_stevedore_log_line,group_dl_wood_manager,1,1,1,1
-access_dl_stevedore_service_manager,dl.stevedore.service.manager,model_dl_stevedore_service,group_dl_wood_manager,1,1,1,1
-access_dl_stevedore_service_user,dl.stevedore.service.user,model_dl_stevedore_service,group_dl_wood_staff,1,0,0,0
 access_dl_payroll_matrix_report,access_dl_payroll_matrix_report,model_dl_payroll_matrix_report,base.group_user,1,0,0,0
 access_dl_drying_pricelist_manager,dl.drying.pricelist.manager,model_dl_drying_pricelist,group_dl_wood_manager,1,1,1,1
 access_dl_drying_pricelist_user,dl.drying.pricelist.user,model_dl_drying_pricelist,group_dl_wood_staff,1,0,0,0
 access_dl_veneer_drying_log_user,dl.veneer.drying.log.user,model_dl_veneer_drying_log,group_dl_wood_staff,1,1,1,1
 access_dl_veneer_drying_log_manager,dl.veneer.drying.log.manager,model_dl_veneer_drying_log,group_dl_wood_manager,1,1,1,1
+access_dl_stevedore_task_user,dl.stevedore.task.user,model_dl_stevedore_task,group_dl_wood_staff,1,0,0,0
+access_dl_stevedore_task_manager,dl.stevedore.task.manager,model_dl_stevedore_task,group_dl_wood_manager,1,1,1,1

@@ -1,7 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_dl_sorting_pricelist_manager,dl.sorting.pricelist.manager,model_dl_sorting_pricelist,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
-access_dl_sorting_pricelist_user,dl.sorting.pricelist.user,model_dl_sorting_pricelist,dl_wood_payroll.group_dl_wood_staff,1,0,0,0
-access_dl_sorting_log_manager,dl.sorting.log.manager,model_dl_sorting_log,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
-access_dl_sorting_log_user,dl.sorting.log.user,model_dl_sorting_log,dl_wood_payroll.group_dl_wood_staff,1,1,1,1
-access_dl_sorting_log_line_manager,dl.sorting.log.line.manager,model_dl_sorting_log_line,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
-access_dl_sorting_log_line_user,dl.sorting.log.line.user,model_dl_sorting_log_line,dl_wood_payroll.group_dl_wood_staff,1,1,1,1

@@ -42,8 +42,8 @@ class GlobalPayrollWizard(models.TransientModel):
             "Giảm trừ gia cảnh", "Thuế TNCN", "Thực Lĩnh", "Chuyển khoản", "Tiền mặt", "Ký nhận"
         ]
         
-        # Column width
-        col_widths = [5, 25, 15, 15, 15, 10, 15, 12, 12, 12, 12, 12, 15, 15, 12, 15, 15, 15, 15]
+        # Column width - Widened as requested
+        col_widths = [6, 30, 18, 20, 20, 10, 18, 15, 15, 15, 15, 15, 18, 15, 15, 18, 18, 18, 18]
         for i, width in enumerate(col_widths):
             sheet.set_column(i, i, width)
 
@@ -63,6 +63,16 @@ class GlobalPayrollWizard(models.TransientModel):
             ('date', '<=', last_day)
         ])
         
+        # Get confirmed Stevedore logs and lines
+        stevedore_logs = self.env['dl.stevedore.log'].search([
+            ('date', '>=', first_day),
+            ('date', '<=', last_day),
+            ('state', '=', 'confirmed')
+        ])
+        stevedore_lines = self.env['dl.stevedore.log.line'].search([
+            ('log_id', 'in', stevedore_logs.ids)
+        ])
+        
         # Get ALL active employees and sort by Group then Name
         employees = self.env['hr.employee'].search([]).sorted(
             lambda e: (e.x_source_group_id.name or 'ZZZ', e.name or '')
@@ -77,6 +87,10 @@ class GlobalPayrollWizard(models.TransientModel):
             # In our pooling result, final_salary = pool_unit_price * actual_work_days - daily_fine
             # But the user asked for "Tổng tiền lương (không bao gồm thưởng phạt)"
             total_salary = sum(p.pool_unit_price * p.actual_work_days for p in emp_pooling)
+            
+            # Add Stevedore salary
+            emp_stevedore = stevedore_lines.filtered(lambda s: s.employee_id.id == emp.id)
+            total_salary += sum(emp_stevedore.mapped('amount'))
             
             # Monthly fines
             fines = self.env['dl.employee.fine'].search([

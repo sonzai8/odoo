@@ -170,7 +170,6 @@ class ComprehensiveExcelWizard(models.TransientModel):
         # --- Add Summary Sheet First ---
         self._add_stevedore_sheet(workbook, start_date, end_date)
         self._add_drying_sheet(workbook, start_date, end_date)
-        self._add_sorting_sheet(workbook, start_date, end_date)
         self._add_summary_sheet(workbook, start_date, end_date)
 
         for group_id, cache in group_data_cache.items():
@@ -543,8 +542,6 @@ class ComprehensiveExcelWizard(models.TransientModel):
                 sheet.write_formula(row_offset, 4, f"=SUM(E{start_loanc_row}:E{row_offset})", f_cell_bold_money)
                 sheet.write_formula(row_offset, 5, f"=SUM(F{start_loanc_row}:F{row_offset})", f_cell_bold_money)
 
-        self._add_stevedore_sheet(workbook, start_date, end_date)
-
         if sheets_created == 0:
             sheet = workbook.add_worksheet("Trống")
             sheet.write(0, 0, "Không có dữ liệu hợp lệ trong khoảng thời gian này.")
@@ -580,18 +577,23 @@ class ComprehensiveExcelWizard(models.TransientModel):
         sheet.merge_range(0, 0, 0, last_day + 1, f"BẢNG TỔNG HỢP LƯƠNG KHOÁN BỐC VÁC - THÁNG {self.month}/{self.year}", f_title)
         
         sheet.write(2, 0, "Họ và tên", f_header)
-        sheet.set_column(0, 0, 25)
+        sheet.set_column(0, 0, 30) # Widen name column
         for d in range(1, last_day + 1):
             sheet.write(2, d, d, f_header)
-            sheet.set_column(d, d, 10)
+            sheet.set_column(d, d, 12) # Widen daily columns
         sheet.write(2, last_day + 1, "Tổng cộng", f_header)
-        sheet.set_column(last_day + 1, last_day + 1, 15)
+        sheet.set_column(last_day + 1, last_day + 1, 18) # Widen total column
 
         # Data
-        lines = self.env['dl.stevedore.log.line'].search([
+        # Data - Fetch confirmed logs first for robustness
+        confirmed_log_ids = self.env['dl.stevedore.log'].search([
             ('date', '>=', start_date),
             ('date', '<=', end_date),
-            ('stevedore_log_id.state', '=', 'confirmed')
+            ('state', '=', 'confirmed')
+        ]).ids
+        
+        lines = self.env['dl.stevedore.log.line'].search([
+            ('log_id', 'in', confirmed_log_ids)
         ])
         
         if not lines:
@@ -640,18 +642,18 @@ class ComprehensiveExcelWizard(models.TransientModel):
         
         headers = [
             "STT", "Họ và tên", "CCCD", "Tổ sản xuất", 
-            "Lương Cào bằng", "Lương Khoán", "Lương Phơi Ván", "Lương Nhặt Ván",
+            "Lương Cào bằng", "Lương Khoán", "Lương Phơi Ván",
             "Phạt", "Công đoàn", "BHXH", "Thu bù BHXH", "Tạm ứng", "Thực lĩnh"
         ]
         for i, h in enumerate(headers):
             sheet.write(2, i, h, f_header)
         
         sheet.set_row(2, 35) # High header for wrap text
-        sheet.set_column(0, 0, 5)
-        sheet.set_column(1, 1, 25)
-        sheet.set_column(2, 2, 15)
-        sheet.set_column(3, 3, 20)
-        sheet.set_column(4, 13, 13)
+        sheet.set_column(0, 0, 6)
+        sheet.set_column(1, 1, 30)
+        sheet.set_column(2, 2, 18)
+        sheet.set_column(3, 3, 25)
+        sheet.set_column(4, 13, 18)
 
         # Optimization: Fetch GROSS Pooling data using SQL
         pooling_query = """
@@ -662,23 +664,27 @@ class ComprehensiveExcelWizard(models.TransientModel):
         """
         self.env.cr.execute(pooling_query, [start_date, end_date])
         pooling_map = {r['employee_id']: r['gross_pooling'] for r in self.env.cr.dictfetchall()}
+        
+        # Fetch confirmed Stevedore logs first
+        confirmed_log_ids = self.env['dl.stevedore.log'].search([
+            ('date', '>=', start_date),
+            ('date', '<=', end_date),
+            ('state', '=', 'confirmed')
+        ]).ids
 
         stevedore_results = self.env['dl.stevedore.log.line'].read_group(
-            [('date', '>=', start_date), ('date', '<=', end_date), ('stevedore_log_id.state', '=', 'confirmed')],
+            [('log_id', 'in', confirmed_log_ids)],
             ['employee_id', 'amount:sum'],
             ['employee_id']
         )
         stevedore_map = {r['employee_id'][0]: r['amount'] for r in stevedore_results if r['employee_id']}
 
-        drying_map = {r['employee_id'][0]: r['total_amount'] for r in drying_results if r['employee_id']}
-
-        # Fetch Sorting data
-        sorting_results = self.env['dl.sorting.log.line'].read_group(
-            [('log_id.date', '>=', start_date), ('log_id.date', '<=', end_date), ('log_id.state', '=', 'confirmed')],
-            ['employee_id', 'amount:sum'],
+        drying_results = self.env['dl.veneer.drying.log'].read_group(
+            [('date', '>=', start_date), ('date', '<=', end_date), ('state', '=', 'confirmed')],
+            ['employee_id', 'total_amount:sum'],
             ['employee_id']
         )
-        sorting_map = {r['employee_id'][0]: r['amount'] for r in sorting_results if r['employee_id']}
+        drying_map = {r['employee_id'][0]: r['total_amount'] for r in drying_results if r['employee_id']}
 
         # Fetch Fines
         fine_results = self.env['dl.employee.fine'].read_group(
@@ -724,16 +730,15 @@ class ComprehensiveExcelWizard(models.TransientModel):
             sheet.write_number(row, 4, p_salary, f_row_money)
             sheet.write_number(row, 5, s_salary, f_row_money)
             sheet.write_number(row, 6, d_salary, f_row_money)
-            sheet.write_number(row, 7, sorting_map.get(emp.id, 0), f_row_money)
-            sheet.write_number(row, 8, f_amount, f_row_money)
-            sheet.write_number(row, 9, 40000 if (p_salary + s_salary + d_salary + sorting_map.get(emp.id, 0)) > 0 else 0, f_row_money) 
+            sheet.write_number(row, 7, f_amount, f_row_money)
+            sheet.write_number(row, 8, 40000 if (p_salary + s_salary + d_salary) > 0 else 0, f_row_money) 
+            sheet.write_number(row, 9, 0, f_row_money) 
             sheet.write_number(row, 10, 0, f_row_money) 
             sheet.write_number(row, 11, 0, f_row_money) 
-            sheet.write_number(row, 12, 0, f_row_money) 
             
-            # Thực lĩnh formula: (Col E + Col F + Col G + Col H) - (Col I + Col J + Col K + Col L + Col M)
-            # E:4, F:5, G:6, H:7, I:8, J:9, K:10, L:11, M:12
-            sheet.write_formula(row, 13, f"=(E{row+1}+F{row+1}+G{row+1}+H{row+1})-(I{row+1}+J{row+1}+K{row+1}+L{row+1}+M{row+1})", f_row_bold_money)
+            # Thực lĩnh formula: (Col E + Col F + Col G) - (Col H + Col I + Col J + Col K + Col L)
+            # E:4, F:5, G:6, H:7, I:8, J:9, K:10, L:11
+            sheet.write_formula(row, 12, f"=(E{row+1}+F{row+1}+G{row+1})-(H{row+1}+I{row+1}+J{row+1}+K{row+1}+L{row+1})", f_row_bold_money)
             
             row += 1
             stt += 1
@@ -825,63 +830,6 @@ class ComprehensiveExcelWizard(models.TransientModel):
             row += 1
             stt += 1
 
-    def _add_sorting_sheet(self, workbook, start_date, end_date):
-        sheet = workbook.add_worksheet("NHẶT VÁN")
-        
-        # Formats
-        f_title = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center', 'valign': 'vcenter'})
-        f_header = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FEF9E7', 'border': 1, 'text_wrap': True})
-        money_fmt = '#,##0 \₫'
-        f_cell_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1})
-        f_cell_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1})
-        
-        # Headers
-        sheet.merge_range(0, 0, 0, 7, f"BÁO CÁO SẢN LƯỢNG NHẶT VÁN - THÁNG {self.month}/{self.year}", f_title)
-        
-        headers = ["STT", "Họ và tên", "Tổng công", "Ván 1.7 ly (Bó)", "Ván 2.0 ly (Bó)", "Tổng cộng (Bó)", "Thành tiền", "Ghi chú"]
-        for i, h in enumerate(headers):
-            sheet.write(2, i, h, f_header)
-            
-        sheet.set_column(0, 0, 5)
-        sheet.set_column(1, 1, 25)
-        sheet.set_column(2, 6, 15)
-
-        # Data Fetching
-        log_lines = self.env['dl.sorting.log.line'].search([
-            ('log_id.date', '>=', start_date),
-            ('log_id.date', '<=', end_date),
-            ('log_id.state', '=', 'confirmed')
-        ])
-        
-        # Aggregate by employee
-        emp_data = {}
-        for line in log_lines:
-            eid = line.employee_id.id
-            if eid not in emp_data:
-                emp_data[eid] = {
-                    'emp_name': line.employee_id.name,
-                    'total_work': 0.0,
-                    'total_qty_17': 0.0,
-                    'total_qty_20': 0.0,
-                    'total_amount': 0.0
-                }
-            emp_data[eid]['total_work'] += line.attendance_type_id.work_value
-            emp_data[eid]['total_qty_17'] += line.qty_17
-            emp_data[eid]['total_qty_20'] += line.qty_20
-            emp_data[eid]['total_amount'] += line.amount
-
-        # Write data
-        row = 3
-        stt = 1
-        for eid in sorted(emp_data.keys()):
-            data = emp_data[eid]
-            sheet.write(row, 0, stt, f_cell_center)
-            sheet.write(row, 1, data['emp_name'], f_cell_center)
-            sheet.write_number(row, 2, data['total_work'], f_cell_center)
-            sheet.write_number(row, 3, data['total_qty_17'], f_cell_center)
-            sheet.write_number(row, 4, data['total_qty_20'], f_cell_center)
-            sheet.write_number(row, 5, data['total_qty_17'] + data['total_qty_20'], f_cell_center)
-            sheet.write_number(row, 6, data['total_amount'], f_cell_money)
             row += 1
             stt += 1
 
