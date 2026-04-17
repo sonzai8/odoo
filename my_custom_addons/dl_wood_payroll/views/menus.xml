@@ -79,6 +79,12 @@
               action="action_dl_comprehensive_excel_wizard"
               sequence="36"/>
 
+    <menuitem id="menu_dl_global_payroll_wizard_action"
+              name="Báo cáo lương tổng hợp toàn công ty (Excel)"
+              parent="menu_dl_pooling_calculation_root"
+              action="action_dl_global_payroll_wizard"
+              sequence="37"/>
+
     <!-- Attendance Group -->
     <menuitem id="menu_dl_attendance_root"
               name="Chấm công"
@@ -208,4 +214,10 @@
               parent="menu_dl_org_config_root"
               action="action_dl_production_stage"
               sequence="20"/>
+    <menuitem id="menu_dl_config_clean_data"
+              name="Tiện ích Xóa dữ liệu"
+              parent="menu_dl_org_config_root"
+              action="action_dl_clean_data_wizard"
+              sequence="100"
+              groups="group_dl_wood_manager"/>
 </odoo>

@@ -155,6 +155,13 @@ class DailyAttendanceLine(models.Model):
             else:
                 line.actual_work = 0.0
 
+    @api.onchange('attendance_type_id')
+    def _onchange_attendance_type_id(self):
+        if self.attendance_type_id:
+            self.actual_work = self.attendance_type_id.work_value
+        else:
+            self.actual_work = 0.0
+
     @api.constrains('employee_id', 'actual_work', 'date')
     def _check_duplicate_attendance(self):
         for line in self:

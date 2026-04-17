@@ -178,12 +178,22 @@ class WorkerLogLine(models.Model):
         store=True
     )
     
-    is_borrowed = fields.Boolean(
-        string='Mượn người', 
-        compute='_compute_is_borrowed', 
-        store=True
-    )
+    native_group_id = fields.Many2one('dl.production.group', string='Tổ biên chế')
+    actual_group_id = fields.Many2one('dl.production.group', string='Tổ thực tế làm việc')
     
+    transfer_status = fields.Selection([
+        ('native', 'Biên chế'),
+        ('lent_out', 'Cho mượn'),
+        ('borrowed_in', 'Mượn người')
+    ], string='Phân loại Mượn')
+
+    handshake_status = fields.Selection([
+        ('n/a', '-'),
+        ('pending', 'Chờ duyệt'),
+        ('confirmed', 'Đã duyệt'),
+        ('rejected', 'Từ chối')
+    ], string='Duyệt', default='n/a')
+
     is_attendance_missing = fields.Boolean(
         string='Thiếu chấm công', 
         compute='_compute_is_attendance_missing'
@@ -199,11 +209,3 @@ class WorkerLogLine(models.Model):
                 line.is_attendance_missing = att_count == 0
             else:
                 line.is_attendance_missing = False
-
-    @api.depends('employee_id', 'production_log_id.production_group_id', 'source_group_id')
-    def _compute_is_borrowed(self):
-        for line in self:
-            if line.employee_id and line.production_log_id.production_group_id and line.source_group_id:
-                line.is_borrowed = line.source_group_id.id != line.production_log_id.production_group_id.id
-            else:
-                line.is_borrowed = False

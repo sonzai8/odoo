@@ -38,6 +38,8 @@
         'wizard/dl_film_wizard_views.xml',
         'wizard/dl_comprehensive_excel_wizard_views.xml',
         'wizard/dl_film_matrix_viewer_views.xml',
+        'wizard/dl_clean_data_wizard_views.xml',
+        'wizard/dl_global_payroll_wizard_views.xml',
         'views/dl_fine_views.xml',
         'data/dl_fine_data.xml',
         'data/dl_film_brand_data.xml',

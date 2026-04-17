@@ -15,6 +15,12 @@ class HrEmployee(models.Model):
         tracking=True,
         default=False
     )
+    x_has_insurance = fields.Boolean(
+        string='Đóng BH (BHYT/BHXH)',
+        tracking=True,
+        default=True,
+        help='Đánh dấu nhân viên có tham gia đóng bảo hiểm. Nhân viên đóng BH và đi đủ công mới được hưởng đơn giá cao.'
+    )
 
     @api.onchange('x_source_group_id')
     def _onchange_x_source_group_id(self):

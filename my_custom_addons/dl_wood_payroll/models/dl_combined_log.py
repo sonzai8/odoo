@@ -70,6 +70,44 @@ class CombinedLog(models.Model):
     avg_salary_low = fields.Float(string='Lương bình quân (Thấp)', compute='_compute_estimates', store=False)
     avg_salary_high = fields.Float(string='Lương bình quân (Cao)', compute='_compute_estimates', store=False)
 
+    foreign_transfer_ids = fields.Many2many(
+        'dl.combined.worker.line',
+        compute='_compute_foreign_transfers',
+        string='Dữ liệu Chéo (Các tổ khác báo mượn/cho mượn)'
+    )
+
+    @api.depends('date', 'production_group_id')
+    def _compute_foreign_transfers(self):
+        for rec in self:
+            if not rec.date or not rec.production_group_id:
+                rec.foreign_transfer_ids = False
+                continue
+                
+            group_id = rec.production_group_id.id
+            
+            # 1. Other team lent someone to us (They are Native, We are Actual)
+            domain1 = [
+                ('combined_log_id.date', '=', rec.date),
+                ('actual_group_id', '=', group_id),
+                ('native_group_id', '!=', group_id),
+                ('transfer_status', '=', 'lent_out'),
+                ('combined_log_id', '!=', rec._origin.id if rec._origin else rec.id)
+            ]
+            
+            # 2. Other team borrowed someone from us (They are Actual, We are Native)
+            domain2 = [
+                ('combined_log_id.date', '=', rec.date),
+                ('native_group_id', '=', group_id),
+                ('actual_group_id', '!=', group_id),
+                ('transfer_status', '=', 'borrowed_in'),
+                ('combined_log_id', '!=', rec._origin.id if rec._origin else rec.id)
+            ]
+            
+            lines1 = self.env['dl.combined.worker.line'].search(domain1)
+            lines2 = self.env['dl.combined.worker.line'].search(domain2)
+            
+            rec.foreign_transfer_ids = (lines1 | lines2).ids
+
     @api.depends(
         'product_line_ids.quantity', 'product_line_ids.price_low', 'product_line_ids.price_high',
         'worker_line_ids.worked_hours'
@@ -78,7 +116,8 @@ class CombinedLog(models.Model):
         for rec in self:
             rev_low = sum((p.quantity * p.price_low) for p in rec.product_line_ids)
             rev_high = sum((p.quantity * p.price_high) for p in rec.product_line_ids)
-            hours = sum(w.worked_hours for w in rec.worker_line_ids)
+            # Mặc định chỉ tạm tính số công của những người thực té làm ở đây (actual == rec.group)
+            hours = sum(w.worked_hours for w in rec.worker_line_ids if w.actual_group_id.id == rec.production_group_id.id)
             
             rec.total_revenue_low = rev_low
             rec.total_revenue_high = rev_high
@@ -145,14 +184,15 @@ class CombinedLog(models.Model):
             
             self.batch_attendance_type_id = default_type
 
-            # 2. Load Workers
+            # 2. Load Workers natively
             lines = []
             for employee in self.production_group_id.member_ids:
                 lines.append((0, 0, {
                     'employee_id': employee.id,
                     'attendance_type_id': default_type.id if default_type else False,
                     'worked_hours': 1.0,
-                    'is_borrowed': False
+                    'native_group_id': employee.x_source_group_id.id or self.production_group_id.id,
+                    'actual_group_id': self.production_group_id.id
                 }))
             self.worker_line_ids = [(5, 0, 0)] + lines
 
@@ -166,6 +206,20 @@ class CombinedLog(models.Model):
         self.ensure_one()
         if not self.worker_line_ids:
             raise ValidationError(_("Vui lòng nhập danh sách nhân sự."))
+            
+        unapproved = self.worker_line_ids.filtered(lambda w: w.handshake_status == 'pending')
+        warning_action = False
+        if unapproved:
+            warning_action = {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Cảnh báo: Tồn đọng Duyệt Mượn người'),
+                    'message': _("Vẫn còn danh sách nhân sự ở trạng thái Chờ Duyệt tổ khác báo sang. Phiếu đã được xác nhận, nhưng những nhân sự mượn này sẽ bị bỏ qua khi Tính lương Cào bằng cho đến khi được duyệt hợp lệ!"),
+                    'sticky': True,
+                    'type': 'warning',
+                }
+            }
 
         # 1. Sync to dl.daily.attendance
         attendance_vals = {
@@ -205,6 +259,10 @@ class CombinedLog(models.Model):
             'worker_line_ids': [(0, 0, {
                 'employee_id': w.employee_id.id,
                 'worked_hours': w.worked_hours,
+                'native_group_id': w.native_group_id.id,
+                'actual_group_id': w.actual_group_id.id,
+                'handshake_status': w.handshake_status,
+                'transfer_status': w.transfer_status,
             }) for w in self.worker_line_ids],
             'x_plastic_belt_qty': self.x_plastic_belt_qty,
             'x_steel_belt_qty': self.x_steel_belt_qty,
@@ -226,6 +284,10 @@ class CombinedLog(models.Model):
             self.production_log_id = self.env['dl.production.log'].create(production_vals)
 
         self.state = 'confirmed'
+        
+        if warning_action:
+            return warning_action
+        return True
 
     def action_draft(self):
         self.state = 'draft'
@@ -301,29 +363,80 @@ class CombinedProductLine(models.Model):
 class CombinedWorkerLine(models.Model):
     _name = 'dl.combined.worker.line'
     _description = 'Chi tiết nhân sự cộng dồn'
-    _order = 'is_borrowed, id'
+    _order = 'id'
 
     combined_log_id = fields.Many2one('dl.combined.log', ondelete='cascade')
     employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
     attendance_type_id = fields.Many2one('dl.attendance.type', string='Loại công', required=True)
-    worked_hours = fields.Float(string='Số công h/tế', default=1.0)
-    is_borrowed = fields.Boolean(string='Mượn người', default=False)
-    
-    borrowed_badge = fields.Char(string='Trạng thái', compute='_compute_borrowed_badge')
+    worked_hours = fields.Float(string='Số công', digits=(16, 1), store=True, compute='_compute_worked_hours')
 
-    def _compute_borrowed_badge(self):
-        for rec in self:
-            rec.borrowed_badge = _('Mượn người') if rec.is_borrowed else _('Biên chế')
+    @api.depends('attendance_type_id')
+    def _compute_worked_hours(self):
+        for line in self:
+            if line.attendance_type_id:
+                line.worked_hours = line.attendance_type_id.work_value
+            else:
+                line.worked_hours = 0.0
 
     @api.onchange('attendance_type_id')
     def _onchange_attendance_type_id(self):
         if self.attendance_type_id:
             self.worked_hours = self.attendance_type_id.work_value
+        else:
+            self.worked_hours = 0.0
+    
+    native_group_id = fields.Many2one('dl.production.group', string='Tổ biên chế', related='employee_id.x_source_group_id', store=True)
+    actual_group_id = fields.Many2one('dl.production.group', string='Tổ thực tế làm việc')
 
+    transfer_status = fields.Selection([
+        ('native', 'Biên chế'),
+        ('lent_out', 'Cho mượn'),
+        ('borrowed_in', 'Mượn người')
+    ], string='Phân loại', compute='_compute_transfer_status', store=True)
+
+    handshake_status = fields.Selection([
+        ('n/a', '-'),
+        ('pending', 'Chờ duyệt'),
+        ('confirmed', 'Đã duyệt'),
+        ('rejected', 'Từ chối')
+    ], string='Duyệt', default='n/a')
+    
     @api.onchange('employee_id')
     def _onchange_employee_id(self):
-        if self.employee_id and self.combined_log_id.production_group_id:
-            # Tự động xác định mượn người (An toàn)
-            source_id = self.employee_id.x_source_group_id.id or 0
-            group_id = self.combined_log_id.production_group_id.id or 0
-            self.is_borrowed = source_id != group_id
+        if self.employee_id:
+            # Native is automatically linked by related field when creating
+            if not self.actual_group_id:
+                # Default to Log Group
+                self.actual_group_id = self.combined_log_id.production_group_id.id or self.employee_id.x_source_group_id.id
+
+    @api.depends('native_group_id', 'actual_group_id', 'combined_log_id.production_group_id')
+    def _compute_transfer_status(self):
+        for rec in self:
+            log_group = rec.combined_log_id.production_group_id
+            if rec.native_group_id and rec.actual_group_id:
+                if rec.native_group_id == rec.actual_group_id:
+                    rec.transfer_status = 'native'
+                    if rec.handshake_status != 'n/a':
+                        rec.handshake_status = 'n/a'
+                elif rec.native_group_id == log_group:
+                    # Log owner is lending out worker
+                    rec.transfer_status = 'lent_out'
+                    if rec.handshake_status == 'n/a':
+                        rec.handshake_status = 'pending'
+                elif rec.actual_group_id == log_group:
+                    # Log owner is borrowing worker in
+                    rec.transfer_status = 'borrowed_in'
+                    if rec.handshake_status == 'n/a':
+                        rec.handshake_status = 'pending'
+                else:
+                    rec.transfer_status = 'native'
+            else:
+                rec.transfer_status = 'native'
+                
+    def action_handshake_approve(self):
+        for rec in self:
+            rec.handshake_status = 'confirmed'
+
+    def action_handshake_reject(self):
+        for rec in self:
+            rec.handshake_status = 'rejected'

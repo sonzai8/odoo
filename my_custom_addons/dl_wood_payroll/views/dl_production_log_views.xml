@@ -71,8 +71,10 @@
                                 <list editable="bottom" decoration-danger="is_attendance_missing">
                                     <field name="employee_id" widget="many2one_avatar_user"/>
                                     <field name="worked_hours" sum="Tổng công"/>
-                                    <field name="source_group_id" string="Tổ gốc"/>
-                                    <field name="is_borrowed" widget="boolean_toggle" readonly="1" string="Mượn người"/>
+                                    <field name="native_group_id" readonly="1" optional="show"/>
+                                    <field name="actual_group_id" optional="show"/>
+                                    <field name="transfer_status" widget="badge" decoration-info="transfer_status == 'native'" decoration-warning="transfer_status == 'lent_out'" decoration-primary="transfer_status == 'borrowed_in'"/>
+                                    <field name="handshake_status" widget="badge" decoration-muted="handshake_status == 'n/a'" decoration-warning="handshake_status == 'pending'" decoration-success="handshake_status == 'confirmed'" decoration-danger="handshake_status == 'rejected'"/>
                                     <field name="is_attendance_missing" string="Dữ liệu ảo" widget="boolean_toggle" decoration-danger="is_attendance_missing"/>
                                 </list>
                             </field>

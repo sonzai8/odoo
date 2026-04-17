@@ -101,9 +101,20 @@ class ComprehensiveExcelWizard(models.TransientModel):
         f_header_emp = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#ffeb3b', 'border': 1})
         f_header_pro = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#d9edf7', 'border': 1})
         f_cell_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1})
-        f_cell_money = workbook.add_format({'num_format': '#,##0', 'align': 'right', 'valign': 'vcenter', 'border': 1})
-        f_cell_formula = workbook.add_format({'num_format': '#,##0', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#e8f5e9'})
-        f_cell_bold_money = workbook.add_format({'bold': True, 'num_format': '#,##0', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#eef1f5'})
+        money_fmt = '#,##0 "₫"'
+        f_cell_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1})
+        f_cell_formula = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#e8f5e9'})
+        f_cell_bold_money = workbook.add_format({'bold': True, 'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#eef1f5'})
+        # Càc format màu đặc biệt cho bảng chấm công
+        f_cell_absent = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1, 'bg_color': '#FFFF00'})    # Vàng - nghỉ
+        f_cell_partial = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1, 'bg_color': '#FFFACD'})   # Vàng nhạt - công < 1
+        f_cell_lent_out = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1, 'bg_color': '#FF8C00'}) # Cam đậm - cho mượn
+        f_cell_note = workbook.add_format({'align': 'left', 'valign': 'vcenter', 'border': 1, 'text_wrap': True, 'font_size': 8})
+        
+        # Format con cho lương (màu + tiền)
+        f_salary_absent = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#FFFF00'})
+        f_salary_partial = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#FFFACD'})
+        f_salary_lent_out = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': '#FF8C00'})
         
         sheets_created = 0
 
@@ -177,8 +188,10 @@ class ComprehensiveExcelWizard(models.TransientModel):
             idx_dt_cao = M + 7
             idx_dt_thap = M + 8
             idx_sc_noi_bo = M + 9
+            idx_avg_cao = M + 10
+            idx_avg_thap = M + 11
             
-            idx_salary_start = M + 10
+            idx_salary_start = M + 12
             
             # Freeze Panes (Chỉ cột ngày)
             sheet.freeze_panes(5, 1)
@@ -191,11 +204,13 @@ class ComprehensiveExcelWizard(models.TransientModel):
             sheet.set_column(idx_sc_ngoai, idx_tu_ngoai_thap, 13)
             sheet.set_column(idx_dt_cao, idx_dt_thap, 15) 
             sheet.set_column(idx_sc_noi_bo, idx_sc_noi_bo, 8) 
-            for i in range(E):
-                sheet.set_column(idx_salary_start + i, idx_salary_start + i, 12) 
+            if E > 0:
+                idx_top_note_col = idx_salary_start + E
+            else:
+                idx_top_note_col = idx_salary_start
 
-            # Headers Top Grid
-            max_col_top = idx_salary_start + E - 1
+            # Đương kẻ max_col_top bao gồm cả cột ghi chú
+            max_col_top = idx_top_note_col
             sheet.merge_range(0, 0, 0, max_col_top, f"BÁO CÁO MATRIX LƯƠNG & SẢN LƯỢNG - TỔ {group.name.upper()} - {self.month}/{self.year}", f_title)
 
             sheet.merge_range(1, 0, 4, 0, "Ngày", f_header)
@@ -236,11 +251,17 @@ class ComprehensiveExcelWizard(models.TransientModel):
             sheet.write(4, idx_dt_thap, "", f_header_pro)
             
             sheet.merge_range(1, idx_sc_noi_bo, 4, idx_sc_noi_bo, "Tổng SC\nChấm Công", f_header)
+            
+            sheet.merge_range(1, idx_avg_cao, 4, idx_avg_cao, "Thu nhập TB\n(Cao)", f_header)
+            sheet.merge_range(1, idx_avg_thap, 4, idx_avg_thap, "Thu nhập TB\n(Thấp)", f_header)
+            sheet.set_column(idx_avg_cao, idx_avg_thap, 14)
 
             if E > 0:
-                sheet.merge_range(1, idx_salary_start, 1, idx_salary_start + E - 1, "BẢNG CHIA LƯƠNG NHÂN VIÊN", f_header_emp)
+                sheet.merge_range(1, idx_salary_start, 1, idx_top_note_col, "BẢNG CHIA LƯƠNG NHÂN VIÊN", f_header_emp)
                 for i, e in enumerate(employees):
                     sheet.merge_range(2, idx_salary_start + i, 4, idx_salary_start + i, e.name, f_header_emp)
+                sheet.merge_range(2, idx_top_note_col, 4, idx_top_note_col, "Ghi chú Mượn/Cho mượn", f_header_emp)
+                sheet.set_column(idx_top_note_col, idx_top_note_col, 45)
 
             # --- SETUP BOTTOM GRID HEADERS (BẢNG CHẤM CÔNG) ---
             emp_grid_start_row = last_day + 8
@@ -249,10 +270,16 @@ class ComprehensiveExcelWizard(models.TransientModel):
             for i in range(E):
                 sheet.set_column(idx_emp_cong_start + i, idx_emp_cong_start + i, 8) 
                 
+            idx_emp_bhyt_start = idx_emp_cong_start + E  # BHYT column comes after all cong cols
+
             if E > 0:
-                sheet.merge_range(emp_grid_start_row, idx_emp_cong_start, emp_grid_start_row, idx_emp_cong_start + E - 1, "BẢNG CHẤM CÔNG NHÂN VIÊN", f_header_emp)
+                sheet.merge_range(emp_grid_start_row, idx_emp_cong_start, emp_grid_start_row, idx_emp_bhyt_start, "BẢNG CHẤM CÔNG NHÂN VIÊN", f_header_emp)
                 for i, e in enumerate(employees):
-                    sheet.merge_range(emp_grid_start_row + 1, idx_emp_cong_start + i, emp_grid_start_row + 3, idx_emp_cong_start + i, e.name, f_header_emp)
+                    sheet.merge_range(emp_grid_start_row + 1, idx_emp_cong_start + i, emp_grid_start_row + 2, idx_emp_cong_start + i, e.name, f_header_emp)
+                    bhyt_val = "Y" if e.x_has_insurance else "N"
+                    sheet.write(emp_grid_start_row + 3, idx_emp_cong_start + i, bhyt_val, f_header_emp)
+                sheet.merge_range(emp_grid_start_row + 1, idx_emp_bhyt_start, emp_grid_start_row + 3, idx_emp_bhyt_start, "Đóng\nBHYT", f_header_emp)
+                sheet.set_column(idx_emp_bhyt_start, idx_emp_bhyt_start, 8)
 
             # --- RENDER DATA LOOPS ---
             row_offset = 5 # Day 1 starts at Row 6
@@ -273,13 +300,22 @@ class ComprehensiveExcelWizard(models.TransientModel):
                     qty = sum([pl.quantity for log in daily_logs for pl in log.product_line_ids if pl.product_id.id == p.id])
                     sheet.write(row_offset, i + 1, qty or 0, f_cell_center)
                 
-                sc_sx_val = sum([line.worked_hours for log in daily_logs for line in log.worker_line_ids])
+                # SỐ CÔNG SẢN XUẤT THỰC TẾ CỦA TỔ NÀY (Bao gồm người nhà và người mượn đã duyệt)
+                worker_lines = self.env['dl.worker.log.line'].search([
+                    ('production_log_id.date', '=', current_date),
+                    ('actual_group_id', '=', group.id),
+                    ('handshake_status', 'in', ['n/a', 'confirmed']),
+                    ('production_log_id.state', 'in', ['confirmed', 'locked'])
+                ])
+                sc_sx_val = sum(worker_lines.mapped('worked_hours'))
                 sheet.write_number(row_offset, idx_sc_sx, sc_sx_val, f_cell_center)
 
+                # TRẢ LƯƠNG NGOÀI: Những người mượn từ tổ khác đến làm cho tổ này
                 incoming_logs = self.env['dl.worker.log.line'].search([
                     ('production_log_id.date', '=', current_date),
-                    ('production_log_id.production_group_id', '=', group.id),
-                    ('employee_id.x_source_group_id', '!=', group.id),
+                    ('actual_group_id', '=', group.id),
+                    ('native_group_id', '!=', group.id),
+                    ('handshake_status', 'in', ['n/a', 'confirmed']),
                     ('production_log_id.state', 'in', ['confirmed', 'locked'])
                 ])
                 sc_ngoai_val = sum(incoming_logs.mapped('worked_hours'))
@@ -305,19 +341,21 @@ class ComprehensiveExcelWizard(models.TransientModel):
                 sheet.write_formula(row_offset, idx_tra_cao, f_tra_cao, f_cell_formula)
                 sheet.write_formula(row_offset, idx_tra_thap, f_tra_thap, f_cell_formula)
 
+                # THU TỪ NGOÀI: Người của tổ mình đi làm cho tổ khác
                 outgoing_logs = self.env['dl.worker.log.line'].search([
                     ('production_log_id.date', '=', current_date),
-                    ('employee_id.x_source_group_id', '=', group.id),
-                    ('production_log_id.production_group_id', '!=', group.id),
+                    ('native_group_id', '=', group.id),
+                    ('actual_group_id', '!=', group.id),
+                    ('handshake_status', 'in', ['n/a', 'confirmed']),
                     ('production_log_id.state', 'in', ['confirmed', 'locked'])
                 ])
-                dest_group_ids = set(outgoing_logs.mapped('production_log_id.production_group_id.id'))
+                dest_group_ids = set(outgoing_logs.mapped('actual_group_id.id'))
                 f_tu_cao_parts = []
                 f_tu_thap_parts = []
                 for dest_id in dest_group_ids:
                     if dest_id not in group_maps: continue
                     dest_map = group_maps[dest_id]
-                    sc_to_dest = sum(outgoing_logs.filtered(lambda l: l.production_log_id.production_group_id.id == dest_id).mapped('worked_hours'))
+                    sc_to_dest = sum(outgoing_logs.filtered(lambda l: l.actual_group_id.id == dest_id).mapped('worked_hours'))
                     s_name = dest_map['sheet_name']
                     d_c_sc_sx = xl_col_to_name(dest_map['M'] + 1)
                     s_ngoai = dest_map['c_sc_ngoai']
@@ -332,7 +370,7 @@ class ComprehensiveExcelWizard(models.TransientModel):
                 sheet.write_formula(row_offset, idx_dt_cao, f"=({sump_cao}) - ${c_tra_cao}{row_actual} + ${c_tu_ngoai_cao}{row_actual}", f_cell_formula)
                 sheet.write_formula(row_offset, idx_dt_thap, f"=({sump_thap}) - ${c_tra_thap}{row_actual} + ${c_tu_ngoai_thap}{row_actual}", f_cell_formula)
 
-                # Write Attendance (Bottom Grid) to prepare SC Noibo 
+                # Write Attendance (Bottom Grid) - plain, no coloring here
                 for i, e in enumerate(employees):
                     col_cong = idx_emp_cong_start + i
                     att_lines = self.env['dl.daily.attendance.line'].search([
@@ -342,34 +380,95 @@ class ComprehensiveExcelWizard(models.TransientModel):
                     work_days = sum(att_lines.mapped('actual_work'))
                     sheet.write_number(emp_row_offset, col_cong, work_days or 0, f_cell_center)
 
-                # Công thức Tổng SC Chấm Công for Top Grid. 
+                # Xây dựng nội dung cột Ghi chú mượn/cho mượn
+                note_parts = []
+                if incoming_logs:
+                    borrow_map = {}
+                    for ll in incoming_logs:
+                        src_name = ll.native_group_id.name or '?'
+                        emp_name = ll.employee_id.name or '?'
+                        borrow_map.setdefault(src_name, []).append(emp_name)
+                    borrow_parts = ', '.join(
+                        f'{emp} - {src}'
+                        for src, emps in borrow_map.items()
+                        for emp in emps
+                    )
+                    note_parts.append(f'Mượn: {borrow_parts}')
+                if outgoing_logs:
+                    lend_map = {}
+                    for ll in outgoing_logs:
+                        dst_name = ll.actual_group_id.name or '?'
+                        emp_name = ll.employee_id.name or '?'
+                        lend_map.setdefault(emp_name, []).append(dst_name)
+                    lend_parts = ', '.join(
+                        f'{emp} -> {dsts[0]}'
+                        for emp, dsts in lend_map.items()
+                    )
+                    note_parts.append(f'Cho mượn: {lend_parts}')
+                note_text = '\n'.join(note_parts)
+
+                # Công thức Tổng SC Chấm Công for Top Grid.
                 start_cong = xl_col_to_name(idx_emp_cong_start)
                 end_cong = xl_col_to_name(idx_emp_cong_start + E - 1)
-                
+
                 if E > 0:
                     sheet.write_formula(row_offset, idx_sc_noi_bo, f"=SUM({start_cong}{row_emp_actual}:{end_cong}{row_emp_actual})", f_cell_formula)
                 else:
                     sheet.write(row_offset, idx_sc_noi_bo, 0, f_cell_center)
 
-                # Write Salaries for Employees (Top Grid)
+                # Thu nhập TB Cao/Thấp (Doanh thu ròng / Tổng SC nội bộ)
+                c_avg_cao = xl_col_to_name(idx_avg_cao)
+                c_avg_thap = xl_col_to_name(idx_avg_thap)
+                sheet.write_formula(row_offset, idx_avg_cao, f"=IF(${c_sc_noi_bo}{row_actual}=0, 0, ${c_dt_cao}{row_actual}/${c_sc_noi_bo}{row_actual})", f_cell_formula)
+                sheet.write_formula(row_offset, idx_avg_thap, f"=IF(${c_sc_noi_bo}{row_actual}=0, 0, ${c_dt_thap}{row_actual}/${c_sc_noi_bo}{row_actual})", f_cell_formula)
+
+                # Write Salaries for Employees (Top Grid) with color coding
+                lent_out_emp_ids = set(outgoing_logs.mapped('employee_id.id'))
                 for i, e in enumerate(employees):
                     col_luong = idx_salary_start + i
                     col_cong = idx_emp_cong_start + i
                     c_cong = xl_col_to_name(col_cong)
-                    
+
+                    # Lấy đặc điểm công của nhân viên hôm nay
+                    att_lines_emp = self.env['dl.daily.attendance.line'].search([
+                        ('date', '=', current_date),
+                        ('employee_id', '=', e.id)
+                    ])
+                    work_days_emp = sum(att_lines_emp.mapped('actual_work'))
+
+                    # Chọn định dạng: cam = cho mượn, vàng = nghỉ, vàng nhạt = công < 1, xanh = bình thường
+                    if e.id in lent_out_emp_ids:
+                        salary_fmt = f_salary_lent_out
+                    elif work_days_emp == 0:
+                        salary_fmt = f_salary_absent
+                    elif work_days_emp < 1:
+                        salary_fmt = f_salary_partial
+                    else:
+                        salary_fmt = f_cell_formula
+
                     total_cong_row = emp_grid_start_row + 5 + last_day
-                    
-                    b_fml = f"IF(${c_sc_noi_bo}{row_actual}=0, 0, IF(${c_cong}${total_cong_row}>={req_days}, ${c_dt_cao}{row_actual}/${c_sc_noi_bo}{row_actual}*${c_cong}{row_emp_actual}, ${c_dt_thap}{row_actual}/${c_sc_noi_bo}{row_actual}*${c_cong}{row_emp_actual}))"
-                    sheet.write_formula(row_offset, col_luong, f"={b_fml}", f_cell_formula)
+                    bhyt_row = emp_grid_start_row + 4
+
+                    b_fml = (f"IF(${c_sc_noi_bo}{row_actual}=0, 0, "
+                             f'IF(AND(${c_cong}${total_cong_row}>={req_days}, {c_cong}{bhyt_row}="Y"), '
+                             f"${c_dt_cao}{row_actual}/${c_sc_noi_bo}{row_actual}*${c_cong}{row_emp_actual}, "
+                             f"${c_dt_thap}{row_actual}/${c_sc_noi_bo}{row_actual}*${c_cong}{row_emp_actual}))")
+                    sheet.write_formula(row_offset, col_luong, f"={b_fml}", salary_fmt)
+
+                # Ghi chú lên top grid
+                sheet.write(row_offset, idx_top_note_col, note_text, f_cell_note)
 
                 row_offset += 1
                 emp_row_offset += 1
 
             # Tổng kết Doanh thu ở Đáy Top Grid
             sheet.write(row_offset, 0, "TỔNG", f_header)
-            for i in range(1, max_col_top + 1):
+            # Tổng kết đến hết cột lương của nhân viên cuối cùng (idx_top_note_col - 1)
+            for i in range(1, idx_top_note_col):
                 c_name = xl_col_to_name(i)
                 sheet.write_formula(row_offset, i, f"=SUM({c_name}6:{c_name}{row_offset})", f_cell_bold_money)
+            # Cột ghi chú ở dòng TỔNG để trống hoặc kẻ khung
+            sheet.write(row_offset, idx_top_note_col, "", f_cell_bold_money)
 
             # Tổng kết Chấm công ở Đáy Bottom Grid
             sheet.write(emp_row_offset, 0, "TỔNG", f_header)

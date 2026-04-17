@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_clean_data_wizard_form" model="ir.ui.view">
+        <field name="name">dl.clean.data.wizard.form</field>
+        <field name="model">dl.clean.data.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Xóa dữ liệu rác (Dev only)">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fa fa-warning"/> 
+                    <strong>CẢNH BÁO:</strong> Hành động này sẽ xóa vĩnh viễn toàn bộ dữ liệu chấm công và sản lượng của tháng đã chọn. Hãy chắc chắn trước khi thực hiện!
+                </div>
+                <group>
+                    <group>
+                        <field name="year"/>
+                    </group>
+                    <group>
+                        <field name="month"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_clean_data" string="BẮT ĐẦU XÓA SẠCH" type="object" class="btn-danger" confirm="Bạn có thực sự muốn xóa sạch dữ liệu của tháng này không?"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_clean_data_wizard" model="ir.actions.act_window">
+        <field name="name">Tiện ích Xóa dữ liệu</field>
+        <field name="res_model">dl.clean.data.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -26,6 +26,7 @@
                         </group>
                         <group class="dl_card" string="Phân loại">
                             <field name="x_is_daily_worker" widget="boolean_toggle"/>
+                            <field name="x_has_insurance" widget="boolean_toggle"/>
                             <field name="job_id"/>
                         </group>
                     </group>
@@ -54,6 +55,17 @@
         <field name="arch" type="xml">
             <xpath expr="//filter[@name='group_department']" position="after">
                 <filter string="Tổ biên chế" name="group_by_source_group" context="{'group_by': 'x_source_group_id'}"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- Thêm cột Tổ biên chế vào danh sách nhân viên -->
+    <record id="view_hr_employee_list_inherit_wood" model="ir.ui.view">
+        <field name="name">hr.employee.list.inherit.wood</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="before">
+                <field name="x_source_group_id" string="Tổ biên chế" optional="show"/>
             </xpath>
         </field>
     </record>

@@ -48,7 +48,8 @@ class PoolingWizard(models.TransientModel):
             'over_hours': set(),
             'missing_output': set(),
             'missing_attendance': set(),
-            'missing_source_group': set()
+            'missing_source_group': set(),
+            'pending_handshakes': set()
         }
         total_created = 0
         
@@ -61,18 +62,22 @@ class PoolingWizard(models.TransientModel):
             all_warnings['missing_attendance'].update(daily_warnings['missing_attendance'])
             if 'missing_source_group' in daily_warnings:
                 all_warnings['missing_source_group'].update(daily_warnings['missing_source_group'])
+            if 'pending_handshakes' in daily_warnings:
+                all_warnings['pending_handshakes'].update(daily_warnings['pending_handshakes'])
             
             current_date += timedelta(days=1)
             
         warning_summary = []
+        if all_warnings['pending_handshakes']:
+            warning_summary.append(Markup("<b>🚫 LỖI CÒN NHÂN SỰ MƯỢN/CHO MƯỢN CHƯA DUYỆT BẮT TAY (KHÔNG TÍNH LƯƠNG ĐƯỢC):</b> %s") % (", ".join(list(all_warnings['pending_handshakes'])[:10]) + ("..." if len(all_warnings['pending_handshakes'])>10 else "")))
         if all_warnings['missing_source_group']:
-            warning_summary.append("<b>🚫 LỖI THIẾU DỮ LIỆU TỔ GỐC (BỎ QUA KHÔNG TÍNH):</b> " + ", ".join(list(all_warnings['missing_source_group'])[:10]) + ("..." if len(all_warnings['missing_source_group'])>10 else ""))
+            warning_summary.append(Markup("<b>🚫 LỖI THIẾU DỮ LIỆU TỔ GỐC (BỎ QUA KHÔNG TÍNH):</b> %s") % (", ".join(list(all_warnings['missing_source_group'])[:10]) + ("..." if len(all_warnings['missing_source_group'])>10 else "")))
         if all_warnings['over_hours']:
-            warning_summary.append("⚠️ TỔNG CÔNG > 1.0: " + ", ".join(list(all_warnings['over_hours'])[:10]) + ("..." if len(all_warnings['over_hours'])>10 else ""))
+            warning_summary.append(Markup("<b>⚠️ TỔNG CÔNG > 1.0:</b> %s") % (", ".join(list(all_warnings['over_hours'])[:10]) + ("..." if len(all_warnings['over_hours'])>10 else "")))
         if all_warnings['missing_output']:
-            warning_summary.append("⚠️ CÓ CÔNG - THIẾU SẢN LƯỢNG: " + ", ".join(list(all_warnings['missing_output'])[:10]) + ("..." if len(all_warnings['missing_output'])>10 else ""))
+            warning_summary.append(Markup("<b>⚠️ CÓ CÔNG - THIẾU SẢN LƯỢNG:</b> %s") % (", ".join(list(all_warnings['missing_output'])[:10]) + ("..." if len(all_warnings['missing_output'])>10 else "")))
         if all_warnings['missing_attendance']:
-            warning_summary.append("❌ CÓ SẢN LƯỢNG - CHƯA CHẤM CÔNG: " + ", ".join(list(all_warnings['missing_attendance'])[:10]) + ("..." if len(all_warnings['missing_attendance'])>10 else ""))
+            warning_summary.append(Markup("<b>❌ CÓ SẢN LƯỢNG - CHƯA CHẤM CÔNG:</b> %s") % (", ".join(list(all_warnings['missing_attendance'])[:10]) + ("..." if len(all_warnings['missing_attendance'])>10 else "")))
             
         return total_created, warning_summary
 
@@ -83,7 +88,17 @@ class PoolingWizard(models.TransientModel):
             ('state', '=', 'confirmed')
         ], limit=1)
         
-        daily_warnings = {'over_hours': [], 'missing_output': [], 'missing_attendance': [], 'missing_source_group': []}
+        daily_warnings = {'over_hours': [], 'missing_output': [], 'missing_attendance': [], 'missing_source_group': [], 'pending_handshakes': []}
+
+        # Kiểm tra nếu còn yêu cầu chưa duyệt trong ngày
+        pending_workers = self.env['dl.worker.log.line'].search([
+            ('production_log_id.date', '=', calc_date),
+            ('handshake_status', '=', 'pending')
+        ])
+        if pending_workers:
+            daily_warnings['pending_handshakes'].extend(
+                [f"{w.employee_id.name} ({calc_date.strftime('%d/%m')})" for w in pending_workers]
+            )
 
         if not pricelist:
             # Ngầm bỏ qua nếu không có bảng giá. Khi cron chạy sẽ không bị lỗi crash.
@@ -238,12 +253,13 @@ class PoolingWizard(models.TransientModel):
         
         for emp_id, data in valid_worker_data.items():
             emp_name = self.env['hr.employee'].browse(emp_id).name
+            fmt_name = f"{emp_name} ({calc_date.strftime('%d/%m')})"
             if data['hours'] > 1.0:
-                daily_warnings['over_hours'].append(emp_name)
+                daily_warnings['over_hours'].append(fmt_name)
             if data['hours'] > 0 and (data['earned_native_high'] + data['earned_borrowed_high']) == 0:
-                daily_warnings['missing_output'].append(emp_name)
+                daily_warnings['missing_output'].append(fmt_name)
             if (data['earned_native_high'] + data['earned_borrowed_high']) > 0 and data['hours'] == 0:
-                daily_warnings['missing_attendance'].append(emp_name)
+                daily_warnings['missing_attendance'].append(fmt_name)
 
         if result_vals:
             self.env['dl.daily.pooling.result'].create(result_vals)
