@@ -52,3 +52,6 @@ python odoo-bin -c odoo.conf -u dl_wood_payroll -d odoo_db --stop-after-init
 # Create new module
 python odoo-bin scaffold task_manager my_custom_addons
 python odoo-bin scaffold dl_wood_payroll my_custom_addons
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+pip install -r requirements.txt
