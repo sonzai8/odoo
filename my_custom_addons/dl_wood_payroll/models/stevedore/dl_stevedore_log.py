@@ -34,19 +34,13 @@ class StevedoreLog(models.Model):
         for rec in self:
             rec.total_amount = rec.quantity * (rec.unit_price or 0.0)
 
-    @api.depends('total_amount', 'line_ids.quantity')
+    @api.depends('total_amount', 'line_ids.amount')
     def _compute_amount_per_worker(self):
         for rec in self:
-            total_qty = sum(rec.line_ids.mapped('quantity'))
-            if total_qty > 0:
-                amount_per_unit = rec.total_amount / total_qty
-                for line in rec.line_ids:
-                    line.amount = line.quantity * amount_per_unit
-                # Hiển thị số tiền trung bình cho 1 công (để tham khảo)
-                rec.amount_per_worker = amount_per_unit
+            count = len(rec.line_ids)
+            if count > 0:
+                rec.amount_per_worker = rec.total_amount / count
             else:
-                for line in rec.line_ids:
-                    line.amount = 0.0
                 rec.amount_per_worker = 0.0
 
     @api.depends('line_ids.employee_id')
@@ -59,15 +53,28 @@ class StevedoreLog(models.Model):
             current_employees = rec.line_ids.mapped('employee_id')
             new_employees = rec.worker_ids
             
-            # Remove
+            # Remove workers not in the new list
             to_remove = rec.line_ids.filtered(lambda l: l.employee_id not in new_employees)
             if to_remove:
-                rec.line_ids -= to_remove
+                rec.line_ids = [(2, line.id) for line in to_remove]
             
-            # Add
+            # Add new workers
             to_add = new_employees - current_employees
-            for emp in to_add:
-                rec.line_ids = [(0, 0, {'employee_id': emp.id})]
+            if to_add:
+                cmds = [(0, 0, {'employee_id': emp.id}) for emp in to_add]
+                rec.write({'line_ids': cmds})
+
+    @api.onchange('production_group_id')
+    def _onchange_production_group_id(self):
+        if self.production_group_id:
+            lines = []
+            for employee in self.production_group_id.member_ids:
+                lines.append((0, 0, {
+                    'employee_id': employee.id,
+                    'quantity': 1.0,
+                }))
+            # Use (5, 0, 0) to clear existing lines before adding new ones
+            self.line_ids = [(5, 0, 0)] + lines
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -143,11 +150,19 @@ class StevedoreLogLine(models.Model):
             if not line.log_id:
                 line.amount = 0.0
                 continue
+            # Logic chia tiền: (Số công của nhân viên / Tổng số công của cả phiếu) * Tổng tiền của phiếu
             total_qty = sum(line.log_id.line_ids.mapped('quantity'))
             if total_qty > 0:
                 line.amount = (line.quantity * line.log_id.total_amount) / total_qty
             else:
                 line.amount = 0.0
+
+    @api.onchange('quantity')
+    def _onchange_quantity(self):
+        """Cập nhật lại tiền của tất cả các dòng khi một dòng thay đổi số công"""
+        if self.log_id:
+            # Kích hoạt tính toán lại trên toàn bộ dòng của phiếu
+            self.log_id._compute_amount_per_worker()
 
     @api.constrains('quantity')
     def _check_quantity(self):

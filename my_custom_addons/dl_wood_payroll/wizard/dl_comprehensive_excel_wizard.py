@@ -672,27 +672,27 @@ class ComprehensiveExcelWizard(models.TransientModel):
             ('state', '=', 'confirmed')
         ]).ids
 
-        stevedore_results = self.env['dl.stevedore.log.line'].read_group(
+        stevedore_results = self.env['dl.stevedore.log.line']._read_group(
             [('log_id', 'in', confirmed_log_ids)],
-            ['employee_id', 'amount:sum'],
-            ['employee_id']
+            ['employee_id'],
+            ['amount:sum']
         )
-        stevedore_map = {r['employee_id'][0]: r['amount'] for r in stevedore_results if r['employee_id']}
+        stevedore_map = {emp.id: amount for emp, amount in stevedore_results}
 
-        drying_results = self.env['dl.veneer.drying.log'].read_group(
+        drying_results = self.env['dl.veneer.drying.log']._read_group(
             [('date', '>=', start_date), ('date', '<=', end_date), ('state', '=', 'confirmed')],
-            ['employee_id', 'total_amount:sum'],
-            ['employee_id']
+            ['employee_id'],
+            ['total_amount:sum']
         )
-        drying_map = {r['employee_id'][0]: r['total_amount'] for r in drying_results if r['employee_id']}
+        drying_map = {emp.id: amount for emp, amount in drying_results}
 
         # Fetch Fines
-        fine_results = self.env['dl.employee.fine'].read_group(
+        fine_results = self.env['dl.employee.fine']._read_group(
             [('date', '>=', start_date), ('date', '<=', end_date)],
-            ['employee_id', 'amount:sum'],
-            ['employee_id']
+            ['employee_id'],
+            ['amount:sum']
         )
-        fine_map = {r['employee_id'][0]: r['amount'] for r in fine_results if r['employee_id']}
+        fine_map = {emp.id: amount for emp, amount in fine_results}
 
         # Get all employees sorted by group and name
         employees = self.env['hr.employee'].search([], order='x_source_group_id, name')

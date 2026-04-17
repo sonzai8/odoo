@@ -56,17 +56,16 @@ class PayrollMatrixReport(models.Model):
                     line.id + 10000000 AS id,
                     line.date AS date,
                     line.employee_id AS employee_id,
-                    COALESCE(emp.x_source_group_id, (SELECT id FROM dl_production_group LIMIT 1)) AS source_group_id,
+                    line.x_source_group_id AS source_group_id,
                     task.name AS product_name,
-                    1.0 AS quantity,
-                    line.amount AS unit_price,
+                    line.quantity AS quantity,
+                    CASE WHEN line.quantity > 0 THEN line.amount / line.quantity ELSE 0 END AS unit_price,
                     line.amount AS total_money,
                     line.currency_id AS currency_id,
                     'stevedore' AS type
                 FROM dl_stevedore_log_line line
                 JOIN dl_stevedore_log log ON line.log_id = log.id
                 JOIN dl_stevedore_task task ON log.task_id = task.id
-                JOIN hr_employee emp ON line.employee_id = emp.id
                 WHERE log.state = 'confirmed'
 
                 UNION ALL
