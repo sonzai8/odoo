@@ -27,6 +27,20 @@ class HrEmployee(models.Model):
         if self.x_source_group_id and self.x_source_group_id.department_id:
             self.department_id = self.x_source_group_id.department_id
 
+    @api.depends('name', 'x_source_group_id.name')
+    def _compute_display_name(self):
+        for employee in self:
+            if employee.x_source_group_id:
+                employee.display_name = f"{employee.name} ({employee.x_source_group_id.name})"
+            else:
+                employee.display_name = employee.name
+
+    @api.model
+    def _name_search(self, name, domain=None, operator='ilike', limit=100, order=None):
+        if name:
+            domain = ['|', ('name', operator, name), ('x_source_group_id.name', operator, name)] + (domain or [])
+        return super()._name_search(name, domain, operator, limit, order)
+
     def action_view_missing_attendance(self):
         """Trả về danh sách nhân viên chưa có chấm công trong ngày hiện tại"""
         today = fields.Date.today()

@@ -167,6 +167,12 @@ class ComprehensiveExcelWizard(models.TransientModel):
                 'sheet_name': sheet_name
             }
 
+        # --- Add Summary Sheet First ---
+        self._add_stevedore_sheet(workbook, start_date, end_date)
+        self._add_drying_sheet(workbook, start_date, end_date)
+        self._add_sorting_sheet(workbook, start_date, end_date)
+        self._add_summary_sheet(workbook, start_date, end_date)
+
         for group_id, cache in group_data_cache.items():
             group = self.env['dl.production.group'].browse(group_id)
             sheets_created += 1
@@ -537,6 +543,8 @@ class ComprehensiveExcelWizard(models.TransientModel):
                 sheet.write_formula(row_offset, 4, f"=SUM(E{start_loanc_row}:E{row_offset})", f_cell_bold_money)
                 sheet.write_formula(row_offset, 5, f"=SUM(F{start_loanc_row}:F{row_offset})", f_cell_bold_money)
 
+        self._add_stevedore_sheet(workbook, start_date, end_date)
+
         if sheets_created == 0:
             sheet = workbook.add_worksheet("Trống")
             sheet.write(0, 0, "Không có dữ liệu hợp lệ trong khoảng thời gian này.")
@@ -556,5 +564,325 @@ class ComprehensiveExcelWizard(models.TransientModel):
             'res_id': self.id,
             'target': 'new',
         }
+
+    def _add_stevedore_sheet(self, workbook, start_date, end_date):
+        sheet = workbook.add_worksheet("Lương Bốc Vác")
+        
+        # Formats
+        f_header = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#f2dede', 'border': 1})
+        money_fmt = '#,##0 "₫"'
+        f_cell_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1})
+        f_cell_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1})
+        f_title = workbook.add_format({'bold': True, 'font_size': 14, 'align': 'center'})
+
+        # Headers
+        _, last_day = calendar.monthrange(self.year, int(self.month))
+        sheet.merge_range(0, 0, 0, last_day + 1, f"BẢNG TỔNG HỢP LƯƠNG KHOÁN BỐC VÁC - THÁNG {self.month}/{self.year}", f_title)
+        
+        sheet.write(2, 0, "Họ và tên", f_header)
+        sheet.set_column(0, 0, 25)
+        for d in range(1, last_day + 1):
+            sheet.write(2, d, d, f_header)
+            sheet.set_column(d, d, 10)
+        sheet.write(2, last_day + 1, "Tổng cộng", f_header)
+        sheet.set_column(last_day + 1, last_day + 1, 15)
+
+        # Data
+        lines = self.env['dl.stevedore.log.line'].search([
+            ('date', '>=', start_date),
+            ('date', '<=', end_date),
+            ('stevedore_log_id.state', '=', 'confirmed')
+        ])
+        
+        if not lines:
+            sheet.write(4, 0, "Không có dữ liệu bốc vác trong tháng này.")
+            return
+
+        employees = lines.mapped('employee_id').sorted(key=lambda e: e.name)
+
+        row = 3
+        for emp in employees:
+            sheet.write(row, 0, emp.name, f_cell_center)
+            emp_total = 0
+            emp_lines = lines.filtered(lambda l: l.employee_id.id == emp.id)
+            
+            # Map day to sum of amount
+            day_map = {}
+            for l in emp_lines:
+                day_map[l.date.day] = day_map.get(l.date.day, 0) + l.amount
+                
+            for d in range(1, last_day + 1):
+                amount = day_map.get(d, 0)
+                if amount:
+                    sheet.write_number(row, d, amount, f_cell_money)
+                    emp_total += amount
+                else:
+                    sheet.write(row, d, 0, f_cell_center)
+            
+            sheet.write_number(row, last_day + 1, emp_total, f_cell_money)
+            row += 1
+
+    def _add_summary_sheet(self, workbook, start_date, end_date):
+        sheet = workbook.add_worksheet("TỔNG HỢP LƯƠNG")
+        
+        # Formats
+        f_title = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center', 'valign': 'vcenter'})
+        f_header = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#f2dede', 'border': 1, 'text_wrap': True})
+        money_fmt = '#,##0 \₫'
+        f_cell_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1})
+        
+        # Group Colors (Hex) from user
+        group_colors = ['#EBF5FB', '#EAFAF1', '#FEF9E7'] # L-Blue, L-Green, L-Yellow
+        
+        # Headers
+        # Headers index: STT:0, Name:1, CCCD:2, Group:3, Pooling:4, Stevedore:5, Drying:6, Fine:7, Union:8, BHXH:9, ThuBu:10, Advance:11, Final:12
+        sheet.merge_range(0, 0, 0, 12, f"BẢNG TỔNG HỢP LƯƠNG TOÀN CÔNG TY - THÁNG {self.month}/{self.year}", f_title)
+        
+        headers = [
+            "STT", "Họ và tên", "CCCD", "Tổ sản xuất", 
+            "Lương Cào bằng", "Lương Khoán", "Lương Phơi Ván", "Lương Nhặt Ván",
+            "Phạt", "Công đoàn", "BHXH", "Thu bù BHXH", "Tạm ứng", "Thực lĩnh"
+        ]
+        for i, h in enumerate(headers):
+            sheet.write(2, i, h, f_header)
+        
+        sheet.set_row(2, 35) # High header for wrap text
+        sheet.set_column(0, 0, 5)
+        sheet.set_column(1, 1, 25)
+        sheet.set_column(2, 2, 15)
+        sheet.set_column(3, 3, 20)
+        sheet.set_column(4, 13, 13)
+
+        # Optimization: Fetch GROSS Pooling data using SQL
+        pooling_query = """
+            SELECT employee_id, SUM(pool_unit_price * actual_work_days) as gross_pooling
+            FROM dl_daily_pooling_result
+            WHERE date >= %s AND date <= %s
+            GROUP BY employee_id
+        """
+        self.env.cr.execute(pooling_query, [start_date, end_date])
+        pooling_map = {r['employee_id']: r['gross_pooling'] for r in self.env.cr.dictfetchall()}
+
+        stevedore_results = self.env['dl.stevedore.log.line'].read_group(
+            [('date', '>=', start_date), ('date', '<=', end_date), ('stevedore_log_id.state', '=', 'confirmed')],
+            ['employee_id', 'amount:sum'],
+            ['employee_id']
+        )
+        stevedore_map = {r['employee_id'][0]: r['amount'] for r in stevedore_results if r['employee_id']}
+
+        drying_map = {r['employee_id'][0]: r['total_amount'] for r in drying_results if r['employee_id']}
+
+        # Fetch Sorting data
+        sorting_results = self.env['dl.sorting.log.line'].read_group(
+            [('log_id.date', '>=', start_date), ('log_id.date', '<=', end_date), ('log_id.state', '=', 'confirmed')],
+            ['employee_id', 'amount:sum'],
+            ['employee_id']
+        )
+        sorting_map = {r['employee_id'][0]: r['amount'] for r in sorting_results if r['employee_id']}
+
+        # Fetch Fines
+        fine_results = self.env['dl.employee.fine'].read_group(
+            [('date', '>=', start_date), ('date', '<=', end_date)],
+            ['employee_id', 'amount:sum'],
+            ['employee_id']
+        )
+        fine_map = {r['employee_id'][0]: r['amount'] for r in fine_results if r['employee_id']}
+
+        # Get all employees sorted by group and name
+        employees = self.env['hr.employee'].search([], order='x_source_group_id, name')
+        
+        row = 3
+        stt = 1
+        current_group_id = False
+        color_index = -1
+        
+        for emp in employees:
+            p_salary = pooling_map.get(emp.id, 0)
+            s_salary = stevedore_map.get(emp.id, 0)
+            d_salary = drying_map.get(emp.id, 0)
+            f_amount = fine_map.get(emp.id, 0)
+            
+            # Bỏ qua nếu không có thu nhập và không có phạt
+            if p_salary == 0 and s_salary == 0 and d_salary == 0 and f_amount == 0:
+                continue
+                
+            # Handle Group Color change
+            if emp.x_source_group_id.id != current_group_id:
+                current_group_id = emp.x_source_group_id.id
+                color_index = (color_index + 1) % len(group_colors)
+            
+            # Create a format for this row based on group color
+            bg_color = group_colors[color_index]
+            f_row_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1, 'bg_color': bg_color})
+            f_row_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': bg_color})
+            f_row_bold_money = workbook.add_format({'bold': True, 'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1, 'bg_color': bg_color})
+            
+            sheet.write(row, 0, stt, f_row_center)
+            sheet.write(row, 1, emp.name, f_row_center)
+            sheet.write(row, 2, emp.identification_id or '', f_row_center)
+            sheet.write(row, 3, emp.x_source_group_id.name or '', f_row_center)
+            sheet.write_number(row, 4, p_salary, f_row_money)
+            sheet.write_number(row, 5, s_salary, f_row_money)
+            sheet.write_number(row, 6, d_salary, f_row_money)
+            sheet.write_number(row, 7, sorting_map.get(emp.id, 0), f_row_money)
+            sheet.write_number(row, 8, f_amount, f_row_money)
+            sheet.write_number(row, 9, 40000 if (p_salary + s_salary + d_salary + sorting_map.get(emp.id, 0)) > 0 else 0, f_row_money) 
+            sheet.write_number(row, 10, 0, f_row_money) 
+            sheet.write_number(row, 11, 0, f_row_money) 
+            sheet.write_number(row, 12, 0, f_row_money) 
+            
+            # Thực lĩnh formula: (Col E + Col F + Col G + Col H) - (Col I + Col J + Col K + Col L + Col M)
+            # E:4, F:5, G:6, H:7, I:8, J:9, K:10, L:11, M:12
+            sheet.write_formula(row, 13, f"=(E{row+1}+F{row+1}+G{row+1}+H{row+1})-(I{row+1}+J{row+1}+K{row+1}+L{row+1}+M{row+1})", f_row_bold_money)
+            
+            row += 1
+            stt += 1
+
+    def _add_drying_sheet(self, workbook, start_date, end_date):
+        sheet = workbook.add_worksheet("PHƠI VÁN")
+        
+        # Formats
+        f_title = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center', 'valign': 'vcenter'})
+        f_header = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#E8F8F5', 'border': 1, 'text_wrap': True})
+        money_fmt = '#,##0 \₫'
+        f_cell_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1})
+        f_cell_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1})
+        
+        # Define 8 types
+        types = [
+            ('am', '1.7', 'A'), ('am', '1.7', 'BC'),
+            ('am', '2.0', 'A'), ('am', '2.0', 'BC'),
+            ('boc', '1.7', 'A'), ('boc', '1.7', 'BC'),
+            ('boc', '2.0', 'A'), ('boc', '2.0', 'BC')
+        ]
+        
+        def get_type_label(t):
+            type_desc = 'Ẩm' if t[0] == 'am' else 'Bóc'
+            return f"Ván {type_desc}\n{t[1]}ly\n{t[2]}"
+
+        # Headers
+        sheet.merge_range(0, 0, 0, 12, f"BÁO CÁO NHẬP SẢN LƯỢNG PHƠI VÁN - THÁNG {self.month}/{self.year}", f_title)
+        
+        sheet.write(2, 0, "STT", f_header)
+        sheet.write(2, 1, "Mã NV", f_header)
+        sheet.write(2, 2, "Tên nhân viên", f_header)
+        
+        for i, t in enumerate(types):
+            sheet.write(2, 3 + i, get_type_label(t), f_header)
+            
+        sheet.write(2, 11, "Tổng công", f_header)
+        sheet.write(2, 12, "Tổng lương", f_header)
+        
+        sheet.set_row(2, 45) # Triple height for 3 lines label
+        sheet.set_column(0, 0, 5)
+        sheet.set_column(1, 1, 12)
+        sheet.set_column(2, 2, 25)
+        sheet.set_column(3, 10, 10)
+        sheet.set_column(11, 12, 12)
+
+        # Data Fetching
+        log_lines = self.env['dl.veneer.drying.log'].search([
+            ('date', '>=', start_date),
+            ('date', '<=', end_date),
+            ('state', '=', 'confirmed')
+        ])
+        
+        # Aggregate by employee
+        emp_data = {}
+        for line in log_lines:
+            eid = line.employee_id.id
+            if eid not in emp_data:
+                emp_data[eid] = {
+                    'emp': line.employee_id,
+                    'quantities': {t: 0 for t in types},
+                    'dates': set(),
+                    'total_amount': 0.0
+                }
+            
+            t_key = (line.veneer_type, line.thickness, line.quality)
+            if t_key in emp_data[eid]['quantities']:
+                emp_data[eid]['quantities'][t_key] += line.quantity
+            
+            emp_data[eid]['dates'].add(line.date)
+            emp_data[eid]['total_amount'] += line.total_amount
+
+        # Write data
+        row = 3
+        stt = 1
+        for eid in sorted(emp_data.keys()):
+            data = emp_data[eid]
+            sheet.write(row, 0, stt, f_cell_center)
+            sheet.write(row, 1, data['emp'].barcode or '', f_cell_center)
+            sheet.write(row, 2, data['emp'].name, f_cell_center)
+            
+            for i, t in enumerate(types):
+                qty = data['quantities'][t]
+                sheet.write_number(row, 3 + i, qty, f_cell_center)
+                
+            sheet.write_number(row, 11, len(data['dates']), f_cell_center)
+            sheet.write_number(row, 12, data['total_amount'], f_cell_money)
+            
+            row += 1
+            stt += 1
+
+    def _add_sorting_sheet(self, workbook, start_date, end_date):
+        sheet = workbook.add_worksheet("NHẶT VÁN")
+        
+        # Formats
+        f_title = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center', 'valign': 'vcenter'})
+        f_header = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#FEF9E7', 'border': 1, 'text_wrap': True})
+        money_fmt = '#,##0 \₫'
+        f_cell_money = workbook.add_format({'num_format': money_fmt, 'align': 'right', 'valign': 'vcenter', 'border': 1})
+        f_cell_center = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1})
+        
+        # Headers
+        sheet.merge_range(0, 0, 0, 7, f"BÁO CÁO SẢN LƯỢNG NHẶT VÁN - THÁNG {self.month}/{self.year}", f_title)
+        
+        headers = ["STT", "Họ và tên", "Tổng công", "Ván 1.7 ly (Bó)", "Ván 2.0 ly (Bó)", "Tổng cộng (Bó)", "Thành tiền", "Ghi chú"]
+        for i, h in enumerate(headers):
+            sheet.write(2, i, h, f_header)
+            
+        sheet.set_column(0, 0, 5)
+        sheet.set_column(1, 1, 25)
+        sheet.set_column(2, 6, 15)
+
+        # Data Fetching
+        log_lines = self.env['dl.sorting.log.line'].search([
+            ('log_id.date', '>=', start_date),
+            ('log_id.date', '<=', end_date),
+            ('log_id.state', '=', 'confirmed')
+        ])
+        
+        # Aggregate by employee
+        emp_data = {}
+        for line in log_lines:
+            eid = line.employee_id.id
+            if eid not in emp_data:
+                emp_data[eid] = {
+                    'emp_name': line.employee_id.name,
+                    'total_work': 0.0,
+                    'total_qty_17': 0.0,
+                    'total_qty_20': 0.0,
+                    'total_amount': 0.0
+                }
+            emp_data[eid]['total_work'] += line.attendance_type_id.work_value
+            emp_data[eid]['total_qty_17'] += line.qty_17
+            emp_data[eid]['total_qty_20'] += line.qty_20
+            emp_data[eid]['total_amount'] += line.amount
+
+        # Write data
+        row = 3
+        stt = 1
+        for eid in sorted(emp_data.keys()):
+            data = emp_data[eid]
+            sheet.write(row, 0, stt, f_cell_center)
+            sheet.write(row, 1, data['emp_name'], f_cell_center)
+            sheet.write_number(row, 2, data['total_work'], f_cell_center)
+            sheet.write_number(row, 3, data['total_qty_17'], f_cell_center)
+            sheet.write_number(row, 4, data['total_qty_20'], f_cell_center)
+            sheet.write_number(row, 5, data['total_qty_17'] + data['total_qty_20'], f_cell_center)
+            sheet.write_number(row, 6, data['total_amount'], f_cell_money)
+            row += 1
+            stt += 1
 
 

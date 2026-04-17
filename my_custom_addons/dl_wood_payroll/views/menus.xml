@@ -1,150 +1,142 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_dl_wood_payroll_root" 
-              name="Chấm Công - Tính Lương" 
+              name="Lương &amp; Sản lượng" 
               web_icon="dl_wood_payroll,static/description/icon.png"
               sequence="20"/>
 
-    <!-- Pricelist Group -->
-    <menuitem id="menu_dl_piece_rate_pricelist"
-              name="Bảng giá"
+    <!-- A. Top Menu: Chấm Công - Tính Lương -->
+    <menuitem id="menu_dl_ops_root"
+              name="Chấm Công - Tính Lương"
               parent="menu_dl_wood_payroll_root"
               sequence="10"/>
 
-    <menuitem id="menu_dl_piece_rate_pricelist_action"
-              name="Đơn giá"
-              parent="menu_dl_piece_rate_pricelist"
+    <menuitem id="menu_dl_combined_log_action"
+              name="Cào bằng tổ sản xuất"
+              parent="menu_dl_ops_root"
+              action="action_dl_combined_log"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_veneer_drying_log_action_in_ops"
+              name="Sản lượng Phơi Ván"
+              parent="menu_dl_ops_root"
+              action="action_dl_veneer_drying_log"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_production_log_action_in_ops"
+              name="Sản lượng Ép Phim"
+              parent="menu_dl_ops_root"
+              action="action_dl_production_log"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_stevedore_log_action_in_ops"
+              name="Phiếu khoán Bốc vác"
+              parent="menu_dl_ops_root"
+              action="action_dl_stevedore_log"
+              sequence="40"/>
+
+    <menuitem id="menu_dl_attendance_action_in_ops"
+              name="Chấm công theo tổ"
+              parent="menu_dl_ops_root"
+              action="action_dl_daily_attendance"
+              sequence="50"/>
+
+    <!-- B. Top Menu: Báo Cáo -->
+    <menuitem id="menu_dl_reports_root"
+              name="Báo Cáo"
+              parent="menu_dl_wood_payroll_root"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_comprehensive_matrix_report_action"
+              name="Bảng tổng hợp"
+              parent="menu_dl_reports_root"
+              action="action_dl_comprehensive_matrix_report"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_comprehensive_excel_wizard_action_in_reports"
+              name="Xuất file Excel Tổng hợp"
+              parent="menu_dl_reports_root"
+              action="action_dl_comprehensive_excel_wizard"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_production_matrix_report_action_in_reports"
+              name="Ma trận Sản lượng"
+              parent="menu_dl_reports_root"
+              action="action_dl_production_matrix_report"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_payroll_matrix_report_action_in_reports"
+              name="Ma trận Lương"
+              parent="menu_dl_reports_root"
+              action="action_dl_payroll_matrix_report"
+              sequence="40"/>
+
+    <menuitem id="menu_dl_attendance_matrix_report_action_in_reports"
+              name="Ma trận Chấm công"
+              parent="menu_dl_reports_root"
+              action="action_dl_matrix_attendance_report"
+              sequence="50"/>
+
+    <menuitem id="menu_dl_stevedore_matrix_action_in_reports"
+              name="Ma trận Lương bốc vác"
+              parent="menu_dl_reports_root"
+              action="action_dl_stevedore_matrix"
+              sequence="60"/>
+
+    <menuitem id="menu_dl_global_payroll_wizard_action_in_reports"
+              name="Xuất Báo cáo lương toàn công ty"
+              parent="menu_dl_reports_root"
+              action="action_dl_global_payroll_wizard"
+              sequence="70"/>
+
+    <menuitem id="menu_dl_daily_attendance_line_action_in_reports"
+              name="Bảng công chi tiết"
+              parent="menu_dl_reports_root"
+              action="action_dl_daily_attendance_line"
+              sequence="80"/>
+
+    <!-- C. Top Menu: Cấu hình đơn giá -->
+    <menuitem id="menu_dl_pricing_root"
+              name="Cấu hình đơn giá"
+              parent="menu_dl_wood_payroll_root"
+              sequence="30"
+              groups="dl_wood_payroll.group_dl_wood_manager"/>
+
+    <menuitem id="menu_dl_piece_rate_pricelist_action_in_pricing"
+              name="Đơn giá Cào bằng / Tổ sản xuất"
+              parent="menu_dl_pricing_root"
               action="action_dl_piece_rate_pricelist"
               sequence="10"/>
 
-    <menuitem id="menu_dl_film_pricelist_action"
-              name="Đơn giá Ép Film"
-              parent="menu_dl_piece_rate_pricelist"
+    <menuitem id="menu_dl_drying_pricelist_action_in_pricing"
+              name="Đơn giá Phơi Ván"
+              parent="menu_dl_pricing_root"
+              action="action_dl_drying_pricelist"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_film_pricelist_action_in_pricing"
+              name="Đơn giá Ép Phim"
+              parent="menu_dl_pricing_root"
               action="action_dl_film_pricelist"
-              sequence="11"/>
-              
-    <menuitem id="menu_dl_piece_rate_matrix_action"
-              name="Ma trận đơn giá"
-              parent="menu_dl_piece_rate_pricelist"
-              action="action_dl_piece_rate_matrix"
-              sequence="12"/>
-
-    <menuitem id="menu_dl_film_pricelist_matrix_action"
-              name="Ma trận Đơn giá Ép Film"
-              parent="menu_dl_piece_rate_pricelist"
-              action="action_dl_film_matrix_viewer"
-              sequence="13"/>
-
-    
-
-    <!-- Calculation Group -->
-    <menuitem id="menu_dl_pooling_calculation_root"
-              name="Tính toán lương"
-              parent="menu_dl_wood_payroll_root"
               sequence="30"/>
 
-    <menuitem id="menu_dl_production_matrix_report_action"
-              name="Ma trận Sản lượng ngày"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_production_matrix_report"
+    <menuitem id="menu_dl_stevedore_service_action_in_pricing"
+              name="Danh mục Công việc Bốc vác"
+              parent="menu_dl_pricing_root"
+              action="action_dl_stevedore_service"
               sequence="40"/>
 
-    <menuitem id="menu_dl_pooling_wizard_action"
-              name="Tính lương cào bằng"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_pooling_wizard"
-              sequence="10"/>
+    <menuitem id="menu_dl_piece_rate_matrix_action_in_pricing"
+              name="Ma trận đơn giá (Tham khảo)"
+              parent="menu_dl_pricing_root"
+              action="action_dl_piece_rate_matrix"
+              sequence="50"/>
 
-    <menuitem id="menu_dl_daily_pooling_result_action"
-              name="Kết quả cào bằng"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_daily_pooling_result"
-              sequence="20"/>
-
-    <menuitem id="menu_dl_payroll_matrix_report_action"
-              name="Ma trận Lương ngày"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_payroll_matrix_report"
-              sequence="30"/>
-
-    <menuitem id="menu_dl_comprehensive_matrix_report_action"
-              name="Báo cáo Tổng hợp (Sản lượng &amp; Lương)"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_comprehensive_matrix_report"
-              sequence="35"/>
-
-    <menuitem id="menu_dl_comprehensive_excel_wizard_action"
-              name="Xuất Báo cáo Tổng hợp (Excel)"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_comprehensive_excel_wizard"
-              sequence="36"/>
-
-    <menuitem id="menu_dl_global_payroll_wizard_action"
-              name="Báo cáo lương tổng hợp toàn công ty (Excel)"
-              parent="menu_dl_pooling_calculation_root"
-              action="action_dl_global_payroll_wizard"
-              sequence="37"/>
-
-    <!-- Attendance Group -->
-    <menuitem id="menu_dl_attendance_root"
-              name="Chấm công"
-              parent="menu_dl_wood_payroll_root"
-              sequence="29"/>
-
-    <menuitem id="menu_dl_daily_attendance_line_action"
-              name="Bảng công chi tiết"
-              parent="menu_dl_attendance_root"
-              action="action_dl_daily_attendance_line"
-              sequence="10"/>
-
-    <menuitem id="menu_dl_attendance_action"
-              name="Chấm công theo tổ"
-              parent="menu_dl_attendance_root"
-              action="action_dl_daily_attendance"
-              sequence="20"/>
-
-    <menuitem id="menu_dl_combined_log_action"
-              name="Cộng Công Lượng (Tất cả trong một)"
-              parent="menu_dl_attendance_root"
-              action="action_dl_combined_log"
-              sequence="5"/>
-
-    <menuitem id="menu_dl_employee_missing_attendance"
-              name="Nhân viên thiếu công"
-              parent="menu_dl_attendance_root"
-              action="action_dl_missing_attendance_client"
-              sequence="25"/>
-
-    <menuitem id="menu_dl_attendance_matrix_report_action"
-              name="Báo cáo Ma trận Chấm công"
-              parent="menu_dl_attendance_root"
-              action="action_dl_matrix_attendance_report"
-              sequence="30"/>
-
-    <menuitem id="menu_dl_attendance_config_action"
-              name="Loại hình chấm công"
-              parent="menu_dl_attendance_root"
-              action="action_dl_attendance_type"
-              sequence="90"
-              groups="dl_wood_payroll.group_dl_payroll_manager"/>
-
-    <!-- Discipline Group -->
-    <menuitem id="menu_dl_discipline_root"
-              name="Quản lý kỷ luật"
-              parent="menu_dl_wood_payroll_root"
-              sequence="55"/>
-
-    <menuitem id="menu_dl_employee_fine_action"
-              name="Danh sách phạt"
-              parent="menu_dl_discipline_root"
-              action="action_dl_employee_fine"
-              sequence="10"/>
-
-    <menuitem id="menu_dl_fine_reason_action"
-              name="Cấu hình lý do phạt"
-              parent="menu_dl_discipline_root"
-              action="action_dl_fine_reason"
-              sequence="20"/>
+    <menuitem id="menu_dl_film_pricelist_matrix_action_in_pricing"
+              name="Ma trận Đơn giá Ép Film (Tham khảo)"
+              parent="menu_dl_pricing_root"
+              action="action_dl_film_matrix_viewer"
+              sequence="60"/>
 
     <!-- HR Group -->
     <menuitem id="menu_dl_payroll_employee_root"
@@ -169,6 +161,12 @@
               parent="menu_dl_payroll_employee_root"
               action="action_dl_employee_transfer"
               sequence="30"/>
+    
+    <menuitem id="menu_dl_employee_missing_attendance_in_hr"
+              name="Nhân viên thiếu công"
+              parent="menu_dl_payroll_employee_root"
+              action="action_dl_missing_attendance_client"
+              sequence="40"/>
 
     <!-- Product Management Group -->
     <menuitem id="menu_dl_product_mgmt_root"
@@ -182,8 +180,6 @@
               action="action_dl_wood_products"
               sequence="10"/>
 
-
-
     <menuitem id="menu_dl_film_brand_action"
               name="Thương hiệu Film (Ép)"
               parent="menu_dl_product_mgmt_root"
@@ -191,11 +187,28 @@
               sequence="25"/>
 
     <menuitem id="menu_dl_product_attribute_action"
-              name="Cấu hình Thuộc tính (Nâng cao)"
+              name="Cấu hình Thuộc tính"
               parent="menu_dl_product_mgmt_root"
               action="action_dl_product_attribute"
               sequence="90"/>
 
+    <!-- Discipline Group -->
+    <menuitem id="menu_dl_discipline_root"
+              name="Quản lý kỷ luật"
+              parent="menu_dl_wood_payroll_root"
+              sequence="60"/>
+
+    <menuitem id="menu_dl_employee_fine_action"
+              name="Danh sách phạt"
+              parent="menu_dl_discipline_root"
+              action="action_dl_employee_fine"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_fine_reason_action"
+              name="Cấu hình lý do phạt"
+              parent="menu_dl_discipline_root"
+              action="action_dl_fine_reason"
+              sequence="20"/>
 
     <!-- Cấu hình tổ chức -->
     <menuitem id="menu_dl_org_config_root"
@@ -214,6 +227,14 @@
               parent="menu_dl_org_config_root"
               action="action_dl_production_stage"
               sequence="20"/>
+
+    <menuitem id="menu_dl_attendance_config_action_in_config"
+              name="Loại hình chấm công"
+              parent="menu_dl_org_config_root"
+              action="action_dl_attendance_type"
+              sequence="30"
+              groups="dl_wood_payroll.group_dl_payroll_manager"/>
+
     <menuitem id="menu_dl_config_clean_data"
               name="Tiện ích Xóa dữ liệu"
               parent="menu_dl_org_config_root"

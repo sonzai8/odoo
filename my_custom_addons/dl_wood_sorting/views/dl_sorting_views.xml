@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Bảng giá Nhặt Ván -->
+    <record id="view_dl_sorting_pricelist_tree" model="ir.ui.view">
+        <field name="name">dl.sorting.pricelist.tree</field>
+        <field name="model">dl.sorting.pricelist</field>
+        <field name="arch" type="xml">
+            <list string="Bảng giá Nhặt Ván">
+                <field name="name"/>
+                <field name="create_date" string="Ngày tạo"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_sorting_pricelist_form" model="ir.ui.view">
+        <field name="name">dl.sorting.pricelist.form</field>
+        <field name="model">dl.sorting.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Bảng giá Nhặt Ván">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Ví dụ: Bảng giá áp dụng từ 01/01"/></h1>
+                    </div>
+                    <group>
+                        <group string="Ván 1.7 ly">
+                            <field name="price_17_base_new"/>
+                            <field name="price_17_bonus_new"/>
+                            <field name="price_17_base_old"/>
+                            <field name="price_17_bonus_old"/>
+                        </group>
+                        <group string="Ván 2.0 ly">
+                            <field name="price_20_base_new"/>
+                            <field name="price_20_bonus_new"/>
+                            <field name="price_20_base_old"/>
+                            <field name="price_20_bonus_old"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_sorting_pricelist" model="ir.actions.act_window">
+        <field name="name">Bảng giá Nhặt Ván</field>
+        <field name="res_model">dl.sorting.pricelist</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Phiếu Nghiệm Thu Nhặt Ván -->
+    <record id="view_dl_sorting_log_tree" model="ir.ui.view">
+        <field name="name">dl.sorting.log.tree</field>
+        <field name="model">dl.sorting.log</field>
+        <field name="arch" type="xml">
+            <list string="Nghiệm thu Nhặt Ván" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="total_qty_17" sum="Tổng 1.7"/>
+                <field name="total_qty_20" sum="Tổng 2.0"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_sorting_log_form" model="ir.ui.view">
+        <field name="name">dl.sorting.log.form</field>
+        <field name="model">dl.sorting.log</field>
+        <field name="arch" type="xml">
+            <form string="Nghiệm thu Nhặt Ván">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="total_qty_17" readonly="1"/>
+                            <field name="total_qty_20" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết Nhân viên" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="employee_id" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="attendance_type_id" widget="selection"/>
+                                    <field name="qty_17" sum="Tổng 1.7"/>
+                                    <field name="qty_20" sum="Tổng 2.0"/>
+                                    <field name="work_value" optional="hide"/>
+                                    <field name="is_new_price" widget="boolean_toggle" optional="show"/>
+                                    <field name="amount" sum="Tổng tiền" widget="monetary" decoration-bf="1"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_sorting_log" model="ir.actions.act_window">
+        <field name="name">Sản lượng Nhặt Ván</field>
+        <field name="res_model">dl.sorting.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bắt đầu ghi nhận sản lượng nhặt ván hàng ngày.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Integration -->
+    <menuitem id="menu_dl_sorting_log_action"
+              name="Sản lượng Nhặt Ván"
+              parent="dl_wood_payroll.menu_dl_ops_root"
+              action="action_dl_sorting_log"
+              sequence="25"/>
+
+    <menuitem id="menu_dl_sorting_pricelist_action"
+              name="Đơn giá Nhặt Ván"
+              parent="dl_wood_payroll.menu_dl_pricing_root"
+              action="action_dl_sorting_pricelist"
+              sequence="25"/>
+</odoo>

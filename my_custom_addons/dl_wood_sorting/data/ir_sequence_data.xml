@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_dl_sorting_log" model="ir.sequence">
+            <field name="name">Nghiệm thu Nhặt Ván</field>
+            <field name="code">dl.sorting.log</field>
+            <field name="prefix">SORT/%(range_year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

@@ -16,3 +16,6 @@ from . import wood_integration
 from . import dl_fine
 from . import dl_film_brand
 from . import dl_film_pricelist
+from . import dl_stevedore_log
+from . import dl_payroll_matrix_report
+from . import dl_veneer_drying

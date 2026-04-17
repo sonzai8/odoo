@@ -54,8 +54,57 @@
         </field>
     </record>
 
+    <record id="view_dl_payroll_matrix_report_tree" model="ir.ui.view">
+        <field name="name">dl.payroll.matrix.report.tree</field>
+        <field name="model">dl.payroll.matrix.report</field>
+        <field name="arch" type="xml">
+            <list string="Ma trận Lương tổng hợp" create="false" edit="false">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="date"/>
+                <field name="employee_id"/>
+                <field name="source_group_id"/>
+                <field name="product_name"/>
+                <field name="quantity" sum="Tổng công"/>
+                <field name="unit_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="total_money" sum="Tổng lương" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="type" widget="badge" decoration-info="type == 'pooling'" decoration-success="type == 'stevedore'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_payroll_matrix_report_pivot" model="ir.ui.view">
+        <field name="name">dl.payroll.matrix.report.pivot</field>
+        <field name="model">dl.payroll.matrix.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Ma trận Lương ngày (Tổng hợp)" sample="1">
+                <field name="source_group_id" type="row"/>
+                <field name="employee_id" type="row"/>
+                <field name="date" interval="day" type="col"/>
+                <field name="total_money" type="measure"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_dl_payroll_matrix_report_search" model="ir.ui.view">
+        <field name="name">dl.payroll.matrix.report.search</field>
+        <field name="model" >dl.payroll.matrix.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="source_group_id"/>
+                <field name="product_name"/>
+                <filter string="Lương cào bằng" name="pooling" domain="[('type', '=', 'pooling')]"/>
+                <filter string="Lương khoán" name="stevedore" domain="[('type', '=', 'stevedore')]"/>
+                <separator/>
+                <filter string="Tổ biên chế" name="group_by_source_group" context="{'group_by':'source_group_id'}"/>
+                <filter string="Nhân viên" name="group_by_employee" context="{'group_by':'employee_id'}"/>
+            </search>
+        </field>
+    </record>
+
     <record id="action_dl_daily_pooling_result" model="ir.actions.act_window">
-        <field name="name">Kết quả cào bằng lương</field>
+        <field name="name">Bảng lương cào bằng (Chi tiết)</field>
         <field name="res_model">dl.daily.pooling.result</field>
         <field name="view_mode">list,pivot,form</field>
         <field name="search_view_id" ref="view_dl_daily_pooling_result_search"/>
@@ -63,16 +112,17 @@
 
     <record id="action_dl_payroll_matrix_report" model="ir.actions.act_window">
         <field name="name">Ma trận Lương ngày</field>
-        <field name="res_model">dl.daily.pooling.result</field>
+        <field name="res_model">dl.payroll.matrix.report</field>
         <field name="view_mode">pivot,list</field>
-        <field name="search_view_id" ref="view_dl_daily_pooling_result_search"/>
+        <field name="search_view_id" ref="view_dl_payroll_matrix_report_search"/>
+        <field name="context">{'search_default_group_by_source_group': 1}</field>
     </record>
 
     <record id="action_dl_comprehensive_matrix_report" model="ir.actions.act_window">
-        <field name="name">Báo cáo Tổng hợp (Sản lượng &amp; Lương)</field>
-        <field name="res_model">dl.daily.pooling.result</field>
+        <field name="name">Báo cáo Tổng hợp (Toàn công ty)</field>
+        <field name="res_model">dl.payroll.matrix.report</field>
         <field name="view_mode">pivot,list</field>
-        <field name="search_view_id" ref="view_dl_daily_pooling_result_search"/>
-        <field name="context">{'search_default_group_by_source_group': 1, 'search_default_group_by_production_summary': 1}</field>
+        <field name="search_view_id" ref="view_dl_payroll_matrix_report_search"/>
+        <field name="context">{'search_default_group_by_source_group': 1}</field>
     </record>
 </odoo>

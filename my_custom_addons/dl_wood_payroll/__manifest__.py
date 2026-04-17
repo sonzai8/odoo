@@ -47,6 +47,9 @@
         'views/dl_combined_log_views.xml',
         'views/integration_views.xml',
         'views/dl_missing_attendance_client_views.xml',
+        'data/dl_stevedore_log_data.xml',
+        'views/dl_stevedore_log_views.xml',
+        'views/dl_veneer_drying_views.xml',
         'views/menus.xml',
     ],
     'assets': {
