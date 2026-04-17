@@ -5,13 +5,51 @@
         <field name="name">dl.drying.pricelist.tree</field>
         <field name="model">dl.drying.pricelist</field>
         <field name="arch" type="xml">
-            <list editable="bottom">
+            <list decoration-info="state == 'draft'" decoration-success="state == 'confirmed'">
                 <field name="name"/>
-                <field name="veneer_type"/>
-                <field name="thickness"/>
-                <field name="quality"/>
-                <field name="unit_price"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_dl_drying_pricelist_form" model="ir.ui.view">
+        <field name="name">dl.drying.pricelist.form</field>
+        <field name="model">dl.drying.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Bảng giá Phơi ván">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_clone_pricelist" string="Sao chép từ tháng trước" type="object" class="btn-secondary" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại nháp" type="object" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month" readonly="state != 'draft'"/>
+                            <field name="year" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết đơn giá">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="veneer_type"/>
+                                    <field name="thickness"/>
+                                    <field name="quality"/>
+                                    <field name="unit_price"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
         </field>
     </record>
 
@@ -26,18 +64,71 @@
         <field name="name">dl.veneer.drying.log.tree</field>
         <field name="model">dl.veneer.drying.log</field>
         <field name="arch" type="xml">
-            <list string="Nghiệm thu Phơi ván" editable="bottom" multi_edit="1">
+            <list string="Nghiệm thu Phơi ván" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'">
                 <field name="date"/>
-                <field name="employee_id"/>
-                <field name="veneer_type"/>
-                <field name="thickness"/>
-                <field name="quality"/>
-                <field name="quantity"/>
-                <field name="unit_price" optional="show"/>
-                <field name="total_amount" sum="Tổng tiền" widget="monetary" decoration-bf="1"/>
+                <field name="production_group_id" string="Tổ sản xuất"/>
                 <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
-                <button name="action_confirm" type="object" string="Xác nhận" icon="fa-check" invisible="state != 'draft'"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_dl_veneer_drying_log_form" model="ir.ui.view">
+        <field name="name">dl.veneer.drying.log.form</field>
+        <field name="model">dl.veneer.drying.log</field>
+        <field name="arch" type="xml">
+            <form string="Nghiệm thu Phơi ván">
+                <header>
+                    <button name="action_confirm" string="Xác nhận &amp; Chốt công" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại nháp" type="object" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="production_group_id"/>
+                        <h1><field name="production_group_id" placeholder="Chọn tổ sản xuất..." readonly="state != 'draft'"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Nhập Ma trận (Bảng ngang)" name="matrix_entry">
+                            <field name="matrix_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="employee_id" widget="many2one_avatar_user" readonly="1" force_save="1"/>
+                                    
+                                    <!-- Nhóm Ván Ẩm -->
+                                    <field name="qty_am_17_a" string="Ẩm 1.7 A" sum="Sum"/>
+                                    <field name="qty_am_17_bc" string="Ẩm 1.7 BC" sum="Sum"/>
+                                    <field name="qty_am_20_a" string="Ẩm 2.0 A" sum="Sum"/>
+                                    <field name="qty_am_20_bc" string="Ẩm 2.0 BC" sum="Sum"/>
+                                    
+                                    <!-- Nhóm Ván Bóc -->
+                                    <field name="qty_boc_17_a" string="Bóc 1.7 A" sum="Sum"/>
+                                    <field name="qty_boc_17_bc" string="Bóc 1.7 BC" sum="Sum"/>
+                                    <field name="qty_boc_20_a" string="Bóc 2.0 A" sum="Sum"/>
+                                    <field name="qty_boc_20_bc" string="Bóc 2.0 BC" sum="Sum"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Dữ liệu chuẩn (Reporting)" name="standard_lines">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="employee_id"/>
+                                    <field name="veneer_type"/>
+                                    <field name="thickness"/>
+                                    <field name="quality"/>
+                                    <field name="quantity" sum="Total"/>
+                                    <field name="unit_price"/>
+                                    <field name="total_amount" sum="Total" widget="monetary"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
         </field>
     </record>
 
@@ -45,26 +136,19 @@
         <field name="name">dl.veneer.drying.log.kanban</field>
         <field name="model">dl.veneer.drying.log</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="employee_id">
-                <field name="employee_id"/>
+            <kanban default_group_by="production_group_id">
+                <field name="production_group_id"/>
                 <field name="date"/>
-                <field name="total_amount"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click container">
                             <div class="row">
                                 <div class="col-8">
-                                    <strong><field name="employee_id"/></strong>
+                                    <strong><field name="production_group_id"/></strong>
                                 </div>
                                 <div class="col-4 text-end">
                                     <field name="date"/>
                                 </div>
-                            </div>
-                            <div class="mt-2">
-                                <span><field name="veneer_type"/> - <field name="thickness"/>ly - <field name="quality"/></span>
-                            </div>
-                            <div class="mt-1">
-                                <strong><field name="total_amount" widget="monetary"/></strong>
                             </div>
                         </div>
                     </t>
@@ -76,6 +160,6 @@
     <record id="action_dl_veneer_drying_log" model="ir.actions.act_window">
         <field name="name">Phiếu Nghiệm Thu Phơi Ván</field>
         <field name="res_model">dl.veneer.drying.log</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">list,form,kanban</field>
     </record>
 </odoo>

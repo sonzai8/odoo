@@ -72,18 +72,18 @@ class PayrollMatrixReport(models.Model):
 
                 -- 3. Dữ liệu Lương Phơi ván (Veneer Drying)
                 SELECT
-                    log.id + 20000000 AS id,
-                    log.date AS date,
-                    log.employee_id AS employee_id,
-                    COALESCE(emp.x_source_group_id, (SELECT id FROM dl_production_group LIMIT 1)) AS source_group_id,
-                    'Nghiệm thu Phơi ván: ' || log.veneer_type || ' ' || log.thickness || 'ly ' || log.quality AS product_name,
-                    log.quantity AS quantity,
-                    log.unit_price AS unit_price,
-                    log.total_amount AS total_money,
-                    log.currency_id AS currency_id,
+                    line.id + 20000000 AS id,
+                    line.date AS date,
+                    line.employee_id AS employee_id,
+                    line.x_source_group_id AS source_group_id,
+                    'Phơi ván: ' || line.veneer_type || ' ' || line.thickness || 'ly ' || line.quality AS product_name,
+                    line.quantity AS quantity,
+                    line.unit_price AS unit_price,
+                    line.total_amount AS total_money,
+                    line.currency_id AS currency_id,
                     'drying' AS type
-                FROM dl_veneer_drying_log log
-                JOIN hr_employee emp ON log.employee_id = emp.id
+                FROM dl_veneer_drying_line line
+                JOIN dl_veneer_drying_log log ON line.log_id = log.id
                 WHERE log.state = 'confirmed'
             )
         """ % self._table)

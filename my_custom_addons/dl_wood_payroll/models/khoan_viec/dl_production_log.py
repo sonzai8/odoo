@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 class ProductionLog(models.Model):
     _name = 'dl.production.log'
@@ -63,6 +64,9 @@ class ProductionLog(models.Model):
             self.worker_line_ids = [(5, 0, 0)] + lines
 
     def action_confirm(self):
+        for rec in self:
+            if any(line.price <= 0 for line in rec.product_line_ids):
+                raise ValidationError(_("Một số sản phẩm trong phiếu này chưa có đơn giá. Vui lòng kiểm tra Bảng giá công đoạn của tháng."))
         self.write({'state': 'confirmed'})
 
     def action_draft(self):
