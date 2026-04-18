@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_payroll_dashboard_kanban" model="ir.ui.view">
+        <field name="name">dl.payroll.dashboard.kanban</field>
+        <field name="model">dl.payroll.dashboard</field>
+        <field name="arch" type="xml">
+            <kanban on_create="false">
+                <field name="bg_color"/>
+                <field name="name"/>
+                <field name="stat_value"/>
+                <field name="stat_label"/>
+                <field name="action_id"/>
+
+                <templates>
+                    <t t-name="card">
+                        <div class="o_kanban_record"
+                             t-att-style="'background-color: ' + (record.bg_color.raw_value || '#f8f9fa')">
+                            <div class="oe_kanban_card">
+                                <div class="o_kanban_card_header">
+                                    <div class="o_kanban_card_header_title">
+                                        <field name="name" class="o_kanban_title"/>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_body">
+                                    <h2 style="margin:4px 0; color:#fff; font-size:22px; font-weight:700;">
+                                        <field name="stat_value"/>
+                                    </h2>
+                                    <div style="font-size:11px; color:rgba(255,255,255,0.8);">
+                                        <field name="stat_label"/>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_footer">
+                                    <field name="action_id" widget="action"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_dl_payroll_dashboard_list" model="ir.ui.view">
+        <field name="name">dl.payroll.dashboard.list</field>
+        <field name="model">dl.payroll.dashboard</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="stat_value"/>
+                <field name="stat_label"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_payroll_dashboard" model="ir.actions.act_window">
+        <field name="name">Tổng quan Lương &amp; Sản lượng</field>
+        <field name="res_model">dl.payroll.dashboard</field>
+        <field name="view_mode">kanban,list</field>
+        <field name="view_id" ref="view_dl_payroll_dashboard_kanban"/>
+        <field name="target">main</field>
+        <field name="context">{'create': 0}</field>
+    </record>
+
+    <record id="action_dl_payroll_dashboard_refresh" model="ir.actions.server">
+        <field name="name">Refresh Dashboard</field>
+        <field name="model_id" ref="model_dl_payroll_dashboard"/>
+        <field name="binding_model_id" ref="model_dl_payroll_dashboard"/>
+        <field name="binding_view_types">kanban</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = model.action_open_dashboard()
+        </field>
+    </record>
+</odoo>

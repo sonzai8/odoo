@@ -50,6 +50,7 @@
         'data/dl_stevedore_log_data.xml',
         'views/stevedore/dl_stevedore_views.xml',
         'views/khoan_viec/dl_veneer_drying_views.xml',
+        'views/dashboard/dashboard_views.xml',
         'views/menus.xml',
     ],
     'assets': {

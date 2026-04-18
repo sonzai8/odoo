@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <data noupdate="0">
+
+    <!-- 0. Dashboard (Landing page) -->
+    <menuitem id="menu_dl_overview_root"
+              name="Tổng quan"
+              parent="menu_dl_wood_payroll_root"
+              action="action_dl_payroll_dashboard"
+              sequence="5"/>
+
     <menuitem id="menu_dl_wood_payroll_root" 
-              name="Lương &amp; Sản lượng" 
+              name="Lương - Sản lượng" 
               web_icon="dl_wood_payroll,static/description/icon.png"
               sequence="20"/>
 
@@ -15,13 +24,13 @@
               name="Cào bằng tổ sản xuất"
               parent="menu_dl_ops_root"
               action="action_dl_combined_log"
-              sequence="10"/>
+              sequence="11"/>
 
     <menuitem id="menu_dl_pooling_wizard_action_in_ops"
               name="Tính toán cào bằng lương"
               parent="menu_dl_ops_root"
               action="action_dl_pooling_wizard"
-              sequence="5"/>
+              sequence="55"/>
 
     <menuitem id="menu_dl_veneer_drying_log_action_in_ops"
               name="Sản lượng Phơi Ván"
@@ -253,4 +262,6 @@
               action="action_dl_clean_data_wizard"
               sequence="100"
               groups="group_dl_wood_manager"/>
+
+    </data>
 </odoo>

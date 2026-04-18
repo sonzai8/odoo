@@ -78,3 +78,4 @@ access_dl_veneer_drying_matrix_line_user,dl.veneer.drying.matrix.line.user,model
 access_dl_veneer_drying_matrix_line_manager,dl.veneer.drying.matrix.line.manager,model_dl_veneer_drying_matrix_line,group_dl_wood_manager,1,1,1,1
 access_dl_stevedore_task_user,dl.stevedore.task.user,model_dl_stevedore_task,group_dl_wood_staff,1,0,0,0
 access_dl_stevedore_task_manager,dl.stevedore.task.manager,model_dl_stevedore_task,group_dl_wood_manager,1,1,1,1
+access_dl_payroll_dashboard_user,dl.payroll.dashboard.user,model_dl_payroll_dashboard,base.group_user,1,0,0,0
