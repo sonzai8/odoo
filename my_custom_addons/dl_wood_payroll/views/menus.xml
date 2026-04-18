@@ -5,6 +5,13 @@
               web_icon="dl_wood_payroll,static/description/icon.png"
               sequence="20"/>
 
+    <!-- 0. Tổng Quan (Landing Page) -->
+    <menuitem id="menu_dl_overview_root"
+              name="Tổng quan"
+              parent="menu_dl_wood_payroll_root"
+              action="action_dl_comprehensive_matrix_report"
+              sequence="5"/>
+
     <!-- A. Top Menu: Chấm Công - Tính Lương -->
     <menuitem id="menu_dl_ops_root"
               name="Chấm Công - Tính Lương"
