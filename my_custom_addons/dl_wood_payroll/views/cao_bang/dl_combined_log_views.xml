@@ -75,7 +75,6 @@
                             <field name="product_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
-                                    <field name="is_re_ep_film"/>
                                     <field name="quantity" sum="Tổng số tấm"/>
                                     <field name="price_high" readonly="1" force_save="1"/>
                                     <field name="price_low" readonly="1" force_save="1"/>

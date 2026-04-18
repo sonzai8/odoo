@@ -181,8 +181,6 @@ class PieceRatePricelistLine(models.Model):
     x_length = fields.Float(related='product_id.x_length', string='Dài (cm)', readonly=True)
     x_width = fields.Float(related='product_id.x_width', string='Rộng (cm)', readonly=True)
     layer_info = fields.Char(related='product_id.x_structure_summary', string='Thông số kỹ thuật', readonly=True)
-    film_type_id = fields.Many2one(related='product_id.x_film_id', string='Loại Phim', readonly=True)
-    coating_type = fields.Selection(related='product_id.x_coating_type', string='Hình thức phủ', readonly=True)
     
     currency_id = fields.Many2one(related='pricelist_id.currency_id', string='Tiền tệ', store=True)
 

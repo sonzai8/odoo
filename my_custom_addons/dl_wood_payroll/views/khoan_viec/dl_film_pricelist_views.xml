@@ -61,13 +61,15 @@
                         <page string="Chi tiết đơn giá" name="lines">
                             <field name="line_ids" readonly="state == 'confirmed'">
                                 <list editable="bottom" decoration-muted="price_high == 0">
+                                    <field name="product_tmpl_id" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="x_thickness_alias"/>
                                     <field name="x_film_brand_id"/>
                                     <field name="x_surface_type"/>
                                     <field name="currency_id" column_invisible="True"/>
-                                    <field name="price_high" widget="monetary" decoration-bf="1" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="price_low" widget="monetary" optional="hide" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="price_re_ep" widget="monetary" decoration-info="1" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_low" widget="monetary" string="Thường Cũ" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_high" widget="monetary" string="Thường Mới" decoration-bf="1" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_re_ep_low" widget="monetary" string="Sửa Cũ" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_re_ep_high" widget="monetary" string="Sửa Mới" decoration-info="1" options="{'currency_field': 'currency_id'}"/>
                                 </list>
                             </field>
                         </page>

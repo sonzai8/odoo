@@ -40,6 +40,7 @@
                         </group>
                         
                         <field name="is_kcs_stage" invisible="1"/>
+                        <field name="is_film_stage" invisible="1"/>
                         <group class="dl_card" string="Vật tư đóng gói (KCS)" invisible="not is_kcs_stage">
                             <group>
                                 <field name="x_plastic_belt_qty" readonly="state == 'locked'"/>
@@ -50,17 +51,31 @@
                                 <field name="x_cardboard_qty" readonly="state == 'locked'"/>
                             </group>
                         </group>
+                        
+                        <group class="dl_card" string="Tạm tính lương (Nội bộ)" invisible="not is_film_stage" style="border-left: 4px solid #3b82f6;">
+                            <field name="currency_id" invisible="1"/>
+                            <group>
+                                <field name="x_total_estimated_wage" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                <field name="x_worker_count"/>
+                            </group>
+                            <group>
+                                <field name="x_avg_wage_per_worker" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" decoration-bf="1"/>
+                            </group>
+                        </group>
                     </group>
                     <notebook>
                         <page string="Sản lượng sản xuất" name="products">
                             <field name="product_line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
-                                    <field name="product_id" domain="[('x_is_wood_product', '=', True)]" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="product_id" 
+                                           domain="[('x_is_wood_product', '=', True), '|', ('parent.is_film_stage', '=', False), ('x_is_film_product', '=', True)]" 
+                                           options="{'no_create': True, 'no_open': True}"/>
                                     <field name="x_quality" widget="badge" decoration-info="1" optional="show"/>
                                     <field name="layer_info" optional="show"/>
-                                    <field name="x_film_brand_id" placeholder="Thương hiệu Film" optional="show"/>
-                                    <field name="x_surface_type" placeholder="Số mặt" optional="show"/>
-                                    <field name="is_re_ep_film" optional="show" string="Ép lại" widget="boolean_toggle"/>
+                                    <field name="x_film_brand_id" placeholder="Thương hiệu Film" optional="show" invisible="not parent.is_film_stage" required="parent.is_film_stage"/>
+                                    <field name="x_surface_type" placeholder="Số mặt" optional="show" invisible="not parent.is_film_stage" required="parent.is_film_stage"/>
+                                    <field name="is_re_ep_film" optional="show" invisible="not parent.is_film_stage"/>
+                                    <field name="x_price_type" column_invisible="True"/>
                                     <field name="quantity" sum="Tổng số tấm"/>
                                     <field name="price" readonly="1" widget="monetary" decoration-info="1"/>
                                 </list>

@@ -6,20 +6,15 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     x_is_wood_product = fields.Boolean(string='Là sản phẩm ngành gỗ', default=False)
+    x_is_film_product = fields.Boolean(string='Là sản phẩm Ép Film', default=False, help='Đánh dấu sản phẩm có công đoạn ép phim để cấu hình đơn giá.')
     x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
+    x_thickness_alias = fields.Char(string='Ký hiệu độ dày', help='Dùng để tra cứu bảng giá Ép Film (ví dụ: 11M, 14D...)')
     x_length = fields.Float(string='Chiều dài (cm)', digits=(16, 1))
     x_width = fields.Float(string='Chiều rộng (cm)', digits=(16, 1))
     
     x_dimension_id = fields.Many2one('product.attribute.value', string='Khổ ván (Kích thước)', 
                                     domain=[('attribute_id.name', 'ilike', 'Kích thước')])
     
-    x_coating_type = fields.Selection([
-        ('none', 'Không phủ film'),
-        ('1_side', 'Phủ 1 mặt'),
-        ('2_side', 'Phủ 2 mặt')
-    ], string='Hình thức phủ', default='none')
-    
-    x_film_id = fields.Many2one('dl.film.brand', string='Thương hiệu Film')
     
     x_quality = fields.Selection([
         ('a', 'Loại A'),
@@ -48,7 +43,7 @@ class ProductTemplate(models.Model):
             product.x_area_m2 = area
             product.x_volume_m3 = (area * product.x_thickness) / 1000.0
 
-    @api.depends('x_thickness', 'x_length', 'x_width', 'x_layer_a_count', 'x_layer_b_count', 'x_layer_c_count', 'x_film_id', 'x_coating_type', 'x_quality')
+    @api.depends('x_thickness', 'x_length', 'x_width', 'x_layer_a_count', 'x_layer_b_count', 'x_layer_c_count', 'x_quality')
     def _compute_structure_summary(self):
         for product in self:
             parts = []
@@ -72,11 +67,6 @@ class ProductTemplate(models.Model):
             if layers:
                 parts.append("-".join(layers))
             
-            # Film & Phủ (Chỉ hiện nếu có phủ)
-            if product.x_coating_type != 'none':
-                film_name = product.x_film_id.name or 'N/A'
-                side_text = "1M" if product.x_coating_type == '1_side' else "2M"
-                parts.append(f"Film {film_name} {side_text}")
             
             product.x_structure_summary = " | ".join(parts)
 
@@ -94,3 +84,13 @@ class ProductTemplate(models.Model):
             if product.x_is_wood_product:
                 if product.x_length <= 0 or product.x_width <= 0 or product.x_thickness <= 0:
                     raise ValidationError("Kích thước và Độ dày sản phẩm gỗ phải lớn hơn 0!")
+
+class ProductProduct(models.Model):
+    _inherit = 'product.product'
+
+    x_is_wood_product = fields.Boolean(related='product_tmpl_id.x_is_wood_product', readonly=True)
+    x_is_film_product = fields.Boolean(related='product_tmpl_id.x_is_film_product', readonly=True)
+    x_thickness = fields.Float(related='product_tmpl_id.x_thickness', readonly=True)
+    x_length = fields.Float(related='product_tmpl_id.x_length', readonly=True)
+    x_width = fields.Float(related='product_tmpl_id.x_width', readonly=True)
+    x_quality = fields.Selection(related='product_tmpl_id.x_quality', readonly=True)

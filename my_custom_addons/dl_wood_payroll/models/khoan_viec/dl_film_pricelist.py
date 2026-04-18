@@ -98,17 +98,17 @@ class FilmPricelist(models.Model):
         }
 
     @api.model
-    def _get_film_active_price(self, date, thickness_alias, film_brand_id, surface_type):
+    def _get_film_active_price(self, date, product_tmpl_id, film_brand_id, surface_type):
         """
         Tra cứu đơn giá Ép Film dựa trên:
           - date: ngày sản xuất
-          - thickness_alias (str): ký hiệu độ dày
+          - product_tmpl_id (int): ID sản phẩm (template)
           - film_brand_id (int): ID thương hiệu Film
           - surface_type (str): '1m' hoặc '2m'
         Trả về dict {price_low, price_high, required_days}
         """
-        empty = {'price_low': 0.0, 'price_high': 0.0, 'required_days': 0.0}
-        if not date or not thickness_alias or not film_brand_id or not surface_type:
+        empty = {'price_low': 0.0, 'price_high': 0.0, 'price_re_ep_low': 0.0, 'price_re_ep_high': 0.0, 'required_days': 0.0}
+        if not date or not product_tmpl_id or not film_brand_id or not surface_type:
             return empty
 
         pricelist = self.search([
@@ -122,7 +122,7 @@ class FilmPricelist(models.Model):
 
         line = self.env['dl.film.pricelist.line'].search([
             ('pricelist_id', '=', pricelist.id),
-            ('x_thickness_alias', '=', thickness_alias),
+            ('product_tmpl_id', '=', product_tmpl_id),
             ('x_film_brand_id', '=', film_brand_id),
             ('x_surface_type', '=', surface_type),
         ], limit=1)
@@ -131,7 +131,8 @@ class FilmPricelist(models.Model):
             return {
                 'price_low': line.price_low,
                 'price_high': line.price_high,
-                'price_re_ep': line.price_re_ep,
+                'price_re_ep_low': line.price_re_ep_low,
+                'price_re_ep_high': line.price_re_ep_high,
                 'required_days': pricelist.x_required_days,
             }
         return empty
@@ -140,12 +141,16 @@ class FilmPricelist(models.Model):
 class FilmPricelistLine(models.Model):
     _name = 'dl.film.pricelist.line'
     _description = 'Chi tiết đơn giá Ép Film'
-    _order = 'x_thickness_alias, x_film_brand_id'
+    _order = 'product_tmpl_id, x_film_brand_id'
 
     pricelist_id = fields.Many2one('dl.film.pricelist', string='Bảng giá', ondelete='cascade', required=True)
-
-    x_thickness_alias = fields.Char(string='Ký hiệu độ dày', required=True,
-                                    help='Ví dụ: 11M, 14D, 17M, 19D...')
+    product_tmpl_id = fields.Many2one(
+        'product.template', 
+        string='Sản phẩm Gỗ', 
+        required=True,
+        domain=[('x_is_film_product', '=', True)]
+    )
+    x_thickness_alias = fields.Char(related='product_tmpl_id.x_thickness_alias', string='Ký hiệu độ dày', readonly=True)
     x_film_brand_id = fields.Many2one('dl.film.brand', string='Thương hiệu Film', required=True)
     x_surface_type = fields.Selection([
         ('1m', '1M'),
@@ -163,13 +168,19 @@ class FilmPricelistLine(models.Model):
         string='DG Mới',
         currency_field='currency_id',
         default=0.0,
-        help='Áp dụng khi nhân viên đủ hoặc vượt số công yêu cầu trong tháng.'
+        help='Áp dụng khi nhân viên đủ hoặc vượt số công yêu cầu + có bảo hiểm.'
     )
-    price_re_ep = fields.Monetary(
-        string='Lại',
+    price_re_ep_low = fields.Monetary(
+        string='Sửa Cũ',
         currency_field='currency_id',
         default=0.0,
-        help='Áp dụng khi sản phẩm được tích là Ép lại 1 mặt.'
+        help='Đơn giá sửa/ép lại cho nhân viên không đủ điều kiện (Cũ).'
+    )
+    price_re_ep_high = fields.Monetary(
+        string='Sửa Mới',
+        currency_field='currency_id',
+        default=0.0,
+        help='Đơn giá sửa/ép lại cho nhân viên đủ điều kiện (Mới).'
     )
 
     # Related để lọc/báo cáo
@@ -177,33 +188,33 @@ class FilmPricelistLine(models.Model):
     year = fields.Integer(related='pricelist_id.year', store=True, index=True, readonly=True)
 
     _sql_constraints = [
-        ('line_unique', 'unique(pricelist_id, x_thickness_alias, x_film_brand_id, x_surface_type)',
-         'Tổ hợp (Alias + Thương hiệu + Số mặt) này đã tồn tại trong bảng giá!'),
+        ('line_unique', 'unique(pricelist_id, product_tmpl_id, x_film_brand_id, x_surface_type)',
+         'Sản phẩm này với thương hiệu và số mặt đã tồn tại trong bảng giá!'),
     ]
 
-    @api.constrains('x_thickness_alias', 'x_film_brand_id', 'x_surface_type')
+    @api.constrains('product_tmpl_id', 'x_film_brand_id', 'x_surface_type')
     def _check_unique_combination(self):
         """Kiểm tra trùng lặp tổ hợp để báo lỗi chi tiết hơn SQL constraint"""
         for rec in self:
             domain = [
                 ('id', '!=', rec.id),
                 ('pricelist_id', '=', rec.pricelist_id.id),
-                ('x_thickness_alias', '=', rec.x_thickness_alias),
+                ('product_tmpl_id', '=', rec.product_tmpl_id.id),
                 ('x_film_brand_id', '=', rec.x_film_brand_id.id),
                 ('x_surface_type', '=', rec.x_surface_type),
             ]
             if self.search_count(domain) > 0:
                 raise UserError(_(
-                    "Lỗi: Tổ hợp này đã tồn tại trong bảng giá!\n"
-                    "- Độ dày: %s\n"
+                    "Lỗi: Sản phẩm này đã tồn tại trong bảng giá!\n"
+                    "- Sản phẩm: %s\n"
                     "- Thương hiệu: %s\n"
                     "- Số mặt: %s"
-                ) % (rec.x_thickness_alias, rec.x_film_brand_id.name, rec.x_surface_type))
+                ) % (rec.product_tmpl_id.name, rec.x_film_brand_id.name, rec.x_surface_type))
 
-    @api.constrains('price_low', 'price_high', 'price_re_ep')
+    @api.constrains('price_low', 'price_high', 'price_re_ep_low', 'price_re_ep_high')
     def _check_prices(self):
         """Kiểm tra đơn giá không âm"""
         for rec in self:
-            if rec.price_low < 0 or rec.price_high < 0 or rec.price_re_ep < 0:
-                raise UserError(_("Đơn giá không được phép là số âm (Dòng: %s - %s)") % 
-                                (rec.x_thickness_alias, rec.x_film_brand_id.name))
+            if rec.price_low < 0 or rec.price_high < 0 or rec.price_re_ep_low < 0 or rec.price_re_ep_high < 0:
+                raise UserError(_("Đơn giá không được phép là số âm (Sản phẩm: %s)") % 
+                                (rec.product_tmpl_id.name))

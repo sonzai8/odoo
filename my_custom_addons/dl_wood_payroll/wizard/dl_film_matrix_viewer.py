@@ -24,12 +24,8 @@ class FilmMatrixViewer(models.TransientModel):
             import re
             lines = pricelist.line_ids
             # Thu thập các Ký hiệu độ dày (Rows) và tự động sắp xếp theo SỐ (vd: 9 ly đứng trước 12 ly)
-            def alias_sort_key(alias):
-                if not alias: return (0, "")
-                match = re.search(r'\d+', alias)
-                return (int(match.group()), alias) if match else (0, alias)
-            
-            aliases = sorted(list(set(lines.mapped('x_thickness_alias'))), key=alias_sort_key)
+            # Thu thập các Sản phẩm (Rows) và sắp xếp theo tên
+            products = sorted(list(set(lines.mapped('product_tmpl_id'))), key=lambda x: x.name)
             
             # Thu thập các Cột (Brand + Surface)
             # Tạo dictionary lồng nhau: Brand -> [1m, 2m]
@@ -38,7 +34,7 @@ class FilmMatrixViewer(models.TransientModel):
             # Gom dữ liệu để tra từ điển nhanh
             data_dict = {}
             for l in lines:
-                key = (l.x_thickness_alias, l.x_film_brand_id.id, l.x_surface_type)
+                key = (l.product_tmpl_id.id, l.x_film_brand_id.id, l.x_surface_type)
                 data_dict[key] = l
 
             # Định dạng số tiền
@@ -147,11 +143,11 @@ class FilmMatrixViewer(models.TransientModel):
                 html1 += "<th>1M (Mới)</th><th>1M (Cũ)</th><th>2M (Mới)</th><th>2M (Cũ)</th>"
             html1 += "</tr></thead><tbody>"
 
-            for alias in aliases:
-                html1 += f"<tr><th class='sticky-col'>{alias}</th>"
+            for p in products:
+                html1 += f"<tr><th class='sticky-col'>{p.name}</th>"
                 for b in brands:
-                    l_1m = data_dict.get((alias, b.id, '1m'))
-                    l_2m = data_dict.get((alias, b.id, '2m'))
+                    l_1m = data_dict.get((p.id, b.id, '1m'))
+                    l_2m = data_dict.get((p.id, b.id, '2m'))
                     
                     p1_h = format_money(l_1m.price_high) if l_1m else "-"
                     p1_l = format_money(l_1m.price_low) if l_1m else "-"
@@ -178,19 +174,22 @@ class FilmMatrixViewer(models.TransientModel):
                 html2 += f"<th colspan='2' class='brand-header'>{b.name}</th>"
             html2 += "</tr><tr>"
             for b in brands:
-                html2 += "<th>1M (Lại)</th><th>2M (Lại)</th>"
+                html2 += "<th>1M (Sửa Mới)</th><th>1M (Sửa Cũ)</th><th>2M (Sửa Mới)</th><th>2M (Sửa Cũ)</th>"
             html2 += "</tr></thead><tbody>"
 
-            for alias in aliases:
-                html2 += f"<tr><th class='sticky-col'>{alias}</th>"
+            for p in products:
+                html2 += f"<tr><th class='sticky-col'>{p.name}</th>"
                 for b in brands:
-                    l_1m = data_dict.get((alias, b.id, '1m'))
-                    l_2m = data_dict.get((alias, b.id, '2m'))
+                    l_1m = data_dict.get((p.id, b.id, '1m'))
+                    l_2m = data_dict.get((p.id, b.id, '2m'))
                     
-                    pr1 = format_money(l_1m.price_re_ep) if l_1m else "-"
-                    pr2 = format_money(l_2m.price_re_ep) if l_2m else "-"
+                    pr1_h = format_money(l_1m.price_re_ep_high) if l_1m else "-"
+                    pr1_l = format_money(l_1m.price_re_ep_low) if l_1m else "-"
+                    pr2_h = format_money(l_2m.price_re_ep_high) if l_2m else "-"
+                    pr2_l = format_money(l_2m.price_re_ep_low) if l_2m else "-"
                     
-                    html2 += f"<td class='cell-re'>{pr1}</td><td class='cell-re'>{pr2}</td>"
+                    html2 += f"<td class='cell-re'>{pr1_h}</td><td class='cell-low'>{pr1_l}</td>"
+                    html2 += f"<td class='cell-re'>{pr2_h}</td><td class='cell-low'>{pr2_l}</td>"
                 html2 += "</tr>"
             html2 += "</tbody></table></div></div>"
 

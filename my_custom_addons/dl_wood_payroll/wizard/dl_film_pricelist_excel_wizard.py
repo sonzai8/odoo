@@ -34,8 +34,8 @@ class FilmPricelistExcelWizard(models.TransientModel):
         header_style = openpyxl.styles.Font(bold=True)
         fill = openpyxl.styles.PatternFill(start_color="B8D4E8", end_color="B8D4E8", fill_type="solid")
 
-        headers = ['ID Dòng', 'Ký hiệu độ dày', 'Thương hiệu Film', 'Số mặt (1m/2m)',
-                   'Đơn giá Mới (Đủ công)', 'Đơn giá Cũ (Thiếu công)', 'Đơn giá Ép lại']
+        headers = ['ID Dòng', 'Tên sản phẩm', 'Thương hiệu Film', 'Số mặt (1m/2m)',
+                   'Đơn giá Thường Mới', 'Đơn giá Thường Cũ', 'Đơn giá Sửa Mới', 'Đơn giá Sửa Cũ']
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
             cell.font = header_style
@@ -43,12 +43,13 @@ class FilmPricelistExcelWizard(models.TransientModel):
 
         for row_idx, line in enumerate(self.pricelist_id.line_ids, 2):
             ws.cell(row=row_idx, column=1, value=line.id)
-            ws.cell(row=row_idx, column=2, value=line.x_thickness_alias)
+            ws.cell(row=row_idx, column=2, value=line.product_tmpl_id.name)
             ws.cell(row=row_idx, column=3, value=line.x_film_brand_id.name)
             ws.cell(row=row_idx, column=4, value=line.x_surface_type)
             ws.cell(row=row_idx, column=5, value=line.price_high)
             ws.cell(row=row_idx, column=6, value=line.price_low)
-            ws.cell(row=row_idx, column=7, value=line.price_re_ep)
+            ws.cell(row=row_idx, column=7, value=line.price_re_ep_high)
+            ws.cell(row=row_idx, column=8, value=line.price_re_ep_low)
 
         fp = io.BytesIO()
         wb.save(fp)
@@ -83,18 +84,24 @@ class FilmPricelistExcelWizard(models.TransientModel):
         for row in ws.iter_rows(min_row=2, values_only=True):
             if not any(row): continue
             line_id = row[0]
-            alias = str(row[1] or '').strip().replace('.0', '')
+            product_name = str(row[1] or '').strip()
             brand_name = str(row[2] or '').strip()
             surface = str(row[3] or '').strip().lower()
             p_high = row[4] or 0.0
             p_low = row[5] or 0.0
-            p_re = row[6] if len(row) > 6 else 0.0
+            p_re_high = row[6] if len(row) > 6 else 0.0
+            p_re_low = row[7] if len(row) > 7 else 0.0
 
             status = 'ready'
             msgs = []
 
-            if not alias:
-                status = 'error'; msgs.append(_("Thiếu ký hiệu độ dày"))
+            if not product_name:
+                status = 'error'; msgs.append(_("Thiếu tên sản phẩm"))
+            
+            # Tìm kiếm sản phẩm
+            product_tmpl = self.env['product.template'].search([('name', '=', product_name), ('x_is_wood_product', '=', True)], limit=1)
+            if not product_tmpl:
+                status = 'error'; msgs.append(_("Không tìm thấy sản phẩm gỗ tên '%s'") % product_name)
 
             # Kiểm tra Brand
             brand = False
@@ -112,17 +119,18 @@ class FilmPricelistExcelWizard(models.TransientModel):
                 status = 'error'; msgs.append(_("Số mặt '%s' không hợp lệ, chỉ nhận '1m' hoặc '2m'") % surface)
 
             # Kiểm tra giá
-            if float(p_high or 0) < 0 or float(p_low or 0) < 0 or float(p_re or 0) < 0:
+            if any(float(p or 0) < 0 for p in [p_high, p_low, p_re_high, p_re_low]):
                 status = 'error'; msgs.append(_("Đơn giá không được âm"))
 
             preview_lines.append((0, 0, {
                 'line_id': int(line_id) if line_id else False,
-                'thickness_alias': alias,
+                'thickness_alias': product_name, # Giữ tên sản phẩm vào field này cho tiện hiển thị
                 'brand_name': brand_name,
                 'surface_type': surface,
                 'price_high': float(p_high or 0),
                 'price_low': float(p_low or 0),
-                'price_re_ep': float(p_re or 0),
+                'price_re_ep_high': float(p_re_high or 0),
+                'price_re_ep_low': float(p_re_low or 0),
                 'status': status,
                 'message': ". ".join(msgs) if msgs else _("Hợp lệ"),
             }))
@@ -154,20 +162,24 @@ class FilmPricelistExcelWizard(models.TransientModel):
             brand = self.env['dl.film.brand'].search([('name', '=', pl.brand_name)], limit=1)
             if not brand: continue
 
+            product_tmpl = self.env['product.template'].search([('name', '=', pl.thickness_alias), ('x_is_wood_product', '=', True)], limit=1)
+            if not product_tmpl: continue
+            
             vals = {
                 'pricelist_id': self.pricelist_id.id,
-                'x_thickness_alias': pl.thickness_alias,
+                'product_tmpl_id': product_tmpl.id,
                 'x_film_brand_id': brand.id,
                 'x_surface_type': pl.surface_type,
                 'price_high': pl.price_high,
                 'price_low': pl.price_low,
-                'price_re_ep': pl.price_re_ep,
+                'price_re_ep_high': pl.price_re_ep_high,
+                'price_re_ep_low': pl.price_re_ep_low,
             }
 
             # Tìm kiếm dòng trùng dựa trên Alias + Brand + Surface
             existing_line = self.env['dl.film.pricelist.line'].search([
                 ('pricelist_id', '=', self.pricelist_id.id),
-                ('x_thickness_alias', '=', pl.thickness_alias),
+                ('product_tmpl_id', '=', product_tmpl.id),
                 ('x_film_brand_id', '=', brand.id),
                 ('x_surface_type', '=', pl.surface_type),
             ], limit=1)
@@ -206,9 +218,10 @@ class FilmPricelistExcelLine(models.TransientModel):
     thickness_alias = fields.Char(string='Ký hiệu độ dày')
     brand_name = fields.Char(string='Thương hiệu Film')
     surface_type = fields.Char(string='Số mặt')
-    price_high = fields.Float(string='Đơn giá Mới')
-    price_low = fields.Float(string='Đơn giá Cũ')
-    price_re_ep = fields.Float(string='Đơn giá Ép lại')
+    price_high = fields.Float(string='Đơn giá Thường Mới')
+    price_low = fields.Float(string='Đơn giá Thường Cũ')
+    price_re_ep_high = fields.Float(string='Đơn giá Sửa Mới')
+    price_re_ep_low = fields.Float(string='Đơn giá Sửa Cũ')
     status = fields.Selection([
         ('ready', 'Hợp lệ'), ('warning', 'Cảnh báo'), ('error', 'Lỗi')
     ], string='Trạng thái', default='ready')
