@@ -55,3 +55,4 @@ python odoo-bin scaffold dl_wood_payroll my_custom_addons
 
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 pip install -r requirements.txt
+myenv\Scripts\activate
