@@ -7,6 +7,7 @@ class ProductTemplate(models.Model):
 
     x_is_wood_product = fields.Boolean(string='Là sản phẩm ngành gỗ', default=False)
     x_is_film_product = fields.Boolean(string='Là sản phẩm Ép Film', default=False, help='Đánh dấu sản phẩm có công đoạn ép phim để cấu hình đơn giá.')
+    x_is_support_product = fields.Boolean(string='Là sản phẩm hỗ trợ', default=False, help='Sản phẩm tính lương cho chuyền nhưng không tính vào báo cáo sản lượng chính.')
     x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
     x_thickness_alias = fields.Char(string='Ký hiệu độ dày', help='Dùng để tra cứu bảng giá Ép Film (ví dụ: 11M, 14D...)')
     x_length = fields.Float(string='Chiều dài (cm)', digits=(16, 1))
@@ -90,6 +91,7 @@ class ProductProduct(models.Model):
 
     x_is_wood_product = fields.Boolean(related='product_tmpl_id.x_is_wood_product', readonly=True)
     x_is_film_product = fields.Boolean(related='product_tmpl_id.x_is_film_product', readonly=True)
+    x_is_support_product = fields.Boolean(related='product_tmpl_id.x_is_support_product', readonly=True)
     x_thickness = fields.Float(related='product_tmpl_id.x_thickness', readonly=True)
     x_length = fields.Float(related='product_tmpl_id.x_length', readonly=True)
     x_width = fields.Float(related='product_tmpl_id.x_width', readonly=True)

@@ -199,6 +199,19 @@ class CombinedLog(models.Model):
                 }))
             self.worker_line_ids = [(5, 0, 0)] + lines
 
+            # 3. Load Support Products
+            support_products = self.env['product.product'].search([
+                ('x_is_support_product', '=', True),
+                ('active', '=', True)
+            ])
+            p_lines = []
+            for product in support_products:
+                p_lines.append((0, 0, {
+                    'product_id': product.id,
+                    'quantity': 0.0,
+                }))
+            self.product_line_ids = [(5, 0, 0)] + p_lines
+
     @api.onchange('batch_attendance_type_id')
     def _onchange_batch_attendance_type_id(self):
         if self.batch_attendance_type_id and self.worker_line_ids:

@@ -136,6 +136,7 @@
         <field name="name">Ma trận Sản lượng ngày</field>
         <field name="res_model">dl.production.log.product.line</field>
         <field name="view_mode">pivot,list</field>
+        <field name="domain">[('x_is_support_product', '=', False)]</field>
         <field name="search_view_id" ref="view_dl_production_log_product_line_search_new"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

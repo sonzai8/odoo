@@ -123,6 +123,7 @@ class ProductionLogProductLine(models.Model):
     department_id = fields.Many2one(related='production_log_id.department_id', store=True, index=True)
     
     product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
+    x_is_support_product = fields.Boolean(related='product_id.x_is_support_product', string='Sản phẩm hỗ trợ', store=True, readonly=True)
     
     # Thông số từ sản phẩm (Read-only)
     x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)

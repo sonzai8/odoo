@@ -11,6 +11,8 @@
                 <div class="o_row">
                     <field name="x_is_wood_product" class="oe_inline"/>
                     <label for="x_is_wood_product" class="fw-bold text-primary"/>
+                    <field name="x_is_support_product" class="oe_inline ms-3"/>
+                    <label for="x_is_support_product" class="fw-bold text-info"/>
                 </div>
             </xpath>
 
@@ -67,6 +69,7 @@
                     <!-- 3. Thông tin phủ phim (Coating) -->
                     <group string="Xử lý bề mặt &amp; Phủ phim" class="dl_card mb-3">
                         <field name="x_is_film_product"/>
+                        <field name="x_is_support_product"/>
                     </group>
                     
                     <!-- 4. Kết quả quy đổi (Results Dashboard) -->
