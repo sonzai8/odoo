@@ -14,47 +14,49 @@
 
     <!-- A. Top Menu: Chấm Công - Tính Lương -->
     <menuitem id="menu_dl_ops_root"
-              name="Chấm Công - Tính Lương"
+              name="Chấm Công - Sản Lượng"
               parent="menu_dl_wood_payroll_root"
               sequence="10"/>
 
     <menuitem id="menu_dl_combined_log_action"
-              name="Cào bằng tổ sản xuất"
+              name="Sản Lượng Chuyền"
               parent="menu_dl_ops_root"
               action="action_dl_combined_log"
               sequence="10"/>
-
-    <menuitem id="menu_dl_pooling_wizard_action_in_ops"
-              name="Tính toán cào bằng lương"
-              parent="menu_dl_ops_root"
-              action="action_dl_pooling_wizard"
-              sequence="5"/>
 
     <menuitem id="menu_dl_veneer_drying_log_action_in_ops"
               name="Sản lượng Phơi Ván"
               parent="menu_dl_ops_root"
               action="action_dl_veneer_drying_log"
-              sequence="20"/>
+              sequence="11"/>
 
     <menuitem id="menu_dl_production_log_action_in_ops"
               name="Sản lượng Ép Phim"
               parent="menu_dl_ops_root"
               action="action_dl_production_log"
-              sequence="30"/>
+              sequence="12"/>
 
     <menuitem id="menu_dl_stevedore_log_action_in_ops"
-              name="Nhật ký Bốc vác"
+              name="Sản lượng Bốc vác"
               parent="menu_dl_ops_root"
               action="action_dl_stevedore_log"
-              sequence="40"/>
+              sequence="13"/>
 
-    <menuitem id="menu_dl_attendance_action_in_ops"
+    <menuitem id="menu_dl_pooling_wizard_action_in_ops"
+              name="Tính toán lương Chuyền"
+              parent="menu_dl_ops_root"
+              action="action_dl_pooling_wizard"
+              sequence="55"/>
+
+    
+
+    <!-- <menuitem id="menu_dl_attendance_action_in_ops"
               name="Chấm công theo tổ"
               parent="menu_dl_ops_root"
               action="action_dl_daily_attendance"
-              sequence="50"/>
-
+              sequence="50"/> -->
     <!-- B. Top Menu: Báo Cáo -->
+
     <menuitem id="menu_dl_reports_root"
               name="Báo Cáo"
               parent="menu_dl_wood_payroll_root"
@@ -122,7 +124,7 @@
               groups="dl_wood_payroll.group_dl_wood_manager"/>
 
     <menuitem id="menu_dl_piece_rate_pricelist_action_in_pricing"
-              name="Đơn giá Cào bằng / Tổ sản xuất"
+              name="Đơn giá Chuyền"
               parent="menu_dl_pricing_root"
               action="action_dl_piece_rate_pricelist"
               sequence="10"/>
