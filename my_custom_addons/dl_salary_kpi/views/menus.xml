@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dl_salary_kpi_root"
+              name="Cân Đối Lương &amp; KPI"
+              web_icon="dl_salary_kpi,static/description/icon.png"
+              sequence="25"/>
+
+    <menuitem id="menu_dl_salary_kpi_main"
+              name="Quản lý lương &amp; KPI"
+              parent="menu_dl_salary_kpi_root"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_salary_kpi_month_action"
+              name="Cân đối theo tháng"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_month"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_salary_kpi_employee_action"
+              name="Quản lý Nhân viên KPI"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_employee"
+              sequence="15"/>
+
+    <!-- <menuitem id="menu_dl_salary_kpi_export_wizard_action"
+              name="Xuất báo cáo lương"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_export_wizard"
+              sequence="20"/> -->
+
+    <menuitem id="menu_dl_salary_kpi_calculation"
+              name="Tính KPI"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_calc"
+              sequence="25"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_dl_salary_kpi_config"
+              name="Cấu hình"
+              parent="menu_dl_salary_kpi_root"
+              sequence="100"/>
+
+    <menuitem id="menu_dl_salary_kpi_attendance_type_action"
+              name="Loại công"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_salary_kpi_attendance_type"
+              sequence="10"/>
+</odoo>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_calc_tree" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.calc.tree</field>
+        <field name="model">dl.salary.kpi.calc</field>
+        <field name="arch" type="xml">
+            <list string="Bảng tính KPI">
+                <field name="month_id"/>
+                <field name="name"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_calc_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.calc.form</field>
+        <field name="model">dl.salary.kpi.calc</field>
+        <field name="arch" type="xml">
+            <form string="Bảng tính KPI">
+                <header>
+                    <button name="action_load_employees" string="Lấy danh sách nhân viên" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-success" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" invisible="state != 'confirmed'"/>
+                    <button name="action_export_excel" string="Xuất Excel" type="object" class="btn-link" icon="fa-download"/>
+                    <button name="action_import_excel" string="Nhập Excel" type="object" class="btn-link" icon="fa-upload" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết tính KPI" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="employee_id" optional="hide"/>
+                                    <field name="employee_name"/>
+                                    <field name="identification_id" optional="show"/>
+                                    <field name="job_title" optional="show"/>
+                                    <field name="salary_base"/>
+                                    <field name="kpi_amount"/>
+                                    <field name="payout_ratio" widget="percentage"/>
+                                    <field name="kpi_coefficient"/>
+                                    <field name="kpi_score"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_calc" model="ir.actions.act_window">
+        <field name="name">Tính KPI</field>
+        <field name="res_model">dl.salary.kpi.calc</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bấm để tạo bảng tính KPI mới.
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_month_tree" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.month.tree</field>
+        <field name="model">dl.salary.kpi.month</field>
+        <field name="arch" type="xml">
+            <list string="Cân đối lương &amp; KPI">
+                <field name="date_month"/>
+                <field name="name" width="200px"/>
+                <field name="company_revenue" width="400px" sum="Tổng doanh thu"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+                <button name="action_export_salary_report" string="Xuất BC Lương" type="object" class="btn-link" icon="fa-download"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_month_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.month.form</field>
+        <field name="model">dl.salary.kpi.month</field>
+        <field name="arch" type="xml">
+            <form string="Cân đối lương &amp; KPI">
+                <header>
+                    <button name="action_load_employees" string="Lấy danh sách NV" type="object" invisible="state != 'draft'"/>
+                    <button name="action_sync_hr_from_month" string="Đồng bộ NV từ HR" type="object" class="oe_link" invisible="state != 'draft'"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="%(action_dl_salary_kpi_export_wizard)d" 
+                            string="Xuất BC Tổng Hợp" 
+                            type="action" 
+                            class="btn-success" 
+                            context="{'default_month_id': id}"
+                            invisible="state == 'draft'"/>
+                    <button name="action_export_attendance_template" string="Xuất mẫu chấm công" type="object" invisible="state != 'draft'"/>
+                    <button name="action_import_attendance" string="Nhập chấm công" type="object" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" invisible="state != 'confirmed'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date_month" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="meal_allowance_default" widget="monetary" readonly="state != 'draft'"/>
+                            <field name="women_allowance_default" widget="monetary" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="company_revenue" widget="monetary" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lương &amp; KPI" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="is_disabled" widget="boolean_toggle" string="Bỏ qua"/>
+                                    <!-- <field name="kpi_employee_id"/> -->
+                                    <field name="employee_name" width="200px"/>
+                                    <field name="gender"/>
+                                    <field name="identification_id" optional="hide"/>
+                                    <field name="department_id" optional="show"/>
+                                    <field name="work_group_id" optional="show"/>
+                                    <field name="total_work_days" sum="Tổng công"/>
+                                    <field name="meal_allowance" sum="Tổng ăn ca"/>
+                                    <field name="women_allowance" sum="Tổng trợ cấp nữ"/>
+                                    <field name="allowance_amount" sum="Tổng hỗ trợ khác"/>
+                                    <field name="bonus_amount" sum="Tổng thưởng"/>
+                                    <field name="kpi_score" avg="Điểm KPI TB"/>
+                                    <field name="total_salary_balance" sum="Tổng lương cân đối"/>
+                                    <field name="notes" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Bảng chấm công" name="matrix">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" decoration-muted="is_disabled">
+                                    <field name="is_disabled" invisible="1"/>
+                                    <field name="employee_name" readonly="1" sticky="1" width="200px"/>
+                                    <field name="day_01" string="01"/>
+                                    <field name="day_02" string="02"/>
+                                    <field name="day_03" string="03"/>
+                                    <field name="day_04" string="04"/>
+                                    <field name="day_05" string="05"/>
+                                    <field name="day_06" string="06"/>
+                                    <field name="day_07" string="07"/>
+                                    <field name="day_08" string="08"/>
+                                    <field name="day_09" string="09"/>
+                                    <field name="day_10" string="10"/>
+                                    <field name="day_11" string="11"/>
+                                    <field name="day_12" string="12"/>
+                                    <field name="day_13" string="13"/>
+                                    <field name="day_14" string="14"/>
+                                    <field name="day_15" string="15"/>
+                                    <field name="day_16" string="16"/>
+                                    <field name="day_17" string="17"/>
+                                    <field name="day_18" string="18"/>
+                                    <field name="day_19" string="19"/>
+                                    <field name="day_20" string="20"/>
+                                    <field name="day_21" string="21"/>
+                                    <field name="day_22" string="22"/>
+                                    <field name="day_23" string="23"/>
+                                    <field name="day_24" string="24"/>
+                                    <field name="day_25" string="25"/>
+                                    <field name="day_26" string="26"/>
+                                    <field name="day_27" string="27"/>
+                                    <field name="day_28" string="28"/>
+                                    <field name="day_29" string="29"/>
+                                    <field name="day_30" string="30"/>
+                                    <field name="day_31" string="31"/>
+                                    <field name="total_work_days" string="Công" sum="Tổng công"/>
+                                    <field name="total_day_hours" string="G.Ngày" sum="Tổng giờ ngày"/>
+                                    <field name="total_night_hours" string="G.Đêm" sum="Tổng giờ đêm"/>
+                                    <field name="total_overtime_hours" string="OT" sum="Tổng OT"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Chấm công" name="attendance">
+                            <group string="Lưu ý: Bạn nên sử dụng tính năng Xuất/Nhập Excel để chấm công nhanh theo chiều ngang."/>
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="employee_name" readonly="1" width="200px"/>
+                                    <field name="attendance_ids" widget="many2many_tags" readonly="1" optional="hide"/>
+                                    <!-- Here we would ideally want a widget for matrix view, but we use Excel for now -->
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_month" model="ir.actions.act_window">
+        <field name="name">Cân đối lương &amp; KPI</field>
+        <field name="res_model">dl.salary.kpi.month</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bấm để tạo đợt cân đối lương mới.
+            </p>
+        </field>
+    </record>
+</odoo>

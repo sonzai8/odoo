@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dl_salary_kpi_month_manager,dl.salary.kpi.month.manager,model_dl_salary_kpi_month,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_line_manager,dl.salary.kpi.line.manager,model_dl_salary_kpi_line,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_attendance_type_manager,dl.salary.kpi.attendance.type.manager,model_dl_salary_kpi_attendance_type,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_attendance_line_manager,dl.salary.kpi.attendance.line.manager,model_dl_salary_kpi_attendance_line,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_employee_manager,dl.salary.kpi.employee.manager,model_dl_salary_kpi_employee,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_notice_manager,dl.salary.kpi.notice.manager,model_dl_salary_kpi_notice,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_export_wizard_manager,dl.salary.kpi.export.wizard,model_dl_salary_kpi_export_wizard,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_import_attendance_wizard_manager,dl.salary.kpi.import.attendance.wizard,model_dl_salary_kpi_import_attendance_wizard,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_export_loading_manager,dl.salary.kpi.export.loading,model_dl_salary_kpi_export_loading,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_calc_manager,dl.salary.kpi.calc.manager,model_dl_salary_kpi_calc,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_calc_line_manager,dl.salary.kpi.calc.line.manager,model_dl_salary_kpi_calc_line,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
