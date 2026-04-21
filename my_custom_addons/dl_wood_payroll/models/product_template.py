@@ -8,6 +8,18 @@ class ProductTemplate(models.Model):
     x_is_wood_product = fields.Boolean(string='Là sản phẩm ngành gỗ', default=False)
     x_is_film_product = fields.Boolean(string='Là sản phẩm Ép Film', default=False, help='Đánh dấu sản phẩm có công đoạn ép phim để cấu hình đơn giá.')
     x_is_support_product = fields.Boolean(string='Là sản phẩm hỗ trợ', default=False, help='Sản phẩm tính lương cho chuyền nhưng không tính vào báo cáo sản lượng chính.')
+    x_production_stage_ids = fields.Many2many(
+        'hr.department', 
+        'product_production_stage_rel',
+        'product_id', 'stage_id',
+        string='Công đoạn sản xuất',
+        domain=[('x_is_production_stage', '=', True)]
+    )
+    dl_is_pickup_process = fields.Boolean(
+        string='Là hàng nhặt ván (Depr)', 
+        default=False, 
+        help='DEPRECATED: Dùng Công đoạn sản xuất thay thế.'
+    )
     x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
     x_thickness_alias = fields.Char(string='Ký hiệu độ dày', help='Dùng để tra cứu bảng giá Ép Film (ví dụ: 11M, 14D...)')
     x_length = fields.Float(string='Chiều dài (cm)', digits=(16, 1))
@@ -96,3 +108,5 @@ class ProductProduct(models.Model):
     x_length = fields.Float(related='product_tmpl_id.x_length', readonly=True)
     x_width = fields.Float(related='product_tmpl_id.x_width', readonly=True)
     x_quality = fields.Selection(related='product_tmpl_id.x_quality', readonly=True)
+    x_production_stage_ids = fields.Many2many(related='product_tmpl_id.x_production_stage_ids', readonly=True)
+    dl_is_pickup_process = fields.Boolean(related='product_tmpl_id.dl_is_pickup_process', readonly=True)

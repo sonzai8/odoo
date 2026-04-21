@@ -13,6 +13,9 @@
                     <label for="x_is_wood_product" class="fw-bold text-primary"/>
                     <field name="x_is_support_product" class="oe_inline ms-3"/>
                     <label for="x_is_support_product" class="fw-bold text-info"/>
+                    <field name="x_production_stage_ids" widget="many2many_tags" 
+                           placeholder="Công đoạn sản xuất..." class="oe_inline ms-3"/>
+                    <field name="dl_is_pickup_process" invisible="1"/>
                 </div>
             </xpath>
 

@@ -12,7 +12,7 @@
         - Tính năng sao chép bảng giá từ tháng trước.
     """,
     'author': 'Antigravity',
-    'depends': ['hr', 'mrp', 'mail', 'product', 'sale', 'stock', 'account'],
+    'depends': ['hr', 'mrp', 'mail', 'product', 'sale', 'stock', 'account', 'hr_attendance'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -48,7 +48,9 @@
         'views/integration_views.xml',
         'views/dl_missing_attendance_client_views.xml',
         'data/dl_stevedore_log_data.xml',
+        'data/pickup/pickup_sequence.xml',
         'views/stevedore/dl_stevedore_views.xml',
+        'views/pickup/dl_wood_pickup_views.xml',
         'views/khoan_viec/dl_veneer_drying_views.xml',
         'views/menus.xml',
     ],

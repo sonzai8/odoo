@@ -78,3 +78,13 @@ access_dl_veneer_drying_matrix_line_user,dl.veneer.drying.matrix.line.user,model
 access_dl_veneer_drying_matrix_line_manager,dl.veneer.drying.matrix.line.manager,model_dl_veneer_drying_matrix_line,group_dl_wood_manager,1,1,1,1
 access_dl_stevedore_task_user,dl.stevedore.task.user,model_dl_stevedore_task,group_dl_wood_staff,1,0,0,0
 access_dl_stevedore_task_manager,dl.stevedore.task.manager,model_dl_stevedore_task,group_dl_wood_manager,1,1,1,1
+access_dl_wood_pickup_pricelist_user,dl.wood.pickup.pricelist.user,model_dl_wood_pickup_pricelist,group_dl_wood_staff,1,0,0,0
+access_dl_wood_pickup_pricelist_manager,dl.wood.pickup.pricelist.manager,model_dl_wood_pickup_pricelist,group_dl_wood_manager,1,1,1,1
+access_dl_wood_pickup_pricelist_line_user,dl.wood.pickup.pricelist.line.user,model_dl_wood_pickup_pricelist_line,group_dl_wood_staff,1,1,1,1
+access_dl_wood_pickup_pricelist_line_manager,dl.wood.pickup.pricelist.line.manager,model_dl_wood_pickup_pricelist_line,group_dl_wood_manager,1,1,1,1
+access_dl_wood_pickup_production_user,dl.wood.pickup.production.user,model_dl_wood_pickup_production,group_dl_wood_staff,1,1,1,1
+access_dl_wood_pickup_production_manager,dl.wood.pickup.production.manager,model_dl_wood_pickup_production,group_dl_wood_manager,1,1,1,1
+access_dl_wood_pickup_production_line_user,dl.wood.pickup.production.line.user,model_dl_wood_pickup_production_line,group_dl_wood_staff,1,1,1,1
+access_dl_wood_pickup_production_line_manager,dl.wood.pickup.production.line.manager,model_dl_wood_pickup_production_line,group_dl_wood_manager,1,1,1,1
+access_dl_wood_pickup_production_attendance_user,dl.wood.pickup.production.attendance.user,model_dl_wood_pickup_production_attendance,group_dl_wood_staff,1,1,1,1
+access_dl_wood_pickup_production_attendance_manager,dl.wood.pickup.production.attendance.manager,model_dl_wood_pickup_production_attendance,group_dl_wood_manager,1,1,1,1

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1. Bảng giá Nhặt ván -->
+    <record id="view_dl_wood_pickup_pricelist_tree" model="ir.ui.view">
+        <field name="name">dl.wood.pickup.pricelist.tree</field>
+        <field name="model">dl.wood.pickup.pricelist</field>
+        <field name="arch" type="xml">
+            <list string="Bảng giá Nhặt ván">
+                <field name="month" widget="date" options="{'format': 'MM/yyyy'}"/>
+                <field name="name"/>
+                <field name="min_workdays"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'draft'" 
+                       decoration-success="state == 'active'" 
+                       decoration-muted="state == 'expired'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_pickup_pricelist_form" model="ir.ui.view">
+        <field name="name">dl.wood.pickup.pricelist.form</field>
+        <field name="model">dl.wood.pickup.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Bảng giá Nhặt ván">
+                <header>
+                    <button name="action_load_products" string="Tải danh mục SP" type="object" 
+                            invisible="state != 'draft'" class="btn-primary"/>
+                    <button name="action_confirm" string="Xác nhận áp dụng" type="object" 
+                            invisible="state != 'draft'" class="btn-success"/>
+                    <button name="action_calculate_monthly_settlement" string="Quyết toán lương tháng" type="object" 
+                            invisible="state != 'active'" class="btn-warning" icon="fa-calculator"/>
+                    <button name="action_draft" string="Cài lại dự thảo" type="object" 
+                            invisible="state == 'draft'" confirm="Bạn có chắc chắn muốn chuyển về dự thảo?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,expired"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month" widget="date" options="{'format': 'MM/yyyy'}" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="min_workdays" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Cấu hình Đơn giá" name="prices">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="price_new" string="Giá mới"/>
+                                    <field name="price_old" string="Giá cũ"/>
+                                    <field name="price_bonus_extra" string="Thưởng thêm (>280)"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info mt-3" role="alert">
+                                <b>Lưu ý:</b> Đơn giá mới áp dụng khi đạt điều kiện (Bảo hiểm &amp; Ngày công). Mỗi bó vượt 280 sẽ được cộng thêm tiền thưởng cấu hình tại cột cuối.
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_pickup_pricelist" model="ir.actions.act_window">
+        <field name="name">Bảng giá Nhặt ván</field>
+        <field name="res_model">dl.wood.pickup.pricelist</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- 2. Ghi nhận Sản lượng Nhặt ván -->
+    <record id="view_dl_wood_pickup_production_tree" model="ir.ui.view">
+        <field name="name">dl.wood.pickup.production.tree</field>
+        <field name="model">dl.wood.pickup.production</field>
+        <field name="arch" type="xml">
+            <list string="Ghi nhận Sản lượng">
+                <field name="date" string="Ngày ghi nhận"/>
+                <field name="name" string="Số phiếu"/>
+                <field name="x_group_id" string="Tên tổ"/>
+                <field name="total_wage" string="Tổng thu nhập" sum="Tổng thu nhập" widget="monetary"/>
+                <field name="avg_wage_new" string="BQ ĐG Mới" widget="monetary"/>
+                <field name="avg_wage_old" string="BQ ĐG Cũ" widget="monetary"/>
+                <field name="num_participants" string="Số người" sum="Tổng số người"/>
+                <field name="total_attendance_weight" string="Tổng trọng số" sum="Tổng trọng số"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'" decoration-warning="state == 'settled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_pickup_production_form" model="ir.ui.view">
+        <field name="name">dl.wood.pickup.production.form</field>
+        <field name="model">dl.wood.pickup.production</field>
+        <field name="arch" type="xml">
+            <form string="Ghi nhận Sản lượng">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object" 
+                            invisible="state != 'draft'" class="btn-success"/>
+                    <button name="action_draft" string="Cài lại dự thảo" type="object" 
+                            invisible="state == 'draft'" confirm="Bạn có chắc chắn muốn chuyển về dự thảo?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,settled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group col="12">
+                        <group name="main_info" colspan="4">
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="x_group_id" readonly="state != 'draft'" options="{'no_create': True}"
+                                   domain="[('department_id.x_is_nhat_van', '=', True)]"/>
+                            <field name="pricelist_id" readonly="1" options="{'no_create': True}"/>
+                        </group>
+                        <group name="revenue_analysis" string="Phân tích Doanh thu &amp; Lương" colspan="8">
+                            <group string="ĐG Cũ">
+                                <field name="display_amount_old" string="Tổng: "/>
+                                <field name="avg_wage_old" string="Bình quân" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                            </group>
+                            <group string="ĐG Mới">
+                                <field name="display_amount_new" string="Tổng: "/>
+                                <field name="avg_wage_new" string="Bình quân" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                            </group>
+                            <group string="Thực tế">
+                                <field name="total_wage" string="Doanh thu Tổ" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                            </group>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết sản lượng (Bó)" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" create="0">
+                                    <field name="product_id" readonly="1" force_save="1"/>
+                                    <field name="price_new" readonly="1" string="Giá mới"/>
+                                    <field name="price_old" readonly="1" string="Giá cũ"/>
+                                    <field name="quantity" string="Tổng SL" sum="Tổng SL"/>
+                                    <field name="qty_base" string="SL Giá Base" sum="SL Base"/>
+                                    <field name="qty_bonus" string="SL Giá Bonus" sum="SL Bonus"/>
+                                    <field name="amount_total" sum="Thành tiền" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info mt-3" role="alert">
+                                <b>Quy tắc tính:</b> 
+                                Total Threshold = (Tổng số công của tổ) x 280. 
+                                Hệ thống ưu tiên dồn định mức Base vào sản phẩm rẻ nhất. 
+                                Phần dư tính giá Bonus (Base + Thưởng thêm).
+                            </div>
+                        </page>
+                        <page string="Thông tin Nhân viên &amp; Lương" name="attendance">
+                            <field name="attendance_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="employee_id" options="{'no_create': True}" readonly="1" force_save="1"/>
+                                    <field name="attendance_type_id" options="{'no_create': True}"/>
+                                    <field name="attendance_value" string="Trọng số"/>
+                                    <field name="month_total_weight" readonly="1" string="Tổng công/tháng" optional="show"/>
+                                    <field name="is_qualified" widget="boolean_toggle" string="Đạt giá mới" optional="show"/>
+                                    <field name="wage_amount" string="Lương nhận được" sum="Tổng lương" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info mt-3" role="alert">
+                                <b>Lưu ý:</b> Chọn Ký hiệu công (N, N/1, P...) để hệ thống tự động tính Trọng số. Lương và Định mức 280 sẽ được cập nhật tương ứng.
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_pickup_production" model="ir.actions.act_window">
+        <field name="name">Ghi nhận Sản lượng</field>
+        <field name="res_model">dl.wood.pickup.production</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

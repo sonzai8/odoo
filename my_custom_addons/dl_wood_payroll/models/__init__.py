@@ -7,3 +7,4 @@ from . import wood_integration
 from . import cao_bang
 from . import khoan_viec
 from . import stevedore
+from . import pickup

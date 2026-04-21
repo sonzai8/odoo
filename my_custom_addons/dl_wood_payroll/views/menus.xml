@@ -42,6 +42,12 @@
               action="action_dl_stevedore_log"
               sequence="13"/>
 
+    <menuitem id="menu_dl_wood_pickup_production_action"
+              name="Sản lượng Nhặt ván"
+              parent="menu_dl_ops_root"
+              action="action_dl_wood_pickup_production"
+              sequence="14"/>
+
     <menuitem id="menu_dl_pooling_wizard_action_in_ops"
               name="Tính toán lương Chuyền"
               parent="menu_dl_ops_root"
@@ -140,6 +146,12 @@
               parent="menu_dl_pricing_root"
               action="action_dl_film_pricelist"
               sequence="30"/>
+
+    <menuitem id="menu_dl_wood_pickup_pricelist_action"
+              name="Đơn giá Nhặt ván"
+              parent="menu_dl_pricing_root"
+              action="action_dl_wood_pickup_pricelist"
+              sequence="35"/>
 
     <menuitem id="menu_dl_stevedore_service_action_in_pricing"
               name="Cấu hình Công việc Bốc vác"
