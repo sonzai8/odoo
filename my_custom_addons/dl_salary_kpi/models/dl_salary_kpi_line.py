@@ -250,3 +250,58 @@ class SalaryKpiLine(models.Model):
                             "Khi chuyển từ ca Ngày (Đ) sang ca Đêm (N), bắt buộc phải có ngày Đổi ca (ĐC) ở giữa."
                         ) % (rec.employee_name, i, i+1))
 
+    @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                    'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                    'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31')
+    def _check_sunday_attendance(self):
+        for rec in self:
+            for i in range(1, 32):
+                day_field = f'day_{i:02d}'
+                is_sun_field = f'day_{i:02d}_is_sunday'
+                if getattr(rec, day_field) and getattr(rec, is_sun_field):
+                    raise ValidationError(_("Ngày %02d là Chủ Nhật. Không được phép chấm công thường vào ngày này. Vui lòng chấm vào phần Làm thêm giờ.") % i)
+
+    @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                    'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                    'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
+                    'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
+                    'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
+                    'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+    def _check_departure_date_attendance(self):
+        """
+        Ràng buộc: Nếu nhân viên đã nghỉ việc (có dl_departure_date),
+        thì không được phép có bất kỳ công nào sau ngày đó.
+        Tự động xoá công nếu cố tình ghi nhận sau ngày nghỉ.
+        """
+        from datetime import date
+        for rec in self:
+            dep_date = rec.employee_id.dl_departure_date
+            if not dep_date:
+                continue
+            
+            month_date = rec.month_id.date_month
+            if not month_date:
+                continue
+                
+            year, month = month_date.year, month_date.month
+            
+            # Kiểm tra cả công thường và làm thêm
+            vals_to_clear = {}
+            for i in range(1, 32):
+                try:
+                    d = date(year, month, i)
+                except ValueError:
+                    continue
+                
+                if d > dep_date:
+                    if getattr(rec, f'day_{i:02d}'):
+                        vals_to_clear[f'day_{i:02d}'] = False
+                    if getattr(rec, f'ot_{i:02d}' if hasattr(rec, f'ot_{i:02d}') else f'ot_day_{i:02d}'):
+                        vals_to_clear[f'ot_day_{i:02d}'] = False
+            
+            if vals_to_clear:
+                # Dùng sudo().write để tránh lặp constraint vô tận nếu cần, 
+                # nhưng ở đây ta chỉ cần xoá dữ liệu sai.
+                # Lưu ý: rec.write sẽ kích hoạt lại constraint, nên ta kiểm tra vals_to_clear trước.
+                rec.sudo().write(vals_to_clear)
+

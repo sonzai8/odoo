@@ -178,7 +178,7 @@ class SalaryKpiMonth(models.Model):
                         d = date(year, month, i)
                         wd = weekday_map[d.weekday()]
                         # Gán label mới: "01\n T2"
-                        node.set('string', f"{i:02d}\n{wd}")
+                        node.set('string', f"{i:02d} - {wd}")
                         
                         # Thêm decorations cho mã công
                         node.set('decoration-warning', f"{code_field} == 'CP'")

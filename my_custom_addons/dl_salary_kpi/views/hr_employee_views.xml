@@ -23,6 +23,7 @@
                         <group string="Thông tin lương thuế">
                             <field name="dl_tax_position"/>
                             <field name="dl_tax_base_salary"/>
+                            <field name="dl_departure_date"/>
                         </group>
                     </group>
                 </page>

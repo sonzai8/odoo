@@ -5,6 +5,11 @@
     vertical-align: middle !important;
 }
 
+.o_list_table td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
 /* Tô màu cột Chủ Nhật */
 .kpi_sunday_col {
     background-color: #E6F2FF !important;

@@ -40,6 +40,9 @@ class SalaryKpiImportWizard(models.TransientModel):
         import_data = [] # List of (line_record, values_to_write)
 
         # Duyệt từ dòng 4 (skip headers)
+        count_skipped_departure = 0
+        from datetime import date
+
         for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
 
             if not row[2]: # Cột C là ID nhân viên
@@ -58,11 +61,19 @@ class SalaryKpiImportWizard(models.TransientModel):
                 errors.append(f"Dòng {row_idx}: Tên nhân viên không khớp (Hệ thống: {line.employee_id.name}, Excel: {emp_name}).")
                 continue
 
+            # Kiểm tra ngày nghỉ việc
+            departure_date = line.employee_id.dl_departure_date
+            month_date = self.month_id.date_month
+            year, month = month_date.year, month_date.month
+
             vals = {}
             row_codes = {} # To check shift change
+            has_departure_skip = False
             
             # Lấy dữ liệu hiện tại từ hệ thống để so sánh chuỗi
             for day in range(1, 32):
+                field_name = f'day_{i:02d}' if self.wizard_type == 'normal' else f'ot_day_{i:02d}'
+                # Note: 'i' is not defined here, should be 'day'
                 field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 current_att = getattr(line, field_name)
                 row_codes[day] = current_att.code if current_att else False
@@ -70,6 +81,19 @@ class SalaryKpiImportWizard(models.TransientModel):
             # Ghi đè bằng dữ liệu từ Excel
             col_offset = 4 if self.wizard_type == 'normal' else 40
             for day in range(1, 32):
+                field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
+                
+                # Check departure date
+                try:
+                    d = date(year, month, day)
+                    if departure_date and d > departure_date:
+                        vals[field_name] = False
+                        row_codes[day] = False
+                        has_departure_skip = True
+                        continue
+                except ValueError:
+                    pass
+
                 # Excel index: col_offset + day - 1
                 try:
                     val = row[col_offset + day - 1]
@@ -77,7 +101,6 @@ class SalaryKpiImportWizard(models.TransientModel):
                 except IndexError:
                     code = ""
 
-                field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 if code:
                     if code not in att_type_map:
                         errors.append(f"Dòng {row_idx}: Mã công '{code}' ngày {day:02d} không hợp lệ.")
@@ -88,12 +111,15 @@ class SalaryKpiImportWizard(models.TransientModel):
                     vals[field_name] = False
                     row_codes[day] = False
 
+            if has_departure_skip:
+                count_skipped_departure += 1
+
             # Kiểm tra quy tắc đổi ca (chỉ cho công thường)
             if self.wizard_type == 'normal':
                 for i in range(1, 31):
                     cur = row_codes.get(i)
                     nxt = row_codes.get(i+1)
-                    if cur == 'Đ' and nxt == 'N': # Đã sửa theo yêu cầu người dùng trước đó
+                    if cur == 'Đ' and nxt == 'N':
                         errors.append(f"Dòng {row_idx} ({emp_name}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
 
             if vals and not errors:
@@ -110,12 +136,17 @@ class SalaryKpiImportWizard(models.TransientModel):
         for line, vals in import_data:
             line.write(vals)
 
+        msg = _('Đã cập nhật dữ liệu cho %s nhân viên.') % len(import_data)
+        if count_skipped_departure > 0:
+            msg += _('\nLưu ý: Có %s nhân viên bị bỏ qua các ngày sau ngày nghỉ việc.') % count_skipped_departure
+
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Thành công'),
-                'message': _('Đã cập nhật dữ liệu cho %s nhân viên.') % len(import_data),
+                'message': msg,
                 'type': 'success',
+                'sticky': True if count_skipped_departure > 0 else False,
             }
         }

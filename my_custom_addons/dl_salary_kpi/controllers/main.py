@@ -31,6 +31,7 @@ class SalaryKpiController(http.Controller):
         fill_cp = openpyxl.styles.PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid") # Vàng nhạt
         fill_kp_o = openpyxl.styles.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid") # Đỏ nhạt
         fill_dc = openpyxl.styles.PatternFill(start_color="E5CCFF", end_color="E5CCFF", fill_type="solid") # Tím nhạt
+        fill_departed = openpyxl.styles.PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid") # Xám nhạt cho nghỉ việc
 
         # Kích thước
         ws.row_dimensions[1].height = 40
@@ -137,6 +138,8 @@ class SalaryKpiController(http.Controller):
             ws.cell(row=row_num, column=2, value=line.employee_name).border = border
             ws.cell(row=row_num, column=3, value=line.employee_id.id).border = border
             ws.cell(row=row_num, column=4, value=line.identification_id).border = border
+            
+            departure_date = line.employee_id.dl_departure_date
 
             # Normal Data (E-AI)
             for day in range(1, 32):
@@ -147,15 +150,20 @@ class SalaryKpiController(http.Controller):
                 cell.border = border
                 cell.alignment = alignment
                 
-                # Tô màu theo mã công (Normal)
-                if norm_code == 'CP':
+                # Check departure
+                d = None
+                if day <= last_day:
+                    d = date(month.date_month.year, month.date_month.month, day)
+
+                if departure_date and d and d > departure_date:
+                    cell.fill = fill_departed
+                elif norm_code == 'CP':
                     cell.fill = fill_cp
                 elif norm_code in ['KP', 'Ô']:
                     cell.fill = fill_kp_o
                 elif norm_code == 'ĐC':
                     cell.fill = fill_dc
                 elif day <= last_day:
-                    d = date(month.date_month.year, month.date_month.month, day)
                     if d.weekday() == 6:
                         cell.fill = sunday_data_fill
 
@@ -182,7 +190,15 @@ class SalaryKpiController(http.Controller):
                 cell = ws.cell(row=row_num, column=col_idx, value=ot_code)
                 cell.border = border
                 cell.alignment = alignment
-                cell.fill = ot_header_fill if not ot_att else sunday_data_fill # Nhấn mạnh ô có dữ liệu thật hoặc gợi ý
+                
+                d = None
+                if day <= last_day:
+                    d = date(month.date_month.year, month.date_month.month, day)
+
+                if departure_date and d and d > departure_date:
+                    cell.fill = fill_departed
+                else:
+                    cell.fill = ot_header_fill if not ot_att else sunday_data_fill # Nhấn mạnh ô có dữ liệu thật hoặc gợi ý
 
             # OT Summary Formulas (BT-BV)
             row = row_num
@@ -244,6 +260,7 @@ class SalaryKpiController(http.Controller):
         fill_cp = openpyxl.styles.PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid") # Vàng nhạt
         fill_kp_o = openpyxl.styles.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid") # Đỏ nhạt
         fill_dc = openpyxl.styles.PatternFill(start_color="E5CCFF", end_color="E5CCFF", fill_type="solid") # Tím nhạt
+        fill_departed = openpyxl.styles.PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid") # Xám nhạt cho nghỉ việc
 
         # Kích thước hàng/cột
         ws.row_dimensions[1].height = 40
@@ -310,6 +327,8 @@ class SalaryKpiController(http.Controller):
             ws.cell(row=row_num, column=2, value=line.employee_name).border = border
             ws.cell(row=row_num, column=3, value=line.employee_id.id).border = border
             ws.cell(row=row_num, column=4, value=line.identification_id).border = border
+            
+            departure_date = line.employee_id.dl_departure_date
 
             for day in range(1, 32):
                 col_idx = 4 + day
@@ -321,14 +340,19 @@ class SalaryKpiController(http.Controller):
                 cell.alignment = alignment
                 
                 # Tô màu theo mã công
-                if code == 'CP':
+                d = None
+                if day <= last_day:
+                    d = date(month.date_month.year, month.date_month.month, day)
+
+                if departure_date and d and d > departure_date:
+                    cell.fill = fill_departed
+                elif code == 'CP':
                     cell.fill = fill_cp
                 elif code in ['KP', 'Ô']:
                     cell.fill = fill_kp_o
                 elif code == 'ĐC':
                     cell.fill = fill_dc
                 elif day <= last_day:
-                    d = date(month.date_month.year, month.date_month.month, day)
                     if d.weekday() == 6:
                         cell.fill = sunday_data_fill
                 
@@ -444,7 +468,7 @@ class SalaryKpiController(http.Controller):
         headers = [
             "STT", "ID NV", "Họ và tên", "Tên riêng", "Email", "SĐT", 
             "Số CCCD", "Giới tính", "Mã số thuế", "Chức vụ thuế", 
-            "Phòng ban thuế", "Lương cơ bản thuế"
+            "Phòng ban thuế", "Lương cơ bản thuế", "Ngày nghỉ việc"
         ]
         for col, text in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=text)
@@ -466,6 +490,7 @@ class SalaryKpiController(http.Controller):
             ws.cell(row=row, column=10, value=emp.dl_tax_position)
             ws.cell(row=row, column=11, value=emp.dl_tax_department)
             ws.cell(row=row, column=12, value=emp.dl_tax_base_salary)
+            ws.cell(row=row, column=13, value=emp.dl_departure_date)
 
         wb.save(output)
         output.seek(0)

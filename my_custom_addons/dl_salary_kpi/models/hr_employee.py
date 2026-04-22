@@ -11,3 +11,4 @@ class HrEmployee(models.Model):
     dl_tax_department = fields.Char(string='Phòng ban thuế')
     dl_tax_position = fields.Char(string='Chức vụ thuế')
     dl_tax_base_salary = fields.Float(string='Lương cơ bản thuế')
+    dl_departure_date = fields.Date(string='Ngày nghỉ việc')
