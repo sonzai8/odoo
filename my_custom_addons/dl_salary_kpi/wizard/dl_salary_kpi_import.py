@@ -10,8 +10,12 @@ class SalaryKpiImportWizard(models.TransientModel):
     _description = 'Wizard nhập bảng công'
 
     month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng bảng công')
-    file_data = fields.Binary(string='File Excel', required=True)
+    file_data = fields.Binary(string='File Excel', required=False)
     file_name = fields.Char(string='Tên file')
+
+    def action_export(self):
+        self.ensure_one()
+        return self.month_id.action_export_excel()
 
     def action_import(self):
         if not self.file_data:

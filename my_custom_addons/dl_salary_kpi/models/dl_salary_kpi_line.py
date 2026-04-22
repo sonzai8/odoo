@@ -125,14 +125,14 @@ class SalaryKpiLine(models.Model):
     )
 
     # Các trường tổng hợp số lượng công
-    total_n = fields.Float(string='Ngày', compute='_compute_totals', store=False)
-    total_d = fields.Float(string='Đêm', compute='_compute_totals', store=False)
-    total_p = fields.Float(string='Phép (P)', compute='_compute_totals', store=False)
-    total_pl = fields.Float(string='Phép lễ (PL)', compute='_compute_totals', store=False)
-    total_kp = fields.Float(string='Không phép (KP)', compute='_compute_totals', store=False)
-    total_o = fields.Float(string='Nghỉ ốm (Ô)', compute='_compute_totals', store=False)
-    total_dc = fields.Float(string='Đổi ca (ĐC)', compute='_compute_totals', store=False)
-    total_co = fields.Float(string='Con ốm (CÔ)', compute='_compute_totals', store=False)
+    total_n = fields.Float(string='Ngày', compute='_compute_totals', store=True)
+    total_d = fields.Float(string='Đêm', compute='_compute_totals', store=True)
+    total_p = fields.Float(string='Phép (P)', compute='_compute_totals', store=True)
+    total_pl = fields.Float(string='Phép lễ (PL)', compute='_compute_totals', store=True)
+    total_kp = fields.Float(string='Không phép (KP)', compute='_compute_totals', store=True)
+    total_o = fields.Float(string='Nghỉ ốm (Ô)', compute='_compute_totals', store=True)
+    total_dc = fields.Float(string='Đổi ca (ĐC)', compute='_compute_totals', store=True)
+    total_co = fields.Float(string='Con ốm (CÔ)', compute='_compute_totals', store=True)
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
@@ -211,9 +211,9 @@ class SalaryKpiLine(models.Model):
                 next_day = getattr(rec, f'day_{i+1:02d}')
                 
                 if current_day and next_day:
-                    if current_day.code == 'N' and next_day.code == 'Đ':
+                    if current_day.code == 'Đ' and next_day.code == 'N':
                         raise ValidationError(_(
                             "Nhân viên %s: Lỗi quy tắc đổi ca tại ngày %02d-%02d. "
-                            "Khi chuyển từ ca Ngày (N) sang ca Đêm (Đ), bắt buộc phải có ngày Đổi ca (ĐC) ở giữa."
+                            "Khi chuyển từ ca Ngày (Đ) sang ca Đêm (N), bắt buộc phải có ngày Đổi ca (ĐC) ở giữa."
                         ) % (rec.employee_name, i, i+1))
 

@@ -18,12 +18,16 @@
         <field name="arch" type="xml">
             <form string="Cân đối bảng công">
                 <header>
-                    <button name="action_export_excel" string="Xuất file công" type="object" class="btn-success" icon="fa-download"/>
-
-                    <button name="action_import_excel" string="Nhập file công" type="object" class="btn-info" icon="fa-upload" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_draft" string="Mở lại dự thảo" type="object" invisible="state != 'confirmed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                    <button name="action_import_excel" string="Nhập/Xuất Công Thường" type="object" class="btn-info" icon="fa-exchange" invisible="state != 'draft'"/>
+                    
+                    <button name="action_lock_normal" string="Chốt công Thường" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_lock_ot" string="Chốt Công Làm thêm" type="object" class="btn-primary" invisible="state != 'lock_normal'"/>
+                    <button name="action_lock_regime" string="Chốt Chế Độ" type="object" class="btn-primary" invisible="state != 'lock_ot'"/>
+                    <button name="action_lock_kpi" string="Chốt KPI" type="object" class="btn-primary" invisible="state != 'lock_regime'"/>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-success" invisible="state != 'lock_kpi'"/>
+                    
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,lock_normal,lock_ot,lock_regime,lock_kpi,confirmed"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -31,16 +35,16 @@
                             <field name="total_employees" widget="statinfo" string="Nhân viên"/>
                         </div>
                         <div class="oe_stat_button" icon="fa-sun-o" font-color="orange">
-                            <field name="total_n" widget="statinfo" string="Công Ngày"/>
+                            <field name="total_n" widget="statinfo" string="Ngày"/>
                         </div>
                         <div class="oe_stat_button" icon="fa-moon-o" font-color="blue">
-                            <field name="total_d" widget="statinfo" string="Công Đêm"/>
+                            <field name="total_d" widget="statinfo" string="Đêm"/>
                         </div>
                         <div class="oe_stat_button" icon="fa-plane" font-color="green">
                             <field name="total_p" widget="statinfo" string="Phép (P)"/>
                         </div>
                         <div class="oe_stat_button" icon="fa-star" font-color="red">
-                            <field name="total_pl" widget="statinfo" string="Lễ (PL)"/>
+                            <field name="total_pl" widget="statinfo" string="Phép lễ"/>
                         </div>
                         <div class="oe_stat_button" icon="fa-exclamation-triangle" font-color="red">
                             <field name="total_kp" widget="statinfo" string="Không phép"/>
@@ -49,7 +53,10 @@
                             <field name="total_o" widget="statinfo" string="Nghỉ ốm"/>
                         </div>
                         <div class="oe_stat_button" icon="fa-exchange" font-color="purple">
-                            <field name="total_dc" widget="statinfo" string="Điều chuyển"/>
+                            <field name="total_dc" widget="statinfo" string="Đổi ca"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-child" font-color="pink">
+                            <field name="total_co" widget="statinfo" string="Con ốm"/>
                         </div>
                     </div>
                     <div class="oe_title">
@@ -189,6 +196,13 @@
                 <field name="month_id"/>
                 <field name="dl_tax_department"/>
 
+                <filter string="Có nghỉ phép (P)" name="has_p" domain="[('total_p', '>', 0)]"/>
+                <filter string="Có không phép (KP)" name="has_kp" domain="[('total_kp', '>', 0)]"/>
+                <filter string="Có nghỉ ốm (Ô)" name="has_o" domain="[('total_o', '>', 0)]"/>
+                <filter string="Có con ốm (CÔ)" name="has_co" domain="[('total_co', '>', 0)]"/>
+                <filter string="Có đổi ca (ĐC)" name="has_dc" domain="[('total_dc', '>', 0)]"/>
+
+                <separator/>
                 <filter string="Tháng" name="group_month" context="{'group_by': 'month_id'}"/>
                 <filter string="Phòng ban" name="group_dept" context="{'group_by': 'dl_tax_department'}"/>
 
@@ -214,6 +228,7 @@
                 <field name="total_kp" sum="Tổng KP" />
                 <field name="total_o" sum="Tổng Ô"/>
                 <field name="total_dc" sum="Tổng ĐC"/>
+                <field name="total_co" sum="Tổng CÔ"/>
                 <field name="attendance_type_ids" widget="many2many_tags" optional="hide"/>
             </list>
         </field>

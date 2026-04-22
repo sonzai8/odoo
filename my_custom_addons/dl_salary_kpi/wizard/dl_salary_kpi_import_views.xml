@@ -5,14 +5,21 @@
         <field name="model">dl.salary.kpi.import.wizard</field>
         <field name="arch" type="xml">
             <form string="Nhập bảng công từ Excel">
-                <group>
-                    <field name="month_id" invisible="1"/>
-                    <field name="file_data" filename="file_name"/>
-                    <field name="file_name" invisible="1"/>
-                </group>
+                <sheet>
+                    <group>
+                        <field name="month_id" invisible="1"/>
+                        <label for="file_data" string="1. Xuất dữ liệu / Tải file mẫu"/>
+                        <div class="o_row">
+                            <button name="action_export" string="Bấm để Tải file Công hiện tại" type="object" class="btn-link" icon="fa-download"/>
+                        </div>
+                        <separator string="2. Nhập dữ liệu từ file đã sửa"/>
+                        <field name="file_data" filename="file_name" string="Chọn file Excel"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                </sheet>
                 <footer>
-                    <button name="action_import" string="Nhập dữ liệu" type="object" class="btn-primary"/>
-                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    <button name="action_import" string="Xác nhận Nhập dữ liệu" type="object" class="btn-primary" invisible="not file_data"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>

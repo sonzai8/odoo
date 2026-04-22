@@ -12,6 +12,10 @@ class SalaryKpiMonth(models.Model):
     date_month = fields.Date(string='Tháng/Năm', required=True, default=fields.Date.today)
     state = fields.Selection([
         ('draft', 'Dự thảo'),
+        ('lock_normal', 'Chốt công Thường'),
+        ('lock_ot', 'Chốt Công Làm thêm'),
+        ('lock_regime', 'Chốt Chế Độ'),
+        ('lock_kpi', 'Chốt KPI'),
         ('confirmed', 'Xác nhận')
     ], string='Trạng thái', default='draft')
     
@@ -33,7 +37,8 @@ class SalaryKpiMonth(models.Model):
     total_pl = fields.Float(string="Tổng Ngày Lễ", compute="_compute_quick_stats")
     total_kp = fields.Float(string="Tổng Không phép (KP)", compute="_compute_quick_stats")
     total_o = fields.Float(string="Tổng Nghỉ ốm (Ô)", compute="_compute_quick_stats")
-    total_dc = fields.Float(string="Tổng Điều chuyển (ĐC)", compute="_compute_quick_stats")
+    total_dc = fields.Float(string="Tổng Đổi ca (ĐC)", compute="_compute_quick_stats")
+    total_co = fields.Float(string="Tổng Con ốm (CÔ)", compute="_compute_quick_stats")
     
     attendance_summary_html = fields.Html(string="Tổng hợp mã công", compute="_compute_quick_stats")
 
@@ -46,7 +51,7 @@ class SalaryKpiMonth(models.Model):
     def _compute_quick_stats(self):
         for rec in self:
             rec.total_employees = len(rec.line_ids)
-            n, d, p, pl, kp, o, dc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            n, d, p, pl, kp, o, dc, co = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
             
             # Đếm chi tiết từng loại mã
             code_counts = {}
@@ -70,6 +75,7 @@ class SalaryKpiMonth(models.Model):
                         elif code == 'KP': kp += 1.0
                         elif code == 'Ô': o += 1.0
                         elif code == 'ĐC': dc += 1.0
+                        elif code == 'CÔ': co += 1.0
             
             rec.total_n = n
             rec.total_d = d
@@ -78,6 +84,7 @@ class SalaryKpiMonth(models.Model):
             rec.total_kp = kp
             rec.total_o = o
             rec.total_dc = dc
+            rec.total_co = co
             
             # Tạo bảng HTML
             html = '<table class="table table-sm table-bordered mt-2">'
@@ -180,8 +187,19 @@ class SalaryKpiMonth(models.Model):
         return res
 
 
-    def action_confirm(self):
+    def action_lock_normal(self):
+        self.write({'state': 'lock_normal'})
 
+    def action_lock_ot(self):
+        self.write({'state': 'lock_ot'})
+
+    def action_lock_regime(self):
+        self.write({'state': 'lock_regime'})
+
+    def action_lock_kpi(self):
+        self.write({'state': 'lock_kpi'})
+
+    def action_confirm(self):
         self.write({'state': 'confirmed'})
 
     def action_draft(self):
