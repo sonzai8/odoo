@@ -10,11 +10,17 @@ class SalaryKpiImportWizard(models.TransientModel):
     _description = 'Wizard nhập bảng công'
 
     month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng bảng công')
+    wizard_type = fields.Selection([
+        ('normal', 'Công Thường'),
+        ('overtime', 'Làm Thêm')
+    ], string='Loại xử lý', default='normal')
     file_data = fields.Binary(string='File Excel', required=False)
     file_name = fields.Char(string='Tên file')
 
     def action_export(self):
         self.ensure_one()
+        if self.wizard_type == 'overtime':
+            return self.month_id.action_export_ot_excel()
         return self.month_id.action_export_excel()
 
     def action_import(self):
@@ -57,29 +63,38 @@ class SalaryKpiImportWizard(models.TransientModel):
             
             # Lấy dữ liệu hiện tại từ hệ thống để so sánh chuỗi
             for day in range(1, 32):
-                field_name = f'day_{day:02d}'
+                field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 current_att = getattr(line, field_name)
                 row_codes[day] = current_att.code if current_att else False
 
             # Ghi đè bằng dữ liệu từ Excel
+            col_offset = 4 if self.wizard_type == 'normal' else 40
             for day in range(1, 32):
-                code = str(row[4 + day - 1]).strip().upper() if row[4 + day - 1] else ""
+                # Excel index: col_offset + day - 1
+                try:
+                    val = row[col_offset + day - 1]
+                    code = str(val).strip().upper() if val else ""
+                except IndexError:
+                    code = ""
+
+                field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 if code:
                     if code not in att_type_map:
                         errors.append(f"Dòng {row_idx}: Mã công '{code}' ngày {day:02d} không hợp lệ.")
                     else:
-                        vals[f'day_{day:02d}'] = att_type_map[code]
+                        vals[field_name] = att_type_map[code]
                         row_codes[day] = code
                 else:
-                    vals[f'day_{day:02d}'] = False
+                    vals[field_name] = False
                     row_codes[day] = False
 
-            # Kiểm tra quy tắc đổi ca ngay tại đây để gom lỗi
-            for i in range(1, 31):
-                cur = row_codes.get(i)
-                nxt = row_codes.get(i+1)
-                if cur == 'N' and nxt == 'Đ':
-                    errors.append(f"Dòng {row_idx} ({emp_name}): Lỗi đổi ca N sang Đ tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
+            # Kiểm tra quy tắc đổi ca (chỉ cho công thường)
+            if self.wizard_type == 'normal':
+                for i in range(1, 31):
+                    cur = row_codes.get(i)
+                    nxt = row_codes.get(i+1)
+                    if cur == 'Đ' and nxt == 'N': # Đã sửa theo yêu cầu người dùng trước đó
+                        errors.append(f"Dòng {row_idx} ({emp_name}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
 
             if vals and not errors:
                 import_data.append((line, vals))

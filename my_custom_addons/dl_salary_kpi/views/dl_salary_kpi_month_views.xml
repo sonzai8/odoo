@@ -19,6 +19,7 @@
             <form string="Cân đối bảng công">
                 <header>
                     <button name="action_import_excel" string="Nhập/Xuất Công Thường" type="object" class="btn-info" icon="fa-exchange" invisible="state != 'draft'"/>
+                    <button name="action_import_ot_excel" string="Nhập/Xuất Công Làm Thêm" type="object" class="btn-warning" icon="fa-clock-o" invisible="state != 'lock_normal'"/>
                     
                     <button name="action_lock_normal" string="Chốt công Thường" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_lock_ot" string="Chốt Công Làm thêm" type="object" class="btn-primary" invisible="state != 'lock_normal'"/>
@@ -66,15 +67,13 @@
                         <group>
                             <field name="date_month" readonly="state != 'draft'"/>
                         </group>
-    
                     </group>
-                    <notebook>
-                        <page string="Bảng công Thường" name="matrix">
-                            <field name="line_ids" readonly="state != 'draft'">
+                    <notebook invisible="state != 'draft'">
+                        <page string="Bảng công Thường" name="matrix_normal">
+                            <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
                                     <field name="dl_tax_department" readonly="1" sticky="1"/>
-                                    <field name="dl_tax_position" readonly="1" sticky="1"/>
                                     
                                     <field name="day_01_is_sunday" column_invisible="1"/>
                                     <field name="day_02_is_sunday" column_invisible="1"/>
@@ -140,7 +139,6 @@
                                     <field name="day_30_code" column_invisible="1"/>
                                     <field name="day_31_code" column_invisible="1"/>
 
-                                    <!-- Ma trận 31 ngày hiển thị mã công -->
                                     <field name="day_01" string="01" widget="badge" decoration-info="day_01_is_sunday"/>
                                     <field name="day_02" string="02" widget="badge" decoration-info="day_02_is_sunday"/>
                                     <field name="day_03" string="03" widget="badge" decoration-info="day_03_is_sunday"/>
@@ -173,13 +171,125 @@
                                     <field name="day_30" string="30" widget="badge" decoration-info="day_30_is_sunday"/>
                                     <field name="day_31" string="31" widget="badge" decoration-info="day_31_is_sunday"/>
                                 </list>
-
                             </field>
                         </page>
                         <page string="Bảng công làm thêm giờ" name="overtime">
-                            
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="employee_name" readonly="1" sticky="1" width="180px"/>
+                                    <field name="ot_day_01" string="01"/>
+                                    <field name="ot_day_02" string="02"/>
+                                    <field name="ot_day_03" string="03"/>
+                                    <field name="ot_day_04" string="04"/>
+                                    <field name="ot_day_05" string="05"/>
+                                    <field name="ot_day_06" string="06"/>
+                                    <field name="ot_day_07" string="07"/>
+                                    <field name="ot_day_08" string="08"/>
+                                    <field name="ot_day_09" string="09"/>
+                                    <field name="ot_day_10" string="10"/>
+                                    <field name="ot_day_11" string="11"/>
+                                    <field name="ot_day_12" string="12"/>
+                                    <field name="ot_day_13" string="13"/>
+                                    <field name="ot_day_14" string="14"/>
+                                    <field name="ot_day_15" string="15"/>
+                                    <field name="ot_day_16" string="16"/>
+                                    <field name="ot_day_17" string="17"/>
+                                    <field name="ot_day_18" string="18"/>
+                                    <field name="ot_day_19" string="19"/>
+                                    <field name="ot_day_20" string="20"/>
+                                    <field name="ot_day_21" string="21"/>
+                                    <field name="ot_day_22" string="22"/>
+                                    <field name="ot_day_23" string="23"/>
+                                    <field name="ot_day_24" string="24"/>
+                                    <field name="ot_day_25" string="25"/>
+                                    <field name="ot_day_26" string="26"/>
+                                    <field name="ot_day_27" string="27"/>
+                                    <field name="ot_day_28" string="28"/>
+                                    <field name="ot_day_29" string="29"/>
+                                    <field name="ot_day_30" string="30"/>
+                                    <field name="ot_day_31" string="31"/>
+                                </list>
+                            </field>
                         </page>
+                    </notebook>
 
+                    <notebook invisible="state == 'draft'">
+                        <page string="Bảng công làm thêm giờ" name="overtime_active">
+                            <field name="line_ids" readonly="state in ['lock_ot', 'lock_regime', 'lock_kpi', 'confirmed']">
+                                <list editable="bottom">
+                                    <field name="employee_name" readonly="1" sticky="1" width="180px"/>
+                                    <field name="ot_day_01" string="01"/>
+                                    <field name="ot_day_02" string="02"/>
+                                    <field name="ot_day_03" string="03"/>
+                                    <field name="ot_day_04" string="04"/>
+                                    <field name="ot_day_05" string="05"/>
+                                    <field name="ot_day_06" string="06"/>
+                                    <field name="ot_day_07" string="07"/>
+                                    <field name="ot_day_08" string="08"/>
+                                    <field name="ot_day_09" string="09"/>
+                                    <field name="ot_day_10" string="10"/>
+                                    <field name="ot_day_11" string="11"/>
+                                    <field name="ot_day_12" string="12"/>
+                                    <field name="ot_day_13" string="13"/>
+                                    <field name="ot_day_14" string="14"/>
+                                    <field name="ot_day_15" string="15"/>
+                                    <field name="ot_day_16" string="16"/>
+                                    <field name="ot_day_17" string="17"/>
+                                    <field name="ot_day_18" string="18"/>
+                                    <field name="ot_day_19" string="19"/>
+                                    <field name="ot_day_20" string="20"/>
+                                    <field name="ot_day_21" string="21"/>
+                                    <field name="ot_day_22" string="22"/>
+                                    <field name="ot_day_23" string="23"/>
+                                    <field name="ot_day_24" string="24"/>
+                                    <field name="ot_day_25" string="25"/>
+                                    <field name="ot_day_26" string="26"/>
+                                    <field name="ot_day_27" string="27"/>
+                                    <field name="ot_day_28" string="28"/>
+                                    <field name="ot_day_29" string="29"/>
+                                    <field name="ot_day_30" string="30"/>
+                                    <field name="ot_day_31" string="31"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Bảng công Thường (Xem)" name="matrix_normal_view">
+                            <field name="line_ids" readonly="1">
+                                <list editable="bottom">
+                                    <field name="employee_name" readonly="1" sticky="1" width="180px"/>
+                                    <field name="day_01" string="01" widget="badge"/>
+                                    <field name="day_02" string="02" widget="badge"/>
+                                    <field name="day_03" string="03" widget="badge"/>
+                                    <field name="day_04" string="04" widget="badge"/>
+                                    <field name="day_05" string="05" widget="badge"/>
+                                    <field name="day_06" string="06" widget="badge"/>
+                                    <field name="day_07" string="07" widget="badge"/>
+                                    <field name="day_08" string="08" widget="badge"/>
+                                    <field name="day_09" string="09" widget="badge"/>
+                                    <field name="day_10" string="10" widget="badge"/>
+                                    <field name="day_11" string="11" widget="badge"/>
+                                    <field name="day_12" string="12" widget="badge"/>
+                                    <field name="day_13" string="13" widget="badge"/>
+                                    <field name="day_14" string="14" widget="badge"/>
+                                    <field name="day_15" string="15" widget="badge"/>
+                                    <field name="day_16" string="16" widget="badge"/>
+                                    <field name="day_17" string="17" widget="badge"/>
+                                    <field name="day_18" string="18" widget="badge"/>
+                                    <field name="day_19" string="19" widget="badge"/>
+                                    <field name="day_20" string="20" widget="badge"/>
+                                    <field name="day_21" string="21" widget="badge"/>
+                                    <field name="day_22" string="22" widget="badge"/>
+                                    <field name="day_23" string="23" widget="badge"/>
+                                    <field name="day_24" string="24" widget="badge"/>
+                                    <field name="day_25" string="25" widget="badge"/>
+                                    <field name="day_26" string="26" widget="badge"/>
+                                    <field name="day_27" string="27" widget="badge"/>
+                                    <field name="day_28" string="28" widget="badge"/>
+                                    <field name="day_29" string="29" widget="badge"/>
+                                    <field name="day_30" string="30" widget="badge"/>
+                                    <field name="day_31" string="31" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
             </form>

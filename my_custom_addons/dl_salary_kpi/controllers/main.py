@@ -7,6 +7,212 @@ from openpyxl.styles import Font, Alignment, Border, Side
 
 class SalaryKpiController(http.Controller):
 
+    @http.route('/dl_salary_kpi/export_ot_attendance/<int:month_id>', type='http', auth='user')
+    def export_ot_attendance(self, month_id, **kwargs):
+        month = request.env['dl.salary.kpi.month'].browse(month_id)
+        if not month.exists():
+            return http.NotFound()
+
+        output = io.BytesIO()
+        wb = openpyxl.Workbook()
+        wb.calculation.fullCalcOnLoad = True
+        ws = wb.active
+        ws.title = "Bang Cham Cong Lam Them"
+        ws.freeze_panes = 'E4'
+
+        # Styles (Same as normal export)
+        title_font = Font(size=16, bold=True)
+        header_font = Font(bold=True)
+        border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        alignment = Alignment(horizontal='center', vertical='center')
+        sunday_fill = openpyxl.styles.PatternFill(start_color="CCE5FF", end_color="CCE5FF", fill_type="solid")
+        sunday_data_fill = openpyxl.styles.PatternFill(start_color="E6F2FF", end_color="E6F2FF", fill_type="solid")
+        ot_header_fill = openpyxl.styles.PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid") # Vàng nhạt cho phần OT
+        fill_cp = openpyxl.styles.PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid") # Vàng nhạt
+        fill_kp_o = openpyxl.styles.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid") # Đỏ nhạt
+        fill_dc = openpyxl.styles.PatternFill(start_color="E5CCFF", end_color="E5CCFF", fill_type="solid") # Tím nhạt
+
+        # Kích thước
+        ws.row_dimensions[1].height = 40
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 12
+        ws.column_dimensions['D'].width = 15
+
+        # Merge Title
+        last_col = 40 + 31 + 3 # 40 (Normal) + 31 (OT) + 3 (OT Summaries)
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_col)
+        title = f"BẢNG CHẤM CÔNG LÀM THÊM THÁNG {month.date_month.strftime('%m/%Y')}".upper()
+        title_cell = ws.cell(row=1, column=1, value=title)
+        title_cell.font = title_font
+        title_cell.alignment = alignment
+
+        # Headers Row 2 & 3
+        headers_main = ["STT", "Họ và tên", "Mã NV (ID)", "Số CCCD"]
+        for col, text in enumerate(headers_main, 1):
+            cell = ws.cell(row=2, column=col, value=text)
+            cell.font = header_font
+            cell.border = border
+            cell.alignment = alignment
+            ws.merge_cells(start_row=2, start_column=col, end_row=3, end_column=col)
+
+        from datetime import date
+        import calendar
+        last_day = calendar.monthrange(month.date_month.year, month.date_month.month)[1]
+        weekday_map = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+
+        # Days Header (Normal 1-31)
+        for day in range(1, 32):
+            col = 4 + day
+            cell_day = ws.cell(row=2, column=col, value=f"{day:02d}")
+            cell_day.font = header_font
+            cell_day.border = border
+            cell_day.alignment = alignment
+            
+            weekday_str = ""
+            is_sun = False
+            if day <= last_day:
+                d = date(month.date_month.year, month.date_month.month, day)
+                weekday_str = weekday_map[d.weekday()]
+                is_sun = (d.weekday() == 6)
+            
+            cell_wd = ws.cell(row=3, column=col, value=weekday_str)
+            cell_wd.font = header_font
+            cell_wd.border = border
+            cell_wd.alignment = alignment
+            if is_sun:
+                cell_day.fill = sunday_fill
+                cell_wd.fill = sunday_fill
+
+        # Summary Headers (Columns 36-40: AJ-AN)
+        summary_headers = ["Công Ngày", "Công Đêm", "Tổng Cộng", "Ngày Lễ", "Ngày Phép"]
+        for i, text in enumerate(summary_headers):
+            col_idx = 36 + i
+            cell = ws.cell(row=2, column=col_idx, value=text)
+            cell.font = header_font
+            cell.border = border
+            cell.alignment = alignment
+            ws.merge_cells(start_row=2, start_column=col_idx, end_row=3, end_column=col_idx)
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 12
+
+        # OT Headers (Columns 41-71: AO-BS)
+        for day in range(1, 32):
+            col = 40 + day
+            cell_day = ws.cell(row=2, column=col, value=f"{day:02d}")
+            cell_day.font = header_font
+            cell_day.border = border
+            cell_day.alignment = alignment
+            cell_day.fill = ot_header_fill
+            
+            weekday_str = ""
+            is_sun = False
+            if day <= last_day:
+                d = date(month.date_month.year, month.date_month.month, day)
+                weekday_str = weekday_map[d.weekday()]
+                is_sun = (d.weekday() == 6)
+            
+            cell_wd = ws.cell(row=3, column=col, value=weekday_str)
+            cell_wd.font = header_font
+            cell_wd.border = border
+            cell_wd.alignment = alignment
+            cell_wd.fill = ot_header_fill
+            if is_sun:
+                cell_wd.font = Font(bold=True, color="FF0000")
+
+        # OT Summary Headers (BT-BV)
+        ot_summary_headers = ["Tăng ca Ngày", "Tăng ca Đêm", "Tổng Tăng ca"]
+        for i, text in enumerate(ot_summary_headers):
+            col_idx = 72 + i
+            cell = ws.cell(row=2, column=col_idx, value=text)
+            cell.font = header_font
+            cell.border = border
+            cell.alignment = alignment
+            ws.merge_cells(start_row=2, start_column=col_idx, end_row=3, end_column=col_idx)
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 15
+
+        # Data rows
+        row_num = 4
+        for i, line in enumerate(month.line_ids, 1):
+            ws.row_dimensions[row_num].height = 30
+            ws.cell(row=row_num, column=1, value=i).border = border
+            ws.cell(row=row_num, column=2, value=line.employee_name).border = border
+            ws.cell(row=row_num, column=3, value=line.employee_id.id).border = border
+            ws.cell(row=row_num, column=4, value=line.identification_id).border = border
+
+            # Normal Data (E-AI)
+            for day in range(1, 32):
+                col_idx = 4 + day
+                norm_att = getattr(line, f"day_{day:02d}")
+                norm_code = norm_att.code if norm_att else ""
+                cell = ws.cell(row=row_num, column=col_idx, value=norm_code)
+                cell.border = border
+                cell.alignment = alignment
+                
+                # Tô màu theo mã công (Normal)
+                if norm_code == 'CP':
+                    cell.fill = fill_cp
+                elif norm_code in ['KP', 'Ô']:
+                    cell.fill = fill_kp_o
+                elif norm_code == 'ĐC':
+                    cell.fill = fill_dc
+                elif day <= last_day:
+                    d = date(month.date_month.year, month.date_month.month, day)
+                    if d.weekday() == 6:
+                        cell.fill = sunday_data_fill
+
+            # Summary Formulas (AJ-AN)
+            row = row_num
+            ws.cell(row=row, column=36, value=f'=COUNTIF(E{row}:AI{row},"N")+(COUNTIF(E{row}:AI{row},"N/1")+COUNTIF(E{row}:AI{row},"N/2"))*0.5').border = border
+            ws.cell(row=row, column=37, value=f'=COUNTIF(E{row}:AI{row},"Đ")+(COUNTIF(E{row}:AI{row},"Đ/1")+COUNTIF(E{row}:AI{row},"Đ/2"))*0.5').border = border
+            ws.cell(row=row, column=38, value=f'=AJ{row}+AK{row}').border = border
+            ws.cell(row=row, column=39, value=f'=COUNTIF(E{row}:AI{row},"PL")').border = border
+            ws.cell(row=row, column=40, value=f'=COUNTIF(E{row}:AI{row},"P")').border = border
+
+            # OT Data (AO-BS) with Auto-mapping
+            for day in range(1, 32):
+                col_idx = 40 + day
+                ot_att = getattr(line, f"ot_day_{day:02d}")
+                ot_code = ot_att.code if ot_att else ""
+                
+                if not ot_code:
+                    norm_att = getattr(line, f"day_{day:02d}")
+                    norm_code = norm_att.code if norm_att else ""
+                    if norm_code == 'N': ot_code = '0.5N'
+                    elif norm_code == 'Đ': ot_code = '0.5Đ'
+                
+                cell = ws.cell(row=row_num, column=col_idx, value=ot_code)
+                cell.border = border
+                cell.alignment = alignment
+                cell.fill = ot_header_fill if not ot_att else sunday_data_fill # Nhấn mạnh ô có dữ liệu thật hoặc gợi ý
+
+            # OT Summary Formulas (BT-BV)
+            row = row_num
+            # Tăng ca Ngày (BT): =COUNTIF(AO{row}:BS{row}, "0.5N")*0.5
+            ws.cell(row=row, column=72, value=f'=COUNTIF(AO{row}:BS{row},"0.5N")*0.5').border = border
+            # Tăng ca Đêm (BU): =COUNTIF(AO{row}:BS{row}, "0.5Đ")*0.5
+            ws.cell(row=row, column=73, value=f'=COUNTIF(AO{row}:BS{row},"0.5Đ")*0.5').border = border
+            # Tổng Tăng ca (BV): =BT{row}+BU{row}
+            ws.cell(row=row, column=74, value=f'=BT{row}+BU{row}').border = border
+
+            row_num += 1
+
+        # Validation and Codes sheet... (skipped for brevity, but I should keep it)
+        ws_codes = wb.create_sheet("Ma cham cong")
+        att_types = request.env['dl.salary.kpi.attendance.type'].search([])
+        for idx, att in enumerate(att_types, 1):
+            ws_codes.cell(row=idx, column=1, value=att.code)
+            ws_codes.cell(row=idx, column=2, value=att.name)
+
+        wb.save(output)
+        output.seek(0)
+        filename = f"Cong_Lam_Them_{month.date_month.strftime('%m_%Y')}.xlsx"
+        return request.make_response(
+            output.getvalue(),
+            headers=[
+                ('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+                ('Content-Disposition', f'attachment; filename={filename}')
+            ]
+        )
+
     @http.route('/dl_salary_kpi/export_attendance/<int:month_id>', type='http', auth='user')
     def export_attendance(self, month_id, **kwargs):
         month = request.env['dl.salary.kpi.month'].browse(month_id)

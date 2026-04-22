@@ -8,6 +8,7 @@
                 <sheet>
                     <group>
                         <field name="month_id" invisible="1"/>
+                        <field name="wizard_type" readonly="1" options="{'horizontal': True}"/>
                         <label for="file_data" string="1. Xuất dữ liệu / Tải file mẫu"/>
                         <div class="o_row">
                             <button name="action_export" string="Bấm để Tải file Công hiện tại" type="object" class="btn-link" icon="fa-download"/>

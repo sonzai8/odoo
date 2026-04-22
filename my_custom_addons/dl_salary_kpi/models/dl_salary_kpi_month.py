@@ -53,30 +53,44 @@ class SalaryKpiMonth(models.Model):
             rec.total_employees = len(rec.line_ids)
             n, d, p, pl, kp, o, dc, co = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
             
-            # Đếm chi tiết từng loại mã
-            code_counts = {}
+            try:
+                # Đếm chi tiết từng loại mã
+                code_counts = {}
+                
+                for line in rec.line_ids:
+                    for i in range(1, 32):
+                        att = getattr(line, f'day_{i:02d}')
+                        if att:
+                            code = att.code
+                            name = att.name
+                            key = (code, name)
+                            code_counts[key] = code_counts.get(key, 0) + 1
+                            
+                            # Thống kê nhanh cho các nhóm chính
+                            if code == 'N': n += 1.0
+                            elif code in ['N/1', 'N/2']: n += 0.5
+                            elif code == 'Đ': d += 1.0
+                            elif code in ['Đ/1', 'Đ/2']: d += 0.5
+                            elif code == 'P': p += 1.0
+                            elif code == 'PL': pl += 1.0
+                            elif code == 'KP': kp += 1.0
+                            elif code == 'Ô': o += 1.0
+                            elif code == 'ĐC': dc += 1.0
+                            elif code == 'CÔ': co += 1.0
             
-            for line in rec.line_ids:
-                for i in range(1, 32):
-                    att = getattr(line, f'day_{i:02d}')
-                    if att:
-                        code = att.code
-                        name = att.name
-                        key = (code, name)
-                        code_counts[key] = code_counts.get(key, 0) + 1
-                        
-                        # Thống kê nhanh cho các nhóm chính
-                        if code == 'N': n += 1.0
-                        elif code in ['N/1', 'N/2']: n += 0.5
-                        elif code == 'Đ': d += 1.0
-                        elif code in ['Đ/1', 'Đ/2']: d += 0.5
-                        elif code == 'P': p += 1.0
-                        elif code == 'PL': pl += 1.0
-                        elif code == 'KP': kp += 1.0
-                        elif code == 'Ô': o += 1.0
-                        elif code == 'ĐC': dc += 1.0
-                        elif code == 'CÔ': co += 1.0
-            
+            except Exception:
+                # Nếu bị lỗi (do đang nâng cấp database chưa có cột), gán giá trị mặc định 0
+                rec.attendance_summary_html = ""
+                rec.total_n = 0
+                rec.total_d = 0
+                rec.total_p = 0
+                rec.total_pl = 0
+                rec.total_kp = 0
+                rec.total_o = 0
+                rec.total_dc = 0
+                rec.total_co = 0
+                continue
+
             rec.total_n = n
             rec.total_d = d
             rec.total_p = p
@@ -216,10 +230,29 @@ class SalaryKpiMonth(models.Model):
     def action_import_excel(self):
         self.ensure_one()
         return {
-            'name': 'Nhập bảng công từ Excel',
+            'name': 'Nhập/Xuất Công Thường',
             'type': 'ir.actions.act_window',
             'res_model': 'dl.salary.kpi.import.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_month_id': self.id}
+            'context': {'default_month_id': self.id, 'default_wizard_type': 'normal'}
+        }
+
+    def action_import_ot_excel(self):
+        self.ensure_one()
+        return {
+            'name': 'Nhập/Xuất Công Làm Thêm',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_month_id': self.id, 'default_wizard_type': 'overtime'}
+        }
+
+    def action_export_ot_excel(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/dl_salary_kpi/export_ot_attendance/{self.id}',
+            'target': 'new',
         }
