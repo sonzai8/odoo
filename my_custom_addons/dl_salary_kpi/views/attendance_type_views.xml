@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_attendance_type_tree" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.attendance.type.tree</field>
+        <field name="model">dl.salary.kpi.attendance.type</field>
+        <field name="arch" type="xml">
+            <list string="Loại công KPI" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="note"/>
+                <field name="weight" sum="Tổng trọng số"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_attendance_type_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.attendance.type.form</field>
+        <field name="model">dl.salary.kpi.attendance.type</field>
+        <field name="arch" type="xml">
+            <form string="Loại công KPI">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="code" string="Mã ký hiệu"/>
+                        <h1>
+                            <field name="code" placeholder="VD: N, D..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="weight"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Ghi chú">
+                        <field name="note" nolabel="1" placeholder="Nhập ghi chú..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_attendance_type" model="ir.actions.act_window">
+        <field name="name">Cấu hình loại công</field>
+        <field name="res_model">dl.salary.kpi.attendance.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bấm để tạo loại công mới.
+            </p>
+        </field>
+    </record>
+</odoo>

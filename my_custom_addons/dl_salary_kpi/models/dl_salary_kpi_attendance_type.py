@@ -1,21 +1,27 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 
 class SalaryKpiAttendanceType(models.Model):
+    """
+    Model quản lý các loại hình chấm công cho KPI và lương.
+    """
     _name = 'dl.salary.kpi.attendance.type'
     _description = 'Loại công KPI'
     _rec_name = 'code'
-    _order = 'sequence'
+    _order = 'sequence, id'
 
-    code = fields.Char(string='Mã', required=True)
-    name = fields.Char(string='Tên đầy đủ', required=True)
-    sequence = fields.Integer(default=10)
-    
-    num_work = fields.Float(string='Số công', default=0.0, help="Số công tính được khi chấm loại công này (VD: 1.0, 0.5)")
-    day_hour = fields.Float(string='Giờ ngày', default=0.0)
-    night_hour = fields.Float(string='Giờ đêm', default=0.0)
-    default_overtime = fields.Float(string='OT mặc định', default=0.0, help="Giờ tăng ca mặc định của công này")
+    code = fields.Char(string='Mã ký hiệu', required=True, help="VD: N, D, P, K")
+    name = fields.Char(string='Tên loại công', required=True)
+    note = fields.Text(string='Ghi chú')
+    weight = fields.Float(string='Trọng số công', default=1.0, help="Giá trị quy đổi công (1.0, 0.5, 0.0...)")
+    sequence = fields.Integer(string='Thứ tự', default=10)
+    active = fields.Boolean(default=True)
 
     _sql_constraints = [
-        ('code_unique', 'unique(code)', 'Mã loại công đã tồn tại!')
+        ('code_unique', 'unique(code)', 'Mã loại công này đã tồn tại!')
     ]
+
+    @api.onchange('code')
+    def _onchange_code(self):
+        if self.code:
+            self.code = self.code.upper()

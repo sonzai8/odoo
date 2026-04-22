@@ -1,0 +1,48 @@
+/* Cho phép xuống hàng trong tiêu đề cột list view */
+.o_list_table th {
+    white-space: pre-wrap !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Tô màu cột Chủ Nhật */
+.kpi_sunday_col {
+    background-color: #E6F2FF !important;
+    /* Xanh nhạt */
+}
+
+/* Tô màu theo mã công cho Badge */
+.o_field_badge.decoration-warning {
+    background-color: #FFFF99 !important;
+    color: #000 !important;
+}
+
+/* CP - Vàng */
+.o_field_badge.decoration-danger {
+    background-color: #FFCCCC !important;
+    color: #000 !important;
+}
+
+/* KP, Ô - Đỏ nhạt */
+.o_field_badge.decoration-bf {
+    background-color: #E5CCFF !important;
+    color: #000 !important;
+    font-weight: normal !important;
+}
+
+/* ĐC - Tím nhạt */
+
+
+/* Đảm bảo badge bên trong vẫn nhìn rõ */
+.kpi_sunday_col .badge {
+    border: 1px solid #007bff !important;
+}
+
+/* Cột đầu tiên - Cố định (Sticky) */
+.o_list_table {
+    border-collapse: separate !important;
+}
+
+.o_list_table th:nth-child(1) {
+    z-index: 101 !important;
+}

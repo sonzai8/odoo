@@ -1,48 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Menu gốc -->
     <menuitem id="menu_dl_salary_kpi_root"
               name="Cân Đối Lương &amp; KPI"
-              web_icon="dl_salary_kpi,static/description/icon.png"
-              sequence="25"/>
+              sequence="20"/>
 
+    <!-- Menu Hoạt động -->
     <menuitem id="menu_dl_salary_kpi_main"
-              name="Quản lý lương &amp; KPI"
+              name="Hoạt động"
               parent="menu_dl_salary_kpi_root"
               sequence="10"/>
 
     <menuitem id="menu_dl_salary_kpi_month_action"
-              name="Cân đối theo tháng"
+              name="Cân đối bảng công"
               parent="menu_dl_salary_kpi_main"
               action="action_dl_salary_kpi_month"
               sequence="10"/>
 
-    <menuitem id="menu_dl_salary_kpi_employee_action"
-              name="Quản lý Nhân viên KPI"
-              parent="menu_dl_salary_kpi_main"
-              action="action_dl_salary_kpi_employee"
-              sequence="15"/>
+    
 
-    <!-- <menuitem id="menu_dl_salary_kpi_export_wizard_action"
-              name="Xuất báo cáo lương"
-              parent="menu_dl_salary_kpi_main"
-              action="action_dl_salary_kpi_export_wizard"
-              sequence="20"/> -->
+    
 
-    <menuitem id="menu_dl_salary_kpi_calculation"
-              name="Tính KPI"
-              parent="menu_dl_salary_kpi_main"
-              action="action_dl_salary_kpi_calc"
-              sequence="25"/>
+    <menuitem id="menu_dl_salary_kpi_tree"
+              name="Quản lý nhân viên"
+              parent="menu_dl_salary_kpi_root"
+              action="action_dl_salary_kpi_employee_tax"
+              sequence="30"/>
+    <menuitem id="menu_dl_salary_kpi_employee_tax_action"
+              name="DS nhân viên thuế"
+              parent="menu_dl_salary_kpi_tree"
+              action="action_dl_salary_kpi_employee_tax"
+              sequence="1"/>
+    <menuitem id="menu_dl_salary_kpi_tax_import_action"
+              name="Nhập nhân viên thuế"
+              parent="menu_dl_salary_kpi_tree"
+              action="action_dl_salary_kpi_tax_import"
+              sequence="2"/>
 
-    <!-- Configuration Menu -->
+    <!-- Menu Cấu hình -->
     <menuitem id="menu_dl_salary_kpi_config"
               name="Cấu hình"
               parent="menu_dl_salary_kpi_root"
-              sequence="100"/>
+              sequence="100"
+              groups="dl_wood_payroll.group_dl_wood_manager"/>
 
     <menuitem id="menu_dl_salary_kpi_attendance_type_action"
               name="Loại công"
               parent="menu_dl_salary_kpi_config"
               action="action_dl_salary_kpi_attendance_type"
               sequence="10"/>
+
+    
 </odoo>
