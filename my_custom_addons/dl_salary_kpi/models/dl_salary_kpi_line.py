@@ -116,9 +116,68 @@ class SalaryKpiLine(models.Model):
     day_30_code = fields.Char(related='day_30.code', store=True)
     day_31_code = fields.Char(related='day_31.code', store=True)
 
+    # Trường tổng hợp để phục vụ tìm kiếm/lọc
+    attendance_type_ids = fields.Many2many(
+        'dl.salary.kpi.attendance.type',
+        compute='_compute_attendance_type_ids',
+        store=True,
+        string='Các loại công trong tháng'
+    )
+
+    # Các trường tổng hợp số lượng công
+    total_n = fields.Float(string='Ngày', compute='_compute_totals', store=False)
+    total_d = fields.Float(string='Đêm', compute='_compute_totals', store=False)
+    total_p = fields.Float(string='Phép (P)', compute='_compute_totals', store=False)
+    total_pl = fields.Float(string='Phép lễ (PL)', compute='_compute_totals', store=False)
+    total_kp = fields.Float(string='Không phép (KP)', compute='_compute_totals', store=False)
+    total_o = fields.Float(string='Nghỉ ốm (Ô)', compute='_compute_totals', store=False)
+    total_dc = fields.Float(string='Đổi ca (ĐC)', compute='_compute_totals', store=False)
+    total_co = fields.Float(string='Con ốm (CÔ)', compute='_compute_totals', store=False)
+
+    @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                 'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                 'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31')
+    def _compute_totals(self):
+        for rec in self:
+            n, d, p, pl, kp, o, dc, co = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            for i in range(1, 32):
+                att = getattr(rec, f'day_{i:02d}')
+                if att:
+                    code = att.code
+                    if code == 'N': n += 1.0
+                    elif code in ['N/1', 'N/2']: n += 0.5
+                    elif code == 'Đ': d += 1.0
+                    elif code in ['Đ/1', 'Đ/2']: d += 0.5
+                    elif code == 'P': p += 1.0
+                    elif code == 'PL': pl += 1.0
+                    elif code == 'KP': kp += 1.0
+                    elif code == 'Ô': o += 1.0
+                    elif code == 'ĐC': dc += 1.0
+                    elif code == 'CÔ': co += 1.0
+            rec.total_n = n
+            rec.total_d = d
+            rec.total_p = p
+            rec.total_pl = pl
+            rec.total_kp = kp
+            rec.total_o = o
+            rec.total_dc = dc
+            rec.total_co = co
+
+    @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                 'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                 'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31')
+    def _compute_attendance_type_ids(self):
+        for rec in self:
+            types = []
+            for i in range(1, 32):
+                val = getattr(rec, f'day_{i:02d}')
+                if val:
+                    types.append(val.id)
+            rec.attendance_type_ids = [(6, 0, list(set(types)))]
+
+    @api.depends('month_id.date_month')
     def _compute_is_sunday(self):
-
-
+        from calendar import monthrange
         from datetime import date
         for rec in self:
             if not rec.month_id.date_month:
@@ -126,17 +185,19 @@ class SalaryKpiLine(models.Model):
                     rec[f'day_{i:02d}_is_sunday'] = False
                 continue
                 
-            year = rec.month_id.date_month.year
-            month = rec.month_id.date_month.month
+            d_m = rec.month_id.date_month
+            year, month = d_m.year, d_m.month
+            last_day = monthrange(year, month)[1]
+            
             for i in range(1, 32):
-                try:
+                field_name = f'day_{i:02d}_is_sunday'
+                if i <= last_day:
                     d = date(year, month, i)
-                    rec[f'day_{i:02d}_is_sunday'] = (d.weekday() == 6)
-                except ValueError:
-                    rec[f'day_{i:02d}_is_sunday'] = False
+                    rec[field_name] = (d.weekday() == 6)
+                else:
+                    rec[field_name] = False
 
     @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
-
                     'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
                     'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31')
     def _check_shift_change(self):

@@ -62,7 +62,7 @@
     
                     </group>
                     <notebook>
-                        <page string="Bảng công Ma trận" name="matrix">
+                        <page string="Bảng công Thường" name="matrix">
                             <field name="line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -169,12 +169,65 @@
 
                             </field>
                         </page>
-                        <page string="Thống kê">
+                        <page string="Bảng công làm thêm giờ" name="overtime">
+                            
                         </page>
 
                     </notebook>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_line_search" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.line.search</field>
+        <field name="model">dl.salary.kpi.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="identification_id"/>
+                <field name="month_id"/>
+                <field name="dl_tax_department"/>
+
+                <filter string="Tháng" name="group_month" context="{'group_by': 'month_id'}"/>
+                <filter string="Phòng ban" name="group_dept" context="{'group_by': 'dl_tax_department'}"/>
+
+                <searchpanel>
+                    <field name="month_id" icon="fa-calendar" enable_counters="1"/>
+                    <field name="attendance_type_ids" string="Mã chấm công" select="multi" icon="fa-tags" enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_line_list" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.line.list</field>
+        <field name="model">dl.salary.kpi.line</field>
+        <field name="arch" type="xml">
+            <list string="Chi tiết công" decoration-danger="total_kp > 0" decoration-warning="total_o > 0">
+                <field name="month_id" width="180px"/>
+                <field name="employee_id" width="110px"/>
+                <field name="dl_tax_department" width="70px"/>
+                <field name="total_n" sum="Tổng N"/>
+                <field name="total_d" sum="Tổng Đ"/>
+                <field name="total_p" sum="Tổng P"/>
+                <field name="total_kp" sum="Tổng KP" />
+                <field name="total_o" sum="Tổng Ô"/>
+                <field name="total_dc" sum="Tổng ĐC"/>
+                <field name="attendance_type_ids" widget="many2many_tags" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_line_detail" model="ir.actions.act_window">
+        <field name="name">Chi tiết chấm công nhân viên</field>
+        <field name="res_model">dl.salary.kpi.line</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_dl_salary_kpi_line_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bảng này hiển thị chi tiết các mã công của từng nhân viên.
+            </p>
         </field>
     </record>
 
@@ -188,4 +241,5 @@
             </p>
         </field>
     </record>
+
 </odoo>

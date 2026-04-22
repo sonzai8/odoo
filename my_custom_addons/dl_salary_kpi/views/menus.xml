@@ -17,6 +17,12 @@
               action="action_dl_salary_kpi_month"
               sequence="10"/>
 
+    <menuitem id="menu_dl_salary_kpi_line_detail"
+              name="Chi tiết công nhân viên"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_line_detail"
+              sequence="20"/>
+
     
 
     
