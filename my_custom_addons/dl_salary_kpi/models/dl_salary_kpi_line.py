@@ -118,6 +118,7 @@ class SalaryKpiLine(models.Model):
 
     def _compute_is_sunday(self):
 
+
         from datetime import date
         for rec in self:
             if not rec.month_id.date_month:

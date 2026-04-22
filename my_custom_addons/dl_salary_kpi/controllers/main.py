@@ -15,6 +15,7 @@ class SalaryKpiController(http.Controller):
 
         output = io.BytesIO()
         wb = openpyxl.Workbook()
+        wb.calculation.fullCalcOnLoad = True
         ws = wb.active
         ws.title = "Bang Cham Cong"
         ws.freeze_panes = 'E4' # Đóng băng 4 cột đầu và 3 hàng đầu
@@ -125,7 +126,56 @@ class SalaryKpiController(http.Controller):
                     if d.weekday() == 6:
                         cell.fill = sunday_data_fill
                 
+            # THÊM CÁC CỘT TỔNG HỢP Ở CUỐI BẰNG CÔNG THỨC EXCEL (AJ -> AN)
+            row = row_num
+            # Công Ngày (Cột 36 - AJ): Đếm N (1.0) và N/1, N/2 (0.5)
+            # Công thức: =COUNTIF(E{row}:AI{row}, "N") + (COUNTIF(E{row}:AI{row}, "N/1") + COUNTIF(E{row}:AI{row}, "N/2"))*0.5
+            formula_n = f'=COUNTIF(E{row}:AI{row},"N")+(COUNTIF(E{row}:AI{row},"N/1")+COUNTIF(E{row}:AI{row},"N/2"))*0.5'
+            cell_n = ws.cell(row=row, column=36, value=formula_n)
+            cell_n.border = border
+            cell_n.alignment = alignment
+
+            # Công Đêm (Cột 37 - AK): Đếm Đ (1.0) và Đ/1, Đ/2 (0.5)
+            # Công thức: =COUNTIF(E{row}:AI{row}, "Đ") + (COUNTIF(E{row}:AI{row}, "Đ/1") + COUNTIF(E{row}:AI{row}, "Đ/2"))*0.5
+            formula_d = f'=COUNTIF(E{row}:AI{row},"Đ")+(COUNTIF(E{row}:AI{row},"Đ/1")+COUNTIF(E{row}:AI{row},"Đ/2"))*0.5'
+            cell_d = ws.cell(row=row, column=37, value=formula_d)
+            cell_d.border = border
+            cell_d.alignment = alignment
+
+            # Tổng Cộng (Cột 38 - AL): = AJ + AK
+            formula_total = f'=AJ{row}+AK{row}'
+            cell_total = ws.cell(row=row, column=38, value=formula_total)
+            cell_total.border = border
+            cell_total.alignment = alignment
+            cell_total.font = Font(bold=True, color="FF0000") # Màu đỏ cho dễ nhìn
+
+            # Ngày Lễ (Cột 39 - AM): Đếm PL
+            formula_pl = f'=COUNTIF(E{row}:AI{row},"PL")'
+            cell_pl = ws.cell(row=row, column=39, value=formula_pl)
+            cell_pl.border = border
+            cell_pl.alignment = alignment
+
+            # Ngày Phép (Cột 40 - AN): Đếm P
+            formula_p = f'=COUNTIF(E{row}:AI{row},"P")'
+            cell_p = ws.cell(row=row, column=40, value=formula_p)
+            cell_p.border = border
+            cell_p.alignment = alignment
+
             row_num += 1
+
+        # Header cho các cột tổng hợp (Hàng 2 & 3)
+        summary_headers = [
+            ("AJ", "Công Ngày"), ("AK", "Công Đêm"), ("AL", "Tổng Cộng"), 
+            ("AM", "Ngày Lễ"), ("AN", "Ngày Phép")
+        ]
+        for i, (col_letter, text) in enumerate(summary_headers):
+            col_idx = 36 + i
+            cell = ws.cell(row=2, column=col_idx, value=text)
+            cell.font = header_font
+            cell.border = border
+            cell.alignment = alignment
+            ws.merge_cells(start_row=2, start_column=col_idx, end_row=3, end_column=col_idx)
+            ws.column_dimensions[col_letter].width = 12
 
         # SHEET 2: MÃ CHẤM CÔNG
         ws_codes = wb.create_sheet("Ma cham cong")
@@ -139,7 +189,6 @@ class SalaryKpiController(http.Controller):
         
         # Thêm Validation (Dropdown) cho sheet chính
         from openpyxl.worksheet.datavalidation import DataValidation
-        # Vùng chọn: Từ Row 4 đến Row_num-1, Từ Cột E (5) đến Cột AI (35)
         last_data_row = row_num - 1
         validation_range = f"E4:AI{last_data_row}"
         
@@ -157,7 +206,6 @@ class SalaryKpiController(http.Controller):
 
         wb.save(output)
         output.seek(0)
-
         
         filename = f"Bang_Cham_Cong_{month.date_month.strftime('%m_%Y')}.xlsx"
         return request.make_response(
@@ -167,6 +215,9 @@ class SalaryKpiController(http.Controller):
                 ('Content-Disposition', f'attachment; filename={filename}')
             ]
         )
+
+
+
 
 
 

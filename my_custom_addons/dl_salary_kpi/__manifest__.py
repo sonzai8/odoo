@@ -20,6 +20,7 @@
     'assets': {
         'web.assets_backend': [
             'dl_salary_kpi/static/src/css/matrix.css',
+            'dl_salary_kpi/static/src/css/full_width_matrix.css',
         ],
     },
     'installable': True,

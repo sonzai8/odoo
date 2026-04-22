@@ -26,6 +26,32 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <div class="oe_stat_button" icon="fa-users">
+                            <field name="total_employees" widget="statinfo" string="Nhân viên"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-sun-o" font-color="orange">
+                            <field name="total_n" widget="statinfo" string="Công Ngày"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-moon-o" font-color="blue">
+                            <field name="total_d" widget="statinfo" string="Công Đêm"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-plane" font-color="green">
+                            <field name="total_p" widget="statinfo" string="Phép (P)"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-star" font-color="red">
+                            <field name="total_pl" widget="statinfo" string="Lễ (PL)"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-exclamation-triangle" font-color="red">
+                            <field name="total_kp" widget="statinfo" string="Không phép"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-medkit" font-color="brown">
+                            <field name="total_o" widget="statinfo" string="Nghỉ ốm"/>
+                        </div>
+                        <div class="oe_stat_button" icon="fa-exchange" font-color="purple">
+                            <field name="total_dc" widget="statinfo" string="Điều chuyển"/>
+                        </div>
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
@@ -33,6 +59,7 @@
                         <group>
                             <field name="date_month" readonly="state != 'draft'"/>
                         </group>
+    
                     </group>
                     <notebook>
                         <page string="Bảng công Ma trận" name="matrix">
@@ -41,42 +68,7 @@
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
                                     <field name="dl_tax_department" readonly="1" sticky="1"/>
                                     <field name="dl_tax_position" readonly="1" sticky="1"/>
-
-
-                                    <!-- Ma trận 31 ngày hiển thị mã công -->
-                                    <field name="day_01" string="01" widget="badge" decoration-info="day_01_is_sunday"/>
-                                    <field name="day_02" string="02" widget="badge" decoration-info="day_02_is_sunday"/>
-                                    <field name="day_03" string="03" widget="badge" decoration-info="day_03_is_sunday"/>
-                                    <field name="day_04" string="04" widget="badge" decoration-info="day_04_is_sunday"/>
-                                    <field name="day_05" string="05" widget="badge" decoration-info="day_05_is_sunday"/>
-                                    <field name="day_06" string="06" widget="badge" decoration-info="day_06_is_sunday"/>
-                                    <field name="day_07" string="07" widget="badge" decoration-info="day_07_is_sunday"/>
-                                    <field name="day_08" string="08" widget="badge" decoration-info="day_08_is_sunday"/>
-                                    <field name="day_09" string="09" widget="badge" decoration-info="day_09_is_sunday"/>
-                                    <field name="day_10" string="10" widget="badge" decoration-info="day_10_is_sunday"/>
-                                    <field name="day_11" string="11" widget="badge" decoration-info="day_11_is_sunday"/>
-                                    <field name="day_12" string="12" widget="badge" decoration-info="day_12_is_sunday"/>
-                                    <field name="day_13" string="13" widget="badge" decoration-info="day_13_is_sunday"/>
-                                    <field name="day_14" string="14" widget="badge" decoration-info="day_14_is_sunday"/>
-                                    <field name="day_15" string="15" widget="badge" decoration-info="day_15_is_sunday"/>
-                                    <field name="day_16" string="16" widget="badge" decoration-info="day_16_is_sunday"/>
-                                    <field name="day_17" string="17" widget="badge" decoration-info="day_17_is_sunday"/>
-                                    <field name="day_18" string="18" widget="badge" decoration-info="day_18_is_sunday"/>
-                                    <field name="day_19" string="19" widget="badge" decoration-info="day_19_is_sunday"/>
-                                    <field name="day_20" string="20" widget="badge" decoration-info="day_20_is_sunday"/>
-                                    <field name="day_21" string="21" widget="badge" decoration-info="day_21_is_sunday"/>
-                                    <field name="day_22" string="22" widget="badge" decoration-info="day_22_is_sunday"/>
-                                    <field name="day_23" string="23" widget="badge" decoration-info="day_23_is_sunday"/>
-                                    <field name="day_24" string="24" widget="badge" decoration-info="day_24_is_sunday"/>
-                                    <field name="day_25" string="25" widget="badge" decoration-info="day_25_is_sunday"/>
-                                    <field name="day_26" string="26" widget="badge" decoration-info="day_26_is_sunday"/>
-                                    <field name="day_27" string="27" widget="badge" decoration-info="day_27_is_sunday"/>
-                                    <field name="day_28" string="28" widget="badge" decoration-info="day_28_is_sunday"/>
-                                    <field name="day_29" string="29" widget="badge" decoration-info="day_29_is_sunday"/>
-                                    <field name="day_30" string="30" widget="badge" decoration-info="day_30_is_sunday"/>
-
-                                    <field name="day_31" string="31" widget="badge" decoration-info="day_31_is_sunday"/>
-
+                                    
                                     <field name="day_01_is_sunday" column_invisible="1"/>
                                     <field name="day_02_is_sunday" column_invisible="1"/>
                                     <field name="day_03_is_sunday" column_invisible="1"/>
@@ -140,10 +132,45 @@
                                     <field name="day_29_code" column_invisible="1"/>
                                     <field name="day_30_code" column_invisible="1"/>
                                     <field name="day_31_code" column_invisible="1"/>
+
+                                    <!-- Ma trận 31 ngày hiển thị mã công -->
+                                    <field name="day_01" string="01" widget="badge" decoration-info="day_01_is_sunday"/>
+                                    <field name="day_02" string="02" widget="badge" decoration-info="day_02_is_sunday"/>
+                                    <field name="day_03" string="03" widget="badge" decoration-info="day_03_is_sunday"/>
+                                    <field name="day_04" string="04" widget="badge" decoration-info="day_04_is_sunday"/>
+                                    <field name="day_05" string="05" widget="badge" decoration-info="day_05_is_sunday"/>
+                                    <field name="day_06" string="06" widget="badge" decoration-info="day_06_is_sunday"/>
+                                    <field name="day_07" string="07" widget="badge" decoration-info="day_07_is_sunday"/>
+                                    <field name="day_08" string="08" widget="badge" decoration-info="day_08_is_sunday"/>
+                                    <field name="day_09" string="09" widget="badge" decoration-info="day_09_is_sunday"/>
+                                    <field name="day_10" string="10" widget="badge" decoration-info="day_10_is_sunday"/>
+                                    <field name="day_11" string="11" widget="badge" decoration-info="day_11_is_sunday"/>
+                                    <field name="day_12" string="12" widget="badge" decoration-info="day_12_is_sunday"/>
+                                    <field name="day_13" string="13" widget="badge" decoration-info="day_13_is_sunday"/>
+                                    <field name="day_14" string="14" widget="badge" decoration-info="day_14_is_sunday"/>
+                                    <field name="day_15" string="15" widget="badge" decoration-info="day_15_is_sunday"/>
+                                    <field name="day_16" string="16" widget="badge" decoration-info="day_16_is_sunday"/>
+                                    <field name="day_17" string="17" widget="badge" decoration-info="day_17_is_sunday"/>
+                                    <field name="day_18" string="18" widget="badge" decoration-info="day_18_is_sunday"/>
+                                    <field name="day_19" string="19" widget="badge" decoration-info="day_19_is_sunday"/>
+                                    <field name="day_20" string="20" widget="badge" decoration-info="day_20_is_sunday"/>
+                                    <field name="day_21" string="21" widget="badge" decoration-info="day_21_is_sunday"/>
+                                    <field name="day_22" string="22" widget="badge" decoration-info="day_22_is_sunday"/>
+                                    <field name="day_23" string="23" widget="badge" decoration-info="day_23_is_sunday"/>
+                                    <field name="day_24" string="24" widget="badge" decoration-info="day_24_is_sunday"/>
+                                    <field name="day_25" string="25" widget="badge" decoration-info="day_25_is_sunday"/>
+                                    <field name="day_26" string="26" widget="badge" decoration-info="day_26_is_sunday"/>
+                                    <field name="day_27" string="27" widget="badge" decoration-info="day_27_is_sunday"/>
+                                    <field name="day_28" string="28" widget="badge" decoration-info="day_28_is_sunday"/>
+                                    <field name="day_29" string="29" widget="badge" decoration-info="day_29_is_sunday"/>
+                                    <field name="day_30" string="30" widget="badge" decoration-info="day_30_is_sunday"/>
+                                    <field name="day_31" string="31" widget="badge" decoration-info="day_31_is_sunday"/>
                                 </list>
+
                             </field>
                         </page>
-
+                        <page string="Thống kê">
+                        </page>
 
                     </notebook>
                 </sheet>

@@ -25,6 +25,72 @@ class SalaryKpiMonth(models.Model):
             else:
                 rec.name = "Mới"
 
+    # Các trường báo cáo nhanh
+    total_employees = fields.Integer(string="Tổng nhân viên", compute="_compute_quick_stats")
+    total_n = fields.Float(string="Tổng Công Ngày", compute="_compute_quick_stats")
+    total_d = fields.Float(string="Tổng Công Đêm", compute="_compute_quick_stats")
+    total_p = fields.Float(string="Tổng Ngày Phép", compute="_compute_quick_stats")
+    total_pl = fields.Float(string="Tổng Ngày Lễ", compute="_compute_quick_stats")
+    total_kp = fields.Float(string="Tổng Không phép (KP)", compute="_compute_quick_stats")
+    total_o = fields.Float(string="Tổng Nghỉ ốm (Ô)", compute="_compute_quick_stats")
+    total_dc = fields.Float(string="Tổng Điều chuyển (ĐC)", compute="_compute_quick_stats")
+    
+    attendance_summary_html = fields.Html(string="Tổng hợp mã công", compute="_compute_quick_stats")
+
+    @api.depends('line_ids', 'line_ids.day_01', 'line_ids.day_02', 'line_ids.day_03', 'line_ids.day_04', 'line_ids.day_05',
+                 'line_ids.day_06', 'line_ids.day_07', 'line_ids.day_08', 'line_ids.day_09', 'line_ids.day_10',
+                 'line_ids.day_11', 'line_ids.day_12', 'line_ids.day_13', 'line_ids.day_14', 'line_ids.day_15',
+                 'line_ids.day_16', 'line_ids.day_17', 'line_ids.day_18', 'line_ids.day_19', 'line_ids.day_20',
+                 'line_ids.day_21', 'line_ids.day_22', 'line_ids.day_23', 'line_ids.day_24', 'line_ids.day_25',
+                 'line_ids.day_26', 'line_ids.day_27', 'line_ids.day_28', 'line_ids.day_29', 'line_ids.day_30', 'line_ids.day_31')
+    def _compute_quick_stats(self):
+        for rec in self:
+            rec.total_employees = len(rec.line_ids)
+            n, d, p, pl, kp, o, dc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            
+            # Đếm chi tiết từng loại mã
+            code_counts = {}
+            
+            for line in rec.line_ids:
+                for i in range(1, 32):
+                    att = getattr(line, f'day_{i:02d}')
+                    if att:
+                        code = att.code
+                        name = att.name
+                        key = (code, name)
+                        code_counts[key] = code_counts.get(key, 0) + 1
+                        
+                        # Thống kê nhanh cho các nhóm chính
+                        if code == 'N': n += 1.0
+                        elif code in ['N/1', 'N/2']: n += 0.5
+                        elif code == 'Đ': d += 1.0
+                        elif code in ['Đ/1', 'Đ/2']: d += 0.5
+                        elif code == 'P': p += 1.0
+                        elif code == 'PL': pl += 1.0
+                        elif code == 'KP': kp += 1.0
+                        elif code == 'Ô': o += 1.0
+                        elif code == 'ĐC': dc += 1.0
+            
+            rec.total_n = n
+            rec.total_d = d
+            rec.total_p = p
+            rec.total_pl = pl
+            rec.total_kp = kp
+            rec.total_o = o
+            rec.total_dc = dc
+            
+            # Tạo bảng HTML
+            html = '<table class="table table-sm table-bordered mt-2">'
+            html += '<thead class="bg-light"><tr><th>Mã</th><th>Tên loại công</th><th>Số lượng (ô)</th></tr></thead><tbody>'
+            
+            # Sắp xếp theo mã
+            sorted_keys = sorted(code_counts.keys(), key=lambda x: x[0])
+            for key in sorted_keys:
+                html += f'<tr><td><strong>{key[0]}</strong></td><td>{key[1]}</td><td>{code_counts[key]}</td></tr>'
+            
+            html += '</tbody></table>'
+            rec.attendance_summary_html = html
+
     @api.model_create_multi
     def create(self, vals_list):
         """Khi tạo mới, tự động lấy toàn bộ nhân viên và chấm công mặc định"""
