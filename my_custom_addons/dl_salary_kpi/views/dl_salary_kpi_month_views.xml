@@ -71,6 +71,8 @@
                     <group>
                         <group>
                             <field name="date_month" readonly="state != 'draft'"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
                     <notebook>
@@ -310,6 +312,15 @@
                             </field>
                         </page>
                         
+                        <page string="Cấu Hình Chung" name="financial_balance" invisible="state == 'draft'">
+                            <group>
+                                <group>
+                                    <field name="dl_revenue" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="dl_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="dl_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </group>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
             </form>

@@ -10,6 +10,9 @@ class SalaryKpiMonth(models.Model):
 
     name = fields.Char(string='Tên bản ghi', compute='_compute_name', store=True)
     date_month = fields.Date(string='Tháng/Năm', required=True, default=fields.Date.today)
+    
+    company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', related='company_id.currency_id')
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('lock_normal', 'Chốt công Thường'),
@@ -20,6 +23,11 @@ class SalaryKpiMonth(models.Model):
     ], string='Trạng thái', default='draft')
     
     line_ids = fields.One2many('dl.salary.kpi.line', 'month_id', string='Chi tiết chấm công')
+    
+    # Thông tin cân đối tài chính
+    dl_revenue = fields.Float(string="Doanh thu tháng (Công ty)")
+    dl_meal_allowance = fields.Float(string="Tiền ăn ca", default=650000)
+    dl_women_allowance = fields.Float(string="Phụ cấp phụ nữ", default=500000)
 
     @api.depends('date_month')
     def _compute_name(self):
