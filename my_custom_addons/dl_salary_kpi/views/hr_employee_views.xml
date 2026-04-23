@@ -18,7 +18,7 @@
                     <group>
                         <group string="Thông tin định danh thuế">
                             <field name="dl_tax_id"/>
-                            <field name="dl_tax_department"/>
+                            <field name="dl_tax_department_id"/>
                         </group>
                         <group string="Thông tin lương thuế">
                             <field name="dl_tax_position"/>

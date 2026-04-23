@@ -9,7 +9,9 @@
     'data': [
         'security/ir.model.access.csv',
         'data/attendance_type_data.xml',
+        'data/dl_tax_department_data.xml',
         'views/attendance_type_views.xml',
+        'views/dl_tax_department_views.xml',
         'views/hr_employee_views.xml',
         'wizard/dl_salary_kpi_import_views.xml',
         'wizard/dl_salary_kpi_tax_import_views.xml',

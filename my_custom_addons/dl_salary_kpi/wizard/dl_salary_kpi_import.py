@@ -48,12 +48,12 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
 
-            if not row[2]: # Cột C là ID nhân viên
+            if not row[1]: # Cột B là ID nhân viên
                 continue
             
-            emp_name_excel = str(row[1]).strip() if row[1] else ""
+            emp_name_excel = str(row[2]).strip() if row[2] else ""
             try:
-                emp_id = int(row[2])
+                emp_id = int(row[1])
             except (ValueError, TypeError):
                 errors.append(f"Dòng {row_idx}: ID nhân viên '{row[2]}' không hợp lệ (phải là số).")
                 continue
@@ -86,7 +86,8 @@ class SalaryKpiImportWizard(models.TransientModel):
                 row_codes[day] = current_att.code if current_att else False
 
             # Ghi đè bằng dữ liệu từ Excel
-            col_offset = 4 if self.wizard_type == 'normal' else 40
+            # Công thường: Cột 10 (index 9). Làm thêm: Cột 46 (index 45)
+            col_offset = 9 if self.wizard_type == 'normal' else 45
             for day in range(1, 32):
                 field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 

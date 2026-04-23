@@ -17,21 +17,34 @@
                         </group>
                     </div>
                     <div invisible="state != 'verify'">
-                        <div class="alert alert-info" role="alert">
+                        <div class="alert alert-info" role="alert" invisible="has_errors">
                             Vui lòng kiểm tra lại thông tin bên dưới trước khi xác nhận nhập liệu. 
-                            Các dòng có thông báo lỗi sẽ không được xử lý.
+                            Hệ thống hiển thị tối đa 5 bản ghi đầu và 5 bản ghi cuối để tối ưu hiệu năng.
+                            <br/><strong>Tổng số bản ghi sẽ nhập: <field name="total_records" readonly="1" class="oe_inline"/></strong>
                         </div>
+                        <div class="alert alert-danger" role="alert" invisible="not has_errors">
+                            <strong>Phát hiện lỗi trong file!</strong> Vui lòng kiểm tra danh sách bên dưới hoặc tóm tắt lỗi để xử lý.
+                            <br/><strong>Tổng số bản ghi: <field name="total_records" readonly="1" class="oe_inline"/></strong>
+                        </div>
+                        <group invisible="not error_summary">
+                            <field name="error_summary" readonly="1" nolabel="1" class="text-danger"/>
+                        </group>
+                        <field name="has_errors" invisible="1"/>
                         <field name="line_ids">
                             <list decoration-danger="error_msg != ''">
                                 <field name="employee_id" optional="show"/>
-                                <field name="name"/>
-                                <field name="import_type" widget="badge" decoration-info="import_type == 'insert'" decoration-warning="import_type == 'update'"/>
+                                <field name="name" width="150px"/>
+                                <field name="dl_first_name"/>
+                                <field name="identification_id" width="100px"/>
                                 <field name="dl_tax_id"/>
+                                <field name="dl_tax_position" width="120px"/>
+                                <field name="dl_tax_department_name"/>
                                 <field name="dl_tax_base_salary"/>
-
-                                <field name="error_msg" widget="badge" decoration-danger="error_msg != ''"/>
-                                <field name="dl_first_name" optional="hide"/>
-                                <field name="email" optional="hide"/>
+                                <field name="import_type" widget="badge" decoration-info="import_type == 'insert'" decoration-warning="import_type == 'update'"/>
+                                <field name="birthday" optional="show"/>
+                                <field name="dl_departure_date" optional="show"/>
+                                <field name="error_msg" widget="badge" decoration-danger="error_msg != ''" invisible="error_msg == ''"/>
+                                <field name="email" optional="hide" width="30px"/>
                             </list>
                         </field>
                     </div>

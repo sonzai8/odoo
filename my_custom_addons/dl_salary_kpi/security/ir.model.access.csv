@@ -14,6 +14,8 @@ access_dl_salary_kpi_month_user,dl.salary.kpi.month.user,model_dl_salary_kpi_mon
 access_dl_salary_kpi_line_user,dl.salary.kpi.line.user,model_dl_salary_kpi_line,base.group_user,1,0,0,0
 access_dl_salary_kpi_tax_import_user,dl.salary.kpi.tax.import.user,model_dl_salary_kpi_tax_import,base.group_user,1,0,0,0
 access_dl_salary_kpi_tax_import_line_user,dl.salary.kpi.tax.import.line.user,model_dl_salary_kpi_tax_import_line,base.group_user,1,0,0,0
+access_dl_tax_department_manager,dl.tax.department.manager,model_dl_tax_department,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_tax_department_user,dl.tax.department.user,model_dl_tax_department,base.group_user,1,0,0,0
 
 
 

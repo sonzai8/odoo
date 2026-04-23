@@ -51,3 +51,40 @@
 .o_list_table th:nth-child(1) {
     z-index: 101 !important;
 }
+/* Styling cho Popup chi tiết công */
+.o_dl_salary_kpi_line_form .dl_day_group .o_field_widget {
+    min-width: 60px !important;
+    width: 60px !important;
+}
+
+.o_dl_salary_kpi_line_form .dl_day_group label {
+    min-width: 40px !important;
+    width: 40px !important;
+    font-size: 0.85rem;
+}
+
+/* Ép kiểu màu đỏ cho các ngày chủ nhật trong popup */
+.o_dl_salary_kpi_line_form .text-danger, 
+.o_dl_salary_kpi_line_form .text-danger * {
+    color: #cc0000 !important;
+    font-weight: bold !important;
+}
+
+/* Đảm bảo label cũng màu đỏ nếu field có class text-danger */
+.o_dl_salary_kpi_line_form .o_inner_group .o_cell:has(.text-danger) label {
+    color: #cc0000 !important;
+    font-weight: bold !important;
+}
+
+/* Đảm bảo các hàng trong lịch có độ cao cố định kể cả khi trống */
+.dl_calendar_row {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+
+/* Ẩn label mặc định của Odoo trong calendar row để tự kiểm soát layout */
+.dl_calendar_row label {
+    width: 30px !important;
+    min-width: 30px !important;
+}

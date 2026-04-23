@@ -6,16 +6,36 @@
         <field name="priority">100</field>
         <field name="arch" type="xml">
             <list string="Quản lý nhân viên thuế" create="false">
-                <field name="name"/>
-                <field name="dl_first_name"/>
+                <field name="name" width="150px" class="text-start"/>
+                <field name="dl_first_name" column_invisible="True"/>
+                <field name="identification_id" width="100px"/>
+                <field name="birthday"/>
                 <field name="sex" />
                 <field name="dl_tax_id"/>
-                <field name="dl_tax_department"/>
-                <field name="dl_tax_position"/>
+                <field name="dl_tax_department_id"/>
+                <field name="dl_tax_position" width="120px"/>
                 <field name="dl_tax_base_salary" sum="Tổng lương thuế"/>
-                <field name="identification_id"/>
-                
             </list>
+        </field>
+    </record>
+
+    <record id="view_employee_tax_search" model="ir.ui.view">
+        <field name="name">hr.employee.tax.search</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm nhân viên thuế">
+                <field name="name"/>
+                <field name="identification_id"/>
+                <field name="dl_tax_id"/>
+                <field name="dl_tax_department_id"/>
+                <field name="dl_tax_position"/>
+                <field name="sex"/>
+                <separator/>
+                <searchpanel>
+                    <field name="sex" icon="fa-users" enable_counters="1"/>
+                    <field name="dl_tax_department_id" icon="fa-building" enable_counters="1"/>
+                </searchpanel>
+            </search>
         </field>
     </record>
 
@@ -24,6 +44,7 @@
         <field name="res_model">hr.employee</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_employee_tax_tree"/>
+        <field name="search_view_id" ref="view_employee_tax_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Quản lý thông tin cấu hình thuế của nhân viên tại đây.

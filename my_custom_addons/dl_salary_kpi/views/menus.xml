@@ -56,5 +56,9 @@
               action="action_dl_salary_kpi_attendance_type"
               sequence="10"/>
 
-    
+    <menuitem id="menu_dl_tax_department_action"
+              name="Phòng ban thuế"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_tax_department"
+              sequence="20"/>
 </odoo>
