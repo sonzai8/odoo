@@ -18,37 +18,37 @@ class SalaryKpiLine(models.Model):
 
 
     # Chấm công 31 ngày (hiển thị mã công)
-    day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01')
-    day_02 = fields.Many2one('dl.salary.kpi.attendance.type', string='02')
-    day_03 = fields.Many2one('dl.salary.kpi.attendance.type', string='03')
-    day_04 = fields.Many2one('dl.salary.kpi.attendance.type', string='04')
-    day_05 = fields.Many2one('dl.salary.kpi.attendance.type', string='05')
-    day_06 = fields.Many2one('dl.salary.kpi.attendance.type', string='06')
-    day_07 = fields.Many2one('dl.salary.kpi.attendance.type', string='07')
-    day_08 = fields.Many2one('dl.salary.kpi.attendance.type', string='08')
-    day_09 = fields.Many2one('dl.salary.kpi.attendance.type', string='09')
-    day_10 = fields.Many2one('dl.salary.kpi.attendance.type', string='10')
-    day_11 = fields.Many2one('dl.salary.kpi.attendance.type', string='11')
-    day_12 = fields.Many2one('dl.salary.kpi.attendance.type', string='12')
-    day_13 = fields.Many2one('dl.salary.kpi.attendance.type', string='13')
-    day_14 = fields.Many2one('dl.salary.kpi.attendance.type', string='14')
-    day_15 = fields.Many2one('dl.salary.kpi.attendance.type', string='15')
-    day_16 = fields.Many2one('dl.salary.kpi.attendance.type', string='16')
-    day_17 = fields.Many2one('dl.salary.kpi.attendance.type', string='17')
-    day_18 = fields.Many2one('dl.salary.kpi.attendance.type', string='18')
-    day_19 = fields.Many2one('dl.salary.kpi.attendance.type', string='19')
-    day_20 = fields.Many2one('dl.salary.kpi.attendance.type', string='20')
-    day_21 = fields.Many2one('dl.salary.kpi.attendance.type', string='21')
-    day_22 = fields.Many2one('dl.salary.kpi.attendance.type', string='22')
-    day_23 = fields.Many2one('dl.salary.kpi.attendance.type', string='23')
-    day_24 = fields.Many2one('dl.salary.kpi.attendance.type', string='24')
-    day_25 = fields.Many2one('dl.salary.kpi.attendance.type', string='25')
-    day_26 = fields.Many2one('dl.salary.kpi.attendance.type', string='26')
-    day_27 = fields.Many2one('dl.salary.kpi.attendance.type', string='27')
-    day_28 = fields.Many2one('dl.salary.kpi.attendance.type', string='28')
-    day_29 = fields.Many2one('dl.salary.kpi.attendance.type', string='29')
-    day_30 = fields.Many2one('dl.salary.kpi.attendance.type', string='30')
-    day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31')
+    day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_02 = fields.Many2one('dl.salary.kpi.attendance.type', string='02', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_03 = fields.Many2one('dl.salary.kpi.attendance.type', string='03', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_04 = fields.Many2one('dl.salary.kpi.attendance.type', string='04', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_05 = fields.Many2one('dl.salary.kpi.attendance.type', string='05', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_06 = fields.Many2one('dl.salary.kpi.attendance.type', string='06', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_07 = fields.Many2one('dl.salary.kpi.attendance.type', string='07', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_08 = fields.Many2one('dl.salary.kpi.attendance.type', string='08', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_09 = fields.Many2one('dl.salary.kpi.attendance.type', string='09', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_10 = fields.Many2one('dl.salary.kpi.attendance.type', string='10', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_11 = fields.Many2one('dl.salary.kpi.attendance.type', string='11', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_12 = fields.Many2one('dl.salary.kpi.attendance.type', string='12', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_13 = fields.Many2one('dl.salary.kpi.attendance.type', string='13', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_14 = fields.Many2one('dl.salary.kpi.attendance.type', string='14', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_15 = fields.Many2one('dl.salary.kpi.attendance.type', string='15', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_16 = fields.Many2one('dl.salary.kpi.attendance.type', string='16', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_17 = fields.Many2one('dl.salary.kpi.attendance.type', string='17', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_18 = fields.Many2one('dl.salary.kpi.attendance.type', string='18', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_19 = fields.Many2one('dl.salary.kpi.attendance.type', string='19', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_20 = fields.Many2one('dl.salary.kpi.attendance.type', string='20', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_21 = fields.Many2one('dl.salary.kpi.attendance.type', string='21', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_22 = fields.Many2one('dl.salary.kpi.attendance.type', string='22', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_23 = fields.Many2one('dl.salary.kpi.attendance.type', string='23', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_24 = fields.Many2one('dl.salary.kpi.attendance.type', string='24', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_25 = fields.Many2one('dl.salary.kpi.attendance.type', string='25', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_26 = fields.Many2one('dl.salary.kpi.attendance.type', string='26', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_27 = fields.Many2one('dl.salary.kpi.attendance.type', string='27', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_28 = fields.Many2one('dl.salary.kpi.attendance.type', string='28', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_29 = fields.Many2one('dl.salary.kpi.attendance.type', string='29', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_30 = fields.Many2one('dl.salary.kpi.attendance.type', string='30', domain="[('apply_to', 'in', ['normal', 'both'])]")
+    day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31', domain="[('apply_to', 'in', ['normal', 'both'])]")
 
     # Các trường ẩn để xác định Chủ Nhật (dùng cho decoration trên web)
     day_01_is_sunday = fields.Boolean(compute='_compute_is_sunday')
@@ -117,37 +117,37 @@ class SalaryKpiLine(models.Model):
     day_31_code = fields.Char(related='day_31.code', store=True)
 
     # Các trường chấm công Làm thêm giờ (Overtime)
-    ot_day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01')
-    ot_day_02 = fields.Many2one('dl.salary.kpi.attendance.type', string='02')
-    ot_day_03 = fields.Many2one('dl.salary.kpi.attendance.type', string='03')
-    ot_day_04 = fields.Many2one('dl.salary.kpi.attendance.type', string='04')
-    ot_day_05 = fields.Many2one('dl.salary.kpi.attendance.type', string='05')
-    ot_day_06 = fields.Many2one('dl.salary.kpi.attendance.type', string='06')
-    ot_day_07 = fields.Many2one('dl.salary.kpi.attendance.type', string='07')
-    ot_day_08 = fields.Many2one('dl.salary.kpi.attendance.type', string='08')
-    ot_day_09 = fields.Many2one('dl.salary.kpi.attendance.type', string='09')
-    ot_day_10 = fields.Many2one('dl.salary.kpi.attendance.type', string='10')
-    ot_day_11 = fields.Many2one('dl.salary.kpi.attendance.type', string='11')
-    ot_day_12 = fields.Many2one('dl.salary.kpi.attendance.type', string='12')
-    ot_day_13 = fields.Many2one('dl.salary.kpi.attendance.type', string='13')
-    ot_day_14 = fields.Many2one('dl.salary.kpi.attendance.type', string='14')
-    ot_day_15 = fields.Many2one('dl.salary.kpi.attendance.type', string='15')
-    ot_day_16 = fields.Many2one('dl.salary.kpi.attendance.type', string='16')
-    ot_day_17 = fields.Many2one('dl.salary.kpi.attendance.type', string='17')
-    ot_day_18 = fields.Many2one('dl.salary.kpi.attendance.type', string='18')
-    ot_day_19 = fields.Many2one('dl.salary.kpi.attendance.type', string='19')
-    ot_day_20 = fields.Many2one('dl.salary.kpi.attendance.type', string='20')
-    ot_day_21 = fields.Many2one('dl.salary.kpi.attendance.type', string='21')
-    ot_day_22 = fields.Many2one('dl.salary.kpi.attendance.type', string='22')
-    ot_day_23 = fields.Many2one('dl.salary.kpi.attendance.type', string='23')
-    ot_day_24 = fields.Many2one('dl.salary.kpi.attendance.type', string='24')
-    ot_day_25 = fields.Many2one('dl.salary.kpi.attendance.type', string='25')
-    ot_day_26 = fields.Many2one('dl.salary.kpi.attendance.type', string='26')
-    ot_day_27 = fields.Many2one('dl.salary.kpi.attendance.type', string='27')
-    ot_day_28 = fields.Many2one('dl.salary.kpi.attendance.type', string='28')
-    ot_day_29 = fields.Many2one('dl.salary.kpi.attendance.type', string='29')
-    ot_day_30 = fields.Many2one('dl.salary.kpi.attendance.type', string='30')
-    ot_day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31')
+    ot_day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_02 = fields.Many2one('dl.salary.kpi.attendance.type', string='02', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_03 = fields.Many2one('dl.salary.kpi.attendance.type', string='03', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_04 = fields.Many2one('dl.salary.kpi.attendance.type', string='04', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_05 = fields.Many2one('dl.salary.kpi.attendance.type', string='05', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_06 = fields.Many2one('dl.salary.kpi.attendance.type', string='06', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_07 = fields.Many2one('dl.salary.kpi.attendance.type', string='07', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_08 = fields.Many2one('dl.salary.kpi.attendance.type', string='08', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_09 = fields.Many2one('dl.salary.kpi.attendance.type', string='09', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_10 = fields.Many2one('dl.salary.kpi.attendance.type', string='10', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_11 = fields.Many2one('dl.salary.kpi.attendance.type', string='11', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_12 = fields.Many2one('dl.salary.kpi.attendance.type', string='12', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_13 = fields.Many2one('dl.salary.kpi.attendance.type', string='13', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_14 = fields.Many2one('dl.salary.kpi.attendance.type', string='14', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_15 = fields.Many2one('dl.salary.kpi.attendance.type', string='15', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_16 = fields.Many2one('dl.salary.kpi.attendance.type', string='16', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_17 = fields.Many2one('dl.salary.kpi.attendance.type', string='17', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_18 = fields.Many2one('dl.salary.kpi.attendance.type', string='18', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_19 = fields.Many2one('dl.salary.kpi.attendance.type', string='19', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_20 = fields.Many2one('dl.salary.kpi.attendance.type', string='20', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_21 = fields.Many2one('dl.salary.kpi.attendance.type', string='21', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_22 = fields.Many2one('dl.salary.kpi.attendance.type', string='22', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_23 = fields.Many2one('dl.salary.kpi.attendance.type', string='23', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_24 = fields.Many2one('dl.salary.kpi.attendance.type', string='24', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_25 = fields.Many2one('dl.salary.kpi.attendance.type', string='25', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_26 = fields.Many2one('dl.salary.kpi.attendance.type', string='26', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_27 = fields.Many2one('dl.salary.kpi.attendance.type', string='27', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_28 = fields.Many2one('dl.salary.kpi.attendance.type', string='28', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_29 = fields.Many2one('dl.salary.kpi.attendance.type', string='29', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_30 = fields.Many2one('dl.salary.kpi.attendance.type', string='30', domain="[('apply_to', 'in', ['overtime', 'both'])]")
+    ot_day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31', domain="[('apply_to', 'in', ['overtime', 'both'])]")
 
     # Trường tổng hợp để phục vụ tìm kiếm/lọc
     attendance_type_ids = fields.Many2many(
@@ -167,13 +167,32 @@ class SalaryKpiLine(models.Model):
     total_dc = fields.Float(string='Đổi ca (ĐC)', compute='_compute_totals', store=True)
     total_co = fields.Float(string='Con ốm (CÔ)', compute='_compute_totals', store=True)
 
+    # Các trường tổng hợp Làm thêm giờ
+    total_ot_n = fields.Float(string='Giờ LT (Ngày)', compute='_compute_totals', store=True)
+    total_ot_d = fields.Float(string='Giờ LT (Đêm)', compute='_compute_totals', store=True)
+    total_ot_all = fields.Float(string='Tổng', compute='_compute_totals', store=True)
+
+    # Các trường chi tiết Làm thêm giờ theo yêu cầu
+    total_ot_n_normal = fields.Float(string='Giờ LT Ngày thường (N)', compute='_compute_totals', store=True)
+    total_ot_d_normal = fields.Float(string='Giờ LT Ngày thường (Đ)', compute='_compute_totals', store=True)
+    total_ot_n_sun = fields.Float(string='Giờ LT CN (Ngày)', compute='_compute_totals', store=True)
+    total_ot_d_sun = fields.Float(string='Giờ LT CN (Đêm)', compute='_compute_totals', store=True)
+    total_ot_n_holiday = fields.Float(string='Giờ LT Lễ (Ngày)', compute='_compute_totals', store=True)
+    total_ot_d_holiday = fields.Float(string='Giờ LT Lễ (Đêm)', compute='_compute_totals', store=True)
+
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
-                 'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31')
+                 'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
+                 'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
+                 'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
+                 'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
     def _compute_totals(self):
         for rec in self:
             n, d, p, pl, kp, o, dc, co = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            ot_n, ot_d = 0.0, 0.0
+            ot_n_normal, ot_d_normal, ot_n_sun, ot_d_sun, ot_n_holiday, ot_d_holiday = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
             for i in range(1, 32):
+                # Công thường
                 att = getattr(rec, f'day_{i:02d}')
                 if att:
                     code = att.code
@@ -187,6 +206,24 @@ class SalaryKpiLine(models.Model):
                     elif code == 'Ô': o += 1.0
                     elif code == 'ĐC': dc += 1.0
                     elif code == 'CÔ': co += 1.0
+                
+                # Làm thêm giờ
+                ot_att = getattr(rec, f'ot_day_{i:02d}')
+                if ot_att:
+                    code = ot_att.code or ""
+                    hours = ot_att.weight * 10
+                    
+                    if ot_att.ot_type == 'day':
+                        ot_n += hours
+                        if code == '0.5N': ot_n_normal += hours
+                        elif code in ['CNN', 'CNN/2']: ot_n_sun += hours
+                        elif code == 'LN': ot_n_holiday += hours
+                    elif ot_att.ot_type == 'night':
+                        ot_d += hours
+                        if code == '0.5Đ': ot_d_normal += hours
+                        elif code in ['CNĐ', 'CNĐ/2', 'CND/2']: ot_d_sun += hours
+                        elif code == 'LĐ': ot_d_holiday += hours
+
             rec.total_n = n
             rec.total_d = d
             rec.total_p = p
@@ -195,6 +232,17 @@ class SalaryKpiLine(models.Model):
             rec.total_o = o
             rec.total_dc = dc
             rec.total_co = co
+            
+            rec.total_ot_n = ot_n
+            rec.total_ot_d = ot_d
+            rec.total_ot_all = ot_n + ot_d
+            
+            rec.total_ot_n_normal = ot_n_normal
+            rec.total_ot_d_normal = ot_d_normal
+            rec.total_ot_n_sun = ot_n_sun
+            rec.total_ot_d_sun = ot_d_sun
+            rec.total_ot_n_holiday = ot_n_holiday
+            rec.total_ot_d_holiday = ot_d_holiday
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
@@ -271,7 +319,6 @@ class SalaryKpiLine(models.Model):
         """
         Ràng buộc: Nếu nhân viên đã nghỉ việc (có dl_departure_date),
         thì không được phép có bất kỳ công nào sau ngày đó.
-        Tự động xoá công nếu cố tình ghi nhận sau ngày nghỉ.
         """
         from datetime import date
         for rec in self:
@@ -285,7 +332,6 @@ class SalaryKpiLine(models.Model):
                 
             year, month = month_date.year, month_date.month
             
-            # Kiểm tra cả công thường và làm thêm
             vals_to_clear = {}
             for i in range(1, 32):
                 try:

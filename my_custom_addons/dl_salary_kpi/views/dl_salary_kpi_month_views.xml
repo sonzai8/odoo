@@ -27,7 +27,12 @@
                     <button name="action_lock_kpi" string="Chốt KPI" type="object" class="btn-primary" invisible="state != 'lock_regime'"/>
                     <button name="action_confirm" string="Xác nhận" type="object" class="btn-success" invisible="state != 'lock_kpi'"/>
                     
-                    <button name="action_draft" string="Mở lại dự thảo" type="object" invisible="state == 'draft'"/>
+                    <button name="action_back_to_draft" string="Quay lại Dự thảo" type="object" invisible="state != 'lock_normal'"/>
+                    <button name="action_back_to_lock_normal" string="Quay lại Công Thường" type="object" invisible="state != 'lock_ot'"/>
+                    <button name="action_back_to_lock_ot" string="Quay lại Làm Thêm" type="object" invisible="state != 'lock_regime'"/>
+                    <button name="action_back_to_lock_regime" string="Quay lại Chế Độ" type="object" invisible="state != 'lock_kpi'"/>
+                    <button name="action_back_to_lock_kpi" string="Quay lại KPI" type="object" invisible="state != 'confirmed'"/>
+                    
                     <field name="state" widget="statusbar" statusbar_visible="draft,lock_normal,lock_ot,lock_regime,lock_kpi,confirmed"/>
                 </header>
                 <sheet>
@@ -68,8 +73,10 @@
                             <field name="date_month" readonly="state != 'draft'"/>
                         </group>
                     </group>
-                    <notebook invisible="state != 'draft'">
-                        <page string="Bảng công Thường" name="matrix_normal">
+                    <notebook>
+                    <page string= "Tổng Hợp Công - Lương" name="summary_payroll" invisible="state in ['draft', 'lock_normal']">
+                        </page>
+                        <page string="Bảng công Thường" name="matrix_normal" invisible="state != 'draft'">
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -173,48 +180,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Bảng công làm thêm giờ" name="overtime">
-                            <field name="line_ids">
-                                <list editable="bottom">
-                                    <field name="employee_name" readonly="1" sticky="1" width="180px"/>
-                                    <field name="ot_day_01" string="01"/>
-                                    <field name="ot_day_02" string="02"/>
-                                    <field name="ot_day_03" string="03"/>
-                                    <field name="ot_day_04" string="04"/>
-                                    <field name="ot_day_05" string="05"/>
-                                    <field name="ot_day_06" string="06"/>
-                                    <field name="ot_day_07" string="07"/>
-                                    <field name="ot_day_08" string="08"/>
-                                    <field name="ot_day_09" string="09"/>
-                                    <field name="ot_day_10" string="10"/>
-                                    <field name="ot_day_11" string="11"/>
-                                    <field name="ot_day_12" string="12"/>
-                                    <field name="ot_day_13" string="13"/>
-                                    <field name="ot_day_14" string="14"/>
-                                    <field name="ot_day_15" string="15"/>
-                                    <field name="ot_day_16" string="16"/>
-                                    <field name="ot_day_17" string="17"/>
-                                    <field name="ot_day_18" string="18"/>
-                                    <field name="ot_day_19" string="19"/>
-                                    <field name="ot_day_20" string="20"/>
-                                    <field name="ot_day_21" string="21"/>
-                                    <field name="ot_day_22" string="22"/>
-                                    <field name="ot_day_23" string="23"/>
-                                    <field name="ot_day_24" string="24"/>
-                                    <field name="ot_day_25" string="25"/>
-                                    <field name="ot_day_26" string="26"/>
-                                    <field name="ot_day_27" string="27"/>
-                                    <field name="ot_day_28" string="28"/>
-                                    <field name="ot_day_29" string="29"/>
-                                    <field name="ot_day_30" string="30"/>
-                                    <field name="ot_day_31" string="31"/>
-                                </list>
-                            </field>
-                        </page>
-                    </notebook>
-
-                    <notebook invisible="state == 'draft'">
-                        <page string="Bảng công làm thêm giờ" name="overtime_active">
+                        <page string="Bảng công làm thêm giờ" name="overtime_active" invisible="state == 'draft'">
                             <field name="line_ids" readonly="state in ['lock_ot', 'lock_regime', 'lock_kpi', 'confirmed']">
                                 <list editable="bottom">
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -249,10 +215,20 @@
                                     <field name="ot_day_29" string="29"/>
                                     <field name="ot_day_30" string="30"/>
                                     <field name="ot_day_31" string="31"/>
+                                    <field name="total_ot_n" string="Giờ LT Ngày" sum="Tổng giờ LT Ngày" readonly="1" decoration-bf="1" optional="hide"/>
+                                    <field name="total_ot_d" string="Giờ LT Đêm" sum="Tổng giờ LT Đêm" readonly="1" decoration-bf="1" optional="hide"/>
+                                    <field name="total_ot_all" string="Tổng giờ LT" sum="Tổng giờ LT" readonly="1" decoration-danger="1" decoration-bf="1"/>
+                                    
+                                    <field name="total_ot_n_normal" string="LT Thường (N)" sum="Tổng" readonly="1" optional="show"/>
+                                    <field name="total_ot_d_normal" string="LT Thường (Đ)" sum="Tổng" readonly="1" optional="show"/>
+                                    <field name="total_ot_n_sun" string="LT CN (N)" sum="Tổng" readonly="1" optional="show"/>
+                                    <field name="total_ot_d_sun" string="LT CN (Đ)" sum="Tổng" readonly="1" optional="show"/>
+                                    <field name="total_ot_n_holiday" string="LT Lễ (N)" sum="Tổng" readonly="1" optional="show"/>
+                                    <field name="total_ot_d_holiday" string="LT Lễ (Đ)" sum="Tổng" readonly="1" optional="show"/>
                                 </list>
                             </field>
                         </page>
-                        <page string="Bảng công Thường (Xem)" name="matrix_normal_view">
+                        <page string="Bảng công Thường (Xem)" name="matrix_normal_view" invisible="state == 'draft'">
                             <field name="line_ids" readonly="1">
                                 <list editable="bottom">
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -290,6 +266,7 @@
                                 </list>
                             </field>
                         </page>
+                        
                     </notebook>
                 </sheet>
             </form>
@@ -339,6 +316,9 @@
                 <field name="total_o" sum="Tổng Ô"/>
                 <field name="total_dc" sum="Tổng ĐC"/>
                 <field name="total_co" sum="Tổng CÔ"/>
+                <field name="total_ot_n" sum="Tổng TC Ngày" optional="show"/>
+                <field name="total_ot_d" sum="Tổng TC Đêm" optional="show"/>
+                <field name="total_ot_all" sum="Tổng Cộng TC" decoration-danger="1" optional="show"/>
                 <field name="attendance_type_ids" widget="many2many_tags" optional="hide"/>
             </list>
         </field>

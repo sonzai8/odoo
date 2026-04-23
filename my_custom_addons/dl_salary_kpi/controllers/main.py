@@ -13,6 +13,9 @@ class SalaryKpiController(http.Controller):
         if not month.exists():
             return http.NotFound()
 
+        # Khởi tạo dữ liệu gợi ý trên web giống như trong Excel
+        month._action_init_overtime_suggestions()
+
         output = io.BytesIO()
         wb = openpyxl.Workbook()
         wb.calculation.fullCalcOnLoad = True

@@ -170,29 +170,39 @@ class SalaryKpiMonth(models.Model):
             year, month = d_m.year, d_m.month
             
             for i in range(1, 32):
-                field_name = f"day_{i:02d}"
-                code_field = f"day_{i:02d}_code"
-                nodes = arch.xpath(f"//field[@name='{field_name}']")
-                for node in nodes:
-                    try:
-                        d = date(year, month, i)
-                        wd = weekday_map[d.weekday()]
-                        # Gán label mới: "01\n T2"
-                        node.set('string', f"{i:02d} - {wd}")
-                        
-                        # Thêm decorations cho mã công
-                        node.set('decoration-warning', f"{code_field} == 'CP'")
-                        node.set('decoration-danger', f"{code_field} in ['KP', 'Ô']")
-                        node.set('decoration-bf', f"{code_field} == 'ĐC'") # Dùng bf làm marker cho Tím
+                weekday_label = ""
+                is_sunday = False
+                try:
+                    d = date(year, month, i)
+                    weekday_label = f"{i:02d} - {weekday_map[d.weekday()]}"
+                    is_sunday = (d.weekday() == 6)
+                except ValueError:
+                    weekday_label = f"{i:02d}"
+
+                # Cập nhật Label cho cả công thường và OT
+                for field_name in [f"day_{i:02d}", f"ot_day_{i:02d}"]:
+                    nodes = arch.xpath(f"//field[@name='{field_name}']")
+                    for node in nodes:
+                        node.set('string', weekday_label)
                         
                         # Thêm class cho Chủ Nhật
                         classes = node.get('class', '').split()
-                        if d.weekday() == 6:
+                        if is_sunday:
                             classes.append('kpi_sunday_col')
                         node.set('class', ' '.join(set(classes)))
                         
-                    except ValueError:
-                        node.set('string', f"{i:02d}")
+                        # Decorations (chỉ cho công thường)
+                        if field_name.startswith('day_'):
+                            code_field = f"{field_name}_code"
+                            node.set('decoration-warning', f"{code_field} == 'CP'")
+                            node.set('decoration-danger', f"{code_field} in ['KP', 'Ô']")
+                            node.set('decoration-bf', f"{code_field} == 'ĐC'")
+                        
+                        # Chỉ cho phép chấm công làm thêm vào ngày Chủ Nhật
+                        if field_name.startswith('ot_day_'):
+                            if not is_sunday:
+                                node.set('readonly', '1')
+                                node.set('force_save', '1')
 
             res['views']['form']['arch'] = etree.tostring(arch, encoding='unicode')
 
@@ -202,6 +212,14 @@ class SalaryKpiMonth(models.Model):
 
 
     def action_lock_normal(self):
+        # Khi chốt công thường, xoá sạch dữ liệu công làm thêm cũ để tránh sai lệch dữ liệu
+        # Đảm bảo khi sang bước Làm thêm, dữ liệu sẽ được tính/nhập mới hoàn toàn
+        for line in self.line_ids:
+            ot_vals = {}
+            for i in range(1, 32):
+                ot_vals[f'ot_day_{i:02d}'] = False
+            line.write(ot_vals)
+            
         self.write({'state': 'lock_normal'})
 
     def action_lock_ot(self):
@@ -216,8 +234,54 @@ class SalaryKpiMonth(models.Model):
     def action_confirm(self):
         self.write({'state': 'confirmed'})
 
-    def action_draft(self):
+    # Các hàm quay lại trạng thái trước
+    def action_back_to_draft(self):
         self.write({'state': 'draft'})
+
+    def action_back_to_lock_normal(self):
+        self.write({'state': 'lock_normal'})
+
+    def action_back_to_lock_ot(self):
+        self.write({'state': 'lock_ot'})
+
+    def action_back_to_lock_regime(self):
+        self.write({'state': 'lock_regime'})
+
+    def action_back_to_lock_kpi(self):
+        self.write({'state': 'lock_kpi'})
+
+    def action_draft(self):
+        # Giữ lại hàm này để tương thích nếu cần, hoặc xoá nếu muốn ép quy trình quay lại từng bước
+        self.write({'state': 'draft'})
+
+    def _action_init_overtime_suggestions(self):
+        """Khởi tạo dữ liệu gợi ý công làm thêm dựa trên công thường cho các ngày Chủ Nhật"""
+        from datetime import date
+        att_types = self.env['dl.salary.kpi.attendance.type'].search([('apply_to', 'in', ['overtime', 'both'])])
+        n_ot = att_types.filtered(lambda t: t.code == '0.5N')
+        d_ot = att_types.filtered(lambda t: t.code == '0.5Đ')
+        
+        month_date = self.date_month
+        year, month = month_date.year, month_date.month
+        
+        for line in self.line_ids:
+            vals = {}
+            for i in range(1, 32):
+                field_name = f'ot_day_{i:02d}'
+                # Chỉ gợi ý cho ngày Chủ Nhật và nếu ô đó đang trống
+                try:
+                    # Gợi ý cho tất cả các ngày (khớp với logic trong Excel export)
+                    if not getattr(line, field_name):
+                        norm_att = getattr(line, f'day_{i:02d}')
+                        if norm_att:
+                            if norm_att.code == 'N' and n_ot:
+                                vals[field_name] = n_ot[0].id
+                            elif norm_att.code == 'Đ' and d_ot:
+                                vals[field_name] = d_ot[0].id
+                except ValueError:
+                    pass
+            if vals:
+                line.write(vals)
 
     def action_export_excel(self):
         self.ensure_one()

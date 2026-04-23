@@ -29,7 +29,10 @@ class SalaryKpiImportWizard(models.TransientModel):
         
         file_content = base64.b64decode(self.file_data)
         wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
-        ws = wb.active
+        if 'Bang Cham Cong' in wb.sheetnames:
+            ws = wb['Bang Cham Cong']
+        else:
+            ws = wb.active # Fallback
 
         # Lấy bản đồ mã công -> ID
         att_types = self.env['dl.salary.kpi.attendance.type'].search([])
@@ -48,17 +51,23 @@ class SalaryKpiImportWizard(models.TransientModel):
             if not row[2]: # Cột C là ID nhân viên
                 continue
             
-            emp_name = str(row[1]) if row[1] else ""
-            emp_id = int(row[2])
+            emp_name_excel = str(row[1]).strip() if row[1] else ""
+            try:
+                emp_id = int(row[2])
+            except (ValueError, TypeError):
+                errors.append(f"Dòng {row_idx}: ID nhân viên '{row[2]}' không hợp lệ (phải là số).")
+                continue
             
             # Tìm line tương ứng trong tháng
             line = self.month_id.line_ids.filtered(lambda l: l.employee_id.id == emp_id)
             if not line:
-                errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên ID {emp_id} trong bảng công này.")
+                errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên ID {emp_id} trong bảng công tháng này.")
                 continue
             
-            if line.employee_id.name != emp_name:
-                errors.append(f"Dòng {row_idx}: Tên nhân viên không khớp (Hệ thống: {line.employee_id.name}, Excel: {emp_name}).")
+            emp_name_sys = line.employee_id.name.strip()
+            if emp_name_sys != emp_name_excel:
+                # Nếu sai tên, báo lỗi để đảm bảo không nhập nhầm dòng
+                errors.append(f"Dòng {row_idx}: Tên không khớp. Hệ thống: '{emp_name_sys}', Excel: '{emp_name_excel}'. Vui lòng kiểm tra lại ID nhân viên.")
                 continue
 
             # Kiểm tra ngày nghỉ việc
@@ -72,8 +81,6 @@ class SalaryKpiImportWizard(models.TransientModel):
             
             # Lấy dữ liệu hiện tại từ hệ thống để so sánh chuỗi
             for day in range(1, 32):
-                field_name = f'day_{i:02d}' if self.wizard_type == 'normal' else f'ot_day_{i:02d}'
-                # Note: 'i' is not defined here, should be 'day'
                 field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 current_att = getattr(line, field_name)
                 row_codes[day] = current_att.code if current_att else False
@@ -86,11 +93,17 @@ class SalaryKpiImportWizard(models.TransientModel):
                 # Check departure date
                 try:
                     d = date(year, month, day)
+                    # Kiểm tra ngày nghỉ việc
                     if departure_date and d > departure_date:
                         vals[field_name] = False
                         row_codes[day] = False
                         has_departure_skip = True
                         continue
+                    
+                    # Quy tắc: Chấm công làm thêm chỉ cho phép vào ngày Chủ Nhật (bỏ qua check này khi import theo yêu cầu mới: cho phép import toàn bộ)
+                    # if self.wizard_type != 'normal' and d.weekday() != 6:
+                    #     continue 
+                    pass
                 except ValueError:
                     pass
 
@@ -105,8 +118,21 @@ class SalaryKpiImportWizard(models.TransientModel):
                     if code not in att_type_map:
                         errors.append(f"Dòng {row_idx}: Mã công '{code}' ngày {day:02d} không hợp lệ.")
                     else:
-                        vals[field_name] = att_type_map[code]
-                        row_codes[day] = code
+                        # Kiểm tra xem mã công có phải là mã làm thêm không (nếu đang import OT)
+                        if self.wizard_type == 'overtime':
+                            att_type_id = att_type_map[code]
+                            # Ta cần lấy thông tin apply_to của mã này
+                            # Để tối ưu, ta có thể đã cache hoặc search lại.
+                            # Vì số lượng dòng ít, search lại hoặc dùng env cache
+                            att_type = self.env['dl.salary.kpi.attendance.type'].browse(att_type_id)
+                            if att_type.apply_to == 'normal':
+                                errors.append(f"Dòng {row_idx}: Mã '{code}' ngày {day:02d} không phải là mã chấm công làm thêm.")
+                            else:
+                                vals[field_name] = att_type_id
+                                row_codes[day] = code
+                        else:
+                            vals[field_name] = att_type_map[code]
+                            row_codes[day] = code
                 else:
                     vals[field_name] = False
                     row_codes[day] = False

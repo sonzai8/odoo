@@ -16,6 +16,16 @@ class SalaryKpiAttendanceType(models.Model):
     weight = fields.Float(string='Trọng số công', default=1.0, help="Giá trị quy đổi công (1.0, 0.5, 0.0...)")
     sequence = fields.Integer(string='Thứ tự', default=10)
     active = fields.Boolean(default=True)
+    apply_to = fields.Selection([
+        ('normal', 'Chỉ Công Thường'),
+        ('overtime', 'Chỉ Làm Thêm'),
+        ('both', 'Cả Hai')
+    ], string='Phạm vi áp dụng', default='both', required=True)
+    ot_type = fields.Selection([
+        ('day', 'Tăng ca Ngày'),
+        ('night', 'Tăng ca Đêm'),
+        ('none', 'Không phải tăng ca')
+    ], string='Loại tăng ca', default='none')
 
     _sql_constraints = [
         ('code_unique', 'unique(code)', 'Mã loại công này đã tồn tại!')
