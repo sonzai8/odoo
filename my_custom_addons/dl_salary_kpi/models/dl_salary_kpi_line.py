@@ -399,6 +399,37 @@ class SalaryKpiLine(models.Model):
     tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương CB', store=True)
     mst = fields.Char(related='employee_id.dl_tax_id', string='MST', store=True)
     cccd = fields.Char(related='employee_id.identification_id', string='CCCD', store=True)
+    
+    # --- CÁC KHOẢN THU NHẬP NỘI BỘ ---
+    payroll_meal_allowance = fields.Float(string='Hỗ trợ ăn ca', compute='_compute_payroll_internal', store=True)
+    payroll_women_allowance = fields.Float(string='Phụ cấp phụ nữ', compute='_compute_payroll_internal', store=True)
+    
+    # Chia nhỏ các loại thưởng năm
+    payroll_bonus_0803 = fields.Float(string='Thưởng 08/03', compute='_compute_payroll_internal', store=True)
+    payroll_bonus_3004 = fields.Float(string='Thưởng 30/04', compute='_compute_payroll_internal', store=True)
+    payroll_bonus_0209 = fields.Float(string='Thưởng 02/09', compute='_compute_payroll_internal', store=True)
+    payroll_bonus_tet_dl = fields.Float(string='Thưởng Tết DL', compute='_compute_payroll_internal', store=True)
+    payroll_bonus_other = fields.Float(string='Thưởng khác', compute='_compute_payroll_internal', store=True)
+
+    payroll_annual_bonus = fields.Float(string='Tổng thưởng năm', compute='_compute_payroll_internal', store=True)
+    payroll_revenue_bonus = fields.Float(string='Thưởng doanh thu', compute='_compute_payroll_internal', store=True)
+    payroll_productivity_bonus = fields.Float(string='Thưởng năng suất', compute='_compute_payroll_internal', store=True)
+    payroll_total_bonus = fields.Float(string='Tổng các khoản thưởng', compute='_compute_payroll_internal', store=True)
+    payroll_total_regime_income = fields.Float(string='Tổng thu nhập chế độ', compute='_compute_payroll_internal', store=True)
+
+    # --- CÁC KHOẢN LƯƠNG CHI TIẾT ---
+    payroll_wage_day = fields.Float(string='Lương ca ngày', compute='_compute_payroll_internal', store=True)
+    payroll_wage_day_150 = fields.Float(string='Lương TC ngày 150%', compute='_compute_payroll_internal', store=True)
+    payroll_wage_night_130 = fields.Float(string='Lương ca đêm thường 130%', compute='_compute_payroll_internal', store=True)
+    payroll_wage_night_200 = fields.Float(string='Lương TC đêm 200% (Ko ngày)', compute='_compute_payroll_internal', store=True)
+    payroll_wage_night_210 = fields.Float(string='Lương TC đêm 210% (Có ngày)', compute='_compute_payroll_internal', store=True)
+    payroll_wage_night_sun_270 = fields.Float(string='Lương TC đêm CN 270%', compute='_compute_payroll_internal', store=True)
+    payroll_wage_day_sun_200 = fields.Float(string='Lương CN ca ngày 200%', compute='_compute_payroll_internal', store=True)
+    payroll_wage_day_holiday_300 = fields.Float(string='Lương Lễ ca ngày 300%', compute='_compute_payroll_internal', store=True)
+    payroll_wage_night_holiday_390 = fields.Float(string='Lương TC đêm Lễ 390%', compute='_compute_payroll_internal', store=True)
+    
+    payroll_total_wage = fields.Float(string='Tổng lương', compute='_compute_payroll_internal', store=True)
+
     attendance_summary_html = fields.Html(string='Tổng hợp mã công', compute='_compute_attendance_summary')
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
@@ -479,6 +510,138 @@ class SalaryKpiLine(models.Model):
             rec.payroll_ot_d_130 = ot_d_normal
             rec.payroll_ot_d_200 = ot_d_200
             rec.payroll_ot_d_sun_300 = ot_d_sun
+
+    @api.depends('month_id.dl_revenue', 'month_id.dl_production_volume', 'month_id.dl_meal_allowance', 
+                 'month_id.dl_women_allowance', 'month_id.bonus_line_ids', 'employee_id.sex', 
+                 'dl_tax_base_salary', 'dl_tax_position', 'payroll_n_ca_ngay', 'total_n', 'total_d',
+                 'total_ot_n_normal', 'total_ot_d_normal', 'total_ot_n_sun', 'total_ot_d_sun', 
+                 'total_ot_n_holiday', 'total_ot_d_holiday', 'day_01', 'day_02', 'day_03', 'day_04', 'day_05', 
+                 'day_06', 'day_07', 'day_08', 'day_09', 'day_10', 'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 
+                 'day_16', 'day_17', 'day_18', 'day_19', 'day_20', 'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 
+                 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
+                 'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
+                 'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
+                 'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+    def _compute_payroll_internal(self):
+        # Định nghĩa mapping nhóm chức vụ
+        POSITION_GROUP_MAP = {
+            'CV': 'QLCC', 'KTT': 'QLCC', 'QL': 'QLCC', 'QĐ': 'QLCC',
+            'TL': 'QLCC', 'PGĐ': 'QLCC', 'GĐ': 'QLCC',
+            'NV': 'NVGT', 'KT': 'NVGT', 'TK': 'NVGT',
+            'CN': 'NVSX', 'LX': 'NVSX',
+        }
+        
+        for rec in self:
+            # 1. Hỗ trợ & Phụ cấp
+            total_work_days = rec.total_n + rec.total_d
+            rec.payroll_meal_allowance = rec.month_id.dl_meal_allowance if total_work_days > 0 else 0
+            
+            is_female = rec.employee_id.sex == 'female'
+            rec.payroll_women_allowance = rec.month_id.dl_women_allowance if (is_female and total_work_days > 0) else 0
+            
+            # 2. Thưởng cố định năm (Phân loại theo tên)
+            b0803, b3004, b0209, btet, bother = 0.0, 0.0, 0.0, 0.0, 0.0
+            for bl in rec.month_id.bonus_line_ids:
+                # Kiểm tra giới tính áp dụng
+                if bl.gender == 'male' and not rec.employee_id.sex == 'male': continue
+                if bl.gender == 'female' and not is_female: continue
+                
+                name = bl.name or ""
+                if '08/03' in name: b0803 += bl.amount
+                elif '30/04' in name: b3004 += bl.amount
+                elif '02/09' in name: b0209 += bl.amount
+                elif 'Tết' in name and 'Dương Lịch' in name: btet += bl.amount
+                else: bother += bl.amount
+            
+            rec.payroll_bonus_0803 = b0803
+            rec.payroll_bonus_3004 = b3004
+            rec.payroll_bonus_0209 = b0209
+            rec.payroll_bonus_tet_dl = btet
+            rec.payroll_bonus_other = bother
+            rec.payroll_annual_bonus = b0803 + b3004 + b0209 + btet + bother
+            
+            # 3. Thưởng doanh thu & Năng suất (Theo chính sách QĐ 3108)
+            group = POSITION_GROUP_MAP.get(rec.dl_tax_position, 'NVSX')
+            revenue = rec.month_id.dl_revenue or 0
+            production = rec.month_id.dl_production_volume or 0
+            
+            rev_bonus_base = 0
+            prod_bonus_base = 0
+            
+            if group in ['QLCC', 'NVGT']:
+                if revenue > 70: rev_bonus_base = 5500000 if group == 'QLCC' else 5000000
+                elif revenue > 50: rev_bonus_base = 5000000 if group == 'QLCC' else 4500000
+                elif revenue > 30: rev_bonus_base = 4300000 if group == 'QLCC' else 3800000
+            else: # NVSX
+                if production > 9100: prod_bonus_base = 4500000
+                elif production > 8500: prod_bonus_base = 4000000
+            
+            # Cách tính: (Mức thưởng * Số công) / 26
+            rec.payroll_revenue_bonus = (rev_bonus_base * total_work_days) / 26.0
+            rec.payroll_productivity_bonus = (prod_bonus_base * total_work_days) / 26.0
+            
+            rec.payroll_total_bonus = rec.payroll_annual_bonus + rec.payroll_revenue_bonus + rec.payroll_productivity_bonus
+            rec.payroll_total_regime_income = rec.payroll_total_bonus + rec.dl_tax_base_salary
+            
+            # 4. Tính toán lương chi tiết (Dựa trên lương cơ bản / 208 giờ)
+            hourly_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0
+            
+            wage_day = 0.0
+            wage_day_150 = 0.0
+            wage_night_130 = 0.0
+            wage_night_200 = 0.0
+            wage_night_210 = 0.0
+            wage_night_sun_270 = 0.0
+            wage_day_sun_200 = 0.0
+            wage_day_holiday_300 = 0.0
+            wage_night_holiday_390 = 0.0
+            
+            for i in range(1, 32):
+                att = getattr(rec, f'day_{i:02d}')
+                ot_att = getattr(rec, f'ot_day_{i:02d}')
+                
+                # Ca ngày thường
+                if att and att.code in ['N', 'N/1', 'N/2']:
+                    hours = 8.0 if att.code == 'N' else 4.0
+                    wage_day += hours * hourly_rate
+                
+                # Ca đêm thường
+                if att and att.code in ['Đ', 'Đ/1', 'Đ/2']:
+                    hours = 8.0 if att.code == 'Đ' else 4.0
+                    wage_night_130 += hours * hourly_rate * 1.3
+                
+                # Làm thêm giờ
+                if ot_att:
+                    hours = ot_att.weight * 10 # Quy ước weight 0.8 = 8h
+                    code = ot_att.code or ""
+                    
+                    if ot_att.ot_type == 'day':
+                        if code == '0.5N': wage_day_150 += hours * hourly_rate * 1.5
+                        elif code in ['CNN', 'CNN/2']: wage_day_sun_200 += hours * hourly_rate * 2.0
+                        elif code == 'LN': wage_day_holiday_300 += hours * hourly_rate * 3.0
+                    
+                    elif ot_att.ot_type == 'night':
+                        if code == '0.5Đ':
+                            if att: # Có làm ca ngày
+                                wage_night_210 += hours * hourly_rate * 2.1
+                            else: # Không làm ca ngày
+                                wage_night_200 += hours * hourly_rate * 2.0
+                        elif code in ['CNĐ', 'CNĐ/2']: wage_night_sun_270 += hours * hourly_rate * 2.7
+                        elif code == 'LĐ': wage_night_holiday_390 += hours * hourly_rate * 3.9
+            
+            rec.payroll_wage_day = wage_day
+            rec.payroll_wage_day_150 = wage_day_150
+            rec.payroll_wage_night_130 = wage_night_130
+            rec.payroll_wage_night_200 = wage_night_200
+            rec.payroll_wage_night_210 = wage_night_210
+            rec.payroll_wage_night_sun_270 = wage_night_sun_270
+            rec.payroll_wage_day_sun_200 = wage_day_sun_200
+            rec.payroll_wage_day_holiday_300 = wage_day_holiday_300
+            rec.payroll_wage_night_holiday_390 = wage_night_holiday_390
+            
+            rec.payroll_total_wage = (wage_day + wage_day_150 + wage_night_130 + wage_night_200 + 
+                                     wage_night_210 + wage_night_sun_270 + wage_day_sun_200 + 
+                                     wage_day_holiday_300 + wage_night_holiday_390)
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',

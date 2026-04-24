@@ -71,19 +71,67 @@
                     <group>
                         <group>
                             <field name="date_month" readonly="state != 'draft'"/>
+                            <field name="dl_revenue" readonly="state != 'draft'"/>
+                            <field name="dl_production_volume" readonly="state != 'draft'"/>
                             <field name="company_id" invisible="1"/>
                             <field name="currency_id" invisible="1"/>
+                            <field name="line_domain" invisible="1"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Bảng KPI" invisible="state in ['draft', 'lock_normal']">
                         </page>
-                        <page string="Bảng Lương Nội Bộ" invisible="state in ['draft', 'lock_normal']">
+                        <page string="Bảng Lương Nội Bộ" name="internal_payroll" invisible="state in ['draft', 'lock_normal']">
+                            <group string="🔍 Bộ lọc nhanh">
+                                <group>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
+                                </group>
+                                <group>
+                                    <field name="filter_position" placeholder="Nhập chức vụ..."/>
+                                </group>
+                            </group>
+                            <field name="filtered_line_ids" readonly="1" nolabel="1">
+                                <list>
+                                    <field name="identification_id" sticky="1" width="50px"/>
+                                    <field name="employee_name" sticky="1" width="180px"/>
+                                    <field name="dl_tax_department_id" sticky="1" width="120px"/>
+                                    <field name="dl_tax_position" sticky="1" width="120px"/>
+                                    
+                                    <field name="payroll_meal_allowance" string="Hỗ trợ ăn ca" sum="Tổng"/>
+                                    <field name="payroll_women_allowance" string="Phụ cấp nữ" sum="Tổng"/>
+                                    
+                                    <field name="payroll_bonus_0803" string="Thưởng 08/03" sum="Tổng" optional="hide"/>
+                                    <field name="payroll_bonus_3004" string="Thưởng 30/04" sum="Tổng" optional="hide"/>
+                                    <field name="payroll_bonus_0209" string="Thưởng 02/09" sum="Tổng" optional="hide"/>
+                                    <field name="payroll_bonus_tet_dl" string="Thưởng Tết DL" sum="Tổng" optional="hide"/>
+                                    <field name="payroll_bonus_other" string="Thưởng khác" sum="Tổng" optional="hide"/>
+                                    <field name="payroll_annual_bonus" string="Tổng Thưởng Năm" sum="Tổng" decoration-bf="1"/>
+
+                                    <field name="payroll_revenue_bonus" string="Thưởng DT" sum="Tổng"/>
+                                    <field name="payroll_productivity_bonus" string="Thưởng NS" sum="Tổng"/>
+                                    <field name="payroll_total_bonus" string="Tổng Thưởng" sum="Tổng" decoration-bf="1"/>
+                                    <field name="dl_tax_base_salary" string="Lương CB" sum="Tổng"/>
+                                    <field name="payroll_total_regime_income" string="Tổng Thu Nhập Chế Độ" sum="Tổng" decoration-info="1" decoration-bf="1"/>
+                                    
+                                    <field name="payroll_wage_day" string="Lương Ngày" sum="Tổng"/>
+                                    <field name="payroll_wage_day_150" string="TC Ngày 150%" sum="Tổng"/>
+                                    <field name="payroll_wage_night_130" string="Đêm 130%" sum="Tổng"/>
+                                    <field name="payroll_wage_night_200" string="TC Đêm 200%" sum="Tổng"/>
+                                    <field name="payroll_wage_night_210" string="TC Đêm 210%" sum="Tổng"/>
+                                    <field name="payroll_wage_night_sun_270" string="Đêm CN 270%" sum="Tổng"/>
+                                    <field name="payroll_wage_day_sun_200" string="CN Ngày 200%" sum="Tổng"/>
+                                    <field name="payroll_wage_day_holiday_300" string="Lễ Ngày 300%" sum="Tổng"/>
+                                    <field name="payroll_wage_night_holiday_390" string="TC Đêm Lễ 390%" sum="Tổng"/>
+                                    
+                                    <field name="payroll_total_wage" string="Tổng Lương" sum="Tổng" decoration-danger="1" decoration-bf="1"/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Tổng Hợp Công - Lương" name="summary_payroll" invisible="state in ['draft', 'lock_normal']">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
-                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..." default_focus="1"/>
                                     <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
                                 </group>
                                 <group>
@@ -111,7 +159,16 @@
                             </field>
                         </page>
                         <page string="Bảng công Thường" name="matrix_normal" invisible="state != 'draft'">
-                            <field name="line_ids">
+                            <group string="🔍 Bộ lọc nhanh">
+                                <group>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
+                                </group>
+                                <group>
+                                    <field name="filter_position" placeholder="Nhập chức vụ..."/>
+                                </group>
+                            </group>
+                            <field name="filtered_line_ids" context="{'matrix_mode': 'normal'}" nolabel="1">
                                 <list editable="bottom">
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -221,7 +278,16 @@
                             </field>
                         </page>
                         <page string="Bảng công làm thêm giờ" name="overtime_active" invisible="state == 'draft'">
-                            <field name="line_ids" readonly="state in ['lock_ot', 'lock_regime', 'lock_kpi', 'confirmed']">
+                            <group string="🔍 Bộ lọc nhanh">
+                                <group>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
+                                </group>
+                                <group>
+                                    <field name="filter_position" placeholder="Nhập chức vụ..."/>
+                                </group>
+                            </group>
+                            <field name="filtered_line_ids" context="{'matrix_mode': 'ot'}" nolabel="1" readonly="state in ['lock_ot', 'lock_regime', 'lock_kpi', 'confirmed']">
                                 <list editable="bottom">
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -276,7 +342,16 @@
                             </field>
                         </page>
                         <page string="Bảng công Thường (Xem)" name="matrix_normal_view" invisible="state == 'draft'">
-                            <field name="line_ids" readonly="1">
+                            <group string="🔍 Bộ lọc nhanh">
+                                <group>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
+                                </group>
+                                <group>
+                                    <field name="filter_position" placeholder="Nhập chức vụ..."/>
+                                </group>
+                            </group>
+                            <field name="filtered_line_ids" context="{'matrix_mode': 'normal_view'}" nolabel="1" readonly="1">
                                 <list editable="bottom">
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>

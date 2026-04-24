@@ -27,21 +27,38 @@ class SalaryKpiMonth(models.Model):
     
     # Thông tin cân đối tài chính
     dl_revenue = fields.Float(string="Doanh thu tháng (Công ty)")
+    dl_production_volume = fields.Float(string="Sản lượng tháng (m³)")
     dl_meal_allowance = fields.Float(string="Tiền ăn ca", default=650000)
     dl_women_allowance = fields.Float(string="Phụ cấp phụ nữ", default=500000)
     
     # Các khoản thưởng áp dụng trong tháng
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
 
-    # === Trường lọc tạm thời cho tab Tổng Hợp Công - Lương ===
+    line_domain = fields.Char(compute='_compute_line_domain', readonly=True)
+
+    # === Trường lọc tạm thời ===
     filter_employee_name = fields.Char(string='Tìm theo tên', store=False)
     filter_department_id = fields.Many2one('dl.tax.department', string='Lọc phòng ban', store=False)
     filter_position = fields.Char(string='Lọc chức vụ', store=False)
     filtered_line_ids = fields.One2many(
         'dl.salary.kpi.line',
         compute='_compute_filtered_line_ids',
+        inverse='_inverse_filtered_line_ids',
         string='Danh sách đã lọc'
     )
+
+    @api.depends('filter_employee_name', 'filter_department_id', 'filter_position')
+    def _compute_line_domain(self):
+        # Giữ lại logic domain để dùng nếu cần, nhưng ưu tiên filtered_line_ids
+        for record in self:
+            domain = []
+            if record.filter_employee_name:
+                domain.append(('employee_name', 'ilike', record.filter_employee_name))
+            if record.filter_department_id:
+                domain.append(('dl_tax_department_id', '=', record.filter_department_id.id))
+            if record.filter_position:
+                domain.append(('dl_tax_position', 'ilike', record.filter_position))
+            record.line_domain = str(domain)
 
     @api.depends('line_ids', 'line_ids.employee_name', 'line_ids.dl_tax_department_id', 'line_ids.dl_tax_position',
                  'filter_employee_name', 'filter_department_id', 'filter_position')
@@ -59,6 +76,27 @@ class SalaryKpiMonth(models.Model):
                 keyword = record.filter_position.lower()
                 lines = lines.filtered(lambda l: keyword in (l.dl_tax_position or '').lower())
             record.filtered_line_ids = lines
+
+    def _inverse_filtered_line_ids(self):
+        """Đồng bộ thay đổi từ danh sách đã lọc ngược lại line_ids gốc."""
+        for record in self:
+            # Odoo tự động xử lý cập nhật field trên record con. 
+            # Chúng ta chỉ cần đảm bảo line_ids chứa các record mới nếu có.
+            actual_line_ids = record.line_ids.ids
+            for line in record.filtered_line_ids:
+                if line.id not in actual_line_ids:
+                    # Nếu có thêm mới record từ view đã lọc (hiếm khi xảy ra ở đây)
+                    record.line_ids |= line
+
+    def action_clear_payroll_filters(self):
+        """Xóa các bộ lọc trong tab Tổng Hợp Công - Lương."""
+        self.ensure_one()
+        self.write({
+            'filter_employee_name': False,
+            'filter_department_id': False,
+            'filter_position': False,
+        })
+        return True
 
     def _compute_bonus_lines(self):
         for rec in self:
