@@ -33,6 +33,33 @@ class SalaryKpiMonth(models.Model):
     # Các khoản thưởng áp dụng trong tháng
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
 
+    # === Trường lọc tạm thời cho tab Tổng Hợp Công - Lương ===
+    filter_employee_name = fields.Char(string='Tìm theo tên', store=False)
+    filter_department_id = fields.Many2one('dl.tax.department', string='Lọc phòng ban', store=False)
+    filter_position = fields.Char(string='Lọc chức vụ', store=False)
+    filtered_line_ids = fields.One2many(
+        'dl.salary.kpi.line',
+        compute='_compute_filtered_line_ids',
+        string='Danh sách đã lọc'
+    )
+
+    @api.depends('line_ids', 'line_ids.employee_name', 'line_ids.dl_tax_department_id', 'line_ids.dl_tax_position',
+                 'filter_employee_name', 'filter_department_id', 'filter_position')
+    def _compute_filtered_line_ids(self):
+        """Trả về danh sách line_ids đã được lọc theo các tiêu chí tạm thời."""
+        for record in self:
+            lines = record.line_ids
+            if record.filter_employee_name:
+                keyword = record.filter_employee_name.lower()
+                lines = lines.filtered(lambda l: keyword in (l.employee_name or '').lower())
+            if record.filter_department_id:
+                dept_id = record.filter_department_id
+                lines = lines.filtered(lambda l: l.dl_tax_department_id == dept_id)
+            if record.filter_position:
+                keyword = record.filter_position.lower()
+                lines = lines.filtered(lambda l: keyword in (l.dl_tax_position or '').lower())
+            record.filtered_line_ids = lines
+
     def _compute_bonus_lines(self):
         for rec in self:
             if not rec.date_month:

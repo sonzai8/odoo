@@ -81,7 +81,16 @@
                         <page string="Bảng Lương Nội Bộ" invisible="state in ['draft', 'lock_normal']">
                         </page>
                         <page string="Tổng Hợp Công - Lương" name="summary_payroll" invisible="state in ['draft', 'lock_normal']">
-                            <field name="line_ids" readonly="1">
+                            <group string="🔍 Bộ lọc nhanh">
+                                <group>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
+                                </group>
+                                <group>
+                                    <field name="filter_position" placeholder="Nhập chức vụ..."/>
+                                </group>
+                            </group>
+                            <field name="filtered_line_ids" readonly="1" nolabel="1">
                                 <list>
                                     <field name="identification_id" sticky="1" width="50px"/>
                                     <field name="employee_name" sticky="1" width="180px"/>
