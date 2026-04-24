@@ -61,4 +61,10 @@
               parent="menu_dl_salary_kpi_config"
               action="action_dl_tax_department"
               sequence="20"/>
+
+    <menuitem id="menu_dl_salary_kpi_bonus_year_action"
+              name="Cấu hình thưởng trong năm"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_salary_kpi_bonus_year"
+              sequence="30"/>
 </odoo>

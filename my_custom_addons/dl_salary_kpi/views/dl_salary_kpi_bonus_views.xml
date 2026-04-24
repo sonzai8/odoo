@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_bonus_year_tree" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.bonus.year.tree</field>
+        <field name="model">dl.salary.kpi.bonus.year</field>
+        <field name="arch" type="xml">
+            <list string="Cấu hình thưởng trong năm">
+                <field name="year"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_bonus_year_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.bonus.year.form</field>
+        <field name="model">dl.salary.kpi.bonus.year</field>
+        <field name="arch" type="xml">
+            <form string="Cấu hình thưởng trong năm">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="year"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết các khoản thưởng">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                    <field name="amount" sum="Tổng thưởng"/>
+                                    <field name="gender"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_bonus_year" model="ir.actions.act_window">
+        <field name="name">Cấu hình thưởng trong năm</field>
+        <field name="res_model">dl.salary.kpi.bonus.year</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bấm để tạo cấu hình thưởng cho năm mới.
+            </p>
+        </field>
+    </record>
+</odoo>

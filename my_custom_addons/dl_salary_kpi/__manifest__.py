@@ -5,7 +5,7 @@
     'summary': 'Quản lý loại công, lương và KPI - Xưởng gỗ Đức Lâm',
     'category': 'Human Resources/Payroll',
     'author': 'Đức Lâm Wood',
-    'depends': ['base','hr'],
+    'depends': ['base','hr', 'dl_wood_payroll'],
     'data': [
         'security/ir.model.access.csv',
         'data/attendance_type_data.xml',
@@ -17,6 +17,7 @@
         'wizard/dl_salary_kpi_tax_import_views.xml',
         'views/dl_salary_kpi_month_views.xml',
         'views/hr_employee_tax_views.xml',
+        'views/dl_salary_kpi_bonus_views.xml',
         'views/menus.xml',
     ],
     'assets': {

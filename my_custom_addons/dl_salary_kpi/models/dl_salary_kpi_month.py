@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 from calendar import monthrange
 from datetime import date
 
@@ -28,6 +29,27 @@ class SalaryKpiMonth(models.Model):
     dl_revenue = fields.Float(string="Doanh thu tháng (Công ty)")
     dl_meal_allowance = fields.Float(string="Tiền ăn ca", default=650000)
     dl_women_allowance = fields.Float(string="Phụ cấp phụ nữ", default=500000)
+    
+    # Các khoản thưởng áp dụng trong tháng
+    bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
+
+    def _compute_bonus_lines(self):
+        for rec in self:
+            if not rec.date_month:
+                rec.bonus_line_ids = False
+                continue
+            
+            year = rec.date_month.year
+            month = rec.date_month.month
+            
+            # Tìm cấu hình thưởng của năm
+            bonus_year = self.env['dl.salary.kpi.bonus.year'].search([('year', '=', year), ('active', '=', True)], limit=1)
+            if bonus_year:
+                # Lọc các dòng thưởng có tháng trùng với tháng đang cân đối
+                lines = bonus_year.line_ids.filtered(lambda l: l.date.month == month and l.active)
+                rec.bonus_line_ids = [(6, 0, lines.ids)]
+            else:
+                rec.bonus_line_ids = False
 
     @api.depends('date_month')
     def _compute_name(self):
@@ -328,3 +350,9 @@ class SalaryKpiMonth(models.Model):
             'url': f'/dl_salary_kpi/export_ot_attendance/{self.id}',
             'target': 'new',
         }
+
+    def unlink(self):
+        for record in self:
+            if record.state != 'draft':
+                raise UserError(_("Bạn không thể xóa phiếu cân đối bảng công khi không ở trạng thái Dự thảo!"))
+        return super(SalaryKpiMonth, self).unlink()
