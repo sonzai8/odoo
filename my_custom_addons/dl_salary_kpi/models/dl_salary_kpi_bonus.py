@@ -11,6 +11,7 @@ class SalaryKpiBonusYear(models.Model):
     name = fields.Char(string='Tên cấu hình', compute='_compute_name', store=True)
     line_ids = fields.One2many('dl.salary.kpi.bonus.line', 'year_id', string='Chi tiết thưởng')
     active = fields.Boolean(string='Đang hoạt động', default=True)
+    company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
     _sql_constraints = [
         ('year_unique', 'unique(year)', 'Cấu hình cho năm này đã tồn tại!')
@@ -63,7 +64,8 @@ class SalaryKpiBonusLine(models.Model):
     year_id = fields.Many2one('dl.salary.kpi.bonus.year', string='Năm cấu hình', ondelete='cascade')
     date = fields.Date(string='Ngày thưởng', required=True)
     name = fields.Char(string='Tên khoản thưởng', required=True)
-    amount = fields.Float(string='Số tiền thưởng')
+    amount = fields.Monetary(string='Số tiền thưởng', currency_field='currency_id')
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', related='year_id.company_id.currency_id')
     gender = fields.Selection([
         ('male', 'Nam'),
         ('female', 'Nữ'),

@@ -27,6 +27,8 @@
                     <button name="action_lock_kpi" string="Chốt KPI" type="object" class="btn-primary" invisible="state != 'lock_regime'"/>
                     <button name="action_confirm" string="Xác nhận" type="object" class="btn-success" invisible="state != 'lock_kpi'"/>
                     
+                    <button name="action_recompute_all_data" string="Cập nhật toàn bộ dữ liệu" type="object" class="btn-secondary" icon="fa-refresh" groups="base.group_user"/>
+                    
                     <button name="action_back_to_draft" string="Quay lại Dự thảo" type="object" invisible="state != 'lock_normal'"/>
                     <button name="action_back_to_lock_normal" string="Quay lại Công Thường" type="object" invisible="state != 'lock_ot'"/>
                     <button name="action_back_to_lock_ot" string="Quay lại Làm Thêm" type="object" invisible="state != 'lock_regime'"/>
@@ -71,8 +73,8 @@
                     <group>
                         <group>
                             <field name="date_month" readonly="state != 'draft'"/>
-                            <field name="dl_revenue" readonly="state != 'draft'"/>
-                            <field name="dl_production_volume" readonly="state != 'draft'"/>
+                            <field name="dl_revenue" widget="monetary" readonly="state != 'draft'" options="{'currency_field': 'currency_id'}"/>
+                            <!-- <field name="dl_production_volume" readonly="state != 'draft'"/> -->
                             <field name="company_id" invisible="1"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="line_domain" invisible="1"/>
@@ -98,33 +100,35 @@
                                     <field name="dl_tax_department_id" sticky="1" width="120px"/>
                                     <field name="dl_tax_position" sticky="1" width="120px"/>
                                     
-                                    <field name="payroll_meal_allowance" string="Hỗ trợ ăn ca" sum="Tổng"/>
-                                    <field name="payroll_women_allowance" string="Phụ cấp nữ" sum="Tổng"/>
+                                    <field name="payroll_meal_allowance" string="Hỗ trợ ăn ca" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Tổng"/>
+                                    <field name="payroll_women_allowance" string="Phụ nữ" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Tổng"/>
                                     
-                                    <field name="payroll_bonus_0803" string="Thưởng 08/03" sum="Tổng" optional="hide"/>
-                                    <field name="payroll_bonus_3004" string="Thưởng 30/04" sum="Tổng" optional="hide"/>
-                                    <field name="payroll_bonus_0209" string="Thưởng 02/09" sum="Tổng" optional="hide"/>
-                                    <field name="payroll_bonus_tet_dl" string="Thưởng Tết DL" sum="Tổng" optional="hide"/>
-                                    <field name="payroll_bonus_other" string="Thưởng khác" sum="Tổng" optional="hide"/>
-                                    <field name="payroll_annual_bonus" string="Tổng Thưởng Năm" sum="Tổng" decoration-bf="1"/>
+                                    <field name="payroll_bonus_0803" string="Thưởng 08/03" sum="Tổng" optional="hide" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_3004" string="Thưởng 30/04" sum="Tổng" optional="hide" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_0209" string="Thưởng 02/09" sum="Tổng" optional="hide" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_tet_dl" string="Thưởng Tết DL" sum="Tổng" optional="hide" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_other" string="Thưởng khác" sum="Tổng" optional="hide" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_annual_bonus" string="Tổng Thưởng Năm" sum="Tổng" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
 
-                                    <field name="payroll_revenue_bonus" string="Thưởng DT" sum="Tổng"/>
-                                    <field name="payroll_productivity_bonus" string="Thưởng NS" sum="Tổng"/>
-                                    <field name="payroll_total_bonus" string="Tổng Thưởng" sum="Tổng" decoration-bf="1"/>
-                                    <field name="dl_tax_base_salary" string="Lương CB" sum="Tổng"/>
-                                    <field name="payroll_total_regime_income" string="Tổng Thu Nhập Chế Độ" sum="Tổng" decoration-info="1" decoration-bf="1"/>
+                                    <field name="payroll_revenue_bonus" string="Thưởng DT" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Tổng"/>
+                                    <!-- <field name="payroll_productivity_bonus" string="Thưởng NS" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/> -->
+                                    <field name="payroll_total_bonus" string="Tổng Trợ cấp &amp; Thưởng năm" sum="Tổng" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="dl_tax_base_salary" string="Lương CB" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_total_regime_income" string="Tổng Thu Nhập Chế Độ" sum="Tổng" decoration-info="1" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     
-                                    <field name="payroll_wage_day" string="Lương Ngày" sum="Tổng"/>
-                                    <field name="payroll_wage_day_150" string="TC Ngày 150%" sum="Tổng"/>
-                                    <field name="payroll_wage_night_130" string="Đêm 130%" sum="Tổng"/>
-                                    <field name="payroll_wage_night_200" string="TC Đêm 200%" sum="Tổng"/>
-                                    <field name="payroll_wage_night_210" string="TC Đêm 210%" sum="Tổng"/>
-                                    <field name="payroll_wage_night_sun_270" string="Đêm CN 270%" sum="Tổng"/>
-                                    <field name="payroll_wage_day_sun_200" string="CN Ngày 200%" sum="Tổng"/>
-                                    <field name="payroll_wage_day_holiday_300" string="Lễ Ngày 300%" sum="Tổng"/>
-                                    <field name="payroll_wage_night_holiday_390" string="TC Đêm Lễ 390%" sum="Tổng"/>
+                                    <field name="payroll_wage_day" string="Lương Ngày + Nghỉ Lương" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_day_150" string="TC Ngày 150%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_130" string="Đêm 130%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_200" string="TC Đêm 200%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_210" string="TC Đêm 210%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_sun_270" string="Đêm CN 270%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_day_sun_200" string="CN Ngày 200%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_day_holiday_300" string="Lễ Ngày 300%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_holiday_390" string="TC Đêm Lễ 390%" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     
-                                    <field name="payroll_total_wage" string="Tổng Lương" sum="Tổng" decoration-danger="1" decoration-bf="1"/>
+                                    <field name="payroll_total_wage" string="Tổng Lương" sum="Tổng" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_total_actual_income" string="Tổng Thu Nhập Thực Tế" sum="Tổng" decoration-danger="1" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="currency_id" column_invisible="1"/>
                                 </list>
                             </field>
                         </page>
@@ -155,6 +159,7 @@
                                     <field name="payroll_ot_d_130" string="TC Đêm (130%)" sum="Tổng"/>
                                     <field name="payroll_ot_d_200" string="TC Đêm (200%)" sum="Tổng"/>
                                     <field name="payroll_ot_d_sun_300" string="TC Đêm CN" sum="Tổng"/>
+                                    <field name="payroll_total_actual_income" string="Tổng Thu Nhập Thực Tế" sum="Tổng" decoration-danger="1" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 </list>
                             </field>
                         </page>
@@ -168,7 +173,7 @@
                                     <field name="filter_position" placeholder="Nhập chức vụ..."/>
                                 </group>
                             </group>
-                            <field name="filtered_line_ids" context="{'matrix_mode': 'normal'}" nolabel="1">
+                            <field name="filtered_line_ids" context="{'matrix_mode': 'normal'}" nolabel="1" readonly="state != 'draft'">
                                 <list editable="bottom">
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -360,7 +365,7 @@
                                     <field name="sex" readonly="1" sticky="1" width="70px"/>
                                     <field name="dl_tax_department_id" readonly="1" sticky="1" width="120px"/>
                                     <field name="dl_tax_position" readonly="1" sticky="1" width="120px"/>
-                                    <field name="dl_tax_base_salary" readonly="1" sticky="1" width="100px"/>
+                                    <!-- <field name="dl_tax_base_salary" readonly="1" sticky="1" width="100px"/> -->
                                     <field name="day_01" string="01" widget="badge"/>
                                     <field name="day_02" string="02" widget="badge"/>
                                     <field name="day_03" string="03" widget="badge"/>
@@ -396,7 +401,7 @@
                             </field>
                         </page>
                         
-                        <page string="Cấu Hình Chung" name="financial_balance" invisible="state == 'draft'">
+                        <page string="Cấu Hình Chung" name="financial_balance">
                             <div class="d-flex flex-wrap gap-4 align-items-start w-100">
                                 <div class="flex-fill" style="min-width: 450px;">
                                     <group string="Thông tin tài chính" class="w-100">
@@ -498,109 +503,153 @@
                         </group>
                     </group>
                     
-                    <separator string="CÔNG THƯỜNG (Bắt đầu Thứ 2)" class="mt-4 mb-2"/>
-                    <group col="5">
-                        <group string="Tuần 1" class="dl_day_group" col="2">
-                            <field name="v01_label" readonly="1" nolabel="1" decoration-danger="v01_sun" class="fw-bold"/><field name="v01" nolabel="1" decoration-danger="v01_sun"/>
-                            <field name="v02_label" readonly="1" nolabel="1" decoration-danger="v02_sun" class="fw-bold"/><field name="v02" nolabel="1" decoration-danger="v02_sun"/>
-                            <field name="v03_label" readonly="1" nolabel="1" decoration-danger="v03_sun" class="fw-bold"/><field name="v03" nolabel="1" decoration-danger="v03_sun"/>
-                            <field name="v04_label" readonly="1" nolabel="1" decoration-danger="v04_sun" class="fw-bold"/><field name="v04" nolabel="1" decoration-danger="v04_sun"/>
-                            <field name="v05_label" readonly="1" nolabel="1" decoration-danger="v05_sun" class="fw-bold"/><field name="v05" nolabel="1" decoration-danger="v05_sun"/>
-                            <field name="v06_label" readonly="1" nolabel="1" decoration-danger="v06_sun" class="fw-bold"/><field name="v06" nolabel="1" decoration-danger="v06_sun"/>
-                            <field name="v07_label" readonly="1" nolabel="1" decoration-danger="v07_sun" class="fw-bold text-danger"/><field name="v07" nolabel="1" decoration-danger="v07_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 2" class="dl_day_group" col="2">
-                            <field name="v08_label" readonly="1" nolabel="1" decoration-danger="v08_sun" class="fw-bold"/><field name="v08" nolabel="1" decoration-danger="v08_sun"/>
-                            <field name="v09_label" readonly="1" nolabel="1" decoration-danger="v09_sun" class="fw-bold"/><field name="v09" nolabel="1" decoration-danger="v09_sun"/>
-                            <field name="v10_label" readonly="1" nolabel="1" decoration-danger="v10_sun" class="fw-bold"/><field name="v10" nolabel="1" decoration-danger="v10_sun"/>
-                            <field name="v11_label" readonly="1" nolabel="1" decoration-danger="v11_sun" class="fw-bold"/><field name="v11" nolabel="1" decoration-danger="v11_sun"/>
-                            <field name="v12_label" readonly="1" nolabel="1" decoration-danger="v12_sun" class="fw-bold"/><field name="v12" nolabel="1" decoration-danger="v12_sun"/>
-                            <field name="v13_label" readonly="1" nolabel="1" decoration-danger="v13_sun" class="fw-bold"/><field name="v13" nolabel="1" decoration-danger="v13_sun"/>
-                            <field name="v14_label" readonly="1" nolabel="1" decoration-danger="v14_sun" class="fw-bold text-danger"/><field name="v14" nolabel="1" decoration-danger="v14_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 3" class="dl_day_group" col="2">
-                            <field name="v15_label" readonly="1" nolabel="1" decoration-danger="v15_sun" class="fw-bold"/><field name="v15" nolabel="1" decoration-danger="v15_sun"/>
-                            <field name="v16_label" readonly="1" nolabel="1" decoration-danger="v16_sun" class="fw-bold"/><field name="v16" nolabel="1" decoration-danger="v16_sun"/>
-                            <field name="v17_label" readonly="1" nolabel="1" decoration-danger="v17_sun" class="fw-bold"/><field name="v17" nolabel="1" decoration-danger="v17_sun"/>
-                            <field name="v18_label" readonly="1" nolabel="1" decoration-danger="v18_sun" class="fw-bold"/><field name="v18" nolabel="1" decoration-danger="v18_sun"/>
-                            <field name="v19_label" readonly="1" nolabel="1" decoration-danger="v19_sun" class="fw-bold"/><field name="v19" nolabel="1" decoration-danger="v19_sun"/>
-                            <field name="v20_label" readonly="1" nolabel="1" decoration-danger="v20_sun" class="fw-bold"/><field name="v20" nolabel="1" decoration-danger="v20_sun"/>
-                            <field name="v21_label" readonly="1" nolabel="1" decoration-danger="v21_sun" class="fw-bold text-danger"/><field name="v21" nolabel="1" decoration-danger="v21_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 4" class="dl_day_group" col="2">
-                            <field name="v22_label" readonly="1" nolabel="1" decoration-danger="v22_sun" class="fw-bold"/><field name="v22" nolabel="1" decoration-danger="v22_sun"/>
-                            <field name="v23_label" readonly="1" nolabel="1" decoration-danger="v23_sun" class="fw-bold"/><field name="v23" nolabel="1" decoration-danger="v23_sun"/>
-                            <field name="v24_label" readonly="1" nolabel="1" decoration-danger="v24_sun" class="fw-bold"/><field name="v24" nolabel="1" decoration-danger="v24_sun"/>
-                            <field name="v25_label" readonly="1" nolabel="1" decoration-danger="v25_sun" class="fw-bold"/><field name="v25" nolabel="1" decoration-danger="v25_sun"/>
-                            <field name="v26_label" readonly="1" nolabel="1" decoration-danger="v26_sun" class="fw-bold"/><field name="v26" nolabel="1" decoration-danger="v26_sun"/>
-                            <field name="v27_label" readonly="1" nolabel="1" decoration-danger="v27_sun" class="fw-bold"/><field name="v27" nolabel="1" decoration-danger="v27_sun"/>
-                            <field name="v28_label" readonly="1" nolabel="1" decoration-danger="v28_sun" class="fw-bold text-danger"/><field name="v28" nolabel="1" decoration-danger="v28_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 5" class="dl_day_group" col="2">
-                            <field name="v29_label" readonly="1" nolabel="1" decoration-danger="v29_sun" class="fw-bold"/><field name="v29" nolabel="1" decoration-danger="v29_sun"/>
-                            <field name="v30_label" readonly="1" nolabel="1" decoration-danger="v30_sun" class="fw-bold"/><field name="v30" nolabel="1" decoration-danger="v30_sun"/>
-                            <field name="v31_label" readonly="1" nolabel="1" decoration-danger="v31_sun" class="fw-bold"/><field name="v31" nolabel="1" decoration-danger="v31_sun"/>
-                            <field name="v32_label" readonly="1" nolabel="1" decoration-danger="v32_sun" class="fw-bold"/><field name="v32" nolabel="1" decoration-danger="v32_sun"/>
-                            <field name="v33_label" readonly="1" nolabel="1" decoration-danger="v33_sun" class="fw-bold"/><field name="v33" nolabel="1" decoration-danger="v33_sun"/>
-                            <field name="v34_label" readonly="1" nolabel="1" decoration-danger="v34_sun" class="fw-bold"/><field name="v34" nolabel="1" decoration-danger="v34_sun"/>
-                            <field name="v35_label" readonly="1" nolabel="1" decoration-danger="v35_sun" class="fw-bold text-danger"/><field name="v35" nolabel="1" decoration-danger="v35_sun" class="text-danger fw-bold"/>
-                        </group>
-                    </group>
+                    <notebook>
+                        <page string="Ma trận Chấm công" name="matrix">
+                            <separator string="CÔNG THƯỜNG (Bắt đầu Thứ 2)" class="mt-4 mb-2"/>
+                            <group col="5">
+                                <group string="Tuần 1" class="dl_day_group" col="2">
+                                    <field name="v01_label" readonly="1" nolabel="1" decoration-danger="v01_sun" class="fw-bold"/><field name="v01" nolabel="1" decoration-danger="v01_sun"/>
+                                    <field name="v02_label" readonly="1" nolabel="1" decoration-danger="v02_sun" class="fw-bold"/><field name="v02" nolabel="1" decoration-danger="v02_sun"/>
+                                    <field name="v03_label" readonly="1" nolabel="1" decoration-danger="v03_sun" class="fw-bold"/><field name="v03" nolabel="1" decoration-danger="v03_sun"/>
+                                    <field name="v04_label" readonly="1" nolabel="1" decoration-danger="v04_sun" class="fw-bold"/><field name="v04" nolabel="1" decoration-danger="v04_sun"/>
+                                    <field name="v05_label" readonly="1" nolabel="1" decoration-danger="v05_sun" class="fw-bold"/><field name="v05" nolabel="1" decoration-danger="v05_sun"/>
+                                    <field name="v06_label" readonly="1" nolabel="1" decoration-danger="v06_sun" class="fw-bold"/><field name="v06" nolabel="1" decoration-danger="v06_sun"/>
+                                    <field name="v07_label" readonly="1" nolabel="1" decoration-danger="v07_sun" class="fw-bold text-danger"/><field name="v07" nolabel="1" decoration-danger="v07_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 2" class="dl_day_group" col="2">
+                                    <field name="v08_label" readonly="1" nolabel="1" decoration-danger="v08_sun" class="fw-bold"/><field name="v08" nolabel="1" decoration-danger="v08_sun"/>
+                                    <field name="v09_label" readonly="1" nolabel="1" decoration-danger="v09_sun" class="fw-bold"/><field name="v09" nolabel="1" decoration-danger="v09_sun"/>
+                                    <field name="v10_label" readonly="1" nolabel="1" decoration-danger="v10_sun" class="fw-bold"/><field name="v10" nolabel="1" decoration-danger="v10_sun"/>
+                                    <field name="v11_label" readonly="1" nolabel="1" decoration-danger="v11_sun" class="fw-bold"/><field name="v11" nolabel="1" decoration-danger="v11_sun"/>
+                                    <field name="v12_label" readonly="1" nolabel="1" decoration-danger="v12_sun" class="fw-bold"/><field name="v12" nolabel="1" decoration-danger="v12_sun"/>
+                                    <field name="v13_label" readonly="1" nolabel="1" decoration-danger="v13_sun" class="fw-bold"/><field name="v13" nolabel="1" decoration-danger="v13_sun"/>
+                                    <field name="v14_label" readonly="1" nolabel="1" decoration-danger="v14_sun" class="fw-bold text-danger"/><field name="v14" nolabel="1" decoration-danger="v14_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 3" class="dl_day_group" col="2">
+                                    <field name="v15_label" readonly="1" nolabel="1" decoration-danger="v15_sun" class="fw-bold"/><field name="v15" nolabel="1" decoration-danger="v15_sun"/>
+                                    <field name="v16_label" readonly="1" nolabel="1" decoration-danger="v16_sun" class="fw-bold"/><field name="v16" nolabel="1" decoration-danger="v16_sun"/>
+                                    <field name="v17_label" readonly="1" nolabel="1" decoration-danger="v17_sun" class="fw-bold"/><field name="v17" nolabel="1" decoration-danger="v17_sun"/>
+                                    <field name="v18_label" readonly="1" nolabel="1" decoration-danger="v18_sun" class="fw-bold"/><field name="v18" nolabel="1" decoration-danger="v18_sun"/>
+                                    <field name="v19_label" readonly="1" nolabel="1" decoration-danger="v19_sun" class="fw-bold"/><field name="v19" nolabel="1" decoration-danger="v19_sun"/>
+                                    <field name="v20_label" readonly="1" nolabel="1" decoration-danger="v20_sun" class="fw-bold"/><field name="v20" nolabel="1" decoration-danger="v20_sun"/>
+                                    <field name="v21_label" readonly="1" nolabel="1" decoration-danger="v21_sun" class="fw-bold text-danger"/><field name="v21" nolabel="1" decoration-danger="v21_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 4" class="dl_day_group" col="2">
+                                    <field name="v22_label" readonly="1" nolabel="1" decoration-danger="v22_sun" class="fw-bold"/><field name="v22" nolabel="1" decoration-danger="v22_sun"/>
+                                    <field name="v23_label" readonly="1" nolabel="1" decoration-danger="v23_sun" class="fw-bold"/><field name="v23" nolabel="1" decoration-danger="v23_sun"/>
+                                    <field name="v24_label" readonly="1" nolabel="1" decoration-danger="v24_sun" class="fw-bold"/><field name="v24" nolabel="1" decoration-danger="v24_sun"/>
+                                    <field name="v25_label" readonly="1" nolabel="1" decoration-danger="v25_sun" class="fw-bold"/><field name="v25" nolabel="1" decoration-danger="v25_sun"/>
+                                    <field name="v26_label" readonly="1" nolabel="1" decoration-danger="v26_sun" class="fw-bold"/><field name="v26" nolabel="1" decoration-danger="v26_sun"/>
+                                    <field name="v27_label" readonly="1" nolabel="1" decoration-danger="v27_sun" class="fw-bold"/><field name="v27" nolabel="1" decoration-danger="v27_sun"/>
+                                    <field name="v28_label" readonly="1" nolabel="1" decoration-danger="v28_sun" class="fw-bold text-danger"/><field name="v28" nolabel="1" decoration-danger="v28_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 5" class="dl_day_group" col="2">
+                                    <field name="v29_label" readonly="1" nolabel="1" decoration-danger="v29_sun" class="fw-bold"/><field name="v29" nolabel="1" decoration-danger="v29_sun"/>
+                                    <field name="v30_label" readonly="1" nolabel="1" decoration-danger="v30_sun" class="fw-bold"/><field name="v30" nolabel="1" decoration-danger="v30_sun"/>
+                                    <field name="v31_label" readonly="1" nolabel="1" decoration-danger="v31_sun" class="fw-bold"/><field name="v31" nolabel="1" decoration-danger="v31_sun"/>
+                                    <field name="v32_label" readonly="1" nolabel="1" decoration-danger="v32_sun" class="fw-bold"/><field name="v32" nolabel="1" decoration-danger="v32_sun"/>
+                                    <field name="v33_label" readonly="1" nolabel="1" decoration-danger="v33_sun" class="fw-bold"/><field name="v33" nolabel="1" decoration-danger="v33_sun"/>
+                                    <field name="v34_label" readonly="1" nolabel="1" decoration-danger="v34_sun" class="fw-bold"/><field name="v34" nolabel="1" decoration-danger="v34_sun"/>
+                                    <field name="v35_label" readonly="1" nolabel="1" decoration-danger="v35_sun" class="fw-bold text-danger"/><field name="v35" nolabel="1" decoration-danger="v35_sun" class="text-danger fw-bold"/>
+                                </group>
+                            </group>
 
-                    <separator string="TĂNG CA (Bắt đầu Thứ 2)" class="mt-4 mb-2"/>
-                    <group col="5">
-                        <group string="Tuần 1" class="dl_day_group" col="2">
-                            <field name="v01_label" readonly="1" nolabel="1" decoration-danger="v01_sun" class="fw-bold"/><field name="v01_ot" nolabel="1" decoration-danger="v01_sun"/>
-                            <field name="v02_label" readonly="1" nolabel="1" decoration-danger="v02_sun" class="fw-bold"/><field name="v02_ot" nolabel="1" decoration-danger="v02_sun"/>
-                            <field name="v03_label" readonly="1" nolabel="1" decoration-danger="v03_sun" class="fw-bold"/><field name="v03_ot" nolabel="1" decoration-danger="v03_sun"/>
-                            <field name="v04_label" readonly="1" nolabel="1" decoration-danger="v04_sun" class="fw-bold"/><field name="v04_ot" nolabel="1" decoration-danger="v04_sun"/>
-                            <field name="v05_label" readonly="1" nolabel="1" decoration-danger="v05_sun" class="fw-bold"/><field name="v05_ot" nolabel="1" decoration-danger="v05_sun"/>
-                            <field name="v06_label" readonly="1" nolabel="1" decoration-danger="v06_sun" class="fw-bold"/><field name="v06_ot" nolabel="1" decoration-danger="v06_sun"/>
-                            <field name="v07_label" readonly="1" nolabel="1" decoration-danger="v07_sun" class="fw-bold text-danger"/><field name="v07_ot" nolabel="1" decoration-danger="v07_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 2" class="dl_day_group" col="2">
-                            <field name="v08_label" readonly="1" nolabel="1" decoration-danger="v08_sun" class="fw-bold"/><field name="v08_ot" nolabel="1" decoration-danger="v08_sun"/>
-                            <field name="v09_label" readonly="1" nolabel="1" decoration-danger="v09_sun" class="fw-bold"/><field name="v09_ot" nolabel="1" decoration-danger="v09_sun"/>
-                            <field name="v10_label" readonly="1" nolabel="1" decoration-danger="v10_sun" class="fw-bold"/><field name="v10_ot" nolabel="1" decoration-danger="v10_sun"/>
-                            <field name="v11_label" readonly="1" nolabel="1" decoration-danger="v11_sun" class="fw-bold"/><field name="v11_ot" nolabel="1" decoration-danger="v11_sun"/>
-                            <field name="v12_label" readonly="1" nolabel="1" decoration-danger="v12_sun" class="fw-bold"/><field name="v12_ot" nolabel="1" decoration-danger="v12_sun"/>
-                            <field name="v13_label" readonly="1" nolabel="1" decoration-danger="v13_sun" class="fw-bold"/><field name="v13_ot" nolabel="1" decoration-danger="v13_sun"/>
-                            <field name="v14_label" readonly="1" nolabel="1" decoration-danger="v14_sun" class="fw-bold text-danger"/><field name="v14_ot" nolabel="1" decoration-danger="v14_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 3" class="dl_day_group" col="2">
-                            <field name="v15_label" readonly="1" nolabel="1" decoration-danger="v15_sun" class="fw-bold"/><field name="v15_ot" nolabel="1" decoration-danger="v15_sun"/>
-                            <field name="v16_label" readonly="1" nolabel="1" decoration-danger="v16_sun" class="fw-bold"/><field name="v16_ot" nolabel="1" decoration-danger="v16_sun"/>
-                            <field name="v17_label" readonly="1" nolabel="1" decoration-danger="v17_sun" class="fw-bold"/><field name="v17_ot" nolabel="1" decoration-danger="v17_sun"/>
-                            <field name="v18_label" readonly="1" nolabel="1" decoration-danger="v18_sun" class="fw-bold"/><field name="v18_ot" nolabel="1" decoration-danger="v18_sun"/>
-                            <field name="v19_label" readonly="1" nolabel="1" decoration-danger="v19_sun" class="fw-bold"/><field name="v19_ot" nolabel="1" decoration-danger="v19_sun"/>
-                            <field name="v20_label" readonly="1" nolabel="1" decoration-danger="v20_sun" class="fw-bold"/><field name="v20_ot" nolabel="1" decoration-danger="v20_sun"/>
-                            <field name="v21_label" readonly="1" nolabel="1" decoration-danger="v21_sun" class="fw-bold text-danger"/><field name="v21_ot" nolabel="1" decoration-danger="v21_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 4" class="dl_day_group" col="2">
-                            <field name="v22_label" readonly="1" nolabel="1" decoration-danger="v22_sun" class="fw-bold"/><field name="v22_ot" nolabel="1" decoration-danger="v22_sun"/>
-                            <field name="v23_label" readonly="1" nolabel="1" decoration-danger="v23_sun" class="fw-bold"/><field name="v23_ot" nolabel="1" decoration-danger="v23_sun"/>
-                            <field name="v24_label" readonly="1" nolabel="1" decoration-danger="v24_sun" class="fw-bold"/><field name="v24_ot" nolabel="1" decoration-danger="v24_sun"/>
-                            <field name="v25_label" readonly="1" nolabel="1" decoration-danger="v25_sun" class="fw-bold"/><field name="v25_ot" nolabel="1" decoration-danger="v25_sun"/>
-                            <field name="v26_label" readonly="1" nolabel="1" decoration-danger="v26_sun" class="fw-bold"/><field name="v26_ot" nolabel="1" decoration-danger="v26_sun"/>
-                            <field name="v27_label" readonly="1" nolabel="1" decoration-danger="v27_sun" class="fw-bold"/><field name="v27_ot" nolabel="1" decoration-danger="v27_sun"/>
-                            <field name="v28_label" readonly="1" nolabel="1" decoration-danger="v28_sun" class="fw-bold text-danger"/><field name="v28_ot" nolabel="1" decoration-danger="v28_sun" class="text-danger fw-bold"/>
-                        </group>
-                        <group string="Tuần 5" class="dl_day_group" col="2">
-                            <field name="v29_label" readonly="1" nolabel="1" decoration-danger="v29_sun" class="fw-bold"/><field name="v29_ot" nolabel="1" decoration-danger="v29_sun"/>
-                            <field name="v30_label" readonly="1" nolabel="1" decoration-danger="v30_sun" class="fw-bold"/><field name="v30_ot" nolabel="1" decoration-danger="v30_sun"/>
-                            <field name="v31_label" readonly="1" nolabel="1" decoration-danger="v31_sun" class="fw-bold"/><field name="v31_ot" nolabel="1" decoration-danger="v31_sun"/>
-                            <field name="v32_label" readonly="1" nolabel="1" decoration-danger="v32_sun" class="fw-bold"/><field name="v32_ot" nolabel="1" decoration-danger="v32_sun"/>
-                            <field name="v33_label" readonly="1" nolabel="1" decoration-danger="v33_sun" class="fw-bold"/><field name="v33_ot" nolabel="1" decoration-danger="v33_sun"/>
-                            <field name="v34_label" readonly="1" nolabel="1" decoration-danger="v34_sun" class="fw-bold"/><field name="v34_ot" nolabel="1" decoration-danger="v34_sun"/>
-                            <field name="v35_label" readonly="1" nolabel="1" decoration-danger="v35_sun" class="fw-bold text-danger"/><field name="v35_ot" nolabel="1" decoration-danger="v35_sun" class="text-danger fw-bold"/>
-                        </group>
-                    </group>
-
-                    <separator string="TỔNG HỢP MÃ CÔNG TRONG THÁNG" class="mt-4 mb-2"/>
-                    <group>
-                        <field name="attendance_type_ids" widget="many2many_tags" readonly="1"/>
-                    </group>
-                    <field name="attendance_summary_html" readonly="1" nolabel="1"/>
+                            <separator string="TĂNG CA (Bắt đầu Thứ 2)" class="mt-4 mb-2"/>
+                            <group col="5">
+                                <group string="Tuần 1" class="dl_day_group" col="2">
+                                    <field name="v01_label" readonly="1" nolabel="1" decoration-danger="v01_sun" class="fw-bold"/><field name="v01_ot" nolabel="1" decoration-danger="v01_sun"/>
+                                    <field name="v02_label" readonly="1" nolabel="1" decoration-danger="v02_sun" class="fw-bold"/><field name="v02_ot" nolabel="1" decoration-danger="v02_sun"/>
+                                    <field name="v03_label" readonly="1" nolabel="1" decoration-danger="v03_sun" class="fw-bold"/><field name="v03_ot" nolabel="1" decoration-danger="v03_sun"/>
+                                    <field name="v04_label" readonly="1" nolabel="1" decoration-danger="v04_sun" class="fw-bold"/><field name="v04_ot" nolabel="1" decoration-danger="v04_sun"/>
+                                    <field name="v05_label" readonly="1" nolabel="1" decoration-danger="v05_sun" class="fw-bold"/><field name="v05_ot" nolabel="1" decoration-danger="v05_sun"/>
+                                    <field name="v06_label" readonly="1" nolabel="1" decoration-danger="v06_sun" class="fw-bold"/><field name="v06_ot" nolabel="1" decoration-danger="v06_sun"/>
+                                    <field name="v07_label" readonly="1" nolabel="1" decoration-danger="v07_sun" class="fw-bold text-danger"/><field name="v07_ot" nolabel="1" decoration-danger="v07_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 2" class="dl_day_group" col="2">
+                                    <field name="v08_label" readonly="1" nolabel="1" decoration-danger="v08_sun" class="fw-bold"/><field name="v08_ot" nolabel="1" decoration-danger="v08_sun"/>
+                                    <field name="v09_label" readonly="1" nolabel="1" decoration-danger="v09_sun" class="fw-bold"/><field name="v09_ot" nolabel="1" decoration-danger="v09_sun"/>
+                                    <field name="v10_label" readonly="1" nolabel="1" decoration-danger="v10_sun" class="fw-bold"/><field name="v10_ot" nolabel="1" decoration-danger="v10_sun"/>
+                                    <field name="v11_label" readonly="1" nolabel="1" decoration-danger="v11_sun" class="fw-bold"/><field name="v11_ot" nolabel="1" decoration-danger="v11_sun"/>
+                                    <field name="v12_label" readonly="1" nolabel="1" decoration-danger="v12_sun" class="fw-bold"/><field name="v12_ot" nolabel="1" decoration-danger="v12_sun"/>
+                                    <field name="v13_label" readonly="1" nolabel="1" decoration-danger="v13_sun" class="fw-bold"/><field name="v13_ot" nolabel="1" decoration-danger="v13_sun"/>
+                                    <field name="v14_label" readonly="1" nolabel="1" decoration-danger="v14_sun" class="fw-bold text-danger"/><field name="v14_ot" nolabel="1" decoration-danger="v14_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 3" class="dl_day_group" col="2">
+                                    <field name="v15_label" readonly="1" nolabel="1" decoration-danger="v15_sun" class="fw-bold"/><field name="v15_ot" nolabel="1" decoration-danger="v15_sun"/>
+                                    <field name="v16_label" readonly="1" nolabel="1" decoration-danger="v16_sun" class="fw-bold"/><field name="v16_ot" nolabel="1" decoration-danger="v16_sun"/>
+                                    <field name="v17_label" readonly="1" nolabel="1" decoration-danger="v17_sun" class="fw-bold"/><field name="v17_ot" nolabel="1" decoration-danger="v17_sun"/>
+                                    <field name="v18_label" readonly="1" nolabel="1" decoration-danger="v18_sun" class="fw-bold"/><field name="v18_ot" nolabel="1" decoration-danger="v18_sun"/>
+                                    <field name="v19_label" readonly="1" nolabel="1" decoration-danger="v19_sun" class="fw-bold"/><field name="v19_ot" nolabel="1" decoration-danger="v19_sun"/>
+                                    <field name="v20_label" readonly="1" nolabel="1" decoration-danger="v20_sun" class="fw-bold"/><field name="v20_ot" nolabel="1" decoration-danger="v20_sun"/>
+                                    <field name="v21_label" readonly="1" nolabel="1" decoration-danger="v21_sun" class="fw-bold text-danger"/><field name="v21_ot" nolabel="1" decoration-danger="v21_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 4" class="dl_day_group" col="2">
+                                    <field name="v22_label" readonly="1" nolabel="1" decoration-danger="v22_sun" class="fw-bold"/><field name="v22_ot" nolabel="1" decoration-danger="v22_sun"/>
+                                    <field name="v23_label" readonly="1" nolabel="1" decoration-danger="v23_sun" class="fw-bold"/><field name="v23_ot" nolabel="1" decoration-danger="v23_sun"/>
+                                    <field name="v24_label" readonly="1" nolabel="1" decoration-danger="v24_sun" class="fw-bold"/><field name="v24_ot" nolabel="1" decoration-danger="v24_sun"/>
+                                    <field name="v25_label" readonly="1" nolabel="1" decoration-danger="v25_sun" class="fw-bold"/><field name="v25_ot" nolabel="1" decoration-danger="v25_sun"/>
+                                    <field name="v26_label" readonly="1" nolabel="1" decoration-danger="v26_sun" class="fw-bold"/><field name="v26_ot" nolabel="1" decoration-danger="v26_sun"/>
+                                    <field name="v27_label" readonly="1" nolabel="1" decoration-danger="v27_sun" class="fw-bold"/><field name="v27_ot" nolabel="1" decoration-danger="v27_sun"/>
+                                    <field name="v28_label" readonly="1" nolabel="1" decoration-danger="v28_sun" class="fw-bold text-danger"/><field name="v28_ot" nolabel="1" decoration-danger="v28_sun" class="text-danger fw-bold"/>
+                                </group>
+                                <group string="Tuần 5" class="dl_day_group" col="2">
+                                    <field name="v29_label" readonly="1" nolabel="1" decoration-danger="v29_sun" class="fw-bold"/><field name="v29_ot" nolabel="1" decoration-danger="v29_sun"/>
+                                    <field name="v30_label" readonly="1" nolabel="1" decoration-danger="v30_sun" class="fw-bold"/><field name="v30_ot" nolabel="1" decoration-danger="v30_sun"/>
+                                    <field name="v31_label" readonly="1" nolabel="1" decoration-danger="v31_sun" class="fw-bold"/><field name="v31_ot" nolabel="1" decoration-danger="v31_sun"/>
+                                    <field name="v32_label" readonly="1" nolabel="1" decoration-danger="v32_sun" class="fw-bold"/><field name="v32_ot" nolabel="1" decoration-danger="v32_sun"/>
+                                    <field name="v33_label" readonly="1" nolabel="1" decoration-danger="v33_sun" class="fw-bold"/><field name="v33_ot" nolabel="1" decoration-danger="v33_sun"/>
+                                    <field name="v34_label" readonly="1" nolabel="1" decoration-danger="v34_sun" class="fw-bold"/><field name="v34_ot" nolabel="1" decoration-danger="v34_sun"/>
+                                    <field name="v35_label" readonly="1" nolabel="1" decoration-danger="v35_sun" class="fw-bold text-danger"/><field name="v35_ot" nolabel="1" decoration-danger="v35_sun" class="text-danger fw-bold"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Chi tiết Lương &amp; Thưởng" name="payroll_details">
+                            <group>
+                                <group string="Lương chi tiết">
+                                    <field name="payroll_wage_day" string="Lương Ngày + Nghỉ Lương" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_day_150" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_130" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_200" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_210" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_sun_270" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_day_sun_200" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_day_holiday_300" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_wage_night_holiday_390" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_total_wage" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                    <field name="payroll_total_actual_income" string="Tổng Thu Nhập Thực Tế" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1"/>
+                                </group>
+                                <group string="Trợ cấp &amp; Thưởng năm">
+                                    <field name="payroll_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <separator string="Thưởng năm chi tiết"/>
+                                    <field name="payroll_bonus_0803" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_3004" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_0209" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_tet_dl" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_bonus_other" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_annual_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                    <separator string="Thưởng khác"/>
+                                    <field name="payroll_revenue_bonus" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_productivity_bonus" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <separator/>
+                                <field name="payroll_total_bonus" string="Tổng Trợ cấp &amp; Thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator"/>
+                                </group>
+                            </group>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="payroll_total_regime_income" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="payroll_total_bonus" string="Tổng Trợ cấp &amp; Thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="payroll_total_wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="payroll_total_actual_income" string="Tổng Thu Nhập Thực Tế" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+                        <page string="Tóm tắt Mã công" name="summary">
+                            <separator string="TỔNG HỢP MÃ CÔNG TRONG THÁNG" class="mt-4 mb-2"/>
+                            <group>
+                                <field name="attendance_type_ids" widget="many2many_tags" readonly="1"/>
+                            </group>
+                            <field name="attendance_summary_html" readonly="1" nolabel="1"/>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

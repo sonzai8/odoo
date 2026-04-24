@@ -26,10 +26,10 @@ class SalaryKpiMonth(models.Model):
     line_ids = fields.One2many('dl.salary.kpi.line', 'month_id', string='Chi tiết chấm công')
     
     # Thông tin cân đối tài chính
-    dl_revenue = fields.Float(string="Doanh thu tháng (Công ty)")
+    dl_revenue = fields.Monetary(string="Doanh thu tháng", currency_field='currency_id')
     dl_production_volume = fields.Float(string="Sản lượng tháng (m³)")
-    dl_meal_allowance = fields.Float(string="Tiền ăn ca", default=650000)
-    dl_women_allowance = fields.Float(string="Phụ cấp phụ nữ", default=500000)
+    dl_meal_allowance = fields.Monetary(string="Tiền ăn ca", currency_field='currency_id', default=650000)
+    dl_women_allowance = fields.Monetary(string="Phụ cấp phụ nữ", currency_field='currency_id', default=500000)
     
     # Các khoản thưởng áp dụng trong tháng
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
@@ -305,44 +305,69 @@ class SalaryKpiMonth(models.Model):
 
         return res
 
+    def action_recompute_all_data(self):
+        """Ép buộc tính toán lại toàn bộ dữ liệu thống kê và lương chi tiết."""
+        for rec in self:
+            # 1. Ép buộc Odoo tính toán lại các trường computed trong các dòng con
+            if rec.line_ids:
+                # Tính toán lại tổng công (N, Đ, OT...) trước
+                rec.line_ids._compute_totals()
+                # Sau đó tính toán lại lương dựa trên các con số tổng đã có
+                rec.line_ids._compute_payroll_internal()
+            
+            # 2. Tính toán lại thống kê nhanh trên phiếu tháng (Bảng tổng hợp ô công)
+            rec._compute_quick_stats()
+        return True
 
     def action_lock_normal(self):
         # Khi chốt công thường, xoá sạch dữ liệu công làm thêm cũ để tránh sai lệch dữ liệu
         # Đảm bảo khi sang bước Làm thêm, dữ liệu sẽ được tính/nhập mới hoàn toàn
-        for line in self.line_ids:
-            ot_vals = {}
-            for i in range(1, 32):
-                ot_vals[f'ot_day_{i:02d}'] = False
-            line.write(ot_vals)
+        ot_fields = {f'ot_day_{i:02d}': False for i in range(1, 32)}
+        self.line_ids.write(ot_fields)
             
+        self.action_recompute_all_data()
         self.write({'state': 'lock_normal'})
 
     def action_lock_ot(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_ot'})
 
     def action_lock_regime(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_regime'})
 
     def action_lock_kpi(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_kpi'})
 
     def action_confirm(self):
+        self.action_recompute_all_data()
         self.write({'state': 'confirmed'})
 
     # Các hàm quay lại trạng thái trước
     def action_back_to_draft(self):
-        self.write({'state': 'draft'})
+        """Khi quay lại dự thảo, xoá sạch mọi kết quả tính toán."""
+        for rec in self:
+            if rec.line_ids:
+                rec.line_ids.action_reset_data()
+            rec.write({'state': 'draft'})
+        # Cập nhật lại thống kê tháng sau khi reset dòng con
+        self._compute_quick_stats()
 
     def action_back_to_lock_normal(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_normal'})
 
     def action_back_to_lock_ot(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_ot'})
 
     def action_back_to_lock_regime(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_regime'})
 
     def action_back_to_lock_kpi(self):
+        self.action_recompute_all_data()
         self.write({'state': 'lock_kpi'})
 
     def action_draft(self):

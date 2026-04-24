@@ -22,9 +22,9 @@ class SalaryKpiController(http.Controller):
         ws = wb.active
         ws.title = "Bang Cham Cong Lam Them"
         ws.freeze_panes = 'F4'
-        ws.protection.sheet = True
-        ws.protection.password = 'duclam'
-        ws.protection.autoFilter = False # Cho phép dùng AutoFilter khi sheet bị khóa
+        # ws.protection.sheet = True
+        # ws.protection.password = 'duclam'
+        # ws.protection.autoFilter = False # Cho phép dùng AutoFilter khi sheet bị khóa
 
         # Styles (Same as normal export)
         title_font = Font(size=16, bold=True)
@@ -313,9 +313,9 @@ class SalaryKpiController(http.Controller):
         ws = wb.active
         ws.title = "Bang Cham Cong"
         ws.freeze_panes = 'F4' # Đóng băng 9 cột đầu và 3 hàng đầu
-        ws.protection.sheet = True
-        ws.protection.password = 'duclam'
-        ws.protection.autoFilter = False # Cho phép dùng AutoFilter khi sheet bị khóa
+        # ws.protection.sheet = True
+        # ws.protection.password = 'duclam'
+        # ws.protection.autoFilter = False # Cho phép dùng AutoFilter khi sheet bị khóa
 
 
         # Tiêu đề hàng 1
