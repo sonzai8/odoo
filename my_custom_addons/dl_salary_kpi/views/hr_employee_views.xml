@@ -27,6 +27,19 @@
                         </group>
                     </group>
                 </page>
+                <page string="Người phụ thuộc" name="dependents">
+                    <field name="dependent_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="name"/>
+                            <field name="birthday"/>
+                            <field name="relationship"/>
+                            <field name="dependent_number"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
 
         </field>

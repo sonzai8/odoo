@@ -43,6 +43,21 @@
               action="action_dl_salary_kpi_tax_import"
               sequence="2"/>
 
+    <menuitem id="menu_dl_dependent_root"
+              name="Quản lý người phụ thuộc"
+              parent="menu_dl_salary_kpi_root"
+              sequence="40"/>
+    <menuitem id="menu_dl_dependent_action"
+              name="Danh sách NPT"
+              parent="menu_dl_dependent_root"
+              action="action_dl_dependent"
+              sequence="1"/>
+    <menuitem id="menu_dl_dependent_import_menu"
+              name="Nhập Người Phụ Thuộc"
+              parent="menu_dl_dependent_root"
+              action="action_dl_dependent_import"
+              sequence="2"/>
+
     <!-- Menu Cấu hình -->
     <menuitem id="menu_dl_salary_kpi_config"
               name="Cấu hình"

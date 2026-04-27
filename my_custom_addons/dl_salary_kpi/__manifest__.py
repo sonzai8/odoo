@@ -15,9 +15,11 @@
         'views/hr_employee_views.xml',
         'wizard/dl_salary_kpi_import_views.xml',
         'wizard/dl_salary_kpi_tax_import_views.xml',
+        'wizard/dl_dependent_import_views.xml',
         'views/dl_salary_kpi_month_views.xml',
         'views/hr_employee_tax_views.xml',
         'views/dl_salary_kpi_bonus_views.xml',
+        'views/dl_dependent_views.xml',
         'views/menus.xml',
     ],
     'assets': {

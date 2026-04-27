@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_dl_salary_kpi_tax_import_form" model="ir.ui.view">
-        <field name="name">dl.salary.kpi.tax.import.form</field>
-        <field name="model">dl.salary.kpi.tax.import</field>
+    <record id="view_dl_dependent_import_form" model="ir.ui.view">
+        <field name="name">dl.dependent.import.form</field>
+        <field name="model">dl.dependent.import</field>
         <field name="arch" type="xml">
-            <form string="Nhập nhân viên thuế từ Excel">
+            <form string="Nhập người phụ thuộc từ Excel">
                 <field name="state" invisible="1"/>
                 <sheet>
                     <group invisible="state != 'init'">
@@ -34,9 +34,9 @@
         </field>
     </record>
 
-    <record id="action_dl_salary_kpi_tax_import" model="ir.actions.act_window">
-        <field name="name">Nhập nhân viên thuế</field>
-        <field name="res_model">dl.salary.kpi.tax.import</field>
+    <record id="action_dl_dependent_import" model="ir.actions.act_window">
+        <field name="name">Nhập người phụ thuộc</field>
+        <field name="res_model">dl.dependent.import</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>

@@ -661,3 +661,120 @@ class SalaryKpiController(http.Controller):
             ]
         )
 
+
+    @http.route('/dl_salary_kpi/export_dependents', type='http', auth='user')
+    def export_dependents(self, **kwargs):
+        import logging
+        _logger = logging.getLogger(__name__)
+        try:
+            dependents = request.env['dl.dependent'].search([], order='employee_id, name')
+            _logger.info(f"Exporting {len(dependents)} dependents...")
+            
+            output = io.BytesIO()
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Danh Sach Nguoi Phu Thuoc"
+
+            # Header
+            headers = [
+                "STT", "Tên nhân viên", "Mã số thuế nhân viên", "Họ và tên người phụ thuộc", 
+                "Quan hệ", "Mã số thuế NPT", "CCCD NPT", "Còn hiệu lực", "Ghi chú"
+            ]
+            
+            # Styles
+            header_font = Font(bold=True)
+            alignment = Alignment(horizontal='center', vertical='center')
+            header_fill = openpyxl.styles.PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
+            border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+            ws.row_dimensions[1].height = 30
+            for col, text in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=text)
+                cell.font = header_font
+                cell.alignment = alignment
+                cell.fill = header_fill
+                cell.border = border
+
+            # Widths
+            ws.column_dimensions['A'].width = 6
+            ws.column_dimensions['B'].width = 25
+            ws.column_dimensions['C'].width = 20
+            ws.column_dimensions['D'].width = 25
+            ws.column_dimensions['E'].width = 15
+            ws.column_dimensions['F'].width = 20
+            ws.column_dimensions['G'].width = 20
+            ws.column_dimensions['H'].width = 15
+            ws.column_dimensions['I'].width = 30
+
+            relationship_map = {
+                'child': 'Con',
+                'spouse': 'Vợ/Chồng',
+                'parent': 'Bố/Mẹ',
+                'sibling': 'Anh/Chị/Em',
+                'other': 'Khác'
+            }
+
+            # Create Hidden Sheet for Data Validation
+            ws_hidden = wb.create_sheet("DanhSachLoaiQuanHe")
+            ws_hidden.sheet_state = 'hidden'
+            relationships = ['Con', 'Vợ/Chồng', 'Bố/Mẹ', 'Anh/Chị/Em', 'Khác']
+            for i, rel in enumerate(relationships, 1):
+                ws_hidden.cell(row=i, column=1, value=rel)
+
+            # Data Validation
+            from openpyxl.worksheet.datavalidation import DataValidation
+            dv = DataValidation(type="list", formula1='=DanhSachLoaiQuanHe!$A$1:$A$5', allow_blank=True)
+            ws.add_data_validation(dv)
+            dv.add('E2:E1000')
+
+            # Data
+            for idx, dep in enumerate(dependents, 1):
+                row = idx + 1
+                ws.row_dimensions[row].height = 25
+                
+                data = [
+                    idx, 
+                    dep.employee_id.name or '', 
+                    dep.employee_id.dl_tax_id or '', 
+                    dep.name or '',
+                    relationship_map.get(dep.relationship, dep.relationship or ''),
+                    dep.dependent_number or '',
+                    dep.dependent_id_card or '',
+                    'X' if dep.active else '',
+                    dep.note or ''
+                ]
+                
+                for col, value in enumerate(data, 1):
+                    cell = ws.cell(row=row, column=col, value=value)
+                    cell.border = border
+                    cell.alignment = Alignment(vertical='center', horizontal='left' if col in [2, 4, 9] else 'center')
+                    
+                    if col in [3, 6, 7]: # MST NV, MST NPT, CCCD
+                        cell.number_format = '@'
+
+            # Table format
+            from openpyxl.worksheet.table import Table, TableStyleInfo
+            last_row = len(dependents) + 1
+            if last_row > 1:
+                table_range = f"A1:I{last_row}"
+                table = Table(displayName="DanhSachNguoiPhuThuoc", ref=table_range)
+                style = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
+                table.tableStyleInfo = style
+                ws.add_table(table)
+
+            wb.save(output)
+            output.seek(0)
+            
+            _logger.info("Export data generated successfully.")
+            filename = "Danh_Sach_Nguoi_Phu_Thuoc.xlsx"
+            return request.make_response(
+                output.getvalue(),
+                headers=[
+                    ('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+                    ('Content-Disposition', f'attachment; filename={filename}')
+                ]
+            )
+        except Exception as e:
+            _logger.error(f"Error exporting dependents: {e}", exc_info=True)
+            return request.make_response(f"Error: {str(e)}", status=500)
+

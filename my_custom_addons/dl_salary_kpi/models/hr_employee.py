@@ -12,3 +12,4 @@ class HrEmployee(models.Model):
     dl_tax_position = fields.Char(string='Chức vụ thuế')
     dl_tax_base_salary = fields.Float(string='Lương cơ bản thuế')
     dl_departure_date = fields.Date(string='Ngày nghỉ việc')
+    dependent_ids = fields.One2many('dl.dependent', 'employee_id', string='Người phụ thuộc')
