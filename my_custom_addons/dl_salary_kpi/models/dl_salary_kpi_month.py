@@ -1,8 +1,23 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-from calendar import monthrange
 from datetime import date
+from calendar import monthrange
+import base64
+import io
+import copy
+from odoo.tools import file_path
+import time
+import logging
+
+_logger = logging.getLogger(__name__)
+
+try:
+    from openpyxl import load_workbook
+    from openpyxl.cell.cell import MergedCell
+    from openpyxl.formula.translate import Translator
+except ImportError:
+    load_workbook = None
 
 class SalaryKpiMonth(models.Model):
     _name = 'dl.salary.kpi.month'
@@ -216,8 +231,15 @@ class SalaryKpiMonth(models.Model):
         return records
 
     def _auto_load_employees(self):
-        """Logic lấy toàn bộ nhân viên active và chấm công mặc định N (T2-T7)"""
-        hr_employees = self.env['hr.employee'].search([('active', '=', True)])
+        """Logic lấy toàn bộ nhân viên active (chưa nghỉ việc trước tháng này) và chấm công mặc định N (T2-T7)"""
+        first_day = self.date_month.replace(day=1)
+        domain = [
+            ('active', '=', True),
+            '|',
+            ('dl_departure_date', '=', False),
+            ('dl_departure_date', '>=', first_day)
+        ]
+        hr_employees = self.env['hr.employee'].search(domain)
         att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N')], limit=1)
         
         last_day = monthrange(self.date_month.year, self.date_month.month)[1]
@@ -245,78 +267,51 @@ class SalaryKpiMonth(models.Model):
         res = super().get_views(views, options)
         if 'form' in res['views']:
             from lxml import etree
-            from datetime import date
-            import calendar
-            
             arch = etree.fromstring(res['views']['form']['arch'])
             
-            # Lấy thông tin tháng từ context hoặc record hiện tại
-            # Vì get_views là static, ta dùng logic mặc định hoặc lấy từ default_date_month
-            # Thực tế: Khi người dùng mở form, Odoo gọi get_views.
-            # Ta có thể thử lấy tháng từ context.
-            ctx = self.env.context
-            date_month_str = ctx.get('default_date_month') or fields.Date.today().strftime('%Y-%m-01')
-            try:
-                d_m = fields.Date.from_string(date_month_str)
-            except:
-                d_m = fields.Date.today()
-                
-            weekday_map = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
-            year, month = d_m.year, d_m.month
-            
+            # Tiêu đề danh sách chỉ hiện số ngày để không bị lệch khi xem các tháng khác nhau
             for i in range(1, 32):
-                weekday_label = ""
-                is_sunday = False
-                try:
-                    d = date(year, month, i)
-                    weekday_label = f"{i:02d} - {weekday_map[d.weekday()]}"
-                    is_sunday = (d.weekday() == 6)
-                except ValueError:
-                    weekday_label = f"{i:02d}"
-
-                # Cập nhật Label cho cả công thường và OT
+                label = f"{i:02d}"
                 for field_name in [f"day_{i:02d}", f"ot_day_{i:02d}"]:
                     nodes = arch.xpath(f"//field[@name='{field_name}']")
                     for node in nodes:
-                        node.set('string', weekday_label)
-                        
-                        # Thêm class cho Chủ Nhật
-                        classes = node.get('class', '').split()
-                        if is_sunday:
-                            classes.append('kpi_sunday_col')
-                        node.set('class', ' '.join(set(classes)))
-                        
-                        # Decorations (chỉ cho công thường)
-                        if field_name.startswith('day_'):
-                            code_field = f"{field_name}_code"
-                            node.set('decoration-warning', f"{code_field} == 'CP'")
-                            node.set('decoration-danger', f"{code_field} in ['KP', 'Ô']")
-                            node.set('decoration-bf', f"{code_field} == 'ĐC'")
-                        
-                        # Chỉ cho phép chấm công làm thêm vào ngày Chủ Nhật
-                        if field_name.startswith('ot_day_'):
-                            if not is_sunday:
-                                node.set('readonly', '1')
-                                node.set('force_save', '1')
-
+                        node.set('string', label)
+            
             res['views']['form']['arch'] = etree.tostring(arch, encoding='unicode')
-
-
-
         return res
 
     def action_recompute_all_data(self):
         """Ép buộc tính toán lại toàn bộ dữ liệu thống kê và lương chi tiết."""
+        import time
+        t_start = time.time()
+        
+        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N')], limit=1)
+        
         for rec in self:
             # 1. Ép buộc Odoo tính toán lại các trường computed trong các dòng con
             if rec.line_ids:
-                # Tính toán lại tổng công (N, Đ, OT...) trước
+                t3 = time.time()
+                
+                # Tính toán lại tổng công
+                
+                # Tính toán lại tổng công
                 rec.line_ids._compute_totals()
-                # Sau đó tính toán lại lương dựa trên các con số tổng đã có
+                t4 = time.time()
+                _logger.info("=== BENCHMARK CHỐT CÔNG [%s]: _compute_totals mất %.2fs ===", rec.name, t4 - t3)
+                
                 rec.line_ids._compute_payroll_internal()
+                t5 = time.time()
+                _logger.info("=== BENCHMARK CHỐT CÔNG [%s]: _compute_payroll_internal mất %.2fs ===", rec.name, t5 - t4)
+            else:
+                t5 = time.time()
             
-            # 2. Tính toán lại thống kê nhanh trên phiếu tháng (Bảng tổng hợp ô công)
+            # 2. Tính toán lại thống kê nhanh
             rec._compute_quick_stats()
+            t6 = time.time()
+            _logger.info("=== BENCHMARK CHỐT CÔNG [%s]: _compute_quick_stats mất %.2fs ===", rec.name, t6 - t5)
+            
+        t_end = time.time()
+        _logger.info("=== BENCHMARK CHỐT CÔNG TỔNG CỘNG MẤT %.2fs ===", t_end - t_start)
         return True
 
     def action_lock_normal(self):
@@ -446,3 +441,167 @@ class SalaryKpiMonth(models.Model):
             if record.state != 'draft':
                 raise UserError(_("Bạn không thể xóa phiếu cân đối bảng công khi không ở trạng thái Dự thảo!"))
         return super(SalaryKpiMonth, self).unlink()
+
+    # --- LOGIC XUẤT BÁO CÁO LƯƠNG TRỰC TIẾP (KHÔNG POPUP) ---
+
+    def _safe_write(self, ws, row, col, value):
+        """Ghi dữ liệu an toàn vào ô, tránh ghi vào ô phụ của vùng gộp"""
+        cell = ws.cell(row=row, column=col)
+        if isinstance(cell, MergedCell):
+            for merged_range in ws.merged_cells.ranges:
+                if cell.coordinate in merged_range:
+                    master_cell = ws.cell(row=merged_range.min_row, column=merged_range.min_col)
+                    master_cell.value = value
+                    return
+        else:
+            cell.value = value
+
+    def _copy_row_formatting(self, ws, source_row, target_row):
+        """Sao chép định dạng và dịch công thức từ dòng nguồn sang dòng đích một cách triệt để"""
+        for col in range(1, ws.max_column + 1):
+            source_cell = ws.cell(row=source_row, column=col)
+            target_cell = ws.cell(row=target_row, column=col)
+
+            # 1. Sao chép giá trị hoặc dịch công thức
+            if source_cell.data_type == 'f':
+                target_cell.value = Translator(source_cell.value, origin=source_cell.coordinate).translate_formula(target_cell.coordinate)
+            else:
+                target_cell.value = source_cell.value
+
+            # 2. Sao chép toàn bộ định dạng (Styles)
+            if source_cell.has_style:
+                target_cell.font = copy.copy(source_cell.font)
+                target_cell.border = copy.copy(source_cell.border)
+                target_cell.fill = copy.copy(source_cell.fill)
+                target_cell.number_format = source_cell.number_format  # Number format là string, gán trực tiếp
+                target_cell.protection = copy.copy(source_cell.protection)
+                target_cell.alignment = copy.copy(source_cell.alignment)
+        
+        # 3. Sao chép chiều cao dòng
+        if ws.row_dimensions[source_row].height:
+            ws.row_dimensions[target_row].height = ws.row_dimensions[source_row].height
+
+    def action_export_salary_report(self):
+        """Hàm xuất báo cáo lương trực tiếp theo Skill Template 01"""
+        self.ensure_one()
+        if not load_workbook:
+            raise UserError(_("Thư viện openpyxl chưa được cài đặt."))
+
+        try:
+            template_path = file_path('dl_salary_kpi/static/src/templates/TEMPLATE_2026.xlsx')
+        except FileNotFoundError:
+            raise UserError(_("Không tìm thấy file mẫu Excel tại static/src/templates/TEMPLATE_2026.xlsx"))
+
+        t0 = time.time()
+        wb = load_workbook(template_path)
+        wb.calculation.fullCalcOnLoad = True
+        ws = wb.active
+        month_date = self.date_month
+        
+        t1 = time.time()
+        _logger.info("=== EXPORT LƯƠNG [%s]: Bước 1 - Tải Template mất %.2fs ===", self.name, t1 - t0)
+        
+        ws.title = f"Tháng {month_date.strftime('%m')} - năm {month_date.strftime('%Y')}"
+
+        # 1. Header
+        self._safe_write(ws, 3, 1, f"Tháng {month_date.strftime('%m')} năm {month_date.strftime('%Y')}")
+        self._safe_write(ws, 4, 7, self.dl_revenue)
+        self._safe_write(ws, 4, 11, int(month_date.strftime('%m')))
+        self._safe_write(ws, 4, 15, int(month_date.strftime('%Y')))
+
+        # 2. Data
+        current_row = 8
+        time_copy = 0.0
+        time_map = 0.0
+        
+        for i, line in enumerate(self.line_ids):
+            t_start_row = time.time()
+            if current_row > 8:
+                self._copy_row_formatting(ws, 8, current_row)
+            
+            t_after_copy = time.time()
+            time_copy += (t_after_copy - t_start_row)
+            
+            # Mapping
+            self._safe_write(ws, current_row, 1, i + 1)
+            self._safe_write(ws, current_row, 2, line.employee_id.dl_tax_id or '')
+            self._safe_write(ws, current_row, 3, line.employee_id.name)
+            birthday_str = line.employee_id.birthday.strftime('%d/%m/%Y') if line.employee_id.birthday else ''
+            self._safe_write(ws, current_row, 4, birthday_str)
+            self._safe_write(ws, current_row, 5, line.employee_id.identification_id or '')
+            gender = 'Nam' if line.employee_id.sex == 'male' else 'Nữ' if line.employee_id.sex == 'female' else ''
+            self._safe_write(ws, current_row, 6, gender)
+            self._safe_write(ws, current_row, 7, line.employee_id.dl_tax_department_id.name or '')
+            self._safe_write(ws, current_row, 8, line.employee_id.dl_tax_position or '')
+            self._safe_write(ws, current_row, 9, line.employee_id.dl_tax_base_salary or 0)
+
+            from calendar import monthrange
+            from datetime import date
+            last_day = monthrange(month_date.year, month_date.month)[1]
+
+            for day in range(1, 32):
+                # 1. Ghi công thường (Vùng J -> AN | Cột 10 -> 40)
+                col_idx = 9 + day
+                att_type = getattr(line, f'day_{day:02d}')
+                self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
+                
+                # 2. Ghi công làm thêm (Vùng AT -> BX | Cột 46 -> 76)
+                # Yêu cầu: CHỈ ghi giá trị vào ngày Chủ Nhật, các ngày khác để nguyên cho công thức Excel chạy
+                if day <= last_day:
+                    d = date(month_date.year, month_date.month, day)
+                    if d.weekday() == 6: # Ngày Chủ nhật
+                        print("xin thong bao ngay chu nhat: ", d)
+                        ot_att = getattr(line, f'ot_day_{day:02d}')
+                        col_ot = 45 + day
+                        self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
+
+            if line.employee_id.sex == 'female':
+                self._safe_write(ws, current_row, 95, self.dl_women_allowance)
+            else:
+                self._safe_write(ws, current_row, 95, 0)
+            
+            self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
+            
+            # DG (111) Lương KPI: Tạm thời để trống
+            self._safe_write(ws, current_row, 111, '')
+            
+            # EE (135) Thưởng cố định năm
+            self._safe_write(ws, current_row, 135, line.payroll_annual_bonus or 0)
+
+            # EH (138) Số người phụ thuộc
+            total_dependents = len(line.employee_id.dependent_ids.filtered(lambda d: d.active))
+            self._safe_write(ws, current_row, 138, total_dependents)
+
+            t_after_map = time.time()
+            time_map += (t_after_map - t_after_copy)
+
+            current_row += 1
+
+        t2 = time.time()
+        _logger.info("=== EXPORT LƯƠNG [%s]: Bước 2 - Đổ %d dòng dữ liệu mất %.2fs ===", self.name, len(self.line_ids), t2 - t1)
+        _logger.info("    -> Thời gian Copy Format: %.2fs", time_copy)
+        _logger.info("    -> Thời gian Map Dữ liệu: %.2fs", time_map)
+
+        # 3. Export
+        output = io.BytesIO()
+        wb.save(output)
+        file_data = base64.b64encode(output.getvalue())
+        output.close()
+        
+        t3 = time.time()
+        _logger.info("=== EXPORT LƯƠNG [%s]: Bước 3 - Lưu file Excel mất %.2fs ===", self.name, t3 - t2)
+        _logger.info("=== EXPORT LƯƠNG [%s]: TỔNG THỜI GIAN MẤT %.2fs ===", self.name, t3 - t0)
+
+        filename = f"BC_LUONG_KPI_{month_date.strftime('%m_%Y')}.xlsx"
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'type': 'binary',
+            'datas': file_data,
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'new',
+        }

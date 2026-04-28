@@ -2,7 +2,7 @@
 from datetime import date
 from calendar import monthrange
 
-def calculate_attendance_totals(rec):
+def calculate_attendance_totals(rec, att_map=None):
     """
     Tính tổng các loại công từ ma trận chấm công 1-31.
     Trả về một dict chứa các giá trị tổng hợp.
@@ -14,9 +14,9 @@ def calculate_attendance_totals(rec):
     
     for i in range(1, 32):
         # 1. Xử lý công thường
-        att = getattr(rec, f'day_{i:02d}')
-        if att:
-            code = att.code
+        att_id = rec[f'day_{i:02d}'].id if rec[f'day_{i:02d}'] else False
+        if att_id:
+            code = att_map[att_id]['code'] if att_map else rec[f'day_{i:02d}'].code
             if code == 'N': n += 1.0
             elif code in ['N/2']: n += 0.5
             elif code == 'Đ': d += 1.0
@@ -29,25 +29,35 @@ def calculate_attendance_totals(rec):
             elif code == 'CÔ': co += 1.0
         
         # 2. Xử lý làm thêm giờ (OT)
-        ot_att = getattr(rec, f'ot_day_{i:02d}')
-        if ot_att:
-            code = ot_att.code or ""
-            hours = ot_att.weight * 10
+        ot_id = rec[f'ot_day_{i:02d}'].id if rec[f'ot_day_{i:02d}'] else False
+        if ot_id:
+            if att_map:
+                code = att_map[ot_id]['code'] or ""
+                hours = att_map[ot_id]['weight'] * 10
+                ot_type = att_map[ot_id]['ot_type']
+            else:
+                ot_att = rec[f'ot_day_{i:02d}']
+                code = ot_att.code or ""
+                hours = ot_att.weight * 10
+                ot_type = ot_att.ot_type
             
-            if ot_att.ot_type == 'day':
+            if ot_type == 'day':
                 ot_n += hours
                 if code == '0.5N': ot_n_normal += hours
                 elif code in ['CNN', 'CNN/2']: ot_n_sun += hours
                 elif code == 'LN': ot_n_holiday += hours
-            elif ot_att.ot_type == 'night':
+            elif ot_type == 'night':
                 ot_d += hours
                 if code == '0.5Đ':
-                    if not att: # Không làm ca ngày
+                    if not att_id: # Không làm ca ngày
                         ot_d_200 += hours
                     else:
                         ot_d_normal += hours
                 elif code in ['CNĐ', 'CNĐ/2', 'CND/2']: ot_d_sun += hours
                 elif code == 'LĐ': ot_d_holiday += hours
+
+    # Logic Thưởng Chuyên Cần (Bonus Paid Leave)
+    bonus_p_day = 1.0 if (n + d > 20) else 0.0
 
     return {
         'total_n': n, 'total_d': d, 'total_p': p, 'total_pl': pl,
@@ -56,7 +66,8 @@ def calculate_attendance_totals(rec):
         'ot_n_normal': ot_n_normal, 'ot_d_normal': ot_d_normal,
         'ot_n_sun': ot_n_sun, 'ot_d_sun': ot_d_sun,
         'ot_n_holiday': ot_n_holiday, 'ot_d_holiday': ot_d_holiday,
-        'ot_d_200': ot_d_200
+        'ot_d_200': ot_d_200,
+        'bonus_p_day': bonus_p_day
     }
 
 def get_attendance_summary_html(rec):
@@ -86,7 +97,13 @@ def get_attendance_summary_html(rec):
     else:
         for code, count in sorted(ot_counts.items()):
             html += f"<li>{code}: {count} ngày</li>"
-    html += "</ul></div></div>"
+    html += "</ul></div>"
+    
+    # Hiển thị Thưởng chuyên cần nếu có
+    if getattr(rec, 'bonus_p_day', 0) > 0:
+        html += "<div class='col-12 mt-3'><strong>Thưởng chuyên cần: </strong><span class='badge text-bg-success'>+1 ngày phép (Hưởng 100% lương)</span></div>"
+        
+    html += "</div>"
     return html
 
 def get_day_metadata(date_month):

@@ -30,24 +30,50 @@ def calculate_annual_bonuses(rec):
         
     return b0803, b3004, b0209, btet, bother
 
+POSITION_GROUP_MAP = {
+    # QLCC
+    'CV': 'QLCC', 'KTT': 'QLCC', 'QL': 'QLCC', 'QĐ': 'QLCC',
+    'TL': 'QLCC', 'PGĐ': 'QLCC', 'GĐ': 'QLCC',
+    # NVGT
+    'NV': 'NVGT', 'KT': 'NVGT', 'TK': 'NVGT',
+    # NVSX
+    'CN': 'NVSX', 'LX': 'NVSX',
+}
+
 def calculate_revenue_productivity_bonuses(rec):
-    """Tính toán thưởng doanh thu & năng suất theo QĐ 3108"""
+    """Tính toán thưởng doanh thu & năng suất theo QĐ mới nhất"""
     total_work_days = rec.total_n + rec.total_d
     revenue = rec.month_id.dl_revenue or 0
+    
+    position = rec.employee_id.dl_tax_position or ''
+    group = POSITION_GROUP_MAP.get(position, '')
 
     rev_bonus_base = 0
-    if revenue > 70_000_000_000: rev_bonus_base = 3_500_000
-    elif revenue > 50_000_000_000: rev_bonus_base = 3_000_000
-    elif revenue > 30_000_000_000: rev_bonus_base = 2_300_000
-    elif revenue > 20_000_000_000: rev_bonus_base = 2_000_000
+    prod_bonus_base = 0
     
+    # 1. Tính mức Thưởng Doanh Thu (Áp dụng chung cho TẤT CẢ)
+    if revenue > 70_000_000_000:
+        rev_bonus_base = 3_500_000
+    elif revenue > 50_000_000_000:
+        rev_bonus_base = 3_000_000
+    elif revenue > 30_000_000_000:
+        rev_bonus_base = 2_300_000
+    elif revenue > 20_000_000_000:
+        rev_bonus_base = 2_000_000
+        
     revenue_bonus = (rev_bonus_base * total_work_days) / 26.0
-    productivity_bonus = 0.0 # Hiện tại chưa dùng theo yêu cầu mới nhất
-    
-    print("Revenue Bonus: ", revenue_bonus)
-    print("Productivity Bonus: ", productivity_bonus)
 
-    return revenue_bonus, productivity_bonus, rev_bonus_base
+    # 2. Tính mức Thưởng Năng Suất (Theo Nhóm chức vụ, áp dụng cho TẤT CẢ)
+    if group == 'QLCC':
+        prod_bonus_base = 2_000_000
+    elif group == 'NVGT':
+        prod_bonus_base = 1_500_000
+    elif group == 'NVSX':
+        prod_bonus_base = 1_000_000
+        
+    productivity_bonus = (prod_bonus_base * total_work_days) / 26.0
+
+    return revenue_bonus, productivity_bonus, rev_bonus_base, prod_bonus_base
 
 def calculate_detailed_wages(rec):
     """Tính toán lương chi tiết dựa trên mã công và giờ làm việc"""
@@ -99,4 +125,22 @@ def calculate_detailed_wages(rec):
                 elif code in ['CNĐ', 'CNĐ/2']: wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
                 elif code == 'LĐ': wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
                 
+    # Thưởng chuyên cần: Được cộng thẳng vào lương ca ngày (như 1 ngày P)
+    if getattr(rec, 'bonus_p_day', 0.0):
+        wages['wage_day'] += rec.bonus_p_day * 8.0 * hourly_rate
+        
     return wages
+
+def calculate_deductions(rec):
+    """Tính toán các khoản khấu trừ bảo hiểm & thuế TNCN"""
+    base_insurance = rec.dl_tax_base_salary or 0.0
+    
+    bhxh = base_insurance * 0.08
+    bhyt = base_insurance * 0.015
+    bhtn = base_insurance * 0.01
+    tncn = 0.0  # Tạm thời để bằng 0 theo yêu cầu
+    
+    total_insurance = bhxh + bhyt + bhtn
+    total_deduction = total_insurance + tncn
+    
+    return bhxh, bhyt, bhtn, tncn, total_insurance, total_deduction

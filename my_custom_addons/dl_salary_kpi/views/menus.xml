@@ -33,12 +33,12 @@
               action="action_dl_salary_kpi_employee_tax"
               sequence="30"/>
     <menuitem id="menu_dl_salary_kpi_employee_tax_action"
-              name="DS nhân viên thuế"
+              name="DS nhân viên"
               parent="menu_dl_salary_kpi_tree"
               action="action_dl_salary_kpi_employee_tax"
               sequence="1"/>
     <menuitem id="menu_dl_salary_kpi_tax_import_action"
-              name="Nhập nhân viên thuế"
+              name="Nhập nhân viên"
               parent="menu_dl_salary_kpi_tree"
               action="action_dl_salary_kpi_tax_import"
               sequence="2"/>

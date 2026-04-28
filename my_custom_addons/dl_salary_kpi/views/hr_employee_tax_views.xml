@@ -15,6 +15,7 @@
                 <field name="dl_tax_department_id"/>
                 <field name="dl_tax_position" width="120px"/>
                 <field name="dl_tax_base_salary" sum="Tổng lương thuế"/>
+                <field name="dl_departure_date" optional="show"/>
             </list>
         </field>
     </record>

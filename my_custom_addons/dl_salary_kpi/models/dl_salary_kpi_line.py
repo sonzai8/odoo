@@ -55,99 +55,99 @@ class SalaryKpiLine(models.Model):
     day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31', domain="[('apply_to', 'in', ['normal', 'both'])]")
 
     # Các trường ẩn để xác định Chủ Nhật và Tuần (dùng cho giao diện)
-    day_01_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_01_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_01_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_02_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_02_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_02_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_03_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_03_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_03_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_04_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_04_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_04_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_05_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_05_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_05_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_06_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_06_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_06_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_07_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_07_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_07_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_08_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_08_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_08_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_09_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_09_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_09_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_10_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_10_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_10_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_11_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_11_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_11_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_12_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_12_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_12_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_13_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_13_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_13_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_14_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_14_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_14_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_15_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_15_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_15_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_16_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_16_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_16_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_17_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_17_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_17_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_18_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_18_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_18_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_19_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_19_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_19_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_20_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_20_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_20_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_21_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_21_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_21_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_22_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_22_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_22_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_23_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_23_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_23_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_24_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_24_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_24_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_25_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_25_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_25_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_26_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_26_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_26_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_27_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_27_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_27_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_28_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_28_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_28_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_29_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_29_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_29_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_30_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_30_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_30_row = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_31_is_sunday = fields.Boolean(compute='_compute_day_metadata', store=True)
-    day_31_week = fields.Integer(compute='_compute_day_metadata', store=True)
-    day_31_row = fields.Integer(compute='_compute_day_metadata', store=True)
+    day_01_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_01_week = fields.Integer(compute='_compute_day_metadata')
+    day_01_row = fields.Integer(compute='_compute_day_metadata')
+    day_02_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_02_week = fields.Integer(compute='_compute_day_metadata')
+    day_02_row = fields.Integer(compute='_compute_day_metadata')
+    day_03_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_03_week = fields.Integer(compute='_compute_day_metadata')
+    day_03_row = fields.Integer(compute='_compute_day_metadata')
+    day_04_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_04_week = fields.Integer(compute='_compute_day_metadata')
+    day_04_row = fields.Integer(compute='_compute_day_metadata')
+    day_05_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_05_week = fields.Integer(compute='_compute_day_metadata')
+    day_05_row = fields.Integer(compute='_compute_day_metadata')
+    day_06_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_06_week = fields.Integer(compute='_compute_day_metadata')
+    day_06_row = fields.Integer(compute='_compute_day_metadata')
+    day_07_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_07_week = fields.Integer(compute='_compute_day_metadata')
+    day_07_row = fields.Integer(compute='_compute_day_metadata')
+    day_08_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_08_week = fields.Integer(compute='_compute_day_metadata')
+    day_08_row = fields.Integer(compute='_compute_day_metadata')
+    day_09_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_09_week = fields.Integer(compute='_compute_day_metadata')
+    day_09_row = fields.Integer(compute='_compute_day_metadata')
+    day_10_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_10_week = fields.Integer(compute='_compute_day_metadata')
+    day_10_row = fields.Integer(compute='_compute_day_metadata')
+    day_11_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_11_week = fields.Integer(compute='_compute_day_metadata')
+    day_11_row = fields.Integer(compute='_compute_day_metadata')
+    day_12_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_12_week = fields.Integer(compute='_compute_day_metadata')
+    day_12_row = fields.Integer(compute='_compute_day_metadata')
+    day_13_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_13_week = fields.Integer(compute='_compute_day_metadata')
+    day_13_row = fields.Integer(compute='_compute_day_metadata')
+    day_14_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_14_week = fields.Integer(compute='_compute_day_metadata')
+    day_14_row = fields.Integer(compute='_compute_day_metadata')
+    day_15_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_15_week = fields.Integer(compute='_compute_day_metadata')
+    day_15_row = fields.Integer(compute='_compute_day_metadata')
+    day_16_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_16_week = fields.Integer(compute='_compute_day_metadata')
+    day_16_row = fields.Integer(compute='_compute_day_metadata')
+    day_17_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_17_week = fields.Integer(compute='_compute_day_metadata')
+    day_17_row = fields.Integer(compute='_compute_day_metadata')
+    day_18_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_18_week = fields.Integer(compute='_compute_day_metadata')
+    day_18_row = fields.Integer(compute='_compute_day_metadata')
+    day_19_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_19_week = fields.Integer(compute='_compute_day_metadata')
+    day_19_row = fields.Integer(compute='_compute_day_metadata')
+    day_20_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_20_week = fields.Integer(compute='_compute_day_metadata')
+    day_20_row = fields.Integer(compute='_compute_day_metadata')
+    day_21_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_21_week = fields.Integer(compute='_compute_day_metadata')
+    day_21_row = fields.Integer(compute='_compute_day_metadata')
+    day_22_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_22_week = fields.Integer(compute='_compute_day_metadata')
+    day_22_row = fields.Integer(compute='_compute_day_metadata')
+    day_23_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_23_week = fields.Integer(compute='_compute_day_metadata')
+    day_23_row = fields.Integer(compute='_compute_day_metadata')
+    day_24_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_24_week = fields.Integer(compute='_compute_day_metadata')
+    day_24_row = fields.Integer(compute='_compute_day_metadata')
+    day_25_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_25_week = fields.Integer(compute='_compute_day_metadata')
+    day_25_row = fields.Integer(compute='_compute_day_metadata')
+    day_26_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_26_week = fields.Integer(compute='_compute_day_metadata')
+    day_26_row = fields.Integer(compute='_compute_day_metadata')
+    day_27_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_27_week = fields.Integer(compute='_compute_day_metadata')
+    day_27_row = fields.Integer(compute='_compute_day_metadata')
+    day_28_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_28_week = fields.Integer(compute='_compute_day_metadata')
+    day_28_row = fields.Integer(compute='_compute_day_metadata')
+    day_29_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_29_week = fields.Integer(compute='_compute_day_metadata')
+    day_29_row = fields.Integer(compute='_compute_day_metadata')
+    day_30_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_30_week = fields.Integer(compute='_compute_day_metadata')
+    day_30_row = fields.Integer(compute='_compute_day_metadata')
+    day_31_is_sunday = fields.Boolean(compute='_compute_day_metadata')
+    day_31_week = fields.Integer(compute='_compute_day_metadata')
+    day_31_row = fields.Integer(compute='_compute_day_metadata')
 
     # 35 Virtual fields for 5 weeks (Mon-Sun grid)
     v01 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v01')
@@ -290,6 +290,34 @@ class SalaryKpiLine(models.Model):
     v35_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v35_ot')
     v35_label = fields.Char(compute='_compute_virtual_days')
     v35_sun = fields.Boolean(compute='_compute_virtual_days')
+    v36 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v36')
+    v36_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v36_ot')
+    v36_label = fields.Char(compute='_compute_virtual_days')
+    v36_sun = fields.Boolean(compute='_compute_virtual_days')
+    v37 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v37')
+    v37_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v37_ot')
+    v37_label = fields.Char(compute='_compute_virtual_days')
+    v37_sun = fields.Boolean(compute='_compute_virtual_days')
+    v38 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v38')
+    v38_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v38_ot')
+    v38_label = fields.Char(compute='_compute_virtual_days')
+    v38_sun = fields.Boolean(compute='_compute_virtual_days')
+    v39 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v39')
+    v39_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v39_ot')
+    v39_label = fields.Char(compute='_compute_virtual_days')
+    v39_sun = fields.Boolean(compute='_compute_virtual_days')
+    v40 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v40')
+    v40_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v40_ot')
+    v40_label = fields.Char(compute='_compute_virtual_days')
+    v40_sun = fields.Boolean(compute='_compute_virtual_days')
+    v41 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v41')
+    v41_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v41_ot')
+    v41_label = fields.Char(compute='_compute_virtual_days')
+    v41_sun = fields.Boolean(compute='_compute_virtual_days')
+    v42 = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v42')
+    v42_ot = fields.Many2one('dl.salary.kpi.attendance.type', compute='_compute_virtual_days', inverse='_inverse_v42_ot')
+    v42_label = fields.Char(compute='_compute_virtual_days')
+    v42_sun = fields.Boolean(compute='_compute_virtual_days')
 
     # Các trường liên kết để lấy mã công (dùng cho decoration trên web)
     day_01_code = fields.Char(related='day_01.code', store=True)
@@ -389,6 +417,9 @@ class SalaryKpiLine(models.Model):
     total_ot_d_holiday = fields.Float(string='Giờ LT Lễ (Đêm)', compute='_compute_totals', store=True)
 
     # Các trường Tổng hợp Công - Lương (Payroll Summary)
+    bonus_p_day = fields.Float(string='Thưởng chuyên cần', compute='_compute_totals', store=True, help="Nếu làm trên 20 công (Ngày + Đêm) sẽ được tặng 1 công phép.")
+    total_attendance_month = fields.Float(string='Tổng công trong tháng', compute='_compute_totals', store=True, help="Tổng công ngày + đêm + công phép thưởng")
+    
     payroll_n_ca_ngay = fields.Float(string='Công thường ca ngày', compute='_compute_totals', store=True)
     payroll_d_gio_ban_ngay = fields.Float(string='Giờ ca đêm tính ngày', compute='_compute_totals', store=True)
     payroll_nghi_luong = fields.Float(string='Nghỉ hưởng 100% lương', compute='_compute_totals', store=True)
@@ -413,9 +444,17 @@ class SalaryKpiLine(models.Model):
 
     payroll_annual_bonus = fields.Monetary(string='Tổng thưởng năm', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     payroll_revenue_bonus = fields.Monetary(string='Thưởng doanh thu', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Thưởng doanh thu thực tế = (Mức thưởng theo doanh thu tháng * Số ngày làm thực tế) / 26")
-    payroll_productivity_bonus = fields.Monetary(string='Thưởng năng suất', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_productivity_bonus = fields.Monetary(string='Thưởng Năng Suất', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_total_rev_prod_bonus = fields.Monetary(string='Tổng thưởng DT & Năng Suất', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     payroll_total_bonus = fields.Monetary(string='Tổng trợ cấp & thưởng năm', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng các khoản trợ cấp & thưởng năm = Ăn ca + Phụ cấp phụ nữ + Tổng thưởng năm (lễ/tết)")
-    payroll_total_regime_income = fields.Monetary(string='Tổng thu nhập chế độ', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập chế độ = Lương cơ bản lý thuyết + Phụ cấp phụ nữ + Hỗ trợ ăn ca + Thưởng doanh thu lý thuyết (mức 26 ngày)")
+    
+    # --- CÁC KHOẢN THEO CHẾ ĐỘ (LÝ THUYẾT 26 NGÀY) ---
+    payroll_regime_meal_allowance = fields.Monetary(string='Hỗ trợ ăn ca (Chế độ)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_regime_women_allowance = fields.Monetary(string='Phụ cấp phụ nữ (Chế độ)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_regime_revenue_bonus = fields.Monetary(string='Thưởng doanh thu (Chế độ)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_regime_productivity_bonus = fields.Monetary(string='Thưởng Năng Suất (Chế độ)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_regime_total_rev_prod_bonus = fields.Monetary(string='Tổng thưởng DT & Năng Suất (Chế độ)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_total_regime_income = fields.Monetary(string='Tổng thu nhập chế độ', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Lương cơ bản + Phụ cấp phụ nữ + Hỗ trợ ăn ca + Thưởng doanh thu/Năng suất (mức 26 ngày)")
 
     # --- CÁC KHOẢN LƯƠNG CHI TIẾT ---
     payroll_wage_day = fields.Monetary(string='Lương ca ngày', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Lương ca ngày = (Số công ca ngày thường N + Số ngày nghỉ hưởng lương P, PL) * Đơn giá lương giờ")
@@ -430,6 +469,15 @@ class SalaryKpiLine(models.Model):
     
     payroll_total_wage = fields.Monetary(string='Tổng lương', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng lương = Tổng các khoản lương chi tiết (ngày, đêm, tăng ca...) + Thưởng doanh thu thực tế")
     payroll_total_actual_income = fields.Monetary(string='Tổng thu nhập thực tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công)")
+
+    # --- CÁC KHOẢN KHẤU TRỪ ---
+    payroll_deduction_bhxh = fields.Monetary(string='BHXH (8%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_deduction_bhyt = fields.Monetary(string='BHYT (1.5%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_deduction_bhtn = fields.Monetary(string='BHTN (1%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_deduction_tncn = fields.Monetary(string='Thuế TNCN', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_total_insurance_deduction = fields.Monetary(string='Tổng cộng trừ bảo hiểm', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_total_deduction = fields.Monetary(string='Tổng các khoản trừ', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_net_salary = fields.Monetary(string='Thực lĩnh', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
 
     currency_id = fields.Many2one('res.currency', related='month_id.currency_id', string='Tiền tệ')
 
@@ -447,6 +495,7 @@ class SalaryKpiLine(models.Model):
             'total_ot_d_sun': 0, 'total_ot_n_holiday': 0, 'total_ot_d_holiday': 0,
             # Payroll Summary
             'payroll_n_ca_ngay': 0, 'payroll_d_gio_ban_ngay': 0, 'payroll_nghi_luong': 0,
+            'bonus_p_day': 0, 'total_attendance_month': 0,
             'payroll_ot_n_150': 0, 'payroll_ot_d_130': 0, 'payroll_ot_d_200': 0, 'payroll_ot_d_sun_300': 0,
             # Thu nhập & Phụ cấp
             'payroll_meal_allowance': 0, 'payroll_women_allowance': 0,
@@ -470,38 +519,47 @@ class SalaryKpiLine(models.Model):
                  'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
     def _compute_totals(self):
         from . import attendance_logic
+        if not self:
+            return
+            
+        # Tải trước toàn bộ mã công vào RAM để tránh N+1 Query
+        att_types = self.env['dl.salary.kpi.attendance.type'].search([])
+        att_map = {t.id: {'code': t.code, 'weight': t.weight, 'ot_type': t.ot_type} for t in att_types}
+        
         for rec in self:
-            res = attendance_logic.calculate_attendance_totals(rec)
-            print("Res: ", res)
-            # Gán kết quả vào các trường tổng hợp
-            rec.total_n = res['total_n']
-            rec.total_d = res['total_d']
-            rec.total_p = res['total_p']
-            rec.total_pl = res['total_pl']
-            rec.total_kp = res['total_kp']
-            rec.total_o = res['total_o']
-            rec.total_dc = res['total_dc']
-            rec.total_co = res['total_co']
+            res = attendance_logic.calculate_attendance_totals(rec, att_map=att_map)
             
-            rec.total_ot_n = res['ot_n']
-            rec.total_ot_d = res['ot_d']
-            rec.total_ot_all = res['ot_all']
-            
-            rec.total_ot_n_normal = res['ot_n_normal']
-            rec.total_ot_d_normal = res['ot_d_normal']
-            rec.total_ot_n_sun = res['ot_n_sun']
-            rec.total_ot_d_sun = res['ot_d_sun']
-            rec.total_ot_n_holiday = res['ot_n_holiday']
-            rec.total_ot_d_holiday = res['ot_d_holiday']
-            
-            # Tính toán cho Payroll Summary
-            rec.payroll_n_ca_ngay = res['total_n']
-            rec.payroll_d_gio_ban_ngay = round(res['total_d'] * 8 * 0.3125, 1)
-            rec.payroll_nghi_luong = res['total_pl'] + res['total_p']
-            rec.payroll_ot_n_150 = res['ot_n_normal']
-            rec.payroll_ot_d_130 = res['ot_d_normal']
-            rec.payroll_ot_d_200 = res['ot_d_200']
-            rec.payroll_ot_d_sun_300 = res['ot_d_sun']
+            # Gán kết quả vào các trường tổng hợp (đẩy 1 lần vào cache bằng update)
+            rec.update({
+                'total_n': res['total_n'],
+                'total_d': res['total_d'],
+                'total_p': res['total_p'],
+                'total_pl': res['total_pl'],
+                'total_kp': res['total_kp'],
+                'total_o': res['total_o'],
+                'total_dc': res['total_dc'],
+                'total_co': res['total_co'],
+                'total_ot_n': res['ot_n'],
+                'total_ot_d': res['ot_d'],
+                'total_ot_all': res['ot_all'],
+                'total_ot_n_normal': res['ot_n_normal'],
+                'total_ot_d_normal': res['ot_d_normal'],
+                'total_ot_n_sun': res['ot_n_sun'],
+                'total_ot_d_sun': res['ot_d_sun'],
+                'total_ot_n_holiday': res['ot_n_holiday'],
+                'total_ot_d_holiday': res['ot_d_holiday'],
+                
+                # Tính toán cho Payroll Summary
+                'bonus_p_day': res['bonus_p_day'],
+                'total_attendance_month': res['total_n'] + res['total_d'] + res['bonus_p_day'],
+                'payroll_n_ca_ngay': res['total_n'],
+                'payroll_d_gio_ban_ngay': round(res['total_d'] * 8 * 0.3125, 1),
+                'payroll_nghi_luong': res['total_pl'] + res['total_p'] + res['bonus_p_day'],
+                'payroll_ot_n_150': res['ot_n_normal'],
+                'payroll_ot_d_130': res['ot_d_normal'],
+                'payroll_ot_d_200': res['ot_d_200'],
+                'payroll_ot_d_sun_300': res['ot_d_sun']
+            })
 
     @api.depends('month_id.dl_revenue', 'month_id.dl_production_volume', 'month_id.dl_meal_allowance', 
                  'month_id.dl_women_allowance', 'month_id.bonus_line_ids', 'employee_id.sex', 
@@ -516,51 +574,95 @@ class SalaryKpiLine(models.Model):
                  'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
     def _compute_payroll_internal(self):
         from . import payroll_logic
-        for rec in self:
+        if not self:
+            return
             
+        # Tải trước (Prefetch) toàn bộ nhân viên và dữ liệu cấu hình tháng bằng 1 query
+        self.mapped('employee_id.dependent_ids')
+        self.mapped('month_id')
+        
+        for rec in self:
             # 1. Hỗ trợ & Phụ cấp
-            rec.payroll_meal_allowance, rec.payroll_women_allowance = payroll_logic.calculate_allowances(rec)
+            meal_allowance, women_allowance = payroll_logic.calculate_allowances(rec)
             
             # 2. Thưởng cố định năm
             b0803, b3004, b0209, btet, bother = payroll_logic.calculate_annual_bonuses(rec)
-            rec.payroll_bonus_0803 = b0803
-            rec.payroll_bonus_3004 = b3004
-            rec.payroll_bonus_0209 = b0209
-            rec.payroll_bonus_tet_dl = btet
-            rec.payroll_bonus_other = bother
-            rec.payroll_annual_bonus = b0803 + b3004 + b0209 + btet + bother
+            annual_bonus = b0803 + b3004 + b0209 + btet + bother
             
             # 3. Thưởng doanh thu & Năng suất (Theo chính sách QĐ 3108)
-            rec.payroll_revenue_bonus, rec.payroll_productivity_bonus, rev_bonus_base = payroll_logic.calculate_revenue_productivity_bonuses(rec)
+            revenue_bonus, productivity_bonus, rev_bonus_base, prod_bonus_base = payroll_logic.calculate_revenue_productivity_bonuses(rec)
             
             # Tổng trợ cấp & thưởng năm = Ăn ca + Phụ cấp phụ nữ + Thưởng năm
-            rec.payroll_total_bonus = rec.payroll_meal_allowance + rec.payroll_women_allowance + rec.payroll_annual_bonus
+            total_bonus = meal_allowance + women_allowance + annual_bonus
             
-            # Tổng thu nhập chế độ = Lương cơ bản lý thuyết + Phụ cấp phụ nữ + Ăn ca + Thưởng doanh thu lý thuyết
-            rec.payroll_total_regime_income = (
+            # --- TÍNH TOÁN LƯƠNG CHẾ ĐỘ (THEO LÝ THUYẾT 26 CÔNG) ---
+            meal_allowance_regime = rec.month_id.dl_meal_allowance or 0.0
+            is_female = rec.employee_id.sex == 'female'
+            women_allowance_regime = rec.month_id.dl_women_allowance if is_female else 0.0
+            
+            # Tổng thu nhập chế độ = Lương cơ bản lý thuyết + Phụ cấp phụ nữ + Ăn ca + Thưởng doanh thu lý thuyết + Thưởng NS lý thuyết
+            total_regime_income = (
                 rec.dl_tax_base_salary + 
-                rec.payroll_women_allowance + 
-                rec.payroll_meal_allowance + 
-                rev_bonus_base
+                women_allowance_regime + 
+                meal_allowance_regime + 
+                rev_bonus_base +
+                prod_bonus_base
             )
 
             # 4. Tính toán lương chi tiết
             wages = payroll_logic.calculate_detailed_wages(rec)
-            rec.payroll_wage_day = wages['wage_day']
-            rec.payroll_wage_day_150 = wages['wage_day_150']
-            rec.payroll_wage_night_130 = wages['wage_night_130']
-            rec.payroll_wage_night_200 = wages['wage_night_200']
-            rec.payroll_wage_night_210 = wages['wage_night_210']
-            rec.payroll_wage_night_sun_270 = wages['wage_night_sun_270']
-            rec.payroll_wage_day_sun_200 = wages['wage_day_sun_200']
-            rec.payroll_wage_day_holiday_300 = wages['wage_day_holiday_300']
-            rec.payroll_wage_night_holiday_390 = wages['wage_night_holiday_390']
             
-            # Tổng lương = Tổng các khoản lương chi tiết + Thưởng doanh thu thực tế
-            rec.payroll_total_wage = sum(wages.values()) + rec.payroll_revenue_bonus
+            # Tổng lương = Tổng các khoản lương chi tiết + Thưởng doanh thu thực tế + Thưởng năng suất thực tế
+            total_wage = sum(wages.values()) + revenue_bonus + productivity_bonus
             
             # Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế
-            rec.payroll_total_actual_income = rec.payroll_total_wage + rec.payroll_meal_allowance + rec.payroll_women_allowance
+            total_actual_income = total_wage + meal_allowance + women_allowance
+
+            # 5. Khấu trừ & Thực lĩnh
+            bhxh, bhyt, bhtn, tncn, total_insurance, total_deduction = payroll_logic.calculate_deductions(rec)
+            net_salary = total_actual_income - total_deduction
+
+            # Đẩy tất cả dữ liệu vào cache một lần bằng update
+            rec.update({
+                'payroll_meal_allowance': meal_allowance,
+                'payroll_women_allowance': women_allowance,
+                'payroll_regime_meal_allowance': meal_allowance_regime,
+                'payroll_regime_women_allowance': women_allowance_regime,
+                'payroll_regime_revenue_bonus': rev_bonus_base,
+                'payroll_regime_productivity_bonus': prod_bonus_base,
+                'payroll_regime_total_rev_prod_bonus': rev_bonus_base + prod_bonus_base,
+                'payroll_bonus_0803': b0803,
+                'payroll_bonus_3004': b3004,
+                'payroll_bonus_0209': b0209,
+                'payroll_bonus_tet_dl': btet,
+                'payroll_bonus_other': bother,
+                'payroll_annual_bonus': annual_bonus,
+                'payroll_revenue_bonus': revenue_bonus,
+                'payroll_productivity_bonus': productivity_bonus,
+                'payroll_total_rev_prod_bonus': revenue_bonus + productivity_bonus,
+                'payroll_total_bonus': total_bonus,
+                'payroll_total_regime_income': total_regime_income,
+                'payroll_wage_day': wages['wage_day'],
+                'payroll_wage_day_150': wages['wage_day_150'],
+                'payroll_wage_night_130': wages['wage_night_130'],
+                'payroll_wage_night_200': wages['wage_night_200'],
+                'payroll_wage_night_210': wages['wage_night_210'],
+                'payroll_wage_night_sun_270': wages['wage_night_sun_270'],
+                'payroll_wage_day_sun_200': wages['wage_day_sun_200'],
+                'payroll_wage_day_holiday_300': wages['wage_day_holiday_300'],
+                'payroll_wage_night_holiday_390': wages['wage_night_holiday_390'],
+                'payroll_total_wage': total_wage,
+                'payroll_total_actual_income': total_actual_income,
+                
+                # Cập nhật các khoản trừ
+                'payroll_deduction_bhxh': bhxh,
+                'payroll_deduction_bhyt': bhyt,
+                'payroll_deduction_bhtn': bhtn,
+                'payroll_deduction_tncn': tncn,
+                'payroll_total_insurance_deduction': total_insurance,
+                'payroll_total_deduction': total_deduction,
+                'payroll_net_salary': net_salary,
+            })
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
@@ -584,7 +686,11 @@ class SalaryKpiLine(models.Model):
             rec.attendance_summary_html = attendance_logic.get_attendance_summary_html(rec)
 
     @api.depends('month_id.date_month')
-    def _compute_day_metadata(self):
+    def _compute_day_metadata_old(self):
+        """
+        Bản gốc chưa tối ưu (giữ lại để tham chiếu / dự phòng).
+        Vấn đề: 330 nhân viên * 31 ngày * 3 trường = 30.690 lệnh gán ORM -> chậm ~27s.
+        """
         from . import attendance_logic
         for rec in self:
             metadata = attendance_logic.get_day_metadata(rec.month_id.date_month)
@@ -593,6 +699,46 @@ class SalaryKpiLine(models.Model):
                 rec[f'day_{i:02d}_is_sunday'] = data['is_sunday']
                 rec[f'day_{i:02d}_week'] = data['week']
                 rec[f'day_{i:02d}_row'] = data['row']
+
+    @api.depends('month_id.date_month')
+    def _compute_day_metadata(self):
+        """
+        Phiên bản tối ưu hoá (Batch update cache).
+        Tất cả nhân viên trong cùng 1 tháng có metadata giống nhau tuyệt đối.
+        Nên ta tính toán metadata một lần, gom thành 1 cục data `vals`,
+        rồi dùng update() đẩy thẳng 93 giá trị vào cache cho từng nhân viên.
+        """
+        from . import attendance_logic
+        import time
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        if not self:
+            return
+            
+        # Nhóm các dòng theo từng bảng cân đối tháng
+        for month_id, records in self.grouped('month_id').items():
+            if not month_id.date_month:
+                continue
+                
+            metadata = attendance_logic.get_day_metadata(month_id.date_month)
+            vals = {}
+            
+            t1 = time.time()
+            for i in range(1, 32):
+                data = metadata.get(i, {'is_sunday': False, 'week': 0, 'row': 0})
+                vals[f'day_{i:02d}_is_sunday'] = data['is_sunday']
+                vals[f'day_{i:02d}_week'] = data['week']
+                vals[f'day_{i:02d}_row'] = data['row']
+            t2 = time.time()
+            _logger.info("=== _compute_day_metadata: Vòng lặp build vals dict mất %.6fs ===", t2 - t1)
+                
+            # Đẩy toàn bộ 93 giá trị vào cache cho từng record cùng lúc
+            t3 = time.time()
+            for rec in records:
+                rec.update(vals)
+            t4 = time.time()
+            _logger.info("=== _compute_day_metadata: Vòng lặp update cache cho %d records mất %.6fs ===", len(records), t4 - t3)
 
     @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                     'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
@@ -636,11 +782,11 @@ class SalaryKpiLine(models.Model):
             for i in range(1, 32):
                 w = getattr(rec, f'day_{i:02d}_week')
                 r = getattr(rec, f'day_{i:02d}_row')
-                if 1 <= w <= 5 and 1 <= r <= 7:
+                if 1 <= w <= 6 and 1 <= r <= 7:
                     slot = (w - 1) * 7 + r
                     mapping[slot] = i
             
-            for s in range(1, 36):
+            for s in range(1, 43):
                 v_f = f'v{s:02d}'
                 v_ot_f = f'v{s:02d}_ot'
                 v_l_f = f'v{s:02d}_label'
@@ -664,7 +810,7 @@ class SalaryKpiLine(models.Model):
             for i in range(1, 32):
                 w = getattr(rec, f'day_{i:02d}_week')
                 r = getattr(rec, f'day_{i:02d}_row')
-                if 1 <= w <= 5 and 1 <= r <= 7:
+                if 1 <= w <= 6 and 1 <= r <= 7:
                     s = (w - 1) * 7 + r
                     mapping[s] = i
             
@@ -744,3 +890,17 @@ class SalaryKpiLine(models.Model):
     def _inverse_v34_ot(self): self._inverse_v_generic(34, True)
     def _inverse_v35(self): self._inverse_v_generic(35)
     def _inverse_v35_ot(self): self._inverse_v_generic(35, True)
+    def _inverse_v36(self): self._inverse_v_generic(36)
+    def _inverse_v36_ot(self): self._inverse_v_generic(36, True)
+    def _inverse_v37(self): self._inverse_v_generic(37)
+    def _inverse_v37_ot(self): self._inverse_v_generic(37, True)
+    def _inverse_v38(self): self._inverse_v_generic(38)
+    def _inverse_v38_ot(self): self._inverse_v_generic(38, True)
+    def _inverse_v39(self): self._inverse_v_generic(39)
+    def _inverse_v39_ot(self): self._inverse_v_generic(39, True)
+    def _inverse_v40(self): self._inverse_v_generic(40)
+    def _inverse_v40_ot(self): self._inverse_v_generic(40, True)
+    def _inverse_v41(self): self._inverse_v_generic(41)
+    def _inverse_v41_ot(self): self._inverse_v_generic(41, True)
+    def _inverse_v42(self): self._inverse_v_generic(42)
+    def _inverse_v42_ot(self): self._inverse_v_generic(42, True)
