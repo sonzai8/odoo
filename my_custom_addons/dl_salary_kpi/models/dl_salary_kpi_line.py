@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import math
+import random
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
@@ -8,6 +10,7 @@ class SalaryKpiLine(models.Model):
     _order = 'dl_tax_department_id, dl_first_name'
 
     month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng bảng công', ondelete='cascade')
+    month_state = fields.Selection(related='month_id.state', string='Trạng thái tháng', store=True)
     employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
     employee_name = fields.Char(related='employee_id.name', string='Tên nhân viên', store=True)
     dl_first_name = fields.Char(related='employee_id.dl_first_name', string='Tên riêng', store=True)
@@ -476,8 +479,29 @@ class SalaryKpiLine(models.Model):
     payroll_deduction_bhtn = fields.Monetary(string='BHTN (1%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     payroll_deduction_tncn = fields.Monetary(string='Thuế TNCN', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     payroll_total_insurance_deduction = fields.Monetary(string='Tổng cộng trừ bảo hiểm', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    
+    # --- CÁC TRƯỜNG PHỤC VỤ THUẾ TNCN ---
+    payroll_pit_taxable_income = fields.Monetary(string='Thu nhập chịu thuế (TNCT)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_pit_number_of_dependents = fields.Integer(string='Số người phụ thuộc', compute='_compute_payroll_internal', store=True)
+    payroll_pit_total_deductions = fields.Monetary(string='Tổng các khoản giảm trừ', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_pit_assessable_income = fields.Monetary(string='Thu nhập tính thuế (TNTT)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+
     payroll_total_deduction = fields.Monetary(string='Tổng các khoản trừ', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
-    payroll_net_salary = fields.Monetary(string='Thực lĩnh', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_net_salary_base = fields.Monetary(string='Thực lĩnh (Cơ sở)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_net_salary = fields.Monetary(string='Thực lĩnh cuối cùng', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+
+    # --- TỰ ĐỘNG SINH ĐIỂM KPI ---
+    payroll_internal_salary = fields.Monetary(string='Lương nội bộ (Mục tiêu)', currency_field='currency_id', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
+    payroll_kpi_score = fields.Float(string='Điểm KPI (Sinh ra)', digits=(16, 2), aggregator="avg")
+    payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id')
+    payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id')
+
+    # --- CHI TIẾT TIÊU CHÍ KPI ---
+    kpi_c1_productivity = fields.Float(string='Năng suất/Chất lượng (Max 40)', digits=(16, 1))
+    kpi_c2_discipline = fields.Float(string='Kỷ luật/An toàn (Max 30)', digits=(16, 1))
+    kpi_c3_teamwork = fields.Float(string='Làm việc nhóm (Max 15)', digits=(16, 1))
+    kpi_c4_5s = fields.Float(string='Vệ sinh/5S (Max 10)', digits=(16, 1))
+    kpi_c5_saving = fields.Float(string='Tiết kiệm (Max 5)', digits=(16, 1))
 
     currency_id = fields.Many2one('res.currency', related='month_id.currency_id', string='Tiền tệ')
 
@@ -508,6 +532,8 @@ class SalaryKpiLine(models.Model):
             'payroll_wage_night_200': 0, 'payroll_wage_night_210': 0, 'payroll_wage_night_sun_270': 0,
             'payroll_wage_day_sun_200': 0, 'payroll_wage_day_holiday_300': 0, 'payroll_wage_night_holiday_390': 0,
             'payroll_total_wage': 0,
+            # KPI
+            'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0,
         }
         self.write(vals)
 
@@ -517,6 +543,85 @@ class SalaryKpiLine(models.Model):
                  'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
                  'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
                  'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+    def action_generate_kpi_scores(self, max_allowed=70):
+        """
+        Thuật toán Tự động sinh Điểm KPI dựa trên Lương nội bộ (Ln).
+        - Lk = payroll_net_salary_base (Thực lĩnh cơ sở).
+        - Điểm KPI (p) là số nguyên, RANDOM trong khoảng [50, min(max_allowed, p_theo)].
+        - Tiền mặt (Cash) bù đắp phần còn lại.
+        """
+        from odoo.exceptions import UserError
+        
+        for rec in self:
+            if rec.month_id.state in ['lock_kpi', 'confirmed']:
+                raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
+            
+            ln = rec.payroll_internal_salary
+            lk = rec.payroll_net_salary_base
+            
+            if not ln or lk <= 0:
+                rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
+                continue
+            
+            # 1. Tính điểm p lý thuyết tối đa có thể đạt được để không vượt quá Ln
+            gap = ln - lk
+            if gap <= 0:
+                p_max_theo = 50
+            else:
+                p_max_theo = int(math.floor(50 + (50 * gap / lk)))
+            
+            # 2. Xác định giới hạn trên cho việc random
+            # Phải nằm trong khoảng [50, 70] và không vượt quá max_allowed
+            upper_limit = min(max_allowed, p_max_theo)
+            if upper_limit > 70: upper_limit = 70
+            
+            # 3. Random điểm KPI trong khoảng cho phép [50, upper_limit]
+            if upper_limit <= 50:
+                p_final = 50
+            else:
+                p_final = random.randint(50, upper_limit)
+            
+            # --- PHÂN RÃ ĐIỂM KPI THÀNH 5 TIÊU CHÍ (C1-C5) ---
+            # Giới hạn: C1: 40, C2: 30, C3: 15, C4: 10, C5: 5 (Tổng max = 100)
+            limits = [40, 30, 15, 10, 5]
+            kpi_vals = [0, 0, 0, 0, 0]
+            remaining = p_final
+            
+            for i in range(4):
+                future_max = sum(limits[i+1:])
+                # Đảm bảo còn đủ điểm cho các tiêu chí sau (mỗi cái ít nhất 1 điểm)
+                low = max(1, remaining - future_max)
+                # Đảm bảo không vượt quá giới hạn của tiêu chí này và để lại ít nhất 1 điểm cho mỗi tiêu chí sau
+                num_future_categories = 4 - i
+                high = min(limits[i], remaining - num_future_categories)
+                
+                if low > high:
+                    val = high
+                else:
+                    val = random.randint(low, high)
+                
+                kpi_vals[i] = val
+                remaining -= val
+            
+            kpi_vals[4] = remaining # Phần còn lại cho C5
+            
+            # 4. Tính Tiền KPI (Mk) thực tế dựa trên điểm random
+            mk = lk * (p_final - 50) / 50
+            
+            # 5. Tiền mặt (Cash) gánh toàn bộ phần còn lại để khớp Ln
+            cash = ln - lk - mk
+            
+            rec.write({
+                'payroll_kpi_score': p_final,
+                'payroll_kpi_amount': mk,
+                'payroll_cash_amount': cash,
+                'kpi_c1_productivity': kpi_vals[0],
+                'kpi_c2_discipline': kpi_vals[1],
+                'kpi_c3_teamwork': kpi_vals[2],
+                'kpi_c4_5s': kpi_vals[3],
+                'kpi_c5_saving': kpi_vals[4],
+            })
+
     def _compute_totals(self):
         from . import attendance_logic
         if not self:
@@ -615,12 +720,19 @@ class SalaryKpiLine(models.Model):
             # Tổng lương = Tổng các khoản lương chi tiết + Thưởng doanh thu thực tế + Thưởng năng suất thực tế
             total_wage = sum(wages.values()) + revenue_bonus + productivity_bonus
             
-            # Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế
-            total_actual_income = total_wage + meal_allowance + women_allowance
+            # Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế + (KPI & Tiền mặt cân đối)
+            total_actual_income = total_wage + meal_allowance + women_allowance + rec.payroll_kpi_amount + rec.payroll_cash_amount
 
             # 5. Khấu trừ & Thực lĩnh
-            bhxh, bhyt, bhtn, tncn, total_insurance, total_deduction = payroll_logic.calculate_deductions(rec)
-            net_salary = total_actual_income - total_deduction
+            # Thuế và bảo hiểm tính trên Thu nhập cơ bản (không bao gồm KPI/Cash cân đối)
+            base_income = total_wage + meal_allowance + women_allowance
+            deductions = payroll_logic.calculate_deductions(rec, base_income, meal_allowance)
+            
+            # Thực lĩnh cơ sở (Lk) = Thu nhập cơ bản - Khấu trừ
+            net_salary_base = base_income - deductions['total_deduction']
+            
+            # Thực lĩnh cuối cùng = Thực lĩnh cơ sở + KPI + Cash
+            net_salary_final = net_salary_base + rec.payroll_kpi_amount + rec.payroll_cash_amount
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({
@@ -654,14 +766,19 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_wage': total_wage,
                 'payroll_total_actual_income': total_actual_income,
                 
-                # Cập nhật các khoản trừ
-                'payroll_deduction_bhxh': bhxh,
-                'payroll_deduction_bhyt': bhyt,
-                'payroll_deduction_bhtn': bhtn,
-                'payroll_deduction_tncn': tncn,
-                'payroll_total_insurance_deduction': total_insurance,
-                'payroll_total_deduction': total_deduction,
-                'payroll_net_salary': net_salary,
+                # Cập nhật các khoản trừ & Thuế TNCN
+                'payroll_deduction_bhxh': deductions['bhxh'],
+                'payroll_deduction_bhyt': deductions['bhyt'],
+                'payroll_deduction_bhtn': deductions['bhtn'],
+                'payroll_deduction_tncn': deductions['tncn'],
+                'payroll_total_insurance_deduction': deductions['total_insurance'],
+                'payroll_pit_taxable_income': deductions['taxable_income'],
+                'payroll_pit_number_of_dependents': deductions['num_dependents'],
+                'payroll_pit_total_deductions': deductions['total_pit_deductions'],
+                'payroll_pit_assessable_income': deductions['assessable_income'],
+                'payroll_total_deduction': deductions['total_deduction'],
+                'payroll_net_salary_base': net_salary_base,
+                'payroll_net_salary': net_salary_final,
             })
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',

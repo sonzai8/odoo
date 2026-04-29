@@ -1,58 +1,65 @@
 # SKILL.md — dl_salary_kpi
 
-## Excel Template: TEMPLATE_2026.xlsx
+> File này là entry point nhanh cho các kỹ năng (Skills) cốt lõi của hệ thống. Chi tiết đầy đủ nằm trong hệ thống Knowledge Items.
 
-### Quy tắc xử lý
-1. **Dòng Master (Dòng 8):** Luôn dùng dòng 8 làm mẫu để sao chép Style (Font, Border, Fill), Formula và Chiều cao dòng cho tất cả nhân viên.
-2. **Dịch công thức:** Sử dụng `Translator` để tịnh tiến công thức từ dòng 8 xuống dòng N.
-3. **Ghi dữ liệu an toàn:** Luôn dùng hàm `safe_write` để bỏ qua các ô gộp (MergedCell) bị read-only.
-4. **Vùng bảo vệ (AT -> BX):** Tuyệt đối không ghi đè dữ liệu vào vùng này vì chứa công thức tính toán tự động của Excel.
+---
 
-### Mapping Dữ liệu (Dòng 8+)
-| Cột | Dữ liệu | Định dạng/Ghi chú |
-|---|---|---|
-| **A (1)** | Số thứ tự | `STT` (1, 2, 3...) |
-| **B (2)** | Mã số thuế | `line.employee_id.dl_tax_id` |
-| **C (3)** | Họ và tên | `line.employee_id.name` |
-| **D (4)** | Ngày sinh | `dd/mm/yyyy` |
-| **E (5)** | Số CCCD | `line.employee_id.identification_id` |
-| **F (6)** | Giới tính | `Nam` / `Nữ` |
-| **G (7)** | Phòng ban | `line.employee_id.dl_tax_department_id.name` |
-| **H (8)** | Chức vụ | `line.employee_id.dl_tax_position` |
-| **I (9)** | Lương cơ bản | `line.employee_id.dl_tax_base_salary` |
-| **J -> AN (10-40)** | Công thường | Mã chấm công ngày 01-31 |
-| **AT -> BX (46-76)** | OT | Công làm thêm. Chỉ ghi đè mã chấm công làm thêm vào các ngày Chủ nhật (T2-T7 để nguyên cho công thức chạy). |
-| **CQ (95)** | Trợ cấp phụ nữ | Lấy ở cấu hình chung (chỉ Nữ) |
-| **CR (96)** | Trợ cấp ăn ca | Lấy ở cấu hình chung |
-| **DG (111)** | Lương KPI | (Tạm thời để trống) |
-| **EE (135)** | Thưởng cố định năm | `line.payroll_annual_bonus` |
-| **EH (138)** | Người phụ thuộc | Tổng số NPT của nhân viên đang active |
+## 1. EXCEL MAPPING (TEMPLATE_2026.xlsx)
+*Tài liệu tham chiếu chính cho logic Xuất báo cáo lương.*
 
-> File này là entry point nhanh. Chi tiết đầy đủ nằm trong hệ thống Knowledge Items.
+### Quy tắc kỹ thuật
+1. **Dòng Master (Dòng 8):** Phải copy dòng 8 để lấy định dạng (Style) và công thức trước khi ghi dữ liệu.
+2. **Dịch công thức (Translator):** Tịnh tiến công thức từ dòng 8 xuống dòng N (ví dụ: `=SUM(I8:AM8)` -> `=SUM(I9:AM9)`).
+3. **Ghi dữ liệu an toàn:** Kiểm tra `MergedCell` để tránh ghi vào các ô phụ (read-only), chỉ ghi vào ô master.
 
-## Quick Reference
+### Mapping tọa độ
+| Vùng | Cột | Nội dung | Ghi chú |
+|---|---|---|---|
+| **Header** | A3, F4, K4, O4 | Thông tin chung | Tháng/Năm, Doanh thu... |
+| **Nhân sự** | B -> I | Thông tin nhân viên | Họ tên, MST, Ngày sinh, Lương CB... |
+| **J -> AN (10-40)** | Công thường | Mã chấm công ngày 01-31 | Ghi mã N, Đ, P, PL... |
+| **AT -> BX (46-76)** | OT | Công làm thêm | **Chỉ ghi vào ngày Chủ nhật**. |
+| **CP, CQ** | Trợ cấp | Phụ nữ, Ăn ca | Lấy từ cấu hình tháng. |
+| **DP (120)** | Thuế TNCN | Số tiền thuế phải đóng | Kết quả đồng bộ từ Odoo. |
+| **EH (138)** | Người phụ thuộc | Số lượng NPT | — |
 
-| Mục | Vị trí |
-|---|---|
-| **Kiến trúc module** | `~/.gemini/antigravity/knowledge/dl-salary-kpi-architecture/` |
-| **Quy chế thưởng (QĐ 3108/2025)** | `~/.gemini/antigravity/knowledge/dl-bonus-policy/` |
-| **UI Patterns & Lỗi thường gặp** | `~/.gemini/antigravity/knowledge/odoo19-ui-patterns/` |
-| **Workflow phát triển** | `~/.gemini/antigravity/knowledge/odoo19-dev-workflow/` |
+---
 
-## Lệnh nhanh
+## 2. KỸ NĂNG: TÍNH THUẾ THU NHẬP CÁ NHÂN (PIT LOGIC)
+*Áp dụng từ tháng 04/2026.*
 
-```bash
-# Upgrade module (XML/Data)
-python3 odoo-bin -c odoo.conf -u dl_salary_kpi -d odoo_db --stop-after-init
+### Định mức cấu hình (Constants)
+- **Giảm trừ bản thân:** 15,500,000 VNĐ
+- **Giảm trừ người phụ thuộc:** 6,200,000 VNĐ / người
+- **Miễn thuế tiền ăn:** Theo thực tế (ví dụ: 650,000 VNĐ)
 
-# Start dev server (Python → phải restart)
-python3 odoo-bin -c odoo.conf --dev=all
-```
+### Quy trình 4 bước
+1. **B1: Tính Thu nhập chịu thuế (TNCT)**
+   `TNCT = Tổng thu nhập thực tế - Miễn thuế tiền ăn + Lương trả cho ngày không nghỉ phép`
+2. **B2: Tính Tổng giảm trừ**
+   `Tổng giảm trừ = Bảo hiểm bắt buộc + Giảm trừ bản thân + (Số NPT * Giảm trừ NPT)`
+3. **B3: Tính Thu nhập tính thuế (TNTT)**
+   `TNTT = TNCT - Tổng giảm trừ`. Nếu `TNTT <= 0` thì Thuế = 0.
+4. **B4: Biểu thuế lũy tiến 5 bậc**
+   - **Bậc 1:** TNTT <= 10M -> `Tax = TNTT * 0.05`
+   - **Bậc 2:** TNTT <= 30M -> `Tax = (TNTT * 0.10) - 500,000`
+   - **Bậc 3:** TNTT <= 60M -> `Tax = (TNTT * 0.20) - 3,500,000`
+   - **Bậc 4:** TNTT <= 100M -> `Tax = (TNTT * 0.30) - 9,500,000`
+   - **Bậc 5:** TNTT > 100M -> `Tax = (TNTT * 0.35) - 14,500,000`
 
-## Điều quan trọng nhất cần nhớ
+### Ràng buộc
+- Làm tròn kết quả về số nguyên (0 chữ số thập phân).
+- Các định mức phải lấy từ cấu hình (`res.company`), không được hardcode.
 
-1. **Thêm method Python mới** → BẮT BUỘC restart server (kill cũ + start lại)
-2. **Inline filter cho One2many** → Dùng computed field + inverse, KHÔNG dùng domain
-3. **Action button trong form** → Return `True` để giữ nguyên tab, KHÔNG return reload
-4. **Chặn xóa bản ghi** → Override `unlink()` với kiểm tra `state != 'draft'`
-5. **Layout 2 cột** → Dùng flexbox + `min-width: 0` + `pointer-events: none` cho cột chỉ xem
+---
+
+## 3. KỸ NĂNG: TỰ ĐỘNG SINH KPI (AUTO GENERATE KPI)
+*Cân đối Lương nội bộ (Ln) thông qua Điểm KPI và Tiền mặt.*
+
+### Thuật toán cốt lõi
+1. **Lk (Lương tính KPI):** Thường lấy từ `tax_base_salary`.
+2. **Tiền mặt (Cash):** `max(0, Ln - Lk - (Lk * 0.4))`, sau đó làm tròn lên 10.000 VNĐ.
+3. **Tiền KPI (Mk):** `Ln - Lk - Cash`.
+4. **Điểm KPI (p):** `50 + (50 * Mk / Lk)`, giới hạn [50, 70].
+
+Chi tiết hướng dẫn kỹ thuật xem tại [SKILL_GENERATE_KPI.MD](file:///Users/sonzai/dev/odoo%2019/odoo/my_custom_addons/dl_salary_kpi/SKILL_GENERATE_KPI.MD).

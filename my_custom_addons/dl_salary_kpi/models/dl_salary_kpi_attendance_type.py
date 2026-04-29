@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+from odoo.models import Constraint
 
 class SalaryKpiAttendanceType(models.Model):
     """
@@ -27,9 +28,7 @@ class SalaryKpiAttendanceType(models.Model):
         ('none', 'Không phải tăng ca')
     ], string='Loại tăng ca', default='none')
 
-    _sql_constraints = [
-        ('code_unique', 'unique(code)', 'Mã loại công này đã tồn tại!')
-    ]
+    _code_unique = Constraint('unique(code)', 'Mã loại công này đã tồn tại!')
 
     @api.onchange('code')
     def _onchange_code(self):

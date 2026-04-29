@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_dl_pit" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.dl.pit</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="99"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Thuế TNCN" string="Thuế TNCN" name="dl_salary_kpi_pit">
+                    <block title="Định mức giảm trừ thuế TNCN" name="dl_pit_settings">
+                        <setting string="Giảm trừ bản thân" help="Mức giảm trừ gia cảnh cho bản thân người nộp thuế">
+                            <field name="dl_pit_personal_deduction"/>
+                        </setting>
+                        <setting string="Giảm trừ người phụ thuộc" help="Mức giảm trừ cho mỗi người phụ thuộc">
+                            <field name="dl_pit_dependent_deduction"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dl_pit_config_settings" model="ir.actions.act_window">
+        <field name="name">Cấu hình Thuế TNCN</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module' : 'dl_salary_kpi_pit'}</field>
+    </record>
+</odoo>

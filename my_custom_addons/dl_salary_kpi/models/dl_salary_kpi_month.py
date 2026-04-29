@@ -9,6 +9,8 @@ import copy
 from odoo.tools import file_path
 import time
 import logging
+import math
+import random
 
 _logger = logging.getLogger(__name__)
 
@@ -428,11 +430,97 @@ class SalaryKpiMonth(models.Model):
             'context': {'default_month_id': self.id, 'default_wizard_type': 'overtime'}
         }
 
+    def action_import_internal_salary(self):
+        self.ensure_one()
+        return {
+            'name': 'Nhập Lương nội bộ (KPI Target)',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_month_id': self.id, 'default_wizard_type': 'internal_salary'}
+        }
+
     def action_export_ot_excel(self):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_url',
             'url': f'/dl_salary_kpi/export_ot_attendance/{self.id}',
+            'target': 'new',
+        }
+
+    def action_export_internal_salary_excel(self):
+        """Xuất file mẫu nhập Lương nội bộ (Ln)"""
+        self.ensure_one()
+        import io
+        import base64
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
+        except ImportError:
+            raise UserError("Vui lòng cài đặt thư viện openpyxl!")
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Bang Luong Noi Bo"
+
+        # Định dạng
+        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        header_fill = PatternFill(start_color="CCE5FF", end_color="CCE5FF", fill_type="solid")
+        header_font = Font(bold=True)
+        center_align = Alignment(horizontal='center', vertical='center')
+
+        # Header dòng 3 (Theo chuẩn các file import khác)
+        headers = ['STT', 'Số CCCD', 'Họ và Tên', 'Bộ phận', 'Số công', 'Thực lĩnh (Ln)']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.border = thin_border
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_align
+
+        # Dữ liệu từ dòng 4
+        row_idx = 4
+        stt = 1
+        for line in self.line_ids:
+            # A: STT
+            ws.cell(row=row_idx, column=1, value=stt).border = thin_border
+            # B: CCCD
+            ws.cell(row=row_idx, column=2, value=line.identification_id or '').border = thin_border
+            # C: Họ tên
+            ws.cell(row=row_idx, column=3, value=line.employee_name or '').border = thin_border
+            # D: Bộ phận
+            ws.cell(row=row_idx, column=4, value=line.dl_tax_department_id.name or '').border = thin_border
+            # E: Số công (Mặc định 0)
+            ws.cell(row=row_idx, column=5, value=0).border = thin_border
+            # F: Thực lĩnh (Mặc định 0) - Hoặc lấy payroll_internal_salary hiện tại
+            ws.cell(row=row_idx, column=6, value=line.payroll_internal_salary or 0).border = thin_border
+            
+            row_idx += 1
+            stt += 1
+
+        # Căn chỉnh độ rộng cột
+        ws.column_dimensions['B'].width = 20
+        ws.column_dimensions['C'].width = 30
+        ws.column_dimensions['D'].width = 25
+        ws.column_dimensions['F'].width = 15
+
+        output = io.BytesIO()
+        wb.save(output)
+        file_data = base64.b64encode(output.getvalue())
+        output.close()
+
+        filename = f"MAU_NHAP_LUONG_NOI_BO_{self.date_month.strftime('%m_%Y')}.xlsx"
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'type': 'binary',
+            'datas': file_data,
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
             'target': 'new',
         }
 
@@ -550,7 +638,7 @@ class SalaryKpiMonth(models.Model):
                 if day <= last_day:
                     d = date(month_date.year, month_date.month, day)
                     if d.weekday() == 6: # Ngày Chủ nhật
-                        print("xin thong bao ngay chu nhat: ", d)
+                        # print("xin thong bao ngay chu nhat: ", d)
                         ot_att = getattr(line, f'ot_day_{day:02d}')
                         col_ot = 45 + day
                         self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
@@ -569,8 +657,10 @@ class SalaryKpiMonth(models.Model):
             self._safe_write(ws, current_row, 135, line.payroll_annual_bonus or 0)
 
             # EH (138) Số người phụ thuộc
-            total_dependents = len(line.employee_id.dependent_ids.filtered(lambda d: d.active))
-            self._safe_write(ws, current_row, 138, total_dependents)
+            self._safe_write(ws, current_row, 138, line.payroll_pit_number_of_dependents or 0)
+
+            # DP (120) Thuế TNCN
+            self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
 
             t_after_map = time.time()
             time_map += (t_after_map - t_after_copy)
@@ -605,3 +695,41 @@ class SalaryKpiMonth(models.Model):
             'url': f'/web/content/{attachment.id}?download=true',
             'target': 'new',
         }
+
+    def action_generate_all_kpi(self):
+        """
+        Kích hoạt tính toán KPI cho toàn bộ nhân viên trong tháng.
+        - Mỗi nhân viên được gán điểm ngẫu nhiên trong khoảng cho phép.
+        - Đảm bảo số người đạt điểm tối đa (70) không quá 50% tổng số nhân viên.
+        """
+        self.ensure_one()
+        from odoo.exceptions import UserError
+        if self.state in ['lock_kpi', 'confirmed']:
+            raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
+            
+        if not self.line_ids:
+            return True
+            
+        import random
+        
+        # 1. Chuẩn bị danh sách nhân viên và quota
+        lines = list(self.line_ids)
+        random.shuffle(lines) # Shuffle để việc phân bổ quota 70 được ngẫu nhiên
+        
+        total_employees = len(lines)
+        quota_70 = total_employees // 2 # Tối đa 50% số người được điểm 70
+        count_70 = 0
+        
+        # 2. Xử lý từng nhân viên
+        for line in lines:
+            # Nếu chưa đạt quota 70, cho phép random tới 70
+            if count_70 < quota_70:
+                line.action_generate_kpi_scores(max_allowed=70)
+                # Kiểm tra xem thực tế line này có được gán 70 không
+                if line.payroll_kpi_score == 70:
+                    count_70 += 1
+            else:
+                # Nếu đã hết quota, chỉ cho phép random tới tối đa 69
+                line.action_generate_kpi_scores(max_allowed=69)
+                
+        return True

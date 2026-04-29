@@ -131,16 +131,65 @@ def calculate_detailed_wages(rec):
         
     return wages
 
-def calculate_deductions(rec):
-    """Tính toán các khoản khấu trừ bảo hiểm & thuế TNCN"""
+def calculate_deductions(rec, total_actual_income, meal_allowance):
+    """
+    Tính toán các khoản khấu trừ bảo hiểm & thuế TNCN (4 bước).
+    
+    Bước 1: Tính Thu nhập chịu thuế (TNCT) = Tổng thu nhập - Miễn thuế tiền ăn.
+    Bước 2: Tính Tổng các khoản giảm trừ (BH + Bản thân + NPT).
+    Bước 3: Tính Thu nhập tính thuế (TNTT) = TNCT - Tổng giảm trừ.
+    Bước 4: Tính Thuế TNCN theo biểu thuế lũy tiến 5 bậc.
+    """
+    company = rec.env.company
+    personal_deduction = company.dl_pit_personal_deduction or 15500000.0
+    dependent_deduction = company.dl_pit_dependent_deduction or 6200000.0
+    
+    # 0. Bảo hiểm bắt buộc (Tính trên lương cơ bản thuế)
     base_insurance = rec.dl_tax_base_salary or 0.0
-    
-    bhxh = base_insurance * 0.08
-    bhyt = base_insurance * 0.015
-    bhtn = base_insurance * 0.01
-    tncn = 0.0  # Tạm thời để bằng 0 theo yêu cầu
-    
+    bhxh = round(base_insurance * 0.08, 0)
+    bhyt = round(base_insurance * 0.015, 0)
+    bhtn = round(base_insurance * 0.01, 0)
     total_insurance = bhxh + bhyt + bhtn
+
+    # 1. Thu nhập chịu thuế (TNCT)
+    # Ghi chú: total_actual_income đã bao gồm lương ngày thưởng chuyên cần.
+    # Theo yêu cầu: Luôn miễn thuế cho toàn bộ tiền trợ cấp ăn ca thực tế.
+    taxable_income = total_actual_income - meal_allowance
+    
+    # 2. Tổng các khoản giảm trừ
+    num_dependents = len(rec.employee_id.dependent_ids)
+    total_deductions = total_insurance + personal_deduction + (num_dependents * dependent_deduction)
+    
+    # 3. Thu nhập tính thuế (TNTT)
+    assessable_income = max(0.0, taxable_income - total_deductions)
+    
+    # 4. Thuế TNCN (Biểu thuế lũy tiến 5 bậc)
+    tncn = 0.0
+    tntt = assessable_income
+    if tntt > 0:
+        if tntt <= 10000000:
+            tncn = tntt * 0.05
+        elif tntt <= 30000000:
+            tncn = (tntt * 0.10) - 500000
+        elif tntt <= 60000000:
+            tncn = (tntt * 0.20) - 3500000
+        elif tntt <= 100000000:
+            tncn = (tntt * 0.30) - 9500000
+        else:
+            tncn = (tntt * 0.35) - 14500000
+    
+    tncn = round(tncn, 0)
     total_deduction = total_insurance + tncn
     
-    return bhxh, bhyt, bhtn, tncn, total_insurance, total_deduction
+    return {
+        'bhxh': bhxh,
+        'bhyt': bhyt,
+        'bhtn': bhtn,
+        'tncn': tncn,
+        'total_insurance': total_insurance,
+        'total_deduction': total_deduction,
+        'taxable_income': taxable_income,
+        'num_dependents': num_dependents,
+        'total_pit_deductions': total_deductions,
+        'assessable_income': assessable_income,
+    }

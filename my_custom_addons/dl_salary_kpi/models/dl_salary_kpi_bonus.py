@@ -2,6 +2,8 @@
 from odoo import models, fields, api, _
 from datetime import date
 
+from odoo.models import Constraint
+
 class SalaryKpiBonusYear(models.Model):
     _name = 'dl.salary.kpi.bonus.year'
     _description = 'Cấu hình thưởng trong năm'
@@ -13,9 +15,7 @@ class SalaryKpiBonusYear(models.Model):
     active = fields.Boolean(string='Đang hoạt động', default=True)
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
-    _sql_constraints = [
-        ('year_unique', 'unique(year)', 'Cấu hình cho năm này đã tồn tại!')
-    ]
+    _year_unique = Constraint('unique(year)', 'Cấu hình cho năm này đã tồn tại!')
 
     @api.depends('year')
     def _compute_name(self):

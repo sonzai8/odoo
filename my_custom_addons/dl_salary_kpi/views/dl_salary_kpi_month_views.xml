@@ -20,6 +20,8 @@
                 <header>
                     <button name="action_import_excel" string="Nhập/Xuất Công Thường" type="object" class="btn-info" icon="fa-exchange" invisible="state != 'draft'"/>
                     <button name="action_import_ot_excel" string="Nhập/Xuất Công Làm Thêm" type="object" class="btn-warning" icon="fa-clock-o" invisible="state != 'lock_normal'"/>
+                    <button name="action_import_internal_salary" string="Import Lương nội bộ" type="object" class="btn-info" icon="fa-upload" invisible="state != 'lock_regime'"/>
+                    <button name="action_generate_all_kpi" string="Tự động sinh KPI" type="object" class="btn-primary" icon="fa-magic" invisible="state != 'lock_regime'"/>
                     
                     <button name="action_lock_normal" string="Chốt công Thường" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_lock_ot" string="Chốt Công Làm thêm" type="object" class="btn-primary" invisible="state != 'lock_normal'"/>
@@ -88,7 +90,42 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Bảng KPI" invisible="state in ['draft', 'lock_normal']">
+                        <page string="Cân đối KPI &amp; Tiền mặt" name="kpi_balancing" invisible="state in ['draft', 'lock_normal']">
+                            <group string="🔍 Bộ lọc nhanh">
+                                <group>
+                                    <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
+                                    <field name="filter_department_id" placeholder="Chọn phòng ban..."/>
+                                </group>
+                                <group>
+                                    <field name="filter_position" placeholder="Nhập chức vụ..."/>
+                                </group>
+                            </group>
+                            <field name="filtered_line_ids" readonly="0" nolabel="1" context="{'dialog_size': 'extra-large'}">
+                                <list editable="bottom" delete="0">
+                                    <field name="identification_id" readonly="1" sticky="1" width="50px"/>
+                                    <field name="employee_name" readonly="1" sticky="1" width="180px"/>
+                                    <field name="dl_tax_department_id" readonly="1" sticky="1" width="120px"/>
+                                    <field name="dl_tax_position" readonly="1" sticky="1" width="120px"/>
+                                    
+                                    <field name="payroll_net_salary_base" string="Thực lĩnh cơ sở (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" readonly="1"/>
+                                    <field name="payroll_internal_salary" string="Lương nội bộ (Ln)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" readonly="1"/>
+                                    
+                                    <field name="payroll_kpi_score" string="Điểm KPI" widget="float" digits="[16,2]" decoration-warning="payroll_kpi_score > 0" readonly="1"/>
+                                    
+                                    <field name="kpi_c1_productivity" string="C1 (40)" optional="show" readonly="1"/>
+                                    <field name="kpi_c2_discipline" string="C2 (30)" optional="show" readonly="1"/>
+                                    <field name="kpi_c3_teamwork" string="C3 (15)" optional="show" readonly="1"/>
+                                    <field name="kpi_c4_5s" string="C4 (10)" optional="show" readonly="1"/>
+                                    <field name="kpi_c5_saving" string="C5 (5)" optional="show" readonly="1"/>
+
+                                    <field name="payroll_kpi_amount" string="Tiền KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1"/>
+                                    <field name="payroll_cash_amount" string="Tiền mặt trả thêm" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1" readonly="1"/>
+                                    
+                                    <button name="action_generate_kpi_scores" string="Tính KPI" type="object" icon="fa-calculator" title="Tính toán lại KPI cho dòng này" invisible="parent.state in ['lock_kpi', 'confirmed']"/>
+                                    
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Chi tiết các khoản trừ" name="internal_payroll" invisible="state in ['draft', 'lock_normal']">
                             <group string="🔍 Bộ lọc nhanh">
@@ -107,17 +144,21 @@
                                     <field name="dl_tax_department_id" sticky="1" width="120px"/>
                                     <field name="dl_tax_position" sticky="1" width="120px"/>
                                     
-                                    <field name="dl_tax_base_salary" string="Lương CB Thuế" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="dl_tax_base_salary" string="Lương CB Thuế" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" optional="hide"/>
                                     <field name="payroll_total_actual_income" string="Tổng Thu Nhập Thực Tế" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     
-                                    <field name="payroll_deduction_bhxh" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_deduction_bhyt" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_deduction_bhtn" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_deduction_tncn" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_total_insurance_deduction" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                    <field name="payroll_deduction_bhxh" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                                    <field name="payroll_deduction_bhyt" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                                    <field name="payroll_deduction_bhtn" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                                    
+                                    <field name="payroll_pit_taxable_income" string="TN Chịu Thuế" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" optional="hide"/>
+                                    <field name="payroll_pit_assessable_income" string="TN Tính Thuế" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                                    <field name="payroll_deduction_tncn" string="Thuế TNCN" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_deduction_tncn > 0"/>
+                                    
+                                    <field name="payroll_total_insurance_deduction" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" optional="hide"/>
                                     <field name="payroll_total_deduction" string="Tổng các khoản trừ" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1"/>
                                     
-                                    <field name="payroll_net_salary" string="Thực lĩnh" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" decoration-bf="1"/>
+                                    <field name="payroll_net_salary" string="Tổng thực lĩnh (Ln)" sum="Tổng" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" decoration-bf="1"/>
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>
                             </field>
@@ -397,9 +438,9 @@
                             <div class="d-flex flex-wrap gap-4 align-items-start w-100">
                                 <div class="flex-fill" style="min-width: 450px;">
                                     <group string="Thông tin tài chính" class="w-100">
-                                        <field name="dl_revenue" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                        <field name="dl_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                        <field name="dl_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        <field name="dl_revenue" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
+                                        <field name="dl_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
+                                        <field name="dl_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
                                     </group>
                                 </div>
                                 <div class="flex-fill" style="min-width: 450px; pointer-events: none;">
@@ -479,6 +520,7 @@
         <field name="arch" type="xml">
             <form string="Chi tiết chấm công" class="o_dl_salary_kpi_line_form">
                 <sheet>
+                    <field name="month_state" invisible="1"/>
                     <div class="oe_title">
                         <h1><field name="employee_id" readonly="1"/></h1>
                         <div class="row">
@@ -646,16 +688,6 @@
                                     <field name="payroll_total_rev_prod_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="1" decoration-bf="1"/>
                                     <field name="payroll_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="payroll_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_total_actual_income" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1"/>
-                                </group>
-                                <group string="Các khoản khấu trừ &amp; Thực lĩnh">
-                                    <field name="payroll_deduction_bhxh" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_deduction_bhyt" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_deduction_bhtn" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_deduction_tncn" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    <field name="payroll_total_deduction" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1"/>
-                                    <separator/>
-                                    <field name="payroll_net_salary" string="THỰC LĨNH" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" decoration-bf="1" class="oe_subtotal_footer_separator"/>
                                 </group>
                             </group>
                             <group string="Thưởng Lễ/Tết &amp; Thưởng khác" invisible="1">
@@ -669,16 +701,61 @@
                                     <field name="payroll_bonus_other" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="payroll_annual_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
                                     <separator/>
-                                <field name="payroll_total_bonus" string="Tổng Trợ cấp &amp; Thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator"/>
+                                    <field name="payroll_total_bonus" string="Tổng Trợ cấp &amp; Thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator"/>
                                 </group>
                             </group>
                             <group class="oe_subtotal_footer oe_right">
-                                <field name="payroll_total_regime_income" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="payroll_total_bonus" string="Tổng Trợ cấp &amp; Thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="payroll_total_wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="payroll_total_actual_income" string="Tổng Thu Nhập Thực Tế" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="payroll_total_deduction" string="Tổng các khoản trừ" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1"/>
-                                <field name="payroll_net_salary" string="THỰC LĨNH" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-success="1"/>
+                                <field name="payroll_total_actual_income" string="TỔNG THU NHẬP THỰC TẾ" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-danger="1"/>
+                            </group>
+                        </page>
+                        <page string="Chi tiết Khấu trừ &amp; Thuế" name="deduction_pit_details">
+                            <group>
+                                <group string="Các khoản khấu trừ bảo hiểm">
+                                    <field name="payroll_deduction_bhxh" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_deduction_bhyt" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_deduction_bhtn" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_total_insurance_deduction" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                </group>
+                                <group string="Tính toán Thuế TNCN">
+                                    <field name="payroll_pit_taxable_income" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_pit_number_of_dependents"/>
+                                    <field name="payroll_pit_total_deductions" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_pit_assessable_income" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                    <field name="payroll_deduction_tncn" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="payroll_total_insurance_deduction" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="payroll_deduction_tncn" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1"/>
+                                <field name="payroll_total_deduction" string="Tổng các khoản trừ" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" class="oe_subtotal_footer_separator"/>
+                                <field name="payroll_net_salary_base" string="THỰC LĨNH" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-success="1"/>
+                            </group>
+                        </page>
+                        <page string="Cân đối KPI &amp; Tiền mặt" name="kpi_balancing">
+                            <group>
+                                <group string="Mục tiêu &amp; Cơ sở">
+                                    <field name="payroll_internal_salary" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" readonly="1"/>
+                                    <field name="payroll_net_salary_base" string="Thực lĩnh cơ sở (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                    <button name="action_generate_kpi_scores" string="Tính toán lại KPI" type="object" class="btn-primary" icon="fa-magic" invisible="month_state in ['lock_kpi', 'confirmed']"/>
+                                </group>
+                                <group string="Kết quả tính toán">
+                                    <field name="payroll_kpi_score" widget="float" digits="[16,2]" decoration-warning="1" decoration-bf="1" readonly="1"/>
+                                    <field name="payroll_kpi_amount" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1"/>
+                                    <field name="payroll_cash_amount" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1" readonly="1"/>
+                                </group>
+                                <group string="Chi tiết Tiêu chí đánh giá">
+                                    <field name="kpi_c1_productivity" readonly="1"/>
+                                    <field name="kpi_c2_discipline" readonly="1"/>
+                                    <field name="kpi_c3_teamwork" readonly="1"/>
+                                    <field name="kpi_c4_5s" readonly="1"/>
+                                    <field name="kpi_c5_saving" readonly="1"/>
+                                </group>
+                            </group>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="payroll_net_salary_base" string="Thực lĩnh cơ sở (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="payroll_kpi_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="payroll_cash_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="payroll_net_salary" string="TỔNG THỰC LĨNH" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-success="1" readonly="1"/>
                             </group>
                         </page>
                         <page string="Tóm tắt Mã công" name="summary">

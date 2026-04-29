@@ -12,7 +12,8 @@ class SalaryKpiImportWizard(models.TransientModel):
     month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng bảng công')
     wizard_type = fields.Selection([
         ('normal', 'Công Thường'),
-        ('overtime', 'Làm Thêm')
+        ('overtime', 'Làm Thêm'),
+        ('internal_salary', 'Lương nội bộ (KPI Target)')
     ], string='Loại xử lý', default='normal')
     file_data = fields.Binary(string='File Excel', required=False)
     file_name = fields.Char(string='Tên file')
@@ -21,6 +22,8 @@ class SalaryKpiImportWizard(models.TransientModel):
         self.ensure_one()
         if self.wizard_type == 'overtime':
             return self.month_id.action_export_ot_excel()
+        if self.wizard_type == 'internal_salary':
+            return self.month_id.action_export_internal_salary_excel()
         return self.month_id.action_export_excel()
 
     def action_import(self):
@@ -33,6 +36,9 @@ class SalaryKpiImportWizard(models.TransientModel):
             ws = wb['Bang Cham Cong']
         else:
             ws = wb.active # Fallback
+
+        if self.wizard_type == 'internal_salary':
+            return self._import_internal_salary(ws)
 
         # Lấy bản đồ mã công -> ID
         att_types = self.env['dl.salary.kpi.attendance.type'].search([])
@@ -175,5 +181,60 @@ class SalaryKpiImportWizard(models.TransientModel):
                 'message': msg,
                 'type': 'success',
                 'sticky': True if count_skipped_departure > 0 else False,
+            }
+        }
+
+    def _import_internal_salary(self, ws):
+        """Import Lương nội bộ (Ln) dựa trên CCCD (Cột B)"""
+        errors = []
+        import_data = []
+        
+        # Duyệt từ dòng 4
+        for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
+            cccd = str(row[1]).strip() if row[1] else False
+            if not cccd:
+                continue
+            
+            # Làm sạch chuỗi CCCD (nếu là số thì bỏ .0)
+            if cccd.endswith('.0'):
+                cccd = cccd[:-2]
+                
+            emp_name_excel = str(row[2]).strip() if row[2] else ""
+            
+            # Tìm line tương ứng dựa trên identification_id
+            line = self.month_id.line_ids.filtered(lambda l: l.identification_id == cccd)
+            if not line:
+                errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên có CCCD '{cccd}' trong bảng công tháng này.")
+                continue
+            
+            if len(line) > 1:
+                errors.append(f"Dòng {row_idx}: Tìm thấy nhiều dòng có cùng CCCD '{cccd}'.")
+                continue
+                
+            # Lương nội bộ ở cột F (index 5)
+            try:
+                internal_salary = float(row[5]) if row[5] else 0.0
+            except (ValueError, TypeError):
+                errors.append(f"Dòng {row_idx}: Lương nội bộ '{row[5]}' không hợp lệ.")
+                continue
+                
+            import_data.append((line, {'payroll_internal_salary': internal_salary}))
+
+        if errors:
+            display_errors = errors[:10]
+            if len(errors) > 10:
+                display_errors.append(f"... và còn {len(errors) - 10} lỗi khác nữa.")
+            raise UserError("\n".join(display_errors))
+
+        for line, vals in import_data:
+            line.write(vals)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã cập nhật Lương nội bộ cho %s nhân viên.') % len(import_data),
+                'type': 'success',
             }
         }

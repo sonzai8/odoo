@@ -21,6 +21,7 @@
         'views/hr_employee_tax_views.xml',
         'views/dl_salary_kpi_bonus_views.xml',
         'views/dl_dependent_views.xml',
+        'views/res_config_settings_views.xml',
         'views/menus.xml',
     ],
     'assets': {
