@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_tax_import_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.tax.import.form</field>
+        <field name="model">dl.salary.kpi.tax.import</field>
+        <field name="arch" type="xml">
+            <form string="Nhập nhân viên thuế từ Excel">
+                <field name="state" invisible="1"/>
+                <sheet>
+                    <group invisible="state != 'init'">
+                        <group>
+                            <field name="file_data" filename="file_name"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <div invisible="state != 'preview'">
+                        <field name="preview_html" nolabel="1"/>
+                    </div>
+                    
+                    <footer>
+                        <!-- Nút cho bước 1: Chọn File -->
+                        <button name="action_preview" string="Xem trước dữ liệu" type="object" class="btn-primary" invisible="state != 'init'"/>
+                        <button name="action_export_template" string="Tải file mẫu" type="object" class="btn-secondary" invisible="state != 'init'"/>
+                        
+                        <!-- Nút cho bước 2: Xem trước -->
+                        <button name="action_confirm_import" string="Xác nhận Import" type="object" class="btn-primary" invisible="state != 'preview'"/>
+                        <button name="action_back" string="Trở lại" type="object" class="btn-secondary" invisible="state != 'preview'"/>
+                        
+                        <button string="Hủy bỏ" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_tax_import" model="ir.actions.act_window">
+        <field name="name">Nhập nhân viên thuế</field>
+        <field name="res_model">dl.salary.kpi.tax.import</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

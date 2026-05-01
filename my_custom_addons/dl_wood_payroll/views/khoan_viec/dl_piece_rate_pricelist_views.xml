@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_piece_rate_pricelist_tree" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.tree</field>
+        <field name="model">dl.piece.rate.pricelist</field>
+        <field name="arch" type="xml">
+            <list string="Bảng giá đơn giá">
+                <field name="name"/>
+                <field name="month" widget="badge" decoration-info="1"/>
+                <field name="year" widget="badge" decoration-info="1"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_piece_rate_pricelist_form" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.form</field>
+        <field name="model">dl.piece.rate.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Bảng giá đơn giá">
+                <header>
+                    <button name="action_clone_pricelist" string="Sao chép tháng trước" type="object" class="btn-primary" invisible="state == 'confirmed'"/>
+                    <button name="action_open_excel_wizard" string="Nhập/Xuất Excel" type="object" class="btn-secondary" invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" string="Xác nhận &amp; Khóa" type="object" class="btn-primary" invisible="state == 'confirmed'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" class="btn-secondary" invisible="state == 'draft'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button string="Lưu nhanh" name="action_save" class="btn-primary o_form_button_save" type="object"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Mã bảng giá"/>
+                        <h1>
+                            <field name="name" readonly="1" force_save="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group class="dl_card" string="Thời điểm áp dụng">
+                            <field name="month"/>
+                            <field name="year"/>
+                        </group>
+                        <group class="dl_card" string="Cấu hình chuyên cần">
+                            <field name="x_required_days"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết đơn giá (Theo công đoạn)" name="lines">
+                            <field name="line_ids" readonly="state == 'confirmed'">
+                                <list editable="bottom">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="department_id" string="Công đoạn"/>
+                                    <field name="product_id"/>
+                                    <field name="x_thickness"/>
+                                    <field name="x_length" optional="show"/>
+                                    <field name="x_width" optional="show"/>
+                                    <field name="layer_info"/>
+                                    <field name="price_low" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_high" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="extra_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group class="dl_card" string="Gán giá khoán">
+                                            <field name="currency_id" invisible="1"/>
+                                            <field name="department_id"/>
+                                            <field name="product_id"/>
+                                            <field name="price_low" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                            <field name="price_high" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                            <field name="extra_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </group>
+                                        <group class="dl_card" string="Thông số kỹ thuật">
+                                            <field name="x_thickness"/>
+                                            <field name="x_length"/>
+                                            <field name="x_width"/>
+                                            <field name="layer_info"/>
+                                        </group>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_piece_rate_pricelist" model="ir.actions.act_window">
+        <field name="name">Bảng giá đơn giá</field>
+        <field name="res_model">dl.piece.rate.pricelist</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_dl_piece_rate_pricelist_tree"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bắt đầu thiết lập bảng đơn giá khoán!
+            </p>
+        </field>
+    </record>
+
+    <!-- Matrix/Line Views -->
+    <record id="view_dl_piece_rate_line_pivot" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.line.pivot</field>
+        <field name="model">dl.piece.rate.pricelist.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Ma trận đơn giá">
+                <field name="product_id" type="row"/>
+                <field name="department_id" type="col"/>
+                <field name="price_low" type="measure"/>
+                <field name="price_high" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_dl_piece_rate_line_tree" model="ir.ui.view">
+        <field name="name">dl.piece.rate.pricelist.line.list</field>
+        <field name="model">dl.piece.rate.pricelist.line</field>
+        <field name="arch" type="xml">
+            <list string="Dữ liệu đơn giá" editable="bottom">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="department_id"/>
+                <field name="product_id"/>
+                <field name="price_low" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="price_high" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="month" optional="show"/>
+                <field name="year" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_piece_rate_matrix" model="ir.actions.act_window">
+        <field name="name">Ma trận đơn giá</field>
+        <field name="res_model">dl.piece.rate.pricelist.line</field>
+        <field name="view_mode">pivot,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Xem ma trận đơn giá sản phẩm!
+            </p>
+        </field>
+    </record>
+</odoo>

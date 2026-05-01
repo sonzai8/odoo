@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- =============================================
+         BẢNG GIÁ ÉP FILM: FORM VIEW
+    ============================================== -->
+    <record id="view_dl_film_pricelist_list" model="ir.ui.view">
+        <field name="name">dl.film.pricelist.list</field>
+        <field name="model">dl.film.pricelist</field>
+        <field name="arch" type="xml">
+            <list string="Bảng giá Ép Film">
+                <field name="name"/>
+                <field name="month" widget="badge" decoration-info="1"/>
+                <field name="year" widget="badge" decoration-info="1"/>
+                <field name="x_required_days"/>
+                <field name="state" widget="badge"
+                    decoration-info="state == 'draft'"
+                    decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_film_pricelist_form" model="ir.ui.view">
+        <field name="name">dl.film.pricelist.form</field>
+        <field name="model">dl.film.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Bảng giá Ép Film">
+                <header>
+                    <button name="action_open_clone_wizard" string="Sao chép từ tháng khác"
+                        type="object" class="btn-secondary"
+                        invisible="state == 'confirmed'"/>
+                    <button name="action_open_excel_wizard" string="Nhập/Xuất Excel"
+                        type="object" class="btn-secondary"
+                        invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" string="Xác nhận &amp; Khóa"
+                        type="object" class="btn-primary"
+                        invisible="state == 'confirmed'"
+                        groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button name="action_draft" string="Mở lại dự thảo"
+                        type="object" class="btn-secondary"
+                        invisible="state == 'draft'"
+                        groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button string="Lưu nhanh" name="action_save"
+                        class="btn-primary o_form_button_save" type="object"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Mã bảng giá"/>
+                        <h1><field name="name" readonly="1" force_save="1"/></h1>
+                    </div>
+                    <group>
+                        <group class="dl_card" string="Thời gian áp dụng">
+                            <field name="month"/>
+                            <field name="year"/>
+                        </group>
+                        <group class="dl_card" string="Cấu hình chuyên cần">
+                            <field name="x_required_days"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết đơn giá" name="lines">
+                            <field name="line_ids" readonly="state == 'confirmed'">
+                                <list editable="bottom" decoration-muted="price_high == 0">
+                                    <field name="product_tmpl_id" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="x_thickness_alias"/>
+                                    <field name="x_film_brand_id"/>
+                                    <field name="x_surface_type"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="price_low" widget="monetary" string="Thường Cũ" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_high" widget="monetary" string="Thường Mới" decoration-bf="1" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_re_ep_low" widget="monetary" string="Sửa Cũ" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_re_ep_high" widget="monetary" string="Sửa Mới" decoration-info="1" options="{'currency_field': 'currency_id'}"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_dl_film_pricelist" model="ir.actions.act_window">
+        <field name="name">Đơn giá Ép Film</field>
+        <field name="res_model">dl.film.pricelist</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo bảng giá Ép Film đầu tiên cho tháng này!
+            </p>
+        </field>
+    </record>
+
+    <!-- =============================================
+         FILM BRAND VIEWS
+    ============================================== -->
+    <record id="view_dl_film_brand_list" model="ir.ui.view">
+        <field name="name">dl.film.brand.list</field>
+        <field name="model">dl.film.brand</field>
+        <field name="arch" type="xml">
+            <list string="Thương hiệu Film">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_film_brand_form" model="ir.ui.view">
+        <field name="name">dl.film.brand.form</field>
+        <field name="model">dl.film.brand</field>
+        <field name="arch" type="xml">
+            <form string="Thương hiệu Film">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="active"/>
+                        <field name="note"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_film_brand" model="ir.actions.act_window">
+        <field name="name">Thương hiệu Film</field>
+        <field name="res_model">dl.film.brand</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

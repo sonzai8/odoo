@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_production_log_tree" model="ir.ui.view">
+        <field name="name">dl.production.log.tree</field>
+        <field name="model">dl.production.log</field>
+        <field name="arch" type="xml">
+            <list string="Nhập sản lượng" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'" decoration-muted="state == 'locked'">
+                <field name="date"/>
+                <field name="production_group_id"/>
+                <field name="department_id" string="Công đoạn"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_production_log_form" model="ir.ui.view">
+        <field name="name">dl.production.log.form</field>
+        <field name="model">dl.production.log</field>
+        <field name="arch" type="xml">
+            <form string="Nhập sản lượng">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_lock" string="Khóa sổ" type="object" class="btn-primary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button name="action_draft" string="Mở lại dự thảo" type="object" class="btn-secondary" invisible="state != 'confirmed'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button name="action_unlock" string="Mở khóa sổ" type="object" class="btn-secondary" invisible="state != 'locked'" groups="dl_wood_payroll.group_dl_wood_manager"/>
+                    <button string="Lưu phiếu" name="action_save" class="btn-primary" type="object" invisible="state == 'locked'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,locked"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="production_group_id" string="Tổ sản xuất thực hiện"/>
+                        <h1>
+                            <field name="production_group_id" placeholder="Chọn Tổ sản xuất" readonly="state != 'draft'"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group class="dl_card" string="Thông tin chung">
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                        </group>
+                        
+                        <field name="is_kcs_stage" invisible="1"/>
+                        <field name="is_film_stage" invisible="1"/>
+                        <group class="dl_card" string="Vật tư đóng gói (KCS)" invisible="not is_kcs_stage">
+                            <group>
+                                <field name="x_plastic_belt_qty" readonly="state == 'locked'"/>
+                                <field name="x_steel_belt_qty" readonly="state == 'locked'"/>
+                            </group>
+                            <group>
+                                <field name="x_paper_qty" readonly="state == 'locked'"/>
+                                <field name="x_cardboard_qty" readonly="state == 'locked'"/>
+                            </group>
+                        </group>
+                        
+                        <group class="dl_card" string="Tạm tính lương (Nội bộ)" invisible="not is_film_stage" style="border-left: 4px solid #3b82f6;">
+                            <field name="currency_id" invisible="1"/>
+                            <group>
+                                <field name="x_total_estimated_wage" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1"/>
+                                <field name="x_worker_count"/>
+                            </group>
+                            <group>
+                                <field name="x_avg_wage_per_worker" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" decoration-bf="1"/>
+                            </group>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sản lượng sản xuất" name="products">
+                            <field name="product_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="product_id" 
+                                           domain="[('x_is_wood_product', '=', True), '|', ('parent.is_film_stage', '=', False), ('x_is_film_product', '=', True)]" 
+                                           options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="x_quality" widget="badge" decoration-info="1" optional="show"/>
+                                    <field name="layer_info" optional="show"/>
+                                    <field name="x_film_brand_id" placeholder="Thương hiệu Film" optional="show" invisible="not parent.is_film_stage" required="parent.is_film_stage"/>
+                                    <field name="x_surface_type" placeholder="Số mặt" optional="show" invisible="not parent.is_film_stage" required="parent.is_film_stage"/>
+                                    <field name="is_re_ep_film" optional="show" invisible="not parent.is_film_stage"/>
+                                    <field name="x_price_type" column_invisible="True"/>
+                                    <field name="quantity" sum="Tổng số tấm"/>
+                                    <field name="price" readonly="1" widget="monetary" decoration-info="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Nhân sự thực hiện" name="workers">
+                            <field name="worker_line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" decoration-danger="is_attendance_missing">
+                                    <field name="employee_id" widget="many2one_avatar_user"/>
+                                    <field name="worked_hours" sum="Tổng công"/>
+                                    <field name="native_group_id" readonly="1" optional="show"/>
+                                    <field name="actual_group_id" optional="show"/>
+                                    <field name="transfer_status" widget="badge" decoration-info="transfer_status == 'native'" decoration-warning="transfer_status == 'lent_out'" decoration-primary="transfer_status == 'borrowed_in'"/>
+                                    <field name="handshake_status" widget="badge" decoration-muted="handshake_status == 'n/a'" decoration-warning="handshake_status == 'pending'" decoration-success="handshake_status == 'confirmed'" decoration-danger="handshake_status == 'rejected'"/>
+                                    <field name="is_attendance_missing" string="Dữ liệu ảo" widget="boolean_toggle" decoration-danger="is_attendance_missing"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_production_log" model="ir.actions.act_window">
+        <field name="name">Nhập sản lượng</field>
+        <field name="res_model">dl.production.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Matrix Report Views -->
+    <record id="view_dl_production_log_product_line_pivot" model="ir.ui.view">
+        <field name="name">dl.production.log.product.line.pivot</field>
+        <field name="model">dl.production.log.product.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Ma trận Sản lượng ngày" sample="1">
+                <field name="production_group_id" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="date" interval="day" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_dl_production_log_product_line_search_new" model="ir.ui.view">
+        <field name="name">dl.production.log.product.line.search.new</field>
+        <field name="model">dl.production.log.product.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="production_group_id"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_production_matrix_report" model="ir.actions.act_window">
+        <field name="name">Ma trận Sản lượng ngày</field>
+        <field name="res_model">dl.production.log.product.line</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="domain">[('x_is_support_product', '=', False)]</field>
+        <field name="search_view_id" ref="view_dl_production_log_product_line_search_new"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Báo cáo ma trận chưa có dữ liệu.
+            </p>
+        </field>
+    </record>
+</odoo>

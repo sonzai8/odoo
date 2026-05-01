@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu gốc -->
+    <menuitem id="menu_dl_salary_kpi_root"
+              name="Cân Đối Lương &amp; KPI"
+              sequence="20"/>
+
+    <!-- Menu Hoạt động -->
+    <menuitem id="menu_dl_salary_kpi_main"
+              name="Hoạt động"
+              parent="menu_dl_salary_kpi_root"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_salary_kpi_month_action"
+              name="Cân đối bảng công"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_month"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_salary_kpi_line_detail"
+              name="Chi tiết công nhân viên"
+              parent="menu_dl_salary_kpi_main"
+              action="action_dl_salary_kpi_line_detail"
+              sequence="20"/>
+
+    
+
+    
+
+    <menuitem id="menu_dl_salary_kpi_tree"
+              name="Quản lý nhân viên"
+              parent="menu_dl_salary_kpi_root"
+              action="action_dl_salary_kpi_employee_tax"
+              sequence="30"/>
+    <menuitem id="menu_dl_salary_kpi_employee_tax_action"
+              name="DS nhân viên"
+              parent="menu_dl_salary_kpi_tree"
+              action="action_dl_salary_kpi_employee_tax"
+              sequence="1"/>
+    <menuitem id="menu_dl_salary_kpi_tax_import_action"
+              name="Nhập nhân viên"
+              parent="menu_dl_salary_kpi_tree"
+              action="action_dl_salary_kpi_tax_import"
+              sequence="2"/>
+
+    <menuitem id="menu_dl_dependent_root"
+              name="Quản lý người phụ thuộc"
+              parent="menu_dl_salary_kpi_root"
+              sequence="40"/>
+    <menuitem id="menu_dl_dependent_action"
+              name="Danh sách NPT"
+              parent="menu_dl_dependent_root"
+              action="action_dl_dependent"
+              sequence="1"/>
+    <menuitem id="menu_dl_dependent_import_menu"
+              name="Nhập Người Phụ Thuộc"
+              parent="menu_dl_dependent_root"
+              action="action_dl_dependent_import"
+              sequence="2"/>
+
+    <!-- Menu Cấu hình -->
+    <menuitem id="menu_dl_salary_kpi_config"
+              name="Cấu hình"
+              parent="menu_dl_salary_kpi_root"
+              sequence="100"
+              groups="dl_wood_payroll.group_dl_wood_manager"/>
+
+    <menuitem id="menu_dl_salary_kpi_attendance_type_action"
+              name="Loại công"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_salary_kpi_attendance_type"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_tax_department_action"
+              name="Phòng ban thuế"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_tax_department"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_salary_kpi_bonus_year_action"
+              name="Cấu hình thưởng trong năm"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_salary_kpi_bonus_year"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_pit_config_settings_action"
+              name="Cấu hình Thuế TNCN"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_pit_config_settings"
+              sequence="40"/>
+</odoo>

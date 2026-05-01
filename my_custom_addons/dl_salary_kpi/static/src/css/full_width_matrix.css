@@ -1,0 +1,18 @@
+/* Ép khung nền giãn hết 100% */
+.o_form_view .o_form_sheet_bg {
+    max-width: 100% !important;
+}
+
+/* Ép sheet bên trong giãn hết 100% và bỏ lề thừa */
+.o_form_view .o_form_sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}
+
+/* Tối ưu cho màn hình cực rộng (Wide Screen) */
+.o_form_view_container {
+    width: 100% !important;
+}

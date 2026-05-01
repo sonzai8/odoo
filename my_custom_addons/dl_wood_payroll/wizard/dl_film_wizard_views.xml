@@ -44,7 +44,7 @@
                     <div class="alert alert-info" role="alert" invisible="state == 'verified' or file_data">
                         <p class="mb-0">
                             <strong>Hướng dẫn:</strong><br/>
-                            1. Bấm <strong>"Xuất dữ liệu / Tải mẫu"</strong> để lấy file mẫu với các cột: Alias, Thương hiệu, Số mặt, Giá Mới, Giá Cũ, Giá Ép Lại.<br/>
+                            1. Bấm <strong>"Xuất dữ liệu / Tải mẫu"</strong> để lấy file mẫu với các cột: Alias, Thương hiệu, Số mặt, Thường Mới, Thường Cũ, Sửa Mới, Sửa Cũ.<br/>
                             2. Điền/sửa giá trong file Excel.<br/>
                             3. Tải lên và bấm <strong>"Kiểm tra dữ liệu"</strong>.
                         </p>
@@ -60,9 +60,10 @@
                                     <field name="thickness_alias"/>
                                     <field name="brand_name"/>
                                     <field name="surface_type"/>
-                                    <field name="price_high"/>
-                                    <field name="price_low" optional="hide"/>
-                                    <field name="price_re_ep" decoration-info="1"/>
+                                    <field name="price_high" string="Thường Mới"/>
+                                    <field name="price_low" string="Thường Cũ" optional="hide"/>
+                                    <field name="price_re_ep_high" string="Sửa Mới" decoration-info="1"/>
+                                    <field name="price_re_ep_low" string="Sửa Cũ" optional="show"/>
                                     <field name="message"/>
                                 </list>
                             </field>

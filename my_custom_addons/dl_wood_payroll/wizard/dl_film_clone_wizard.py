@@ -38,12 +38,13 @@ class FilmCloneWizard(models.TransientModel):
         for line in source.line_ids:
             vals_list.append({
                 'pricelist_id': target.id,
-                'x_thickness_alias': line.x_thickness_alias,
+                'product_tmpl_id': line.product_tmpl_id.id,
                 'x_film_brand_id': line.x_film_brand_id.id,
                 'x_surface_type': line.x_surface_type,
                 'price_low': line.price_low,
                 'price_high': line.price_high,
-                'price_re_ep': line.price_re_ep,
+                'price_re_ep_low': line.price_re_ep_low,
+                'price_re_ep_high': line.price_re_ep_high,
             })
 
         if vals_list:

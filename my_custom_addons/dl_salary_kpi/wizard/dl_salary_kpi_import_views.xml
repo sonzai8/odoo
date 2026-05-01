@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_import_wizard_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.import.wizard.form</field>
+        <field name="model">dl.salary.kpi.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập bảng công từ Excel">
+                <sheet>
+                    <group>
+                        <field name="month_id" invisible="1"/>
+                        <field name="wizard_type" readonly="1" options="{'horizontal': True}"/>
+                        <label for="file_data" string="1. Xuất dữ liệu / Tải file mẫu"/>
+                        <div class="o_row">
+                            <button name="action_export" string="Bấm để Tải file Công hiện tại" type="object" class="btn-link" icon="fa-download"/>
+                        </div>
+                        <separator string="2. Nhập dữ liệu từ file đã sửa"/>
+                        <field name="file_data" filename="file_name" string="Chọn file Excel"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_import" string="Xác nhận Nhập dữ liệu" type="object" class="btn-primary" invisible="not file_data"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

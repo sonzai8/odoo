@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_tax" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.tax</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//div[hasclass('oe_title')]//h1" position="after">
+                <h5 class="d-flex align-items-baseline mb-0">
+                    <i class="fa fa-id-badge fa-fw me-1 text-primary" title="Tên riêng"/>
+                    <field name="dl_first_name" placeholder="Tên riêng nhân viên..."/>
+                </h5>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Cấu Hình Thuế" name="tax_config">
+                    <group>
+                        <group string="Thông tin định danh thuế">
+                            <field name="dl_tax_id"/>
+                            <field name="dl_tax_department_id"/>
+                        </group>
+                        <group string="Thông tin lương thuế">
+                            <field name="dl_tax_position"/>
+                            <field name="dl_tax_base_salary"/>
+                            <field name="dl_departure_date"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Người phụ thuộc" name="dependents">
+                    <field name="dependent_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="name"/>
+                            <field name="birthday"/>
+                            <field name="relationship"/>
+                            <field name="dependent_number"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

@@ -5,14 +5,21 @@
               web_icon="dl_wood_payroll,static/description/icon.png"
               sequence="20"/>
 
+    <!-- 0. Tổng Quan (Landing Page) -->
+    <menuitem id="menu_dl_overview_root"
+              name="Tổng quan"
+              parent="menu_dl_wood_payroll_root"
+              action="action_dl_comprehensive_matrix_report"
+              sequence="5"/>
+
     <!-- A. Top Menu: Chấm Công - Tính Lương -->
     <menuitem id="menu_dl_ops_root"
-              name="Chấm Công - Tính Lương"
+              name="Chấm Công - Sản Lượng"
               parent="menu_dl_wood_payroll_root"
               sequence="10"/>
 
     <menuitem id="menu_dl_combined_log_action"
-              name="Cào bằng tổ sản xuất"
+              name="Sản Lượng Chuyền"
               parent="menu_dl_ops_root"
               action="action_dl_combined_log"
               sequence="10"/>
@@ -21,27 +28,35 @@
               name="Sản lượng Phơi Ván"
               parent="menu_dl_ops_root"
               action="action_dl_veneer_drying_log"
-              sequence="20"/>
+              sequence="11"/>
 
     <menuitem id="menu_dl_production_log_action_in_ops"
               name="Sản lượng Ép Phim"
               parent="menu_dl_ops_root"
               action="action_dl_production_log"
-              sequence="30"/>
+              sequence="12"/>
 
     <menuitem id="menu_dl_stevedore_log_action_in_ops"
-              name="Phiếu khoán Bốc vác"
+              name="Sản lượng Bốc vác"
               parent="menu_dl_ops_root"
               action="action_dl_stevedore_log"
-              sequence="40"/>
+              sequence="13"/>
 
-    <menuitem id="menu_dl_attendance_action_in_ops"
+    <menuitem id="menu_dl_pooling_wizard_action_in_ops"
+              name="Tính toán lương Chuyền"
+              parent="menu_dl_ops_root"
+              action="action_dl_pooling_wizard"
+              sequence="55"/>
+
+    
+
+    <!-- <menuitem id="menu_dl_attendance_action_in_ops"
               name="Chấm công theo tổ"
               parent="menu_dl_ops_root"
               action="action_dl_daily_attendance"
-              sequence="50"/>
-
+              sequence="50"/> -->
     <!-- B. Top Menu: Báo Cáo -->
+
     <menuitem id="menu_dl_reports_root"
               name="Báo Cáo"
               parent="menu_dl_wood_payroll_root"
@@ -78,9 +93,9 @@
               sequence="50"/>
 
     <menuitem id="menu_dl_stevedore_matrix_action_in_reports"
-              name="Ma trận Lương bốc vác"
+              name="Báo cáo Lương Bốc vác"
               parent="menu_dl_reports_root"
-              action="action_dl_stevedore_matrix"
+              action="action_dl_stevedore_report"
               sequence="60"/>
 
     <menuitem id="menu_dl_global_payroll_wizard_action_in_reports"
@@ -95,6 +110,12 @@
               action="action_dl_daily_attendance_line"
               sequence="80"/>
 
+    <menuitem id="menu_dl_daily_pooling_result_action_in_reports"
+              name="Kết quả cào bằng lương"
+              parent="menu_dl_reports_root"
+              action="action_dl_daily_pooling_result"
+              sequence="90"/>
+
     <!-- C. Top Menu: Cấu hình đơn giá -->
     <menuitem id="menu_dl_pricing_root"
               name="Cấu hình đơn giá"
@@ -103,7 +124,7 @@
               groups="dl_wood_payroll.group_dl_wood_manager"/>
 
     <menuitem id="menu_dl_piece_rate_pricelist_action_in_pricing"
-              name="Đơn giá Cào bằng / Tổ sản xuất"
+              name="Đơn giá Chuyền"
               parent="menu_dl_pricing_root"
               action="action_dl_piece_rate_pricelist"
               sequence="10"/>
@@ -121,9 +142,9 @@
               sequence="30"/>
 
     <menuitem id="menu_dl_stevedore_service_action_in_pricing"
-              name="Danh mục Công việc Bốc vác"
+              name="Cấu hình Công việc Bốc vác"
               parent="menu_dl_pricing_root"
-              action="action_dl_stevedore_service"
+              action="action_dl_stevedore_task"
               sequence="40"/>
 
     <menuitem id="menu_dl_piece_rate_matrix_action_in_pricing"
@@ -233,7 +254,7 @@
               parent="menu_dl_org_config_root"
               action="action_dl_attendance_type"
               sequence="30"
-              groups="dl_wood_payroll.group_dl_payroll_manager"/>
+              groups="dl_wood_payroll.group_dl_wood_manager"/>
 
     <menuitem id="menu_dl_config_clean_data"
               name="Tiện ích Xóa dữ liệu"
