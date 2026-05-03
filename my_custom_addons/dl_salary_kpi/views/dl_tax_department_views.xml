@@ -4,7 +4,7 @@
         <field name="name">dl.tax.department.list</field>
         <field name="model">dl.tax.department</field>
         <field name="arch" type="xml">
-            <list string="Phòng ban thuế" editable="bottom">
+            <list limit="20" string="Phòng ban thuế" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="code"/>

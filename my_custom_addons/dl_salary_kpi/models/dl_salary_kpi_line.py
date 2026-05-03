@@ -425,7 +425,6 @@ class SalaryKpiLine(models.Model):
     
     payroll_n_ca_ngay = fields.Float(string='Công thường ca ngày', compute='_compute_totals', store=True)
     payroll_d_gio_ban_ngay = fields.Float(string='Giờ ca đêm tính ngày', compute='_compute_totals', store=True)
-    payroll_nghi_luong = fields.Float(string='Nghỉ hưởng 100% lương', compute='_compute_totals', store=True)
     payroll_ot_n_150 = fields.Float(string='Giờ TC ngày 150%', compute='_compute_totals', store=True)
     payroll_ot_d_130 = fields.Float(string='Giờ ca đêm thường 130%', compute='_compute_totals', store=True)
     payroll_ot_d_200 = fields.Float(string='Giờ TC đêm (không ngày) 200%', compute='_compute_totals', store=True)
@@ -518,7 +517,7 @@ class SalaryKpiLine(models.Model):
             'total_ot_n_normal': 0, 'total_ot_d_normal': 0, 'total_ot_n_sun': 0, 
             'total_ot_d_sun': 0, 'total_ot_n_holiday': 0, 'total_ot_d_holiday': 0,
             # Payroll Summary
-            'payroll_n_ca_ngay': 0, 'payroll_d_gio_ban_ngay': 0, 'payroll_nghi_luong': 0,
+            'payroll_n_ca_ngay': 0, 'payroll_d_gio_ban_ngay': 0,
             'bonus_p_day': 0, 'total_attendance_month': 0,
             'payroll_ot_n_150': 0, 'payroll_ot_d_130': 0, 'payroll_ot_d_200': 0, 'payroll_ot_d_sun_300': 0,
             # Thu nhập & Phụ cấp
@@ -622,6 +621,12 @@ class SalaryKpiLine(models.Model):
                 'kpi_c5_saving': kpi_vals[4],
             })
 
+    @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                 'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                 'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
+                 'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
+                 'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
+                 'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
     def _compute_totals(self):
         from . import attendance_logic
         if not self:
@@ -659,10 +664,9 @@ class SalaryKpiLine(models.Model):
                 'total_attendance_month': res['total_n'] + res['total_d'] + res['bonus_p_day'],
                 'payroll_n_ca_ngay': res['total_n'],
                 'payroll_d_gio_ban_ngay': round(res['total_d'] * 8 * 0.3125, 1),
-                'payroll_nghi_luong': res['total_pl'] + res['total_p'] + res['bonus_p_day'],
                 'payroll_ot_n_150': res['ot_n_normal'],
-                'payroll_ot_d_130': res['ot_d_normal'],
-                'payroll_ot_d_200': res['ot_d_200'],
+                'payroll_ot_d_130': round(res['total_d'] * 8 * 0.6875, 1),
+                'payroll_ot_d_200': res['ot_d_normal'],
                 'payroll_ot_d_sun_300': res['ot_d_sun']
             })
 

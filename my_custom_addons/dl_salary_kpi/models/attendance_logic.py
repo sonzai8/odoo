@@ -33,12 +33,12 @@ def calculate_attendance_totals(rec, att_map=None):
         if ot_id:
             if att_map:
                 code = att_map[ot_id]['code'] or ""
-                hours = att_map[ot_id]['weight'] * 10
+                hours = att_map[ot_id]['weight'] * 8
                 ot_type = att_map[ot_id]['ot_type']
             else:
                 ot_att = rec[f'ot_day_{i:02d}']
                 code = ot_att.code or ""
-                hours = ot_att.weight * 10
+                hours = ot_att.weight * 8
                 ot_type = ot_att.ot_type
             
             if ot_type == 'day':
@@ -57,7 +57,7 @@ def calculate_attendance_totals(rec, att_map=None):
                 elif code == 'LĐ': ot_d_holiday += hours
 
     # Logic Thưởng Chuyên Cần (Bonus Paid Leave)
-    bonus_p_day = 1.0 if (n + d > 20) else 0.0
+    bonus_p_day = 1.0 if (n + d >= 20) else 0.0
 
     return {
         'total_n': n, 'total_d': d, 'total_p': p, 'total_pl': pl,

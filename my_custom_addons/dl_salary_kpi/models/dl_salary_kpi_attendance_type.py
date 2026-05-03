@@ -14,7 +14,7 @@ class SalaryKpiAttendanceType(models.Model):
     code = fields.Char(string='Mã ký hiệu', required=True, help="VD: N, D, P, K")
     name = fields.Char(string='Tên loại công', required=True)
     note = fields.Text(string='Ghi chú')
-    weight = fields.Float(string='Trọng số công', default=1.0, help="Giá trị quy đổi công (1.0, 0.5, 0.0...)")
+    weight = fields.Float(string='Trọng số công', default=1.0, help="Giá trị quy đổi công (1.0, 0.5, 0.0...)", digits=(6,4))
     sequence = fields.Integer(string='Thứ tự', default=10)
     active = fields.Boolean(default=True)
     apply_to = fields.Selection([

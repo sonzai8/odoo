@@ -29,7 +29,7 @@
                 </page>
                 <page string="Người phụ thuộc" name="dependents">
                     <field name="dependent_ids" nolabel="1">
-                        <list editable="bottom">
+                        <list limit="20" editable="bottom">
                             <field name="name"/>
                             <field name="birthday"/>
                             <field name="relationship"/>

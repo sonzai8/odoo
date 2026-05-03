@@ -4,7 +4,7 @@
         <field name="name">dl.salary.kpi.bonus.year.tree</field>
         <field name="model">dl.salary.kpi.bonus.year</field>
         <field name="arch" type="xml">
-            <list string="Cấu hình thưởng trong năm">
+            <list limit="20" string="Cấu hình thưởng trong năm">
                 <field name="year"/>
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
@@ -30,7 +30,7 @@
                     <notebook>
                         <page string="Chi tiết các khoản thưởng">
                             <field name="line_ids">
-                                <list editable="bottom">
+                                <list limit="20" editable="bottom">
                                     <field name="date"/>
                                     <field name="name"/>
                                     <field name="amount" sum="Tổng thưởng"/>
