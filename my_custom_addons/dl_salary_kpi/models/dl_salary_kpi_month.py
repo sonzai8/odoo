@@ -379,6 +379,17 @@ class SalaryKpiMonth(models.Model):
         self.write({'state': 'lock_normal'})
 
     def action_back_to_lock_ot(self):
+        # Xóa dữ liệu KPI khi quay lại trạng thái trước
+        self.line_ids.write({
+            'payroll_kpi_score': 0,
+            'payroll_kpi_amount': 0,
+            'payroll_cash_amount': 0,
+            'kpi_c1_productivity': 0,
+            'kpi_c2_discipline': 0,
+            'kpi_c3_teamwork': 0,
+            'kpi_c4_5s': 0,
+            'kpi_c5_saving': 0,
+        })
         self.action_recompute_all_data()
         self.write({'state': 'lock_ot'})
 

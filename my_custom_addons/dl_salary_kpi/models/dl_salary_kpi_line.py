@@ -494,6 +494,19 @@ class SalaryKpiLine(models.Model):
     payroll_kpi_score = fields.Float(string='Điểm KPI (Sinh ra)', digits=(16, 2), aggregator="avg")
     payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id')
     payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id')
+    
+    payroll_net_salary_base_rounded = fields.Monetary(string='Lk làm tròn', compute='_compute_lk_rounding', store=True, currency_field='currency_id')
+    payroll_net_salary_base_rounding_error = fields.Monetary(string='Sai số Lk', compute='_compute_lk_rounding', store=True, currency_field='currency_id')
+    payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
+    payroll_income_explanation = fields.Html(string='Diễn giải thu nhập', compute='_compute_payroll_internal', store=True)
+
+    @api.depends('payroll_net_salary_base')
+    def _compute_lk_rounding(self):
+        for rec in self:
+            # Làm tròn xuống hàng nghìn cho Thực lĩnh cơ sở (Lk)
+            rounded = (rec.payroll_net_salary_base // 1000) * 1000 if rec.payroll_net_salary_base else 0
+            rec.payroll_net_salary_base_rounded = rounded
+            rec.payroll_net_salary_base_rounding_error = rec.payroll_net_salary_base - rounded
 
     # --- CHI TIẾT TIÊU CHÍ KPI ---
     kpi_c1_productivity = fields.Float(string='Năng suất/Chất lượng (Max 40)', digits=(16, 1))
@@ -556,7 +569,8 @@ class SalaryKpiLine(models.Model):
                 raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
             
             ln = rec.payroll_internal_salary
-            lk = rec.payroll_net_salary_base
+            # Sử dụng Thực lĩnh cơ sở đã làm tròn để tính toán
+            lk = rec.payroll_net_salary_base_rounded
             
             if not ln or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
@@ -721,25 +735,71 @@ class SalaryKpiLine(models.Model):
             # 4. Tính toán lương chi tiết
             wages = payroll_logic.calculate_detailed_wages(rec)
             
-            # Tổng lương = Tổng các khoản lương chi tiết + Thưởng doanh thu thực tế + Thưởng năng suất thực tế
-            total_wage = sum(wages.values()) + revenue_bonus + productivity_bonus
+            # Tổng lương chi tiết (Chỉ bao gồm lương công, không bao gồm thưởng)
+            total_detailed_wage = sum(wages.values())
             
-            # Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế + (KPI & Tiền mặt cân đối)
-            total_actual_income = total_wage + meal_allowance + women_allowance + rec.payroll_kpi_amount + rec.payroll_cash_amount
+            # Tổng thu nhập thực tế = Lương chi tiết + Thưởng (DT + NS) + Trợ cấp thực tế + Tiền KPI
+            total_actual_income = (
+                total_detailed_wage + 
+                revenue_bonus + 
+                productivity_bonus + 
+                meal_allowance + 
+                women_allowance + 
+                max(0, rec.payroll_kpi_amount)
+            )
 
             # 5. Khấu trừ & Thực lĩnh
             # Thuế và bảo hiểm tính trên Thu nhập cơ bản (không bao gồm KPI/Cash cân đối)
-            base_income = total_wage + meal_allowance + women_allowance
+            # Thu nhập chịu thuế (không bao gồm KPI/Cash cân đối)
+            base_income = total_detailed_wage + revenue_bonus + productivity_bonus + meal_allowance + women_allowance
             deductions = payroll_logic.calculate_deductions(rec, base_income, meal_allowance)
             
             # Thực lĩnh cơ sở (Lk) = Thu nhập cơ bản - Khấu trừ
             net_salary_base = base_income - deductions['total_deduction']
             
-            # Thực lĩnh cuối cùng = Thực lĩnh cơ sở + KPI + Cash
-            net_salary_final = net_salary_base + rec.payroll_kpi_amount + rec.payroll_cash_amount
+            # Thực lĩnh cuối cùng = Thực lĩnh cơ sở + KPI + Cash (không được trừ tiền mặt)
+            net_salary_final = net_salary_base + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
+            
+            # 6. Gợi ý xử lý dữ liệu bất thường (Nếu Lk > Ln)
+            anomaly_suggestion = ""
+            if net_salary_base > rec.payroll_internal_salary and rec.payroll_internal_salary > 0:
+                diff = net_salary_base - rec.payroll_internal_salary
+                h_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0
+                ins_factor = 0.895 # Ước tính sau khi trừ 10.5% BH
+                
+                if h_rate > 0:
+                    import math
+                    # Giá trị Net ước tính cho từng loại công
+                    v_05n = 4.0 * 1.5 * h_rate * ins_factor
+                    v_05d = 4.0 * 2.0 * h_rate * ins_factor
+                    
+                    meal_day = (rec.month_id.dl_meal_allowance or 0.0) / 26.0
+                    women_day = (rec.month_id.dl_women_allowance or 0.0) / 26.0 if rec.employee_id.sex == 'female' else 0.0
+                    
+                    # Giá trị N gộp = Lương N (8h) + Ăn ca + Phụ nữ + Lương 0.5N đi kèm
+                    v_n_full = (8.0 * h_rate * ins_factor) + meal_day + women_day + v_05n
+                    # Giá trị Đ gộp = Lương Đ quy đổi (8h) + Ăn ca + Phụ nữ + Lương 0.5Đ đi kèm
+                    v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
+                    
+                    # Tính số lượng cần giảm (làm tròn lên)
+                    c_05n = math.ceil(diff / v_05n) if v_05n > 0 else 0
+                    c_05d = math.ceil(diff / v_05d) if v_05d > 0 else 0
+                    c_n = math.ceil(diff / v_n_full) if v_n_full > 0 else 0
+                    c_d = math.ceil(diff / v_d_full) if v_d_full > 0 else 0
+                    
+                    anomaly_suggestion = (
+                        f"<div style='color: #d9534f; font-weight: bold;'>🔻 Cần giảm ít nhất một trong các phương án:</div>"
+                        f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                        f"<li><b>{c_05n}</b> lần <b>0.5N</b></li>"
+                        f"<li><b>{c_05d}</b> lần <b>0.5Đ</b></li>"
+                        f"<li><b>{c_n}</b> ngày <b>N</b> (kèm 0.5N)</li>"
+                        f"<li><b>{c_d}</b> ngày <b>Đ</b> (kèm 0.5Đ)</li>"
+                        f"</ul>"
+                    )
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({
+                'payroll_anomaly_suggestion': anomaly_suggestion,
                 'payroll_meal_allowance': meal_allowance,
                 'payroll_women_allowance': women_allowance,
                 'payroll_regime_meal_allowance': meal_allowance_regime,
@@ -767,8 +827,12 @@ class SalaryKpiLine(models.Model):
                 'payroll_wage_day_sun_200': wages['wage_day_sun_200'],
                 'payroll_wage_day_holiday_300': wages['wage_day_holiday_300'],
                 'payroll_wage_night_holiday_390': wages['wage_night_holiday_390'],
-                'payroll_total_wage': total_wage,
+                'payroll_total_wage': total_detailed_wage + revenue_bonus + productivity_bonus,
                 'payroll_total_actual_income': total_actual_income,
+                'payroll_income_explanation': self._get_income_explanation(
+                    total_detailed_wage, revenue_bonus, productivity_bonus, 
+                    meal_allowance, women_allowance, rec.payroll_kpi_amount
+                ),
                 
                 # Cập nhật các khoản trừ & Thuế TNCN
                 'payroll_deduction_bhxh': deductions['bhxh'],
@@ -784,6 +848,25 @@ class SalaryKpiLine(models.Model):
                 'payroll_net_salary_base': net_salary_base,
                 'payroll_net_salary': net_salary_final,
             })
+
+    def _get_income_explanation(self, wage, rev, prod, meal, women, kpi):
+        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML"""
+        parts = []
+        def fmt(val):
+            return "{:,.0f}".format(val or 0).replace(",", ".")
+            
+        if wage: parts.append(f"<b>{fmt(wage)}</b> (Lương CT)")
+        if rev: parts.append(f"<b>{fmt(rev)}</b> (Thưởng DT)")
+        if prod: parts.append(f"<b>{fmt(prod)}</b> (Thưởng NS)")
+        if meal: parts.append(f"<b>{fmt(meal)}</b> (Ăn ca)")
+        if women: parts.append(f"<b>{fmt(women)}</b> (Phụ nữ)")
+        if kpi: parts.append(f"<b>{fmt(kpi)}</b> (KPI)")
+        
+        if not parts: return ""
+        
+        formula = " + ".join(parts)
+        total = (wage or 0) + (rev or 0) + (prod or 0) + (meal or 0) + (women or 0) + (kpi or 0)
+        return f"<div style='text-align: right; color: #444; font-size: 0.95em; border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px;'>{formula} = <span style='color: #d9534f; font-weight: bold;'>{fmt(total)}</span></div>"
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
