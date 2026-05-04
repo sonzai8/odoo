@@ -607,34 +607,52 @@ class SalaryKpiLine(models.Model):
                 # Bắt buộc dùng Tiền mặt
                 cash_needed = gap - max_mk
                 if cash_needed >= 1000000:
-                    # Tiền mặt đủ lớn, random điểm KPI từ 50-70 (Ưu tiên 60-70)
-                    # Cho phép lẻ 2 chữ số để trông tự nhiên
+                    # Tiền mặt đủ lớn, lấy ngẫu nhiên Điểm KPI trước
                     if random.random() < 0.7:
-                        p_final = round(random.uniform(60.0, float(max_allowed)), 2)
+                        p_temp = random.uniform(60.0, float(max_allowed))
                     else:
-                        p_final = round(random.uniform(50.0, float(max_allowed)), 2)
-                    mk = lk * (p_final - 50.0) / 50.0
-                    cash = gap - mk
+                        p_temp = random.uniform(50.0, float(max_allowed))
+                    
+                    mk_temp = lk * (p_temp - 50.0) / 50.0
+                    cash_raw = gap - mk_temp
+                    # Làm tròn Tiền mặt đến hàng chục nghìn (10.000 VNĐ)
+                    cash = round(cash_raw / 10000.0) * 10000
+                    # Tính ngược lại Điểm KPI lẻ để khớp hoàn toàn
+                    mk = gap - cash
+                    p_final = 50.0 + 50.0 * mk / lk
                 else:
-                    # Tiền mặt < 1 triệu, phải giảm điểm KPI
+                    # Tiền mặt < 1 triệu, tính p_theo để nhường chỗ 1 triệu cho Tiền mặt
                     remaining_gap = gap - 1000000
                     if remaining_gap < 0:
-                        # Edge case: Tổng khoảng cách < 1 triệu, không đủ gánh 1 triệu
+                        # Edge case: Tổng khoảng cách < 1 triệu
                         p_final = 50.0
                         mk = 0.0
                         cash = gap
                     else:
-                        # Normal case
-                        p_theo = 50.0 + 50.0 * remaining_gap / lk
-                        # Bắt buộc làm tròn XUỐNG để nhường chỗ trống >= 1 triệu cho Tiền mặt
-                        upper_bound = math.floor(p_theo)
-                        # Ưu tiên 60-70 nếu upper_bound cho phép
-                        if upper_bound >= 60 and random.random() < 0.7:
-                            p_final = round(random.uniform(60.0, float(upper_bound)), 2)
+                        # Normal case: Lấy p_upper là điểm tối đa để vẫn còn 1tr Tiền mặt
+                        p_upper = 50.0 + 50.0 * remaining_gap / lk
+                        if p_upper >= 60 and random.random() < 0.7:
+                            p_temp = random.uniform(60.0, float(min(max_allowed, p_upper)))
                         else:
-                            p_final = round(random.uniform(50.0, float(upper_bound)), 2)
-                        mk = lk * (p_final - 50.0) / 50.0
-                        cash = gap - mk
+                            p_temp = random.uniform(50.0, float(min(max_allowed, p_upper)))
+                        
+                        mk_temp = lk * (p_temp - 50.0) / 50.0
+                        cash_raw = gap - mk_temp
+                        # Làm tròn Tiền mặt đến hàng chục nghìn
+                        cash = round(cash_raw / 10000.0) * 10000
+                        mk = gap - cash
+                        p_final = 50.0 + 50.0 * mk / lk
+                
+                # --- KIỂM SOÁT BIÊN (CAPPING) ---
+                # Nếu sau khi làm tròn mà p_final vượt ngưỡng cho phép
+                if p_final > max_allowed:
+                    p_final = float(max_allowed)
+                    mk = lk * (p_final - 50.0) / 50.0
+                    cash = gap - mk
+                
+            # Đảm bảo p_final luôn làm tròn 2 chữ số thập phân cho đẹp
+            p_final = round(p_final, 2)
+            mk = gap - cash # Đảm bảo mk + cash luôn bằng gap
             
             # --- PHÂN RÃ ĐIỂM KPI THÀNH 5 TIÊU CHÍ (C1-C5) TỶ LỆ THUẬN ---
             # Giới hạn: C1: 40, C2: 30, C3: 15, C4: 10, C5: 5 (Tổng max = 100)
