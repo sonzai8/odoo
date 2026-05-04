@@ -45,13 +45,39 @@ class SalaryKpiTaxImport(models.TransientModel):
         wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
         ws = wb.active
 
+        # --- BƯỚC 1: KIỂM TRA ĐỊNH DẠNG TEMPLATE ---
+        # Kiểm tra dòng 1 hoặc dòng 2 xem có phải là tiêu đề chuẩn không
+        header_found = False
+        start_row = 2
+        
+        # Thử kiểm tra 3 dòng đầu tiên để tìm header
+        for r in range(1, 4):
+            row_vals = [str(ws.cell(row=r, column=c).value or '').strip() for c in range(1, 15)]
+            # Kiểm tra các cột then chốt: Họ tên (cột 3), MST (cột 10)
+            if "Họ tên" in row_vals[2] and "Mã số thuế" in row_vals[9]:
+                header_found = True
+                start_row = r + 1
+                break
+        
+        if not header_found:
+            raise UserError(_("Sai định dạng file Excel! Hệ thống không tìm thấy các cột 'Họ tên' và 'Mã số thuế' ở vị trí mong đợi. Vui lòng sử dụng file mẫu xuất từ hệ thống."))
+
         parsed_data = []
-        # Bắt đầu đọc từ dòng 2
-        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
-            if not row or not any(row[1:3]): # Kiểm tra có dữ liệu cơ bản không
+        # Bắt đầu đọc từ dòng sau tiêu đề
+        for row_idx, row in enumerate(ws.iter_rows(min_row=start_row, values_only=True), start_row):
+            if not row or not any(row[1:3]): # Kiểm tra có dữ liệu cơ bản không (ID hoặc Tên)
                 continue
             
             # Cấu trúc: 0:STT, 1:ID NV, 2:Họ tên, 3:Tên riêng, 4:CCCD, 5:Ngày sinh, 6:Email, 7:SĐT, 8:Giới tính, 9:MST, 10:Chức vụ, 11:Phòng ban, 12:Lương, 13:Ngày nghỉ
+            
+            # Kiểm tra và xử lý Lương (Cột 12) - Tránh lỗi nếu vấp phải dòng text hoặc rỗng
+            raw_salary = row[12] if len(row) > 12 else 0.0
+            try:
+                base_salary = float(raw_salary) if raw_salary else 0.0
+            except (ValueError, TypeError):
+                # Nếu không phải số, có thể là dòng ghi chú hoặc header thừa, bỏ qua
+                continue
+
             emp_id = int(row[1]) if row[1] and str(row[1]).isdigit() else False
             name = str(row[2]).strip() if row[2] else ''
             dl_tax_id = str(row[9]).strip() if len(row) > 9 and row[9] else ''
@@ -85,7 +111,7 @@ class SalaryKpiTaxImport(models.TransientModel):
                 'dl_tax_id': dl_tax_id,
                 'dl_tax_position': str(row[10]) if len(row) > 10 and row[10] else '',
                 'dl_tax_department_name': dept_name,
-                'dl_tax_base_salary': float(row[12]) if len(row) > 12 and row[12] else 0.0,
+                'dl_tax_base_salary': base_salary,
                 'dl_departure_date': self._parse_date(row[13]) if len(row) > 13 else False,
                 'error': error
             })
