@@ -101,14 +101,15 @@ def calculate_detailed_wages(rec):
             hours = 8.0 if att.code in ['N', 'P', 'PL'] else 4.0
             wages['wage_day'] += hours * hourly_rate
         
-        # Ca đêm thường
+        # Ca đêm thường (Tách 31.25% vào lương ngày, 68.75% vào lương đêm 130%)
         if att and att.code in ['Đ', 'Đ/1', 'Đ/2']:
             hours = 8.0 if att.code == 'Đ' else 4.0
-            wages['wage_night_130'] += hours * hourly_rate * 1.3
+            wages['wage_day'] += hours * 0.3125 * hourly_rate
+            wages['wage_night_130'] += hours * 0.6875 * hourly_rate * 1.3
         
         # Làm thêm giờ
         if ot_att:
-            hours = ot_att.weight * 10 
+            hours = ot_att.weight * 8 
             code = ot_att.code or ""
             
             if ot_att.ot_type == 'day':
@@ -118,10 +119,9 @@ def calculate_detailed_wages(rec):
             
             elif ot_att.ot_type == 'night':
                 if code == '0.5Đ':
-                    if att: # Có làm ca ngày
-                        wages['wage_night_210'] += hours * hourly_rate * 2.1
-                    else: # Không làm ca ngày
-                        wages['wage_night_200'] += hours * hourly_rate * 2.0
+                    # Tất cả làm thêm đêm 0.5Đ hiện tại thống nhất tính 200%
+                    wages['wage_night_200'] += hours * hourly_rate * 2.0
+                    wages['wage_night_210'] = 0.0
                 elif code in ['CNĐ', 'CNĐ/2']: wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
                 elif code == 'LĐ': wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
                 

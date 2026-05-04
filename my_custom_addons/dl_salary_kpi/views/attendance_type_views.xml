@@ -4,7 +4,7 @@
         <field name="name">dl.salary.kpi.attendance.type.tree</field>
         <field name="model">dl.salary.kpi.attendance.type</field>
         <field name="arch" type="xml">
-            <list string="Loại công KPI" editable="bottom">
+            <list limit="20" string="Loại công KPI" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="code"/>
                 <field name="name"/>

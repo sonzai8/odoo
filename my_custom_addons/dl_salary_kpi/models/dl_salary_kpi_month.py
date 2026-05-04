@@ -64,6 +64,12 @@ class SalaryKpiMonth(models.Model):
         string='Danh sách đã lọc'
     )
 
+    anomaly_line_ids = fields.One2many(
+        'dl.salary.kpi.line',
+        compute='_compute_anomaly_line_ids',
+        string='Dữ liệu bất thường'
+    )
+
     @api.depends('filter_employee_name', 'filter_department_id', 'filter_position')
     def _compute_line_domain(self):
         # Giữ lại logic domain để dùng nếu cần, nhưng ưu tiên filtered_line_ids
@@ -104,6 +110,24 @@ class SalaryKpiMonth(models.Model):
                 if line.id not in actual_line_ids:
                     # Nếu có thêm mới record từ view đã lọc (hiếm khi xảy ra ở đây)
                     record.line_ids |= line
+
+    @api.depends(
+        'line_ids',
+        'line_ids.payroll_net_salary',
+        'line_ids.payroll_internal_salary',
+    )
+    def _compute_anomaly_line_ids(self):
+        """
+        Lọc danh sách nhân viên có dữ liệu bất thường:
+        - Tổng thu nhập thực tế (payroll_net_salary) > Lương nội bộ (payroll_internal_salary).
+        - Tổng thu nhập thực tế bị âm (payroll_net_salary < 0).
+        """
+        for record in self:
+            anomaly = record.line_ids.filtered(
+                lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary > l.payroll_internal_salary)
+                or l.payroll_net_salary < 0
+            )
+            record.anomaly_line_ids = anomaly
 
     def action_clear_payroll_filters(self):
         """Xóa các bộ lọc trong tab Tổng Hợp Công - Lương."""
@@ -153,6 +177,48 @@ class SalaryKpiMonth(models.Model):
     total_co = fields.Float(string="Tổng Con ốm (CÔ)", compute="_compute_quick_stats")
     
     attendance_summary_html = fields.Html(string="Tổng hợp mã công", compute="_compute_quick_stats")
+
+    # === Tổng lương toàn bộ (dùng để hiển thị phía trên danh sách, tính từ TẤT CẢ line_ids) ===
+    total_lk = fields.Monetary(
+        string='Tổng Thực lĩnh ngoài (Lk)',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng Thực lĩnh ngoài (Lk) của toàn bộ nhân viên trong tháng."
+    )
+    total_lk_rounded = fields.Monetary(
+        string='Tổng TL làm tròn',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng TL làm tròn của toàn bộ nhân viên trong tháng."
+    )
+    total_rounding_error = fields.Monetary(
+        string='Tổng Sai số',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng sai số làm tròn của toàn bộ nhân viên trong tháng."
+    )
+    total_ln = fields.Monetary(
+        string='Tổng Lương trong (Ln)',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng Lương trong (Ln) nhập tay của toàn bộ nhân viên trong tháng."
+    )
+
+    @api.depends(
+        'line_ids.payroll_net_salary_base',
+        'line_ids.payroll_net_salary_base_rounded',
+        'line_ids.payroll_net_salary_base_rounding_error',
+        'line_ids.payroll_internal_salary',
+    )
+    def _compute_salary_totals(self):
+        """Tính tổng 4 chỉ số lương chính từ toàn bộ line_ids (không phân trang)."""
+        for rec in self:
+            rec.total_lk = sum(rec.line_ids.mapped('payroll_net_salary_base'))
+            rec.total_lk_rounded = sum(rec.line_ids.mapped('payroll_net_salary_base_rounded'))
+            rec.total_rounding_error = sum(rec.line_ids.mapped('payroll_net_salary_base_rounding_error'))
+            rec.total_ln = sum(rec.line_ids.mapped('payroll_internal_salary'))
+
+
 
     @api.depends('line_ids', 'line_ids.day_01', 'line_ids.day_02', 'line_ids.day_03', 'line_ids.day_04', 'line_ids.day_05',
                  'line_ids.day_06', 'line_ids.day_07', 'line_ids.day_08', 'line_ids.day_09', 'line_ids.day_10',
@@ -317,10 +383,9 @@ class SalaryKpiMonth(models.Model):
         return True
 
     def action_lock_normal(self):
-        # Khi chốt công thường, xoá sạch dữ liệu công làm thêm cũ để tránh sai lệch dữ liệu
-        # Đảm bảo khi sang bước Làm thêm, dữ liệu sẽ được tính/nhập mới hoàn toàn
-        ot_fields = {f'ot_day_{i:02d}': False for i in range(1, 32)}
-        self.line_ids.write(ot_fields)
+        # Khi chốt công thường, tự động khởi tạo gợi ý công làm thêm (0.5N/0.5Đ)
+        # dựa trên các ngày đã chấm công thường (N/Đ).
+        self._action_init_overtime_suggestions()
             
         self.action_recompute_all_data()
         self.write({'state': 'lock_normal'})
@@ -356,6 +421,17 @@ class SalaryKpiMonth(models.Model):
         self.write({'state': 'lock_normal'})
 
     def action_back_to_lock_ot(self):
+        # Xóa dữ liệu KPI khi quay lại trạng thái trước
+        self.line_ids.write({
+            'payroll_kpi_score': 0,
+            'payroll_kpi_amount': 0,
+            'payroll_cash_amount': 0,
+            'kpi_c1_productivity': 0,
+            'kpi_c2_discipline': 0,
+            'kpi_c3_teamwork': 0,
+            'kpi_c4_5s': 0,
+            'kpi_c5_saving': 0,
+        })
         self.action_recompute_all_data()
         self.write({'state': 'lock_ot'})
 
@@ -372,31 +448,35 @@ class SalaryKpiMonth(models.Model):
         self.write({'state': 'draft'})
 
     def _action_init_overtime_suggestions(self):
-        """Khởi tạo dữ liệu gợi ý công làm thêm dựa trên công thường cho các ngày Chủ Nhật"""
+        """Khởi tạo dữ liệu gợi ý công làm thêm dựa trên công thường (N -> 0.5N, Đ -> 0.5Đ)"""
         from datetime import date
-        att_types = self.env['dl.salary.kpi.attendance.type'].search([('apply_to', 'in', ['overtime', 'both'])])
-        n_ot = att_types.filtered(lambda t: t.code == '0.5N')
-        d_ot = att_types.filtered(lambda t: t.code == '0.5Đ')
-        
+        n_ot = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N')], limit=1)
+        d_ot = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ')], limit=1)
         month_date = self.date_month
         year, month = month_date.year, month_date.month
         
+        n_ot_id = n_ot.id if n_ot else False
+        d_ot_id = d_ot.id if d_ot else False
+        
+        if not n_ot_id or not d_ot_id:
+            return
+
         for line in self.line_ids:
             vals = {}
             for i in range(1, 32):
-                field_name = f'ot_day_{i:02d}'
-                # Chỉ gợi ý cho ngày Chủ Nhật và nếu ô đó đang trống
-                try:
-                    # Gợi ý cho tất cả các ngày (khớp với logic trong Excel export)
-                    if not getattr(line, field_name):
-                        norm_att = getattr(line, f'day_{i:02d}')
-                        if norm_att:
-                            if norm_att.code == 'N' and n_ot:
-                                vals[field_name] = n_ot[0].id
-                            elif norm_att.code == 'Đ' and d_ot:
-                                vals[field_name] = d_ot[0].id
-                except ValueError:
-                    pass
+                ot_field = f'ot_day_{i:02d}'
+                norm_field = f'day_{i:02d}'
+                
+                norm_att = getattr(line, norm_field)
+                new_ot_value = False
+                if norm_att and norm_att.code:
+                    code = norm_att.code.strip().upper()
+                    if code == 'N':
+                        new_ot_value = n_ot_id
+                    elif code == 'Đ':
+                        new_ot_value = d_ot_id
+                
+                vals[ot_field] = new_ot_value
             if vals:
                 line.write(vals)
 
@@ -634,14 +714,11 @@ class SalaryKpiMonth(models.Model):
                 self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
                 
                 # 2. Ghi công làm thêm (Vùng AT -> BX | Cột 46 -> 76)
-                # Yêu cầu: CHỈ ghi giá trị vào ngày Chủ Nhật, các ngày khác để nguyên cho công thức Excel chạy
+                # Ghi mã công làm thêm hoặc ghi rỗng để xoá công thức của Template nếu trên Odoo không có dữ liệu
                 if day <= last_day:
-                    d = date(month_date.year, month_date.month, day)
-                    if d.weekday() == 6: # Ngày Chủ nhật
-                        # print("xin thong bao ngay chu nhat: ", d)
-                        ot_att = getattr(line, f'ot_day_{day:02d}')
-                        col_ot = 45 + day
-                        self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
+                    ot_att = getattr(line, f'ot_day_{day:02d}')
+                    col_ot = 45 + day
+                    self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
 
             if line.employee_id.sex == 'female':
                 self._safe_write(ws, current_row, 95, self.dl_women_allowance)

@@ -17,6 +17,7 @@
         'wizard/dl_salary_kpi_tax_import_views.xml',
         'wizard/dl_dependent_import_views.xml',
         'wizard/dl_salary_kpi_export_wizard_views.xml',
+        'wizard/dl_salary_kpi_quick_fix_wizard_views.xml',
         'views/dl_salary_kpi_month_views.xml',
         'views/hr_employee_tax_views.xml',
         'views/dl_salary_kpi_bonus_views.xml',

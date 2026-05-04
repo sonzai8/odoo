@@ -49,15 +49,19 @@
         </record>
         <record id="att_type_cnn" model="dl.salary.kpi.attendance.type">
             <field name="code">CNN</field>
-            <field name="name">Làm chủ nhật</field>
+            <field name="name">Làm chủ nhật (Ngày)</field>
             <field name="weight">1.0</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">day</field>
             <field name="sequence">60</field>
         </record>
         <record id="att_type_cnn_half" model="dl.salary.kpi.attendance.type">
             <field name="code">CNN/2</field>
             <field name="name">Làm nửa ngày chủ nhật</field>
             <field name="weight">0.5</field>
-            <field name="sequence">60</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">day</field>
+            <field name="sequence">61</field>
         </record>
         <record id="att_type_o" model="dl.salary.kpi.attendance.type">
             <field name="code">Ô</field>
@@ -109,6 +113,46 @@
             <field name="name">Nghỉ du lịch</field>
             <field name="weight">0.0</field>
             <field name="sequence">140</field>
+        </record>
+        <record id="att_type_05n" model="dl.salary.kpi.attendance.type">
+            <field name="code">0.5N</field>
+            <field name="name">Làm thêm 0,5 giờ ban ngày</field>
+            <field name="weight">0.0625</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">day</field>
+            <field name="sequence">200</field>
+        </record>
+        <record id="att_type_05d" model="dl.salary.kpi.attendance.type">
+            <field name="code">0.5Đ</field>
+            <field name="name">Làm thêm 0,5 giờ ban đêm</field>
+            <field name="weight">0.0625</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">night</field>
+            <field name="sequence">201</field>
+        </record>
+        <record id="att_type_ln" model="dl.salary.kpi.attendance.type">
+            <field name="code">LN</field>
+            <field name="name">Làm lễ (Ngày)</field>
+            <field name="weight">1.0</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">day</field>
+            <field name="sequence">210</field>
+        </record>
+        <record id="att_type_ld" model="dl.salary.kpi.attendance.type">
+            <field name="code">LĐ</field>
+            <field name="name">Làm lễ (Đêm)</field>
+            <field name="weight">1.0</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">night</field>
+            <field name="sequence">211</field>
+        </record>
+        <record id="att_type_cnd" model="dl.salary.kpi.attendance.type">
+            <field name="code">CNĐ</field>
+            <field name="name">Làm chủ nhật (Đêm)</field>
+            <field name="weight">1.0</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">night</field>
+            <field name="sequence">212</field>
         </record>
     </data>
 </odoo>
