@@ -615,8 +615,8 @@ class SalaryKpiLine(models.Model):
                     
                     mk_temp = lk * (p_temp - 50.0) / 50.0
                     cash_raw = gap - mk_temp
-                    # Làm tròn Tiền mặt đến hàng chục nghìn (10.000 VNĐ)
-                    cash = round(cash_raw / 10000.0) * 10000
+                    # Làm tròn Tiền mặt đến hàng nghìn (1.000 VNĐ)
+                    cash = round(cash_raw / 1000.0) * 1000
                     # Tính ngược lại Điểm KPI lẻ để khớp hoàn toàn
                     mk = gap - cash
                     p_final = 50.0 + 50.0 * mk / lk
@@ -638,8 +638,8 @@ class SalaryKpiLine(models.Model):
                         
                         mk_temp = lk * (p_temp - 50.0) / 50.0
                         cash_raw = gap - mk_temp
-                        # Làm tròn Tiền mặt đến hàng chục nghìn
-                        cash = round(cash_raw / 10000.0) * 10000
+                        # Làm tròn Tiền mặt đến hàng nghìn
+                        cash = round(cash_raw / 1000.0) * 1000
                         mk = gap - cash
                         p_final = 50.0 + 50.0 * mk / lk
                 
@@ -766,7 +766,6 @@ class SalaryKpiLine(models.Model):
         from . import payroll_logic
         if not self:
             return
-            
         # Tải trước (Prefetch) toàn bộ nhân viên và dữ liệu cấu hình tháng bằng 1 query
         self.mapped('employee_id.dependent_ids')
         self.mapped('month_id')
@@ -955,14 +954,11 @@ class SalaryKpiLine(models.Model):
             })
                 
             # Cập nhật các trường Tiền chuyển khoản và làm tròn
-            # Sử dụng round() để tránh sai số dấu phẩy động (9199999.999... // 1000 = 9199)
             transfer_val = net_salary_base + (rec.payroll_kpi_amount or 0)
-            transfer_val_clean = round(transfer_val)
-            rounded_transfer = (transfer_val_clean // 1000) * 1000 if transfer_val_clean else 0
+            rounded_transfer = round(transfer_val, -3)
             
             cash_val = rec.payroll_cash_amount or 0
-            cash_val_clean = round(cash_val)
-            rounded_cash = (cash_val_clean // 1000) * 1000 if cash_val_clean else 0
+            rounded_cash = round(cash_val, -3)
 
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,

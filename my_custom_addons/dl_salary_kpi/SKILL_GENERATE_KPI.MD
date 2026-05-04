@@ -5,7 +5,7 @@ Tại công ty Sản xuất Gỗ Đức Lâm, tồn tại khái niệm "Lương 
 Hệ thống cần tự động sinh ra một số Điểm KPI (từ 50 đến 70) để số Tiền KPI sinh ra tiệm cận mức Lương nội bộ. Số tiền chênh lệch còn thiếu sẽ được trả bằng Tiền mặt.
 
 **Ràng buộc cốt lõi:** 
-- **Tiền mặt (Cash):** BẮT BUỘC phải là số tròn đến hàng **chục nghìn (10.000 VNĐ)** để thuận tiện chi trả thực tế.
+- **Tiền mặt (Cash):** BẮT BUỘC phải là số tròn đến hàng **nghìn (1.000 VNĐ)** để thuận tiện chi trả thực tế.
 - **Điểm KPI có thể lẻ (Float):** Hệ thống hỗ trợ điểm lẻ (2 chữ số thập phân) để hấp thụ phần lẻ từ việc làm tròn Tiền mặt, đảm bảo tổng thu nhập không đổi.
 - **Phân bổ tỷ lệ thuận:** Các tiêu chí KPI phải tỷ lệ với điểm tối đa của chúng.
 
