@@ -178,6 +178,48 @@ class SalaryKpiMonth(models.Model):
     
     attendance_summary_html = fields.Html(string="Tổng hợp mã công", compute="_compute_quick_stats")
 
+    # === Tổng lương toàn bộ (dùng để hiển thị phía trên danh sách, tính từ TẤT CẢ line_ids) ===
+    total_lk = fields.Monetary(
+        string='Tổng Thực lĩnh ngoài (Lk)',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng Thực lĩnh ngoài (Lk) của toàn bộ nhân viên trong tháng."
+    )
+    total_lk_rounded = fields.Monetary(
+        string='Tổng TL làm tròn',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng TL làm tròn của toàn bộ nhân viên trong tháng."
+    )
+    total_rounding_error = fields.Monetary(
+        string='Tổng Sai số',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng sai số làm tròn của toàn bộ nhân viên trong tháng."
+    )
+    total_ln = fields.Monetary(
+        string='Tổng Lương trong (Ln)',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng Lương trong (Ln) nhập tay của toàn bộ nhân viên trong tháng."
+    )
+
+    @api.depends(
+        'line_ids.payroll_net_salary_base',
+        'line_ids.payroll_net_salary_base_rounded',
+        'line_ids.payroll_net_salary_base_rounding_error',
+        'line_ids.payroll_internal_salary',
+    )
+    def _compute_salary_totals(self):
+        """Tính tổng 4 chỉ số lương chính từ toàn bộ line_ids (không phân trang)."""
+        for rec in self:
+            rec.total_lk = sum(rec.line_ids.mapped('payroll_net_salary_base'))
+            rec.total_lk_rounded = sum(rec.line_ids.mapped('payroll_net_salary_base_rounded'))
+            rec.total_rounding_error = sum(rec.line_ids.mapped('payroll_net_salary_base_rounding_error'))
+            rec.total_ln = sum(rec.line_ids.mapped('payroll_internal_salary'))
+
+
+
     @api.depends('line_ids', 'line_ids.day_01', 'line_ids.day_02', 'line_ids.day_03', 'line_ids.day_04', 'line_ids.day_05',
                  'line_ids.day_06', 'line_ids.day_07', 'line_ids.day_08', 'line_ids.day_09', 'line_ids.day_10',
                  'line_ids.day_11', 'line_ids.day_12', 'line_ids.day_13', 'line_ids.day_14', 'line_ids.day_15',

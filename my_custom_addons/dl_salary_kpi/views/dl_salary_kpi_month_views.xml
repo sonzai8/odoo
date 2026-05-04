@@ -98,6 +98,12 @@
                                     <field name="filter_position" placeholder="Nhập chức vụ..."/>
                                 </group>
                             </group>
+                            <group string="📊 Tổng toàn bộ nhân viên" col="4">
+                                <field name="total_lk" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" nolabel="0"/>
+                                <field name="total_lk_rounded" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="total_rounding_error" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="total_ln" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                            </group>
                             <field name="filtered_line_ids" readonly="0" nolabel="1" context="{'dialog_size': 'extra-large'}">
                                 <list editable="bottom" delete="0" limit="20">
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
@@ -105,10 +111,10 @@
                                     <field name="dl_tax_department_id" readonly="1" sticky="1" width="120px"/>
                                     <field name="dl_tax_position" readonly="1" sticky="1" width="120px"/>
                                     
-                                    <field name="payroll_net_salary_base" string="Thực lĩnh cơ sở (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" readonly="1"/>
-                                    <field name="payroll_net_salary_base_rounded" string="Lk làm tròn" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" readonly="1"/>
-                                    <field name="payroll_net_salary_base_rounding_error" string="Sai số Lk" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show" readonly="1"/>
-                                    <field name="payroll_internal_salary" string="Lương nội bộ (Ln)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" readonly="1"/>
+                                    <field name="payroll_net_salary_base" string="Thực lĩnh ngoài (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" readonly="1" sum="Tổng"/>
+                                    <field name="payroll_net_salary_base_rounded" string="TL làm tròn" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" readonly="1" sum="Tổng"/>
+                                    <field name="payroll_net_salary_base_rounding_error" string="Sai số" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show" readonly="1" sum="Tổng"/>
+                                    <field name="payroll_internal_salary" string="Lương trong (Ln)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" readonly="1" sum="Tổng"/>
                                     
                                     <field name="payroll_kpi_score" string="Điểm KPI" widget="float" digits="[16,2]" decoration-warning="payroll_kpi_score > 0" readonly="1"/>
                                     
@@ -745,8 +751,8 @@
                         <page string="Cân đối KPI &amp; Tiền mặt" name="kpi_balancing">
                             <group>
                                 <group string="Mục tiêu &amp; Cơ sở">
-                                    <field name="payroll_internal_salary" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" readonly="1"/>
-                                    <field name="payroll_net_salary_base" string="Thực lĩnh cơ sở (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                    <field name="payroll_internal_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương trong (Ln)" decoration-info="1" decoration-bf="1" readonly="1"/>
+                                    <field name="payroll_net_salary_base" string="Thực lĩnh ngoài (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                     <button name="action_generate_kpi_scores" string="Tính toán lại KPI" type="object" class="btn-primary" icon="fa-magic" invisible="month_state in ['lock_kpi', 'confirmed']"/>
                                 </group>
                                 <group string="Kết quả tính toán">
@@ -763,7 +769,7 @@
                                 </group>
                             </group>
                             <group class="oe_subtotal_footer oe_right">
-                                <field name="payroll_net_salary_base" string="Thực lĩnh cơ sở (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="payroll_net_salary_base" string="Thực lĩnh ngoài (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                 <field name="payroll_kpi_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                 <field name="payroll_cash_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                 <field name="payroll_net_salary" string="TỔNG THỰC LĨNH" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-success="1" readonly="1"/>

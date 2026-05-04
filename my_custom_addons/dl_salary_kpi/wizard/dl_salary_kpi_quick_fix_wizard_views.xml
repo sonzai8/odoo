@@ -10,8 +10,8 @@
                         <field name="line_id" invisible="1"/>
                         <field name="employee_name" string="Nhân viên"/>
                         <field name="identification_id" string="Số CCCD"/>
-                        <field name="current_lk" widget="monetary" options="{'currency_field': 'currency_id'}" string="Thực lĩnh cơ sở (Lk)"/>
-                        <field name="target_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương nội bộ (Ln)"/>
+                        <field name="current_lk" widget="monetary" options="{'currency_field': 'currency_id'}" string="Thực lĩnh ngoài (Lk)"/>
+                        <field name="target_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương trong (Ln)"/>
                         <field name="currency_id" invisible="1"/>
                     </group>
                     <group string="📊 Gợi ý xử lý">

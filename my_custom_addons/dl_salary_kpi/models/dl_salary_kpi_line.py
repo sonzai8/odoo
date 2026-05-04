@@ -486,17 +486,17 @@ class SalaryKpiLine(models.Model):
     payroll_pit_assessable_income = fields.Monetary(string='Thu nhập tính thuế (TNTT)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
 
     payroll_total_deduction = fields.Monetary(string='Tổng các khoản trừ', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
-    payroll_net_salary_base = fields.Monetary(string='Thực lĩnh (Cơ sở)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
-    payroll_net_salary = fields.Monetary(string='Thực lĩnh cuối cùng', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_net_salary_base = fields.Monetary(string='Thực lĩnh ngoài (Lk)', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_net_salary = fields.Monetary(string='Thực lĩnh cuối cùng', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
 
     # --- TỰ ĐỘNG SINH ĐIỂM KPI ---
-    payroll_internal_salary = fields.Monetary(string='Lương nội bộ (Mục tiêu)', currency_field='currency_id', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
+    payroll_internal_salary = fields.Monetary(string='Lương trong (Ln)', currency_field='currency_id', aggregator='sum', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
     payroll_kpi_score = fields.Float(string='Điểm KPI (Sinh ra)', digits=(16, 2), aggregator="avg")
-    payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id')
-    payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id')
+    payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id', aggregator='sum')
+    payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id', aggregator='sum')
     
-    payroll_net_salary_base_rounded = fields.Monetary(string='Lk làm tròn', compute='_compute_lk_rounding', store=True, currency_field='currency_id')
-    payroll_net_salary_base_rounding_error = fields.Monetary(string='Sai số Lk', compute='_compute_lk_rounding', store=True, currency_field='currency_id')
+    payroll_net_salary_base_rounded = fields.Monetary(string='TL làm tròn', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_net_salary_base_rounding_error = fields.Monetary(string='Sai số', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
     payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
     payroll_income_explanation = fields.Html(string='Diễn giải thu nhập', compute='_compute_payroll_internal', store=True)
 
