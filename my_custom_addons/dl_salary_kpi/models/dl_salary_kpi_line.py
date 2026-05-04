@@ -495,28 +495,39 @@ class SalaryKpiLine(models.Model):
     payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id', aggregator='sum')
     payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id', aggregator='sum')
     
-    payroll_net_salary_base_rounded = fields.Monetary(string='TL làm tròn', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
-    payroll_net_salary_base_rounding_error = fields.Monetary(string='Sai số', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
-    payroll_bank_transfer_amount = fields.Monetary(string='Tiền chuyển khoản', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_bank_transfer_amount = fields.Monetary(string='Tiền chuyển khoản', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_bank_transfer_amount_rounded = fields.Monetary(string='Tiền CK làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_bank_transfer_amount_rounding_error = fields.Monetary(string='Sai số CK', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_cash_amount_rounded = fields.Monetary(string='Tiền mặt làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_cash_amount_rounding_error = fields.Monetary(string='Sai số Tiền mặt', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    total_normal_weekday_days = fields.Integer(string='Tổng công thường T2-T7', compute='_compute_payroll_internal', store=True)
+
     payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
     payroll_income_explanation = fields.Html(string='Diễn giải thu nhập', compute='_compute_payroll_internal', store=True)
 
-    @api.depends('payroll_net_salary_base', 'payroll_kpi_amount')
-    def _compute_lk_rounding(self):
+    @api.depends('payroll_net_salary_base', 'payroll_kpi_amount', 'payroll_cash_amount')
+    def _compute_final_rounding(self):
         for rec in self:
-            # Làm tròn xuống hàng nghìn cho Thực lĩnh cơ sở (Lk)
-            rounded = (rec.payroll_net_salary_base // 1000) * 1000 if rec.payroll_net_salary_base else 0
-            rec.payroll_net_salary_base_rounded = rounded
-            rec.payroll_net_salary_base_rounding_error = rec.payroll_net_salary_base - rounded
-            # Tiền chuyển khoản = Lk làm tròn + Tiền KPI
-            rec.payroll_bank_transfer_amount = rounded + (rec.payroll_kpi_amount or 0)
+            bank_transfer = (rec.payroll_net_salary_base or 0) + (rec.payroll_kpi_amount or 0)
+            rec.payroll_bank_transfer_amount = bank_transfer
+            
+            # Làm tròn xuống hàng nghìn cho Tiền chuyển khoản
+            rounded_bt = (bank_transfer // 1000) * 1000 if bank_transfer else 0
+            rec.payroll_bank_transfer_amount_rounded = rounded_bt
+            rec.payroll_bank_transfer_amount_rounding_error = bank_transfer - rounded_bt
+            
+            # Làm tròn xuống hàng nghìn cho Tiền mặt
+            cash = rec.payroll_cash_amount or 0
+            rounded_cash = (cash // 1000) * 1000 if cash else 0
+            rec.payroll_cash_amount_rounded = rounded_cash
+            rec.payroll_cash_amount_rounding_error = cash - rounded_cash
 
     # --- CHI TIẾT TIÊU CHÍ KPI ---
-    kpi_c1_productivity = fields.Float(string='Năng suất/Chất lượng (Max 40)', digits=(16, 1))
-    kpi_c2_discipline = fields.Float(string='Kỷ luật/An toàn (Max 30)', digits=(16, 1))
-    kpi_c3_teamwork = fields.Float(string='Làm việc nhóm (Max 15)', digits=(16, 1))
-    kpi_c4_5s = fields.Float(string='Vệ sinh/5S (Max 10)', digits=(16, 1))
-    kpi_c5_saving = fields.Float(string='Tiết kiệm (Max 5)', digits=(16, 1))
+    kpi_c1_productivity = fields.Float(string='Năng suất/Chất lượng (Max 40)', digits=(16, 2))
+    kpi_c2_discipline = fields.Float(string='Kỷ luật/An toàn (Max 30)', digits=(16, 2))
+    kpi_c3_teamwork = fields.Float(string='Làm việc nhóm (Max 15)', digits=(16, 2))
+    kpi_c4_5s = fields.Float(string='Vệ sinh/5S (Max 10)', digits=(16, 2))
+    kpi_c5_saving = fields.Float(string='Tiết kiệm (Max 5)', digits=(16, 2))
 
     currency_id = fields.Many2one('res.currency', related='month_id.currency_id', string='Tiền tệ')
 
@@ -561,71 +572,97 @@ class SalaryKpiLine(models.Model):
     def action_generate_kpi_scores(self, max_allowed=70):
         """
         Thuật toán Tự động sinh Điểm KPI dựa trên Lương nội bộ (Ln).
-        - Lk = payroll_net_salary_base (Thực lĩnh cơ sở).
-        - Điểm KPI (p) là số nguyên, RANDOM trong khoảng [50, min(max_allowed, p_theo)].
-        - Tiền mặt (Cash) bù đắp phần còn lại.
+        - Đảm bảo điểm KPI chẵn.
+        - Tiền mặt >= 1 triệu hoặc = 0 (trừ trường hợp ngoại lệ).
+        - Tổng thực nhận luôn khớp tuyệt đối Ln.
         """
         from odoo.exceptions import UserError
+        import math
         
         for rec in self:
             if rec.month_id.state in ['lock_kpi', 'confirmed']:
                 raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
             
             ln = rec.payroll_internal_salary
-            # Sử dụng Thực lĩnh cơ sở đã làm tròn để tính toán
-            lk = rec.payroll_net_salary_base_rounded
+            lk = rec.payroll_net_salary_base
             
             if not ln or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
                 continue
             
-            # 1. Tính điểm p lý thuyết tối đa có thể đạt được để không vượt quá Ln
             gap = ln - lk
+            max_mk = lk * (max_allowed - 50) / 50.0
+            
             if gap <= 0:
-                p_max_theo = 50
-            else:
-                p_max_theo = int(math.floor(50 + (50 * gap / lk)))
-            
-            # 2. Xác định giới hạn trên cho việc random
-            # Phải nằm trong khoảng [50, 70] và không vượt quá max_allowed
-            upper_limit = min(max_allowed, p_max_theo)
-            if upper_limit > 70: upper_limit = 70
-            
-            # 3. Random điểm KPI trong khoảng cho phép [50, upper_limit]
-            if upper_limit <= 50:
                 p_final = 50
+                mk = 0.0
+                cash = 0.0
+            elif gap <= max_mk:
+                # Đủ sức dùng 100% KPI (Không dùng Tiền mặt)
+                # Cho phép điểm KPI lẻ để khớp hoàn toàn Ln = Lk + Mk
+                p_final = 50 + 50 * gap / lk
+                mk = gap
+                cash = 0.0
             else:
-                p_final = random.randint(50, upper_limit)
+                # Bắt buộc dùng Tiền mặt
+                cash_needed = gap - max_mk
+                if cash_needed >= 1000000:
+                    # Tiền mặt đủ lớn, random điểm KPI từ 50-70 (Ưu tiên 60-70)
+                    if random.random() < 0.7:
+                        p_final = random.randint(60, max_allowed)
+                    else:
+                        p_final = random.randint(50, max_allowed)
+                    mk = lk * (p_final - 50) / 50.0
+                    cash = gap - mk
+                else:
+                    # Tiền mặt < 1 triệu, phải giảm điểm KPI
+                    remaining_gap = gap - 1000000
+                    if remaining_gap < 0:
+                        # Edge case: Tổng khoảng cách < 1 triệu, không đủ gánh 1 triệu
+                        p_final = 50
+                        mk = 0.0
+                        cash = gap
+                    else:
+                        # Normal case
+                        p_theo = 50 + 50 * remaining_gap / lk
+                        # Bắt buộc làm tròn XUỐNG để nhường chỗ trống >= 1 triệu cho Tiền mặt
+                        upper_bound = int(math.floor(p_theo))
+                        # Ưu tiên 60-70 nếu upper_bound cho phép
+                        if upper_bound >= 60 and random.random() < 0.7:
+                            p_final = random.randint(60, upper_bound)
+                        else:
+                            p_final = random.randint(50, upper_bound)
+                        mk = lk * (p_final - 50) / 50.0
+                        cash = gap - mk
             
             # --- PHÂN RÃ ĐIỂM KPI THÀNH 5 TIÊU CHÍ (C1-C5) ---
             # Giới hạn: C1: 40, C2: 30, C3: 15, C4: 10, C5: 5 (Tổng max = 100)
+            # Vì p_final có thể là số lẻ (float), ta chia phần nguyên trước, phần dư cộng vào C1
+            p_int = int(math.floor(p_final))
+            p_rem = p_final - p_int
+            
             limits = [40, 30, 15, 10, 5]
-            kpi_vals = [0, 0, 0, 0, 0]
-            remaining = p_final
+            kpi_vals = [0.0, 0.0, 0.0, 0.0, 0.0]
+            remaining = p_int
             
             for i in range(4):
                 future_max = sum(limits[i+1:])
                 # Đảm bảo còn đủ điểm cho các tiêu chí sau (mỗi cái ít nhất 1 điểm)
-                low = max(1, remaining - future_max)
+                low = int(max(1, remaining - future_max))
                 # Đảm bảo không vượt quá giới hạn của tiêu chí này và để lại ít nhất 1 điểm cho mỗi tiêu chí sau
                 num_future_categories = 4 - i
-                high = min(limits[i], remaining - num_future_categories)
+                high = int(min(limits[i], remaining - num_future_categories))
                 
                 if low > high:
                     val = high
                 else:
                     val = random.randint(low, high)
                 
-                kpi_vals[i] = val
+                kpi_vals[i] = float(val)
                 remaining -= val
             
-            kpi_vals[4] = remaining # Phần còn lại cho C5
-            
-            # 4. Tính Tiền KPI (Mk) thực tế dựa trên điểm random
-            mk = lk * (p_final - 50) / 50
-            
-            # 5. Tiền mặt (Cash) gánh toàn bộ phần còn lại để khớp Ln
-            cash = ln - lk - mk
+            kpi_vals[4] = float(remaining) # Phần còn lại cho C5
+            kpi_vals[0] += p_rem # Cộng phần lẻ vào tiêu chí C1 (Năng suất)
             
             rec.write({
                 'payroll_kpi_score': p_final,
@@ -697,7 +734,8 @@ class SalaryKpiLine(models.Model):
                  'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
                  'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
                  'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
-                 'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+                 'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31',
+                 'payroll_kpi_amount', 'payroll_cash_amount')
     def _compute_payroll_internal(self):
         from . import payroll_logic
         if not self:
@@ -707,7 +745,22 @@ class SalaryKpiLine(models.Model):
         self.mapped('employee_id.dependent_ids')
         self.mapped('month_id')
         
+        import datetime
         for rec in self:
+            year = rec.month_id.date_month.year if rec.month_id.date_month else datetime.date.today().year
+            month = rec.month_id.date_month.month if rec.month_id.date_month else datetime.date.today().month
+            normal_weekdays = 0
+            for day in range(1, 32):
+                field_name = f'day_{day:02d}'
+                day_val = getattr(rec, field_name, False)
+                if day_val and getattr(day_val, 'code', '') in ('N', 'Đ'):
+                    try:
+                        d = datetime.date(year, month, day)
+                        if d.weekday() < 6: # 0-5 is Mon-Sat
+                            normal_weekdays += 1
+                    except ValueError:
+                        pass
+            
             # 1. Hỗ trợ & Phụ cấp
             meal_allowance, women_allowance = payroll_logic.calculate_allowances(rec)
             
@@ -763,10 +816,10 @@ class SalaryKpiLine(models.Model):
             # Thực lĩnh cuối cùng = Thực lĩnh cơ sở + KPI + Cash (không được trừ tiền mặt)
             net_salary_final = net_salary_base + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
             
-            # 6. Gợi ý xử lý dữ liệu bất thường (Nếu Lk sát hoặc vượt Ln)
+            # 6. Gợi ý xử lý dữ liệu bất thường
             anomaly_suggestion = ""
             buffer = 300000 # 1 ngày công
-            if rec.payroll_internal_salary > 0 and net_salary_base > (rec.payroll_internal_salary - buffer):
+            if rec.payroll_internal_salary > 0:
                 diff = net_salary_base - rec.payroll_internal_salary
                 h_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0
                 ins_factor = 0.895 # Ước tính sau khi trừ 10.5% BH
@@ -785,28 +838,46 @@ class SalaryKpiLine(models.Model):
                     # Giá trị Đ gộp = Lương Đ quy đổi (8h) + Ăn ca + Phụ nữ + Lương 0.5Đ đi kèm
                     v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
                     
-                    # Tính số lượng cần giảm (làm tròn lên)
-                    c_05n = math.ceil(max(0, diff) / v_05n) if v_05n > 0 else 0
-                    c_05d = math.ceil(max(0, diff) / v_05d) if v_05d > 0 else 0
-                    c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
-                    c_d = math.ceil(max(0, diff) / v_d_full) if v_d_full > 0 else 0
-                    
-                    if diff > 0:
-                        header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Lk đã VƯỢT Ln. Cần giảm ít nhất:</div>"
-                    else:
-                        header = f"<div style='color: #f0ad4e; font-weight: bold;'>⚠️ Lk quá sát Ln (Dưới 1 ngày công). Nên giảm bớt để có dư địa KPI:</div>"
+                    if diff > -buffer:
+                        # Thực lĩnh ngoài (Lk) quá cao, cần GIẢM công
+                        c_05n = math.ceil(max(0, diff) / v_05n) if v_05n > 0 else 0
+                        c_05d = math.ceil(max(0, diff) / v_05d) if v_05d > 0 else 0
+                        c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
+                        c_d = math.ceil(max(0, diff) / v_d_full) if v_d_full > 0 else 0
+                        
+                        if diff > 0:
+                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Thực lĩnh nội bộ. Cần giảm ít nhất:</div>"
+                        else:
+                            header = f"<div style='color: #f0ad4e; font-weight: bold;'>⚠️ Thực lĩnh ngoài sát Thực lĩnh nội bộ. Nên giảm bớt:</div>"
 
-                    anomaly_suggestion = (
-                        header +
-                        f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                        f"<li>Giảm <b>{max(1, c_05n)}</b> lần <b>0.5N</b></li>"
-                        f"<li>Hoặc <b>{max(1, c_05d)}</b> lần <b>0.5Đ</b></li>"
-                        f"<li>Hoặc <b>{max(1, c_n)}</b> ngày <b>N</b></li>"
-                        f"</ul>"
-                    )
+                        anomaly_suggestion = (
+                            header +
+                            f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                            f"<li>Giảm <b>{max(1, c_05n)}</b> lần <b>0.5N</b></li>"
+                            f"<li>Hoặc <b>{max(1, c_05d)}</b> lần <b>0.5Đ</b></li>"
+                            f"<li>Hoặc <b>{max(1, c_n)}</b> ngày <b>N</b></li>"
+                            f"</ul>"
+                        )
+                    elif rec.payroll_internal_salary >= (net_salary_base * 1.4):
+                        # Thực lĩnh nội bộ (Ln) quá cao, chênh lệch lớn, cần THÊM công
+                        gap = -diff
+                        c_05n = math.ceil(gap / v_05n) if v_05n > 0 else 0
+                        c_05d = math.ceil(gap / v_05d) if v_05d > 0 else 0
+                        c_n = math.ceil(gap / v_n_full) if v_n_full > 0 else 0
+                        
+                        header = f"<div style='color: #5cb85c; font-weight: bold;'>🟢 Chênh lệch quá lớn. Có thể thêm tối đa:</div>"
+                        anomaly_suggestion = (
+                            header +
+                            f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                            f"<li>Thêm <b>{max(1, c_05n)}</b> lần <b>0.5N</b></li>"
+                            f"<li>Hoặc <b>{max(1, c_05d)}</b> lần <b>0.5Đ</b></li>"
+                            f"<li>Hoặc <b>{max(1, c_n)}</b> ngày <b>N</b></li>"
+                            f"</ul>"
+                        )
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({
+                'total_normal_weekday_days': normal_weekdays,
                 'payroll_anomaly_suggestion': anomaly_suggestion,
                 'payroll_meal_allowance': meal_allowance,
                 'payroll_women_allowance': women_allowance,
@@ -855,6 +926,24 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_deduction': deductions['total_deduction'],
                 'payroll_net_salary_base': net_salary_base,
                 'payroll_net_salary': net_salary_final,
+            })
+                
+            # Cập nhật các trường Tiền chuyển khoản và làm tròn
+            # Sử dụng round() để tránh sai số dấu phẩy động (9199999.999... // 1000 = 9199)
+            transfer_val = net_salary_base + (rec.payroll_kpi_amount or 0)
+            transfer_val_clean = round(transfer_val)
+            rounded_transfer = (transfer_val_clean // 1000) * 1000 if transfer_val_clean else 0
+            
+            cash_val = rec.payroll_cash_amount or 0
+            cash_val_clean = round(cash_val)
+            rounded_cash = (cash_val_clean // 1000) * 1000 if cash_val_clean else 0
+
+            rec.update({
+                'payroll_bank_transfer_amount': transfer_val,
+                'payroll_bank_transfer_amount_rounded': rounded_transfer,
+                'payroll_bank_transfer_amount_rounding_error': transfer_val - rounded_transfer,
+                'payroll_cash_amount_rounded': rounded_cash,
+                'payroll_cash_amount_rounding_error': cash_val - rounded_cash,
             })
 
     def _get_income_explanation(self, wage, rev, prod, meal, women, kpi):
@@ -1128,5 +1217,24 @@ class SalaryKpiLine(models.Model):
             'target': 'new',
             'context': {
                 'default_line_id': self.id,
-            },
+                'default_employee_name': self.employee_name,
+                'default_identification_id': self.identification_id,
+                'default_current_lk': self.payroll_net_salary_base,
+                'default_target_salary': self.payroll_internal_salary,
+            }
         }
+
+    # @api.constrains('payroll_bank_transfer_amount', 'payroll_internal_salary')
+    # def _check_bank_transfer_limit(self):
+    #     for rec in self:
+    #         # Chỉ kiểm tra nếu có lương nội bộ (tránh lỗi khi chưa nhập Ln)
+    #         if rec.payroll_internal_salary > 0 and rec.payroll_bank_transfer_amount > rec.payroll_internal_salary:
+    #             # Tính toán chênh lệch để thông báo rõ ràng
+    #             diff = rec.payroll_bank_transfer_amount - rec.payroll_internal_salary
+    #             def fmt(v): return "{:,.0f}".format(v).replace(",", ".")
+    #             
+    #             raise ValidationError(_(
+    #                 "Dòng của %s: Tiền chuyển khoản (%s) đang cao hơn Lương nội bộ (%s) một khoảng %s. \n\n"
+    #                 "Lý do: Thực lĩnh ngoài (Lk) hoặc KPI (Mk) quá cao. \n"
+    #                 "Giải pháp: Hãy dùng nút 'Sửa nhanh' để giảm bớt ngày công hoặc giảm điểm KPI."
+    #             ) % (rec.employee_name, fmt(rec.payroll_bank_transfer_amount), fmt(rec.payroll_internal_salary), fmt(diff)))

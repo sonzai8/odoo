@@ -115,21 +115,24 @@ class SalaryKpiMonth(models.Model):
         'line_ids',
         'line_ids.payroll_net_salary',
         'line_ids.payroll_internal_salary',
+        'line_ids.dl_tax_base_salary'
     )
     def _compute_anomaly_line_ids(self):
         """
         Lọc danh sách nhân viên có dữ liệu bất thường:
-        - Thực lĩnh ngoài (Lk) >= (Lương trong (Ln) - 300.000). (Vùng đệm 1 ngày công để có dư địa KPI).
+        - Lương trong (Ln) >= (Lương cơ bản + Lương cơ bản * 0.4).
         - Thực lĩnh ngoài bị âm (Lk < 0).
+        - Thực lĩnh ngoài (Lk) > Lương trong (Ln).
         """
-        for record in self:
-            # Ngưỡng đệm: 300.000 VNĐ (khoảng 1 ngày công)
-            buffer = 300000
-            anomaly = record.line_ids.filtered(
-                lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > (l.payroll_internal_salary - buffer))
-                or l.payroll_net_salary_base < 0
-            )
-            record.anomaly_line_ids = anomaly
+        for rec in self:
+            anomalies = self.env['dl.salary.kpi.line']
+            if rec.line_ids:
+                anomalies = rec.line_ids.filtered(
+                    lambda l: (l.payroll_net_salary_base > 0 and l.payroll_internal_salary >= (l.payroll_net_salary_base * 1.4))
+                    or l.payroll_net_salary_base < 0
+                    or (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
+                )
+            rec.anomaly_line_ids = anomalies
 
     def action_clear_payroll_filters(self):
         """Xóa các bộ lọc trong tab Tổng Hợp Công - Lương."""
@@ -187,18 +190,6 @@ class SalaryKpiMonth(models.Model):
         currency_field='currency_id',
         help="Tổng Thực lĩnh ngoài (Lk) của toàn bộ nhân viên trong tháng."
     )
-    total_lk_rounded = fields.Monetary(
-        string='Tổng TL làm tròn',
-        compute='_compute_salary_totals',
-        currency_field='currency_id',
-        help="Tổng TL làm tròn của toàn bộ nhân viên trong tháng."
-    )
-    total_rounding_error = fields.Monetary(
-        string='Tổng Sai số',
-        compute='_compute_salary_totals',
-        currency_field='currency_id',
-        help="Tổng sai số làm tròn của toàn bộ nhân viên trong tháng."
-    )
     total_ln = fields.Monetary(
         string='Tổng Lương trong (Ln)',
         compute='_compute_salary_totals',
@@ -209,13 +200,11 @@ class SalaryKpiMonth(models.Model):
         string='Tổng Tiền chuyển khoản',
         compute='_compute_salary_totals',
         currency_field='currency_id',
-        help="Tổng tiền chuyển khoản (Lk làm tròn + KPI) của toàn bộ nhân viên."
+        help="Tổng tiền chuyển khoản của toàn bộ nhân viên."
     )
 
     @api.depends(
         'line_ids.payroll_net_salary_base',
-        'line_ids.payroll_net_salary_base_rounded',
-        'line_ids.payroll_net_salary_base_rounding_error',
         'line_ids.payroll_internal_salary',
         'line_ids.payroll_bank_transfer_amount',
     )
@@ -223,8 +212,6 @@ class SalaryKpiMonth(models.Model):
         """Tính tổng các chỉ số lương chính từ toàn bộ line_ids (không phân trang)."""
         for rec in self:
             rec.total_lk = sum(rec.line_ids.mapped('payroll_net_salary_base'))
-            rec.total_lk_rounded = sum(rec.line_ids.mapped('payroll_net_salary_base_rounded'))
-            rec.total_rounding_error = sum(rec.line_ids.mapped('payroll_net_salary_base_rounding_error'))
             rec.total_ln = sum(rec.line_ids.mapped('payroll_internal_salary'))
             rec.total_bank_transfer = sum(rec.line_ids.mapped('payroll_bank_transfer_amount'))
 
