@@ -466,8 +466,8 @@
                         <page string="&#9888;&#65039; D&#7919; li&#7879;u B&#7845;t Th&#432;&#7901;ng" name="anomaly_data">
                             <field name="anomaly_line_ids" nolabel="1" readonly="1">
                                 <list string="Nhân viên có dữ liệu bất thường"
-                                      decoration-danger="payroll_net_salary_base &lt; 0"
-                                      decoration-warning="payroll_net_salary_base &gt; payroll_internal_salary and payroll_net_salary_base &gt;= 0"
+                                      decoration-danger="payroll_net_salary_base &gt; payroll_internal_salary"
+                                      decoration-warning="payroll_net_salary_base &gt; (payroll_internal_salary - 300000) and payroll_net_salary_base &lt;= payroll_internal_salary"
                                       limit="20">
                                     <field name="identification_id" string="S&#7889; CCCD" sticky="1" width="120px"/>
                                     <field name="employee_name" string="H&#7885; v&#224; t&#234;n" sticky="1" width="180px"/>

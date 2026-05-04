@@ -763,9 +763,10 @@ class SalaryKpiLine(models.Model):
             # Thực lĩnh cuối cùng = Thực lĩnh cơ sở + KPI + Cash (không được trừ tiền mặt)
             net_salary_final = net_salary_base + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
             
-            # 6. Gợi ý xử lý dữ liệu bất thường (Nếu Lk > Ln)
+            # 6. Gợi ý xử lý dữ liệu bất thường (Nếu Lk sát hoặc vượt Ln)
             anomaly_suggestion = ""
-            if net_salary_base > rec.payroll_internal_salary and rec.payroll_internal_salary > 0:
+            buffer = 300000 # 1 ngày công
+            if rec.payroll_internal_salary > 0 and net_salary_base > (rec.payroll_internal_salary - buffer):
                 diff = net_salary_base - rec.payroll_internal_salary
                 h_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0
                 ins_factor = 0.895 # Ước tính sau khi trừ 10.5% BH
@@ -785,18 +786,22 @@ class SalaryKpiLine(models.Model):
                     v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
                     
                     # Tính số lượng cần giảm (làm tròn lên)
-                    c_05n = math.ceil(diff / v_05n) if v_05n > 0 else 0
-                    c_05d = math.ceil(diff / v_05d) if v_05d > 0 else 0
-                    c_n = math.ceil(diff / v_n_full) if v_n_full > 0 else 0
-                    c_d = math.ceil(diff / v_d_full) if v_d_full > 0 else 0
+                    c_05n = math.ceil(max(0, diff) / v_05n) if v_05n > 0 else 0
+                    c_05d = math.ceil(max(0, diff) / v_05d) if v_05d > 0 else 0
+                    c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
+                    c_d = math.ceil(max(0, diff) / v_d_full) if v_d_full > 0 else 0
                     
+                    if diff > 0:
+                        header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Lk đã VƯỢT Ln. Cần giảm ít nhất:</div>"
+                    else:
+                        header = f"<div style='color: #f0ad4e; font-weight: bold;'>⚠️ Lk quá sát Ln (Dưới 1 ngày công). Nên giảm bớt để có dư địa KPI:</div>"
+
                     anomaly_suggestion = (
-                        f"<div style='color: #d9534f; font-weight: bold;'>🔻 Cần giảm ít nhất một trong các phương án:</div>"
+                        header +
                         f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                        f"<li><b>{c_05n}</b> lần <b>0.5N</b></li>"
-                        f"<li><b>{c_05d}</b> lần <b>0.5Đ</b></li>"
-                        f"<li><b>{c_n}</b> ngày <b>N</b> (kèm 0.5N)</li>"
-                        f"<li><b>{c_d}</b> ngày <b>Đ</b> (kèm 0.5Đ)</li>"
+                        f"<li>Giảm <b>{max(1, c_05n)}</b> lần <b>0.5N</b></li>"
+                        f"<li>Hoặc <b>{max(1, c_05d)}</b> lần <b>0.5Đ</b></li>"
+                        f"<li>Hoặc <b>{max(1, c_n)}</b> ngày <b>N</b></li>"
                         f"</ul>"
                     )
 
