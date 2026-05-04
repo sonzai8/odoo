@@ -464,15 +464,15 @@
                         <page string="&#9888;&#65039; D&#7919; li&#7879;u B&#7845;t Th&#432;&#7901;ng" name="anomaly_data">
                             <field name="anomaly_line_ids" nolabel="1" readonly="1">
                                 <list string="Nhân viên có dữ liệu bất thường"
-                                      decoration-danger="payroll_net_salary &lt; 0"
-                                      decoration-warning="payroll_net_salary &gt; payroll_internal_salary and payroll_net_salary &gt;= 0"
+                                      decoration-danger="payroll_net_salary_base &lt; 0"
+                                      decoration-warning="payroll_net_salary_base &gt; payroll_internal_salary and payroll_net_salary_base &gt;= 0"
                                       limit="20">
                                     <field name="identification_id" string="S&#7889; CCCD" sticky="1" width="120px"/>
                                     <field name="employee_name" string="H&#7885; v&#224; t&#234;n" sticky="1" width="180px"/>
                                     <field name="dl_tax_department_id" string="Ph&#242;ng ban" width="130px"/>
                                     <field name="dl_tax_position" string="Ch&#7913;c v&#7909;" width="120px"/>
                                     <field name="dl_tax_id" string="M&#227; s&#7889; thu&#7871;" width="110px"/>
-                                    <field name="payroll_net_salary" string="Thu nh&#7853;p th&#7921;c t&#7871;" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_net_salary &lt; 0" decoration-bf="1"/>
+                                    <field name="payroll_net_salary_base" string="Thực lĩnh ngoài (Lk)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_net_salary_base &lt; 0" decoration-bf="1"/>
                                     <field name="payroll_internal_salary" string="L&#432;&#417;ng n&#7897;i b&#7897;" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="payroll_anomaly_suggestion" string="Gợi ý xử lý" widget="html"/>
                                     <button name="action_open_quick_fix" string="Sửa nhanh" type="object" icon="fa-wrench" title="Mở popup sửa nhanh công" class="btn-link"/>

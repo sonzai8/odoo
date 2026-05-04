@@ -119,13 +119,13 @@ class SalaryKpiMonth(models.Model):
     def _compute_anomaly_line_ids(self):
         """
         Lọc danh sách nhân viên có dữ liệu bất thường:
-        - Tổng thu nhập thực tế (payroll_net_salary) > Lương nội bộ (payroll_internal_salary).
-        - Tổng thu nhập thực tế bị âm (payroll_net_salary < 0).
+        - Thực lĩnh ngoài (payroll_net_salary_base) > Lương trong (payroll_internal_salary).
+        - Thực lĩnh ngoài bị âm (payroll_net_salary_base < 0).
         """
         for record in self:
             anomaly = record.line_ids.filtered(
-                lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary > l.payroll_internal_salary)
-                or l.payroll_net_salary < 0
+                lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
+                or l.payroll_net_salary_base < 0
             )
             record.anomaly_line_ids = anomaly
 
