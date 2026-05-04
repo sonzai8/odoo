@@ -497,16 +497,19 @@ class SalaryKpiLine(models.Model):
     
     payroll_net_salary_base_rounded = fields.Monetary(string='TL làm tròn', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
     payroll_net_salary_base_rounding_error = fields.Monetary(string='Sai số', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_bank_transfer_amount = fields.Monetary(string='Tiền chuyển khoản', compute='_compute_lk_rounding', store=True, currency_field='currency_id', aggregator='sum')
     payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
     payroll_income_explanation = fields.Html(string='Diễn giải thu nhập', compute='_compute_payroll_internal', store=True)
 
-    @api.depends('payroll_net_salary_base')
+    @api.depends('payroll_net_salary_base', 'payroll_kpi_amount')
     def _compute_lk_rounding(self):
         for rec in self:
             # Làm tròn xuống hàng nghìn cho Thực lĩnh cơ sở (Lk)
             rounded = (rec.payroll_net_salary_base // 1000) * 1000 if rec.payroll_net_salary_base else 0
             rec.payroll_net_salary_base_rounded = rounded
             rec.payroll_net_salary_base_rounding_error = rec.payroll_net_salary_base - rounded
+            # Tiền chuyển khoản = Lk làm tròn + Tiền KPI
+            rec.payroll_bank_transfer_amount = rounded + (rec.payroll_kpi_amount or 0)
 
     # --- CHI TIẾT TIÊU CHÍ KPI ---
     kpi_c1_productivity = fields.Float(string='Năng suất/Chất lượng (Max 40)', digits=(16, 1))
