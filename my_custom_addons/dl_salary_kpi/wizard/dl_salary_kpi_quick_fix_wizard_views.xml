@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_quick_fix_wizard_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.quick.fix.wizard.form</field>
+        <field name="model">dl.salary.kpi.quick.fix.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Sửa nhanh công chấm công">
+                <group>
+                    <group string="📋 Thông tin nhân viên">
+                        <field name="line_id" invisible="1"/>
+                        <field name="employee_name" string="Nhân viên"/>
+                        <field name="identification_id" string="Số CCCD"/>
+                        <field name="current_lk" widget="monetary" options="{'currency_field': 'currency_id'}" string="Thực lĩnh cơ sở (Lk)"/>
+                        <field name="target_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương nội bộ (Ln)"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                    <group string="📊 Gợi ý xử lý">
+                        <field name="suggestion_html" nolabel="1" colspan="2"/>
+                    </group>
+                </group>
+                <separator string="Nhập số lượng công cần giảm"/>
+                <group>
+                    <group string="🔻 Giảm công chính (xóa cả OT đi kèm)">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="reduce_n" string="Giảm N" class="fw-bold"/>
+                            <field name="reduce_n" nolabel="1" class="oe_inline" style="width: 60px;"/>
+                            <span class="text-muted">/ Tối đa: </span>
+                            <field name="max_n" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            <label for="reduce_d" string="Giảm Đ" class="fw-bold"/>
+                            <field name="reduce_d" nolabel="1" class="oe_inline" style="width: 60px;"/>
+                            <span class="text-muted">/ Tối đa: </span>
+                            <field name="max_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
+                        </div>
+                    </group>
+                    <group string="🔻 Giảm OT (giữ nguyên công chính)">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="reduce_ot_n" string="Giảm 0.5N" class="fw-bold"/>
+                            <field name="reduce_ot_n" nolabel="1" class="oe_inline" style="width: 60px;"/>
+                            <span class="text-muted">/ Tối đa: </span>
+                            <field name="max_ot_n" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            <label for="reduce_ot_d" string="Giảm 0.5Đ" class="fw-bold"/>
+                            <field name="reduce_ot_d" nolabel="1" class="oe_inline" style="width: 60px;"/>
+                            <span class="text-muted">/ Tối đa: </span>
+                            <field name="max_ot_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
+                        </div>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_apply_quick_fix" string="Xác nhận điều chỉnh" type="object" class="btn-primary" icon="fa-check"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

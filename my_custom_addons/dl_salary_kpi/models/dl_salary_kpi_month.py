@@ -672,14 +672,11 @@ class SalaryKpiMonth(models.Model):
                 self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
                 
                 # 2. Ghi công làm thêm (Vùng AT -> BX | Cột 46 -> 76)
-                # Yêu cầu: CHỈ ghi giá trị vào ngày Chủ Nhật, các ngày khác để nguyên cho công thức Excel chạy
+                # Ghi mã công làm thêm hoặc ghi rỗng để xoá công thức của Template nếu trên Odoo không có dữ liệu
                 if day <= last_day:
-                    d = date(month_date.year, month_date.month, day)
-                    if d.weekday() == 6: # Ngày Chủ nhật
-                        # print("xin thong bao ngay chu nhat: ", d)
-                        ot_att = getattr(line, f'ot_day_{day:02d}')
-                        col_ot = 45 + day
-                        self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
+                    ot_att = getattr(line, f'ot_day_{day:02d}')
+                    col_ot = 45 + day
+                    self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
 
             if line.employee_id.sex == 'female':
                 self._safe_write(ws, current_row, 95, self.dl_women_allowance)

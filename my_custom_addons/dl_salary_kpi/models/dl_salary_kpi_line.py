@@ -1108,3 +1108,17 @@ class SalaryKpiLine(models.Model):
     def _inverse_v41_ot(self): self._inverse_v_generic(41, True)
     def _inverse_v42(self): self._inverse_v_generic(42)
     def _inverse_v42_ot(self): self._inverse_v_generic(42, True)
+
+    def action_open_quick_fix(self):
+        """Mở Wizard Sửa nhanh công để giảm công thường/OT cho nhân viên bất thường."""
+        self.ensure_one()
+        return {
+            'name': f'Sửa nhanh công - {self.employee_name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.quick.fix.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_line_id': self.id,
+            },
+        }

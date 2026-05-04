@@ -469,6 +469,7 @@
                                     <field name="payroll_net_salary" string="Thu nh&#7853;p th&#7921;c t&#7871;" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_net_salary &lt; 0" decoration-bf="1"/>
                                     <field name="payroll_internal_salary" string="L&#432;&#417;ng n&#7897;i b&#7897;" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="payroll_anomaly_suggestion" string="Gợi ý xử lý" widget="html"/>
+                                    <button name="action_open_quick_fix" string="Sửa nhanh" type="object" icon="fa-wrench" title="Mở popup sửa nhanh công" class="btn-link"/>
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>
                             </field>
