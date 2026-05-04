@@ -60,11 +60,11 @@ class SalaryKpiExportWizard(models.TransientModel):
         if not load_workbook:
             raise UserError(_("Thư viện openpyxl chưa được cài đặt."))
 
-        # 1. Lấy template TEAMPLATE_01.xlsx
+        # 1. Lấy template TEMPLATE_2026.xlsx
         try:
-            template_path = file_path('dl_salary_kpi/static/src/templates/TEAMPLATE_01.xlsx')
+            template_path = file_path('dl_salary_kpi/static/src/templates/TEMPLATE_2026.xlsx')
         except FileNotFoundError:
-            raise UserError(_("Không tìm thấy file mẫu Excel tại static/src/templates/TEAMPLATE_01.xlsx"))
+            raise UserError(_("Không tìm thấy file mẫu Excel tại static/src/templates/TEMPLATE_2026.xlsx"))
 
         wb = load_workbook(template_path)
         ws = wb.active
@@ -125,6 +125,10 @@ class SalaryKpiExportWizard(models.TransientModel):
             
             # CQ: Ăn ca
             self._safe_write(ws, current_row, 95, line.payroll_meal_allowance) # CQ là cột 95
+
+            # DG: Tiền KPI (Cân đối)
+            if line.payroll_kpi_amount:
+                self._safe_write(ws, current_row, 111, line.payroll_kpi_amount) # DG là cột 111
 
             # Số người phụ thuộc (Cột EI)
             total_dependents = len(line.employee_id.dependent_ids.filtered(lambda d: d.active))

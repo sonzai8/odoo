@@ -20,8 +20,9 @@
 | **J -> AN (10-40)** | Công thường | Mã chấm công ngày 01-31 | Ghi mã N, Đ, P, PL... |
 | **AT -> BX (46-76)** | OT | Công làm thêm | **Chỉ ghi vào ngày Chủ nhật**. |
 | **CP, CQ** | Trợ cấp | Phụ nữ, Ăn ca | Lấy từ cấu hình tháng. |
+| **DG (111)** | KPI | Tiền KPI cân đối | — |
 | **DP (120)** | Thuế TNCN | Số tiền thuế phải đóng | Kết quả đồng bộ từ Odoo. |
-| **EH (138)** | Người phụ thuộc | Số lượng NPT | — |
+| **EI (139)** | Người phụ thuộc | Số lượng NPT | — |
 
 ---
 
@@ -57,9 +58,9 @@
 *Cân đối Lương nội bộ (Ln) thông qua Điểm KPI và Tiền mặt.*
 
 ### Thuật toán cốt lõi
-1. **Lk (Lương tính KPI):** Thường lấy từ `tax_base_salary`.
-2. **Tiền mặt (Cash):** `max(0, Ln - Lk - (Lk * 0.4))`, sau đó làm tròn lên 10.000 VNĐ.
-3. **Tiền KPI (Mk):** `Ln - Lk - Cash`.
-4. **Điểm KPI (p):** `50 + (50 * Mk / Lk)`, giới hạn [50, 70].
+1. **Lk (Lương tính KPI):** Lấy từ `payroll_net_salary_base`.
+2. **Tiền mặt (Cash):** `max(0, Ln - Lk - (Lk * 0.4))`. Ưu tiên >= 1.000.000 VNĐ.
+3. **Điểm KPI (p):** `50 + (50 * Mk / Lk)`, giới hạn [50, 70], hỗ trợ số lẻ.
+4. **Phân bổ tiêu chí:** Phân bổ `p` vào C1-C5 tỷ lệ thuận. C2-C5 là số nguyên, C1 gánh phần lẻ.
 
 Chi tiết hướng dẫn kỹ thuật xem tại [SKILL_GENERATE_KPI.MD](file:///Users/sonzai/dev/odoo%2019/odoo/my_custom_addons/dl_salary_kpi/SKILL_GENERATE_KPI.MD).

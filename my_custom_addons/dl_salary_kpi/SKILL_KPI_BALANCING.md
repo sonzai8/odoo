@@ -13,10 +13,10 @@ Tài liệu này ghi chú lại (Knowledge Item) toàn bộ logic và bối cả
 
 ### Quy tắc cốt lõi:
 1. **Tiền mặt phải có ý nghĩa:** Nếu đã phát sinh chi Tiền mặt (Cash_needed > 0), số Tiền mặt tối thiểu phải >= `1.000.000đ` (tránh tình trạng đi rút ngân hàng vài trăm nghìn lẻ để phát cho công nhân).
-2. **Điểm KPI tự nhiên:** Không ép điểm KPI lên kịch kim `70` để trông khách quan.
-    - Nếu dư địa lớn: Điểm KPI được random trong khoảng [50, 70].
-    - **Quy tắc ưu tiên (Mới):** Hệ thống ưu tiên rơi vào khoảng **60 - 70 điểm** (xác suất 70%) để số liệu trông tích cực hơn, 30% còn lại rơi vào khoảng 50 - 60.
-    - Nếu dư địa hẹp (Ln - Lk sát 1tr): Điểm KPI được tính toán và làm tròn xuống để nhường chỗ cho Tiền mặt.
+2. **Điểm KPI tự nhiên & Tỷ lệ thuận:** Không ép điểm KPI lên kịch kim `70` để trông khách quan.
+    - Nếu dư địa lớn: Điểm KPI được random trong khoảng [50, 70] (hỗ trợ số lẻ).
+    - **Quy tắc ưu tiên:** Hệ thống ưu tiên rơi vào khoảng **60 - 70 điểm** (xác suất 70%).
+    - **Phân bổ tiêu chí (Mới):** Điểm KPI tổng được phân rã vào 5 tiêu chí (C1-C5) theo tỷ lệ thuận với điểm tối đa của từng tiêu chí (ví dụ: C1 max 40 sẽ luôn chiếm khoảng 40% tổng điểm). Tránh tình trạng tiêu chí quan trọng bị điểm quá thấp.
 3. **Bù trừ thông minh (Edge cases):**
    - Nếu khoảng cách `Ln - Lk` quá nhỏ (ví dụ `800.000đ`), không thể ép Tiền mặt lên 1 triệu vì sẽ gây lạm chi. Thuật toán chấp nhận Tiền mặt = 800.000đ và đánh tụt KPI về 50 (0đ tiền KPI).
    - Nếu `Ln - Lk` nhỏ đến mức dưới `300.000đ`, hệ thống sẽ hạ điểm KPI sao cho vừa khít và không phát sinh Tiền mặt.

@@ -724,8 +724,11 @@ class SalaryKpiMonth(models.Model):
             
             self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
             
-            # DG (111) Lương KPI: Tạm thời để trống
-            self._safe_write(ws, current_row, 111, '')
+            # DG (111) Lương KPI: Ghi số tiền KPI cân đối
+            if line.payroll_kpi_amount:
+                self._safe_write(ws, current_row, 111, line.payroll_kpi_amount)
+            else:
+                self._safe_write(ws, current_row, 111, 0)
             
             # EE (135) Thưởng cố định năm
             self._safe_write(ws, current_row, 135, line.payroll_annual_bonus or 0)

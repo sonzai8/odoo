@@ -594,13 +594,13 @@ class SalaryKpiLine(models.Model):
             max_mk = lk * (max_allowed - 50) / 50.0
             
             if gap <= 0:
-                p_final = 50
+                p_final = 50.0
                 mk = 0.0
                 cash = 0.0
             elif gap <= max_mk:
                 # Đủ sức dùng 100% KPI (Không dùng Tiền mặt)
                 # Cho phép điểm KPI lẻ để khớp hoàn toàn Ln = Lk + Mk
-                p_final = 50 + 50 * gap / lk
+                p_final = 50.0 + 50.0 * gap / lk
                 mk = gap
                 cash = 0.0
             else:
@@ -608,61 +608,69 @@ class SalaryKpiLine(models.Model):
                 cash_needed = gap - max_mk
                 if cash_needed >= 1000000:
                     # Tiền mặt đủ lớn, random điểm KPI từ 50-70 (Ưu tiên 60-70)
+                    # Cho phép lẻ 2 chữ số để trông tự nhiên
                     if random.random() < 0.7:
-                        p_final = random.randint(60, max_allowed)
+                        p_final = round(random.uniform(60.0, float(max_allowed)), 2)
                     else:
-                        p_final = random.randint(50, max_allowed)
-                    mk = lk * (p_final - 50) / 50.0
+                        p_final = round(random.uniform(50.0, float(max_allowed)), 2)
+                    mk = lk * (p_final - 50.0) / 50.0
                     cash = gap - mk
                 else:
                     # Tiền mặt < 1 triệu, phải giảm điểm KPI
                     remaining_gap = gap - 1000000
                     if remaining_gap < 0:
                         # Edge case: Tổng khoảng cách < 1 triệu, không đủ gánh 1 triệu
-                        p_final = 50
+                        p_final = 50.0
                         mk = 0.0
                         cash = gap
                     else:
                         # Normal case
-                        p_theo = 50 + 50 * remaining_gap / lk
+                        p_theo = 50.0 + 50.0 * remaining_gap / lk
                         # Bắt buộc làm tròn XUỐNG để nhường chỗ trống >= 1 triệu cho Tiền mặt
-                        upper_bound = int(math.floor(p_theo))
+                        upper_bound = math.floor(p_theo)
                         # Ưu tiên 60-70 nếu upper_bound cho phép
                         if upper_bound >= 60 and random.random() < 0.7:
-                            p_final = random.randint(60, upper_bound)
+                            p_final = round(random.uniform(60.0, float(upper_bound)), 2)
                         else:
-                            p_final = random.randint(50, upper_bound)
-                        mk = lk * (p_final - 50) / 50.0
+                            p_final = round(random.uniform(50.0, float(upper_bound)), 2)
+                        mk = lk * (p_final - 50.0) / 50.0
                         cash = gap - mk
             
-            # --- PHÂN RÃ ĐIỂM KPI THÀNH 5 TIÊU CHÍ (C1-C5) ---
+            # --- PHÂN RÃ ĐIỂM KPI THÀNH 5 TIÊU CHÍ (C1-C5) TỶ LỆ THUẬN ---
             # Giới hạn: C1: 40, C2: 30, C3: 15, C4: 10, C5: 5 (Tổng max = 100)
-            # Vì p_final có thể là số lẻ (float), ta chia phần nguyên trước, phần dư cộng vào C1
-            p_int = int(math.floor(p_final))
-            p_rem = p_final - p_int
-            
             limits = [40, 30, 15, 10, 5]
-            kpi_vals = [0.0, 0.0, 0.0, 0.0, 0.0]
-            remaining = p_int
+            target_ratio = p_final / 100.0
+            kpi_vals = [0.0] * 5
             
-            for i in range(4):
-                future_max = sum(limits[i+1:])
-                # Đảm bảo còn đủ điểm cho các tiêu chí sau (mỗi cái ít nhất 1 điểm)
-                low = int(max(1, remaining - future_max))
-                # Đảm bảo không vượt quá giới hạn của tiêu chí này và để lại ít nhất 1 điểm cho mỗi tiêu chí sau
-                num_future_categories = 4 - i
-                high = int(min(limits[i], remaining - num_future_categories))
-                
-                if low > high:
-                    val = high
-                else:
-                    val = random.randint(low, high)
-                
-                kpi_vals[i] = float(val)
-                remaining -= val
+            # 1. Tính toán giá trị nguyên cho C2, C3, C4, C5 (Tỷ lệ thuận + Ngẫu nhiên)
+            for i in range(1, 5):
+                variance = random.uniform(0.9, 1.1)
+                # Sử dụng int(round(...)) để ép về số nguyên tuyệt đối
+                val = int(round(limits[i] * target_ratio * variance))
+                # Đảm bảo tối thiểu 1 điểm nếu p_final đủ lớn, và không vượt quá giới hạn
+                min_val = 1 if p_final > 30 else 0
+                kpi_vals[i] = float(max(min_val, min(limits[i], val)))
             
-            kpi_vals[4] = float(remaining) # Phần còn lại cho C5
-            kpi_vals[0] += p_rem # Cộng phần lẻ vào tiêu chí C1 (Năng suất)
+            # 2. Tiêu chí 1 (C1) gánh toàn bộ phần lẻ để khớp p_final
+            # C1 = p_final - (tổng các số nguyên C2, C3, C4, C5)
+            kpi_vals[0] = round(p_final - sum(kpi_vals[1:5]), 2)
+            
+            # 3. Xử lý trường hợp C1 vượt ngưỡng (Cap at 40)
+            if kpi_vals[0] > limits[0]:
+                excess = kpi_vals[0] - limits[0]
+                kpi_vals[0] = float(limits[0])
+                # Phân bổ phần dư vào các tiêu chí khác (vẫn giữ nguyên số nguyên)
+                for i in range(1, 5):
+                    if excess <= 0: break
+                    can_add = limits[i] - kpi_vals[i]
+                    if can_add > 0:
+                        add = min(math.ceil(excess), can_add)
+                        kpi_vals[i] += add
+                        excess -= add
+                # Nếu vẫn còn dư sau khi đã kịch trần tất cả (hy hữu), cộng nốt vào C1 
+                # (Dù sẽ vượt 40 một chút nhưng đảm bảo khớp Ln)
+                if excess > 0:
+                    kpi_vals[0] = round(kpi_vals[0] + excess, 2)
             
             rec.write({
                 'payroll_kpi_score': p_final,
