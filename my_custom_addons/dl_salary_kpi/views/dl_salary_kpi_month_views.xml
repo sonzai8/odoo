@@ -103,6 +103,7 @@
                                 <field name="total_lk_rounded" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                 <field name="total_rounding_error" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                 <field name="total_ln" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
+                                <field name="total_bank_transfer" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" decoration-bf="1" decoration-info="1"/>
                             </group>
                             <field name="filtered_line_ids" readonly="0" nolabel="1" context="{'dialog_size': 'extra-large'}">
                                 <list editable="bottom" delete="0" limit="20">
@@ -125,6 +126,7 @@
                                     <field name="kpi_c5_saving" string="C5 (5)" optional="show" readonly="1"/>
 
                                     <field name="payroll_kpi_amount" string="Tiền KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1"/>
+                                    <field name="payroll_bank_transfer_amount" string="Tiền chuyển khoản" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" decoration-info="1" readonly="1"/>
                                     <field name="payroll_cash_amount" string="Tiền mặt trả thêm" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1" readonly="1"/>
                                     
                                     <button name="action_generate_kpi_scores" string="Tính KPI" type="object" icon="fa-calculator" title="Tính toán lại KPI cho dòng này" invisible="parent.state in ['lock_kpi', 'confirmed']"/>

@@ -203,20 +203,28 @@ class SalaryKpiMonth(models.Model):
         currency_field='currency_id',
         help="Tổng Lương trong (Ln) nhập tay của toàn bộ nhân viên trong tháng."
     )
+    total_bank_transfer = fields.Monetary(
+        string='Tổng Tiền chuyển khoản',
+        compute='_compute_salary_totals',
+        currency_field='currency_id',
+        help="Tổng tiền chuyển khoản (Lk làm tròn + KPI) của toàn bộ nhân viên."
+    )
 
     @api.depends(
         'line_ids.payroll_net_salary_base',
         'line_ids.payroll_net_salary_base_rounded',
         'line_ids.payroll_net_salary_base_rounding_error',
         'line_ids.payroll_internal_salary',
+        'line_ids.payroll_bank_transfer_amount',
     )
     def _compute_salary_totals(self):
-        """Tính tổng 4 chỉ số lương chính từ toàn bộ line_ids (không phân trang)."""
+        """Tính tổng các chỉ số lương chính từ toàn bộ line_ids (không phân trang)."""
         for rec in self:
             rec.total_lk = sum(rec.line_ids.mapped('payroll_net_salary_base'))
             rec.total_lk_rounded = sum(rec.line_ids.mapped('payroll_net_salary_base_rounded'))
             rec.total_rounding_error = sum(rec.line_ids.mapped('payroll_net_salary_base_rounding_error'))
             rec.total_ln = sum(rec.line_ids.mapped('payroll_internal_salary'))
+            rec.total_bank_transfer = sum(rec.line_ids.mapped('payroll_bank_transfer_amount'))
 
 
 
