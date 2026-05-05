@@ -938,42 +938,44 @@ class SalaryKpiLine(models.Model):
                     meal_allowance, women_allowance, rec.payroll_kpi_amount
                 ),
                 
-                # Cập nhật các khoản trừ & Thuế TNCN
-                'payroll_deduction_bhxh': deductions['bhxh'],
-                'payroll_deduction_bhyt': deductions['bhyt'],
-                'payroll_deduction_bhtn': deductions['bhtn'],
-                'payroll_deduction_tncn': deductions['tncn'],
-                'payroll_total_insurance_deduction': deductions['total_insurance'],
-                'payroll_pit_taxable_income': deductions['taxable_income'],
+                # Cập nhật các khoản trừ & Thuế TNCN (Ép kiểu số nguyên)
+                'payroll_deduction_bhxh': int(round(deductions['bhxh'], 0)),
+                'payroll_deduction_bhyt': int(round(deductions['bhyt'], 0)),
+                'payroll_deduction_bhtn': int(round(deductions['bhtn'], 0)),
+                'payroll_deduction_tncn': int(round(deductions['tncn'], 0)),
+                'payroll_total_insurance_deduction': int(round(deductions['total_insurance'], 0)),
+                'payroll_pit_taxable_income': int(round(deductions['taxable_income'], 0)),
                 'payroll_pit_number_of_dependents': deductions['num_dependents'],
-                'payroll_pit_total_deductions': deductions['total_pit_deductions'],
-                'payroll_pit_assessable_income': deductions['assessable_income'],
-                'payroll_total_deduction': deductions['total_deduction'],
-                'payroll_net_salary_base': net_salary_base,
-                'payroll_net_salary': net_salary_final,
+                'payroll_pit_total_deductions': int(round(deductions['total_pit_deductions'], 0)),
+                'payroll_pit_assessable_income': int(round(deductions['assessable_income'], 0)),
+                'payroll_total_deduction': int(round(deductions['total_deduction'], 0)),
+                'payroll_net_salary_base': int(round(net_salary_base, 0)),
+                'payroll_net_salary': int(round(net_salary_final, 0)),
             })
                 
-            # Cập nhật các trường Tiền chuyển khoản và làm tròn XUỐNG (Floor)
-            import math
-            transfer_val = net_salary_base + (rec.payroll_kpi_amount or 0)
-            rounded_transfer = math.floor(transfer_val / 1000) * 1000
+            # Cập nhật các trường Tiền chuyển khoản và làm tròn XUỐNG (Sử dụng chia lấy nguyên để tránh sai số số thực)
+            # Đảm bảo transfer_val là số nguyên trước khi tính toán làm tròn
+            transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0), 0))
+            rounded_transfer = int(transfer_val // 1000) * 1000
             
-            cash_val = rec.payroll_cash_amount or 0
-            rounded_cash = math.floor(cash_val / 1000) * 1000
+            cash_val = int(round(rec.payroll_cash_amount or 0, 0))
+            rounded_cash = int(cash_val // 1000) * 1000
 
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,
                 'payroll_bank_transfer_amount_rounded': rounded_transfer,
-                'payroll_bank_transfer_amount_rounding_error': transfer_val - rounded_transfer,
+                'payroll_bank_transfer_amount_rounding_error': int(transfer_val - rounded_transfer),
                 'payroll_cash_amount_rounded': rounded_cash,
-                'payroll_cash_amount_rounding_error': cash_val - rounded_cash,
+                'payroll_cash_amount_rounding_error': int(cash_val - rounded_cash),
             })
 
     def _get_income_explanation(self, wage, rev, prod, meal, women, kpi):
-        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML"""
+        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML (Luôn hiển thị số nguyên)"""
         parts = []
         def fmt(val):
-            return "{:,.0f}".format(val or 0).replace(",", ".")
+            # Ép kiểu nguyên và định dạng phân cách hàng nghìn kiểu VN
+            v = int(round(val or 0, 0))
+            return "{:,.0f}".format(v).replace(",", ".")
             
         if wage: parts.append(f"<b>{fmt(wage)}</b> (Lương CT)")
         if rev: parts.append(f"<b>{fmt(rev)}</b> (Thưởng DT)")
@@ -985,7 +987,11 @@ class SalaryKpiLine(models.Model):
         if not parts: return ""
         
         formula = " + ".join(parts)
-        total = (wage or 0) + (rev or 0) + (prod or 0) + (meal or 0) + (women or 0) + (kpi or 0)
+        # Tính tổng dựa trên các số đã làm tròn để khớp tuyệt đối với UI
+        total = (
+            int(round(wage or 0, 0)) + int(round(rev or 0, 0)) + int(round(prod or 0, 0)) + 
+            int(round(meal or 0, 0)) + int(round(women or 0, 0)) + int(round(kpi or 0, 0))
+        )
         return f"<div style='text-align: right; color: #444; font-size: 0.95em; border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px;'>{formula} = <span style='color: #d9534f; font-weight: bold;'>{fmt(total)}</span></div>"
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
