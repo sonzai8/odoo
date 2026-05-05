@@ -18,62 +18,28 @@
         <field name="arch" type="xml">
             <form string="Cân đối bảng công">
                 <header>
-                    <button name="action_import_excel" string="Nhập/Xuất Công Thường" type="object" class="btn-info" icon="fa-exchange" invisible="state != 'draft'"/>
-                    <button name="action_import_ot_excel" string="Nhập/Xuất Công Làm Thêm" type="object" class="btn-warning" icon="fa-clock-o" invisible="state != 'lock_normal'"/>
-                    <button name="action_import_internal_salary" string="Import Lương nội bộ" type="object" class="btn-info" icon="fa-upload" invisible="state != 'lock_regime'"/>
-                    <button name="action_generate_all_kpi" string="Tự động sinh KPI" type="object" class="btn-primary" icon="fa-magic" invisible="state != 'lock_regime'"/>
-                    
                     <button name="action_lock_normal" string="Chốt công Thường" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_lock_ot" string="Chốt Công Làm thêm" type="object" class="btn-primary" invisible="state != 'lock_normal'"/>
                     <button name="action_lock_regime" string="Chốt Chế Độ" type="object" class="btn-primary" invisible="state != 'lock_ot'"/>
                     <button name="action_lock_kpi" string="Chốt KPI" type="object" class="btn-primary" invisible="state != 'lock_regime'"/>
                     <button name="action_confirm" string="Xác nhận" type="object" class="btn-success" invisible="state != 'lock_kpi'"/>
                     
-                    <button name="action_recompute_all_data" string="Cập nhật toàn bộ dữ liệu" type="object" class="btn-secondary" icon="fa-refresh" groups="base.group_user" invisible="state == 'confirmed'"/>
-                    
-                    <button name="%(dl_salary_kpi.action_dl_salary_kpi_export_wizard)d" 
-                            string="Xuất báo cáo (Excel)" 
-                            type="action" 
-                            class="btn-success" 
-                            icon="fa-file-excel-o"
-                            context="{'default_month_id': id}"
-                            invisible="state == 'draft'"/>
-                    
                     <button name="action_back_to_draft" string="Quay lại Dự thảo" type="object" invisible="state != 'lock_normal'"/>
                     <button name="action_back_to_lock_normal" string="Quay lại Công Thường" type="object" invisible="state != 'lock_ot'"/>
-                    <button name="action_back_to_lock_ot" string="Quay lại Làm Thêm" type="object" invisible="state != 'lock_regime'"/>
-                    <button name="action_back_to_lock_regime" string="Quay lại Chế Độ" type="object" invisible="state != 'lock_kpi'"/>
+                    <button name="action_back_to_lock_ot" string="Quay lại Công LT" type="object" invisible="state != 'lock_regime'"/>
+                    <button name="action_back_to_lock_regime" string="Quay lại" type="object" invisible="state != 'lock_kpi'"/>
                     <button name="action_back_to_lock_kpi" string="Quay lại KPI" type="object" invisible="state != 'confirmed'"/>
                     
                     <field name="state" widget="statusbar" statusbar_visible="draft,lock_normal,lock_ot,lock_regime,lock_kpi,confirmed"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <div class="oe_stat_button" icon="fa-users">
-                            <field name="total_employees" widget="statinfo" string="Nhân viên"/>
-                        </div>
-                        <div class="oe_stat_button" icon="fa-sun-o" font-color="orange">
-                        </div>
-                        <div class="oe_stat_button" icon="fa-moon-o" font-color="blue">
-                        </div>
-                        <div class="oe_stat_button" icon="fa-plane" font-color="green">
-                            <field name="total_p" widget="statinfo" string="P"/>
-                        </div>
-                        <div class="oe_stat_button" icon="fa-star" font-color="red">
-                            <field name="total_pl" widget="statinfo" string="PL"/>
-                        </div>
-                        <div class="oe_stat_button" icon="fa-exclamation-triangle" font-color="red">
-                            <field name="total_kp" widget="statinfo" string="KP"/>
-                        </div>
-                        <div class="oe_stat_button" icon="fa-medkit" font-color="brown">
-                            <field name="total_o" widget="statinfo" string="Ô"/>
-                        </div>
-                        <!-- <div class="oe_stat_button" icon="fa-exchange" font-color="purple">
-                            <field name="total_dc" widget="statinfo" string="Đổi ca"/>
-                        </div> -->
-                        <div class="oe_stat_button" icon="fa-child" font-color="pink">
-                            <field name="total_co" widget="statinfo" string="CÔ"/>
-                        </div>
+                        <button name="action_recompute_all_data" string="Tính toán lại" type="object" class="oe_stat_button" icon="fa-refresh" groups="base.group_user" invisible="state == 'confirmed'"/>
+                        <button name="action_import_excel" string="Nhập Công" type="object" class="oe_stat_button" icon="fa-exchange" invisible="state != 'draft'"/>
+                        <button name="action_import_ot_excel" string="Nhập công LT" type="object" class="oe_stat_button" icon="fa-clock-o" invisible="state != 'lock_normal'"/>
+                        <button name="action_import_internal_salary" string="Nhập Lương" type="object" class="oe_stat_button" icon="fa-upload" invisible="state != 'lock_regime'"/>
+                        <button name="action_generate_all_kpi" string="Tạo KPI" type="object" class="oe_stat_button" icon="fa-magic" invisible="state != 'lock_regime'"/>
+                        <button name="action_open_export_wizard" string="Xuất báo cáo" type="object" class="oe_stat_button" icon="fa-file-excel-o" invisible="state == 'lock_ot'"/>
                     </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>

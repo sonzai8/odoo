@@ -11,6 +11,10 @@ import time
 import logging
 import math
 import random
+import threading
+from datetime import date
+from calendar import monthrange
+from openpyxl.styles import PatternFill
 
 from . import attendance_logic
 from . import payroll_logic
@@ -642,7 +646,7 @@ class SalaryKpiMonth(models.Model):
                 target_cell.font = copy.copy(source_cell.font)
                 target_cell.border = copy.copy(source_cell.border)
                 target_cell.fill = copy.copy(source_cell.fill)
-                target_cell.number_format = source_cell.number_format  # Number format là string, gán trực tiếp
+                target_cell.number_format = source_cell.number_format
                 target_cell.protection = copy.copy(source_cell.protection)
                 target_cell.alignment = copy.copy(source_cell.alignment)
         
@@ -650,55 +654,62 @@ class SalaryKpiMonth(models.Model):
         if ws.row_dimensions[source_row].height:
             ws.row_dimensions[target_row].height = ws.row_dimensions[source_row].height
 
-    def action_export_salary_report(self):
-        """Hàm xuất báo cáo lương trực tiếp theo Skill Template 01"""
-        self.ensure_one()
+    def _bg_generate_excel_report(self, attachment_id, report_type):
+        """
+        Hàm chạy ngầm (Background Thread) để tạo file Excel.
+        Sử dụng new cursor để tránh xung đột transaction.
+        """
+        # Tạo cursor mới cho thread
+        new_cr = self.pool.cursor()
+        self = self.with_env(self.env(cr=new_cr))
+        try:
+            if report_type == 'salary':
+                # Logic tạo file lương
+                attachment = self.env['ir.attachment'].browse(attachment_id)
+                # Tạm thời gán logic tạo file (giống action_export_salary_report nhưng không trả về action)
+                result = self._get_salary_report_data() # Hàm helper mới
+                attachment.write({'datas': result['datas']})
+            elif report_type == 'kpi':
+                # Logic tạo file KPI
+                attachment = self.env['ir.attachment'].browse(attachment_id)
+                file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
+                attachment.write({'datas': file_data})
+            
+            new_cr.commit()
+        except Exception as e:
+            _logger.error("Lỗi khi tạo file Excel trong background: %s", str(e))
+            new_cr.rollback()
+        finally:
+            new_cr.close()
+
+    def _get_salary_report_data(self):
+        """Hàm nội bộ tách logic tạo dữ liệu Excel Lương để dùng cho cả Thread và Sync."""
         if not load_workbook:
             raise UserError(_("Thư viện openpyxl chưa được cài đặt."))
 
-        try:
-            template_path = file_path('dl_salary_kpi/static/src/templates/TEMPLATE_2026.xlsx')
-        except FileNotFoundError:
-            raise UserError(_("Không tìm thấy file mẫu Excel tại static/src/templates/TEMPLATE_2026.xlsx"))
-
-        t0 = time.time()
+        template_path = file_path('dl_salary_kpi/static/src/templates/TEMPLATE_2026.xlsx')
         wb = load_workbook(template_path)
         wb.calculation.fullCalcOnLoad = True
         ws = wb.active
         month_date = self.date_month
-        
-        t1 = time.time()
-        _logger.info("=== EXPORT LƯƠNG [%s]: Bước 1 - Tải Template mất %.2fs ===", self.name, t1 - t0)
-        
         ws.title = f"Tháng {month_date.strftime('%m')} - năm {month_date.strftime('%Y')}"
 
-        # 1. Header
         self._safe_write(ws, 3, 1, f"Tháng {month_date.strftime('%m')} năm {month_date.strftime('%Y')}")
         self._safe_write(ws, 4, 7, self.dl_revenue)
         self._safe_write(ws, 4, 12, int(month_date.strftime('%m')))
         self._safe_write(ws, 4, 16, int(month_date.strftime('%Y')))
         
-        # Ghi tên khoản thưởng vào ô EC5 (Cột 133)
         bonus_names = [b.name for b in self.bonus_line_ids]
         if bonus_names:
             self._safe_write(ws, 5, 133, " + ".join(bonus_names))
         else:
             self._safe_write(ws, 5, 133, "")
 
-        # 2. Data
         current_row = 8
-        time_copy = 0.0
-        time_map = 0.0
-        
         for i, line in enumerate(self.line_ids):
-            t_start_row = time.time()
             if current_row > 8:
                 self._copy_row_formatting(ws, 8, current_row)
             
-            t_after_copy = time.time()
-            time_copy += (t_after_copy - t_start_row)
-            
-            # Mapping
             self._safe_write(ws, current_row, 1, i + 1)
             self._safe_write(ws, current_row, 2, line.employee_id.dl_tax_id or '')
             self._safe_write(ws, current_row, 3, line.employee_id.name)
@@ -711,18 +722,25 @@ class SalaryKpiMonth(models.Model):
             self._safe_write(ws, current_row, 8, line.employee_id.dl_tax_position or '')
             self._safe_write(ws, current_row, 9, line.employee_id.dl_tax_base_salary or 0)
 
-            from calendar import monthrange
-            from datetime import date
             last_day = monthrange(month_date.year, month_date.month)[1]
-
             for day in range(1, 32):
-                # 1. Ghi công thường (Vùng J -> AN | Cột 10 -> 40)
                 col_idx = 9 + day
                 att_type = getattr(line, f'day_{day:02d}')
-                self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
                 
-                # 2. Ghi công làm thêm (Vùng AT -> BX | Cột 46 -> 76)
-                # Ghi mã công làm thêm hoặc ghi rỗng để xoá công thức của Template nếu trên Odoo không có dữ liệu
+                # Logic rà soát công trống (Chỉ áp dụng khi Confirmed)
+                is_filled_cp = False
+                if self.state == 'confirmed' and day <= last_day:
+                    current_date = date(month_date.year, month_date.month, day)
+                    # Thứ 2 (0) đến Thứ 7 (5). Chủ Nhật là 6.
+                    if current_date.weekday() < 6 and not att_type:
+                        self._safe_write(ws, current_row, col_idx, "CP")
+                        # Tô màu vàng nhạt FFFFE0
+                        ws.cell(row=current_row, column=col_idx).fill = PatternFill(start_color='FFFFE0', end_color='FFFFE0', fill_type='solid')
+                        is_filled_cp = True
+
+                if not is_filled_cp:
+                    self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
+
                 if day <= last_day:
                     ot_att = getattr(line, f'ot_day_{day:02d}')
                     col_ot = 45 + day
@@ -732,25 +750,15 @@ class SalaryKpiMonth(models.Model):
                 self._safe_write(ws, current_row, 95, self.dl_women_allowance)
             else:
                 self._safe_write(ws, current_row, 95, 0)
-            
             self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
-            
-            # DG (111) Lương KPI: Ghi số tiền KPI cân đối
             if line.payroll_kpi_amount:
                 self._safe_write(ws, current_row, 111, line.payroll_kpi_amount)
             else:
                 self._safe_write(ws, current_row, 111, 0)
-            
-            # EE (135) Thưởng cố định năm
             self._safe_write(ws, current_row, 135, line.payroll_annual_bonus or 0)
-
-            # EH (138) Số người phụ thuộc
             self._safe_write(ws, current_row, 138, line.payroll_pit_number_of_dependents or 0)
-
-            # DP (120) Thuế TNCN
             self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
             
-            # EC (133) Thưởng lễ
             total_bonus = 0
             for bonus in self.bonus_line_ids:
                 emp_sex = line.employee_id.sex
@@ -759,35 +767,110 @@ class SalaryKpiMonth(models.Model):
                    (bonus.gender == 'male' and emp_sex == 'male'):
                     total_bonus += bonus.amount
             self._safe_write(ws, current_row, 133, total_bonus)
-
-            t_after_map = time.time()
-            time_map += (t_after_map - t_after_copy)
-
             current_row += 1
 
-        t2 = time.time()
-        _logger.info("=== EXPORT LƯƠNG [%s]: Bước 2 - Đổ %d dòng dữ liệu mất %.2fs ===", self.name, len(self.line_ids), t2 - t1)
-        _logger.info("    -> Thời gian Copy Format: %.2fs", time_copy)
-        _logger.info("    -> Thời gian Map Dữ liệu: %.2fs", time_map)
-
-        # 3. Export
         output = io.BytesIO()
         wb.save(output)
         file_data = base64.b64encode(output.getvalue())
         output.close()
         
-        t3 = time.time()
-        _logger.info("=== EXPORT LƯƠNG [%s]: Bước 3 - Lưu file Excel mất %.2fs ===", self.name, t3 - t2)
-        _logger.info("=== EXPORT LƯƠNG [%s]: TỔNG THỜI GIAN MẤT %.2fs ===", self.name, t3 - t0)
-
         filename = f"BC_LUONG_KPI_{month_date.strftime('%m_%Y')}.xlsx"
+        return {'datas': file_data, 'filename': filename}
+
+    def action_export_salary_report(self):
+        """Hàm xuất báo cáo lương. Nếu gọi từ wizard thì sẽ trả về action tải file."""
+        self.ensure_one()
+        result = self._get_salary_report_data()
+        attachment = self.env['ir.attachment'].create({
+            'name': result['filename'],
+            'type': 'binary',
+            'datas': result['datas'],
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'new',
+        }
+
+    def action_export_kpi_point_report(self):
+        """Xuất báo cáo điểm KPI trực tiếp (Sync)."""
+        self.ensure_one()
+        file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
         attachment = self.env['ir.attachment'].create({
             'name': filename,
             'type': 'binary',
             'datas': file_data,
             'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'new',
+        }
 
+    def action_open_export_wizard(self):
+        """
+        Hàm mở Wizard: KHÔNG chờ đợi.
+        Kích hoạt Thread chạy ngầm và hiện Popup ngay lập tức.
+        """
+        self.ensure_one()
+        month_str = self.date_month.strftime('%m_%Y')
+        
+        # 1. Tạo sẵn 2 bản ghi Attachment rỗng
+        salary_attachment = self.env['ir.attachment'].create({
+            'name': f"BC_LUONG_KPI_{month_str}.xlsx",
+            'type': 'binary',
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'res_model': 'dl.salary.kpi.month',
+            'res_id': self.id,
+            'datas': False, # Chưa có dữ liệu
+        })
+        
+        kpi_attachment = self.env['ir.attachment'].create({
+            'name': f"BC_KPI_DIEM_TIEN_{month_str}.xlsx",
+            'type': 'binary',
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'res_model': 'dl.salary.kpi.month',
+            'res_id': self.id,
+            'datas': False, # Chưa có dữ liệu
+        })
+
+        # 2. Khởi chạy threads chạy ngầm
+        thread_salary = threading.Thread(target=self._bg_generate_excel_report, args=(salary_attachment.id, 'salary'))
+        thread_kpi = threading.Thread(target=self._bg_generate_excel_report, args=(kpi_attachment.id, 'kpi'))
+        
+        thread_salary.start()
+        thread_kpi.start()
+
+        # 3. Trả về Popup ngay lập tức
+        return {
+            'name': 'Xuất báo cáo Excel',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.export.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_month_id': self.id,
+                'default_salary_attachment_id': salary_attachment.id,
+                'default_kpi_attachment_id': kpi_attachment.id,
+            }
+        }
+
+    def action_export_kpi_point_report(self):
+        """Xuất báo cáo điểm KPI. Trả về act_url."""
+        self.ensure_one()
+        file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
+        
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'type': 'binary',
+            'datas': file_data,
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'res_model': 'dl.salary.kpi.month',
+            'res_id': self.id,
+        })
+        
         return {
             'type': 'ir.actions.act_url',
             'url': f'/web/content/{attachment.id}?download=true',
@@ -831,21 +914,3 @@ class SalaryKpiMonth(models.Model):
                 line.action_generate_kpi_scores(max_allowed=69)
                 
         return True
-
-    def action_export_kpi_point_report(self):
-        """Xuất báo cáo điểm KPI theo mẫu TEMPLATE_KPI_2026.xlsx, chia sheet theo phòng ban."""
-        self.ensure_one()
-        file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
-        
-        attachment = self.env['ir.attachment'].create({
-            'name': filename,
-            'type': 'binary',
-            'datas': file_data,
-            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        })
-
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/{attachment.id}?download=true',
-            'target': 'new',
-        }
