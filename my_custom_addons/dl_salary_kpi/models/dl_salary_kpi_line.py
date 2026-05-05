@@ -953,12 +953,13 @@ class SalaryKpiLine(models.Model):
                 'payroll_net_salary': net_salary_final,
             })
                 
-            # Cập nhật các trường Tiền chuyển khoản và làm tròn
+            # Cập nhật các trường Tiền chuyển khoản và làm tròn XUỐNG (Floor)
+            import math
             transfer_val = net_salary_base + (rec.payroll_kpi_amount or 0)
-            rounded_transfer = round(transfer_val, -3)
+            rounded_transfer = math.floor(transfer_val / 1000) * 1000
             
             cash_val = rec.payroll_cash_amount or 0
-            rounded_cash = round(cash_val, -3)
+            rounded_cash = math.floor(cash_val / 1000) * 1000
 
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,

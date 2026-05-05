@@ -210,6 +210,31 @@ class SalaryKpiMonth(models.Model):
         currency_field='currency_id',
         help="Tổng tiền chuyển khoản của toàn bộ nhân viên."
     )
+    total_bank_transfer_rounded = fields.Monetary(
+        string='Tổng CK làm tròn',
+        compute='_compute_salary_totals',
+        currency_field='currency_id'
+    )
+    total_bank_transfer_error = fields.Monetary(
+        string='Tổng sai số CK',
+        compute='_compute_salary_totals',
+        currency_field='currency_id'
+    )
+    total_cash_rounded = fields.Monetary(
+        string='Tổng tiền mặt tròn',
+        compute='_compute_salary_totals',
+        currency_field='currency_id'
+    )
+    total_cash_error = fields.Monetary(
+        string='Tổng sai số TM',
+        compute='_compute_salary_totals',
+        currency_field='currency_id'
+    )
+    total_kpi_amount = fields.Monetary(
+        string='Tổng tiền KPI',
+        compute='_compute_salary_totals',
+        currency_field='currency_id'
+    )
 
     @api.depends(
         'line_ids.payroll_net_salary_base',
@@ -222,6 +247,13 @@ class SalaryKpiMonth(models.Model):
             rec.total_lk = sum(rec.line_ids.mapped('payroll_net_salary_base'))
             rec.total_ln = sum(rec.line_ids.mapped('payroll_internal_salary'))
             rec.total_bank_transfer = sum(rec.line_ids.mapped('payroll_bank_transfer_amount'))
+            
+            # Các trường mới
+            rec.total_bank_transfer_rounded = sum(rec.line_ids.mapped('payroll_bank_transfer_amount_rounded'))
+            rec.total_bank_transfer_error = sum(rec.line_ids.mapped('payroll_bank_transfer_amount_rounding_error'))
+            rec.total_cash_rounded = sum(rec.line_ids.mapped('payroll_cash_amount_rounded'))
+            rec.total_cash_error = sum(rec.line_ids.mapped('payroll_cash_amount_rounding_error'))
+            rec.total_kpi_amount = sum(rec.line_ids.mapped('payroll_kpi_amount'))
 
 
 
@@ -391,25 +423,29 @@ class SalaryKpiMonth(models.Model):
         # Khi chốt công thường, tự động khởi tạo gợi ý công làm thêm (0.5N/0.5Đ)
         # dựa trên các ngày đã chấm công thường (N/Đ).
         self._action_init_overtime_suggestions()
-            
         self.action_recompute_all_data()
         self.write({'state': 'lock_normal'})
+        return True
 
     def action_lock_ot(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_ot'})
+        return True
 
     def action_lock_regime(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_regime'})
+        return True
 
     def action_lock_kpi(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_kpi'})
+        return True
 
     def action_confirm(self):
         self.action_recompute_all_data()
         self.write({'state': 'confirmed'})
+        return True
 
     # Các hàm quay lại trạng thái trước
     def action_back_to_draft(self):
@@ -420,10 +456,12 @@ class SalaryKpiMonth(models.Model):
             rec.write({'state': 'draft'})
         # Cập nhật lại thống kê tháng sau khi reset dòng con
         self._compute_quick_stats()
+        return True
 
     def action_back_to_lock_normal(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_normal'})
+        return True
 
     def action_back_to_lock_ot(self):
         # Xóa dữ liệu KPI khi quay lại trạng thái trước
@@ -439,14 +477,17 @@ class SalaryKpiMonth(models.Model):
         })
         self.action_recompute_all_data()
         self.write({'state': 'lock_ot'})
+        return True
 
     def action_back_to_lock_regime(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_regime'})
+        return True
 
     def action_back_to_lock_kpi(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_kpi'})
+        return True
 
     def action_draft(self):
         # Giữ lại hàm này để tương thích nếu cần, hoặc xoá nếu muốn ép quy trình quay lại từng bước
