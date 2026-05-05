@@ -791,7 +791,7 @@ class SalaryKpiMonth(models.Model):
             self._safe_write(ws, current_row, 95, self.dl_women_allowance if line.employee_id.sex == 'female' else 0)
             self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
             self._safe_write(ws, current_row, 111, line.payroll_kpi_amount or 0)
-            self._safe_write(ws, current_row, 135, line.payroll_annual_bonus or 0)
+            # Cột 135 (EE) bỏ qua vì có công thức sẵn
             self._safe_write(ws, current_row, 136, line.payroll_pit_number_of_dependents or 0) # Cột EF
             self._safe_write(ws, current_row, 138, line.payroll_pit_number_of_dependents or 0)
             self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)

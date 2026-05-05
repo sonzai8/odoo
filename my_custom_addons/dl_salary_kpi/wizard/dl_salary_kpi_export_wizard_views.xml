@@ -11,18 +11,17 @@
                 <div class="d-flex justify-content-around mb-4">
                     <field name="salary_attachment_id" invisible="1"/>
                     <field name="kpi_attachment_id" invisible="1"/>
-                    <button name="action_export_salary" 
-                            string="1. Báo cáo Lương &amp; KPI (Tổng hợp)" 
-                            type="object" 
-                            class="btn-primary btn-lg p-4" 
-                            icon="fa-file-text-o"
-                            style="width: 45%;"/>
-                    
                     <button name="action_export_kpi_point" 
-                            string="2. Báo cáo KPI (Điểm &amp; Tiền)" 
+                            string="1. Báo cáo KPI (Điểm &amp; Tiền)" 
                             type="object" 
-                            class="btn-success btn-lg p-4" 
+                            class="btn-success btn-lg p-3" 
                             icon="fa-users"
+                            style="width: 45%;"/>
+                    <button name="action_export_salary" 
+                            string="2. Báo cáo Lương &amp; KPI (Tổng hợp)" 
+                            type="object" 
+                            class="btn-primary btn-lg p-3" 
+                            icon="fa-file-text-o"
                             style="width: 45%;"/>
                 </div>
                 <footer>

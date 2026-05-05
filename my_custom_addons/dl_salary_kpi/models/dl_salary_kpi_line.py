@@ -492,6 +492,7 @@ class SalaryKpiLine(models.Model):
 
     # --- TỰ ĐỘNG SINH ĐIỂM KPI ---
     payroll_internal_salary = fields.Monetary(string='Lương trong (Ln)', currency_field='currency_id', aggregator='sum', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
+    payroll_internal_salary_minus_bonus = fields.Monetary(string='Ln trừ thưởng năm', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_kpi_score = fields.Float(string='Điểm KPI (Sinh ra)', digits=(16, 2), aggregator="avg")
     payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id', aggregator='sum')
     payroll_kpi_amount_rounded = fields.Monetary(string='Tiền KPI làm tròn', currency_field='currency_id', aggregator='sum')
@@ -586,14 +587,15 @@ class SalaryKpiLine(models.Model):
             if rec.month_id.state in ['lock_kpi', 'confirmed']:
                 raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
             
-            ln = rec.payroll_internal_salary
+            # Lấy Ln đã trừ Thưởng năm để làm mốc cân đối KPI
+            ln_target = rec.payroll_internal_salary_minus_bonus
             lk = rec.payroll_net_salary_base
             
-            if not ln or lk <= 0:
+            if not ln_target or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
                 continue
             
-            gap = ln - lk
+            gap = ln_target - lk
             max_mk = lk * (max_allowed - 50) / 50.0
             
             if gap <= 0:
@@ -849,13 +851,16 @@ class SalaryKpiLine(models.Model):
             # 1. Gross Lk (Tổng lương & Thưởng hiệu quả chính quy)
             gross_lk = total_detailed_wage + revenue_bonus + productivity_bonus
             
-            # 2. Thực lĩnh ngoài (Lk) = Gross Lk 
-            net_salary_base = gross_lk 
+            # 2. Thực lĩnh ngoài (Lk) = Gross Lk (KHÔNG KHẤU TRỪ theo yêu cầu)
+            net_salary_base = gross_lk
             
             # 3. Tổng thu nhập thực tế = Lk + Ăn ca + Phụ cấp phụ nữ
             total_actual_income = net_salary_base + meal_allowance + women_allowance
             
-            # 4. Thực lĩnh cuối cùng (bao gồm cả các khoản bù KPI/Tiền mặt)
+            # 5. Lương trong mục tiêu trừ đi các khoản thưởng năm (để cân đối KPI chính xác)
+            internal_salary_minus_bonus = max(0, rec.payroll_internal_salary - annual_bonus)
+            
+            # 6. Thực lĩnh cuối cùng (bao gồm cả các khoản bù KPI/Tiền mặt)
             net_salary_final = total_actual_income + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
             
             # Gợi ý xử lý dữ liệu bất thường (Dựa trên Lk mới)
@@ -974,11 +979,12 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_deduction': int(round(deductions['total_deduction'], 0)),
                 'payroll_net_salary_base': int(round(net_salary_base, 0)),
                 'payroll_net_salary': int(round(net_salary_final, 0)),
+                'payroll_internal_salary_minus_bonus': int(round(internal_salary_minus_bonus, 0)),
             })
                 
-            # Cập nhật các trường Tiền chuyển khoản và làm tròn XUỐNG (Sử dụng chia lấy nguyên để tránh sai số số thực)
+            # Cập nhật các trường Tiền chuyển khoản: Lk + KPI + Thưởng năm
             # Đảm bảo transfer_val là số nguyên trước khi tính toán làm tròn
-            transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0), 0))
+            transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
             rounded_transfer = int(transfer_val // 1000) * 1000
             
             cash_val = int(round(rec.payroll_cash_amount or 0, 0))
@@ -999,7 +1005,7 @@ class SalaryKpiLine(models.Model):
             })
 
     def _get_income_explanation(self, gross_lk, deduction, lk, meal, women, total):
-        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML cho Logic mới"""
+        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML cho Logic mới (Lk = Gross)"""
         def fmt(val):
             v = int(round(val or 0, 0))
             return "{:,.0f}".format(v).replace(",", ".")
@@ -1009,8 +1015,7 @@ class SalaryKpiLine(models.Model):
             <div style='margin-bottom: 8px;'>
                 <b>1. Tính Thực lĩnh ngoài (Lk):</b><br/>
                 &nbsp;&nbsp;&nbsp;&nbsp;{fmt(gross_lk)} (Tổng lương & Thưởng hiệu quả)<br/>
-                
-                &nbsp;&nbsp;= <span style='color: #2e7d32; font-weight: bold;'>{fmt(lk)}</span> (Lk)
+                &nbsp;&nbsp;= <span style='color: #2e7d32; font-weight: bold;'>{fmt(lk)}</span> (Lk - Không khấu trừ)
             </div>
             <div>
                 <b>2. Tính Tổng thu nhập thực tế:</b><br/>
