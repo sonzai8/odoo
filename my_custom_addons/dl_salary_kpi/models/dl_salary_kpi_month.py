@@ -26,10 +26,11 @@ try:
     from openpyxl import load_workbook
     from openpyxl.cell.cell import MergedCell
     from openpyxl.formula.translate import Translator
-    from openpyxl.styles import PatternFill
+    from openpyxl.styles import PatternFill, Font
 except ImportError:
     load_workbook = None
     PatternFill = None
+    Font = None
 
 class SalaryKpiMonth(models.Model):
     _name = 'dl.salary.kpi.month'
@@ -715,10 +716,18 @@ class SalaryKpiMonth(models.Model):
         self._safe_write(ws, 4, 16, int(month_date.strftime('%Y')))
         
         bonus_names = [b.name for b in self.bonus_line_ids]
-        if bonus_names:
-            self._safe_write(ws, 5, 133, " + ".join(bonus_names))
-        else:
-            self._safe_write(ws, 5, 133, "")
+        self._safe_write(ws, 5, 133, " + ".join(bonus_names) if bonus_names else "")
+
+        # Định nghĩa bảng màu chuẩn Đức Lâm
+        COLOR_MAP = {
+            'Ô': 'F8E5D8', 'CÔ': 'F8E5D8',
+            'CP': 'FFFF00',
+            'KP': 'EA3323'
+        }
+
+        # Lấy mẫu định dạng màu (Fill) từ hàng 8 (Template) để áp dụng đồng nhất cho mã CP sau này
+        sample_col_idx = 10 # Cột J (Ngày 01)
+        template_cp_fill = copy.copy(ws.cell(row=8, column=sample_col_idx).fill) if ws.cell(row=8, column=sample_col_idx).has_style else None
 
         current_row = 8
         for i, line in enumerate(self.line_ids):
@@ -743,8 +752,7 @@ class SalaryKpiMonth(models.Model):
             for day in range(1, 32):
                 col_idx = 9 + day
                 att_type = getattr(line, f'day_{day:02d}')
-                # Reset màu nền để tránh dính màu vàng từ hàng mẫu phía trên
-                ws.cell(row=current_row, column=col_idx).fill = PatternFill(fill_type=None)
+                # Chỉ ghi giá trị thô, chưa tô màu
                 self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
 
                 # Ghi công làm thêm
@@ -752,26 +760,37 @@ class SalaryKpiMonth(models.Model):
                     ot_att = getattr(line, f'ot_day_{day:02d}')
                     self._safe_write(ws, current_row, 45 + day, ot_att.code if ot_att else '')
 
-            # 2. HẬU XỬ LÝ: Tự động rà soát và điền CP (Chỉ khi bảng lương đã CONFIRMED)
+            # 2. HẬU XỬ LÝ ĐIỀN CP: Tự động rà soát (Chỉ khi đã CONFIRMED)
             if self.state == 'confirmed':
                 for day in range(1, last_day + 1):
                     current_date = date(month_date.year, month_date.month, day)
                     col_idx = 9 + day
                     cell = ws.cell(row=current_row, column=col_idx)
-                    
-                    # Nếu là ngày trong tuần (T2-T7) và chưa có mã công thực tế
+                    # Nếu là ngày trong tuần (T2-T7) và chưa có mã công
                     if current_date.weekday() < 6 and not cell.value:
                         cell.value = "CP"
-                        # Tô màu vàng nhạt FFFFE0
-                        cell.fill = PatternFill(start_color='FFFFE0', end_color='FFFFE0', fill_type='solid')
 
-            # 3. Ghi các chỉ số tài chính và thưởng
+            # 3. HẬU XỬ LÝ TÔ MÀU: Duyệt lại toàn bộ 31 ngày để áp dụng Style đồng nhất
+            for day in range(1, 32):
+                col_idx = 9 + day
+                cell = ws.cell(row=current_row, column=col_idx)
+                code = str(cell.value) if cell.value else ''
+                
+                if code in COLOR_MAP:
+                    cell.fill = PatternFill(start_color=COLOR_MAP[code], end_color=COLOR_MAP[code], fill_type='solid')
+                    if code == 'KP':
+                        cell.font = Font(color='FFFFFF', bold=True)
+                    else:
+                        cell.font = Font(color='000000')
+                else:
+                    # Reset về nền trắng và chữ đen cho các mã khác
+                    cell.fill = PatternFill(fill_type=None)
+                    cell.font = Font(color='000000')
+
+            # 4. Ghi các chỉ số tài chính và thưởng
             self._safe_write(ws, current_row, 95, self.dl_women_allowance if line.employee_id.sex == 'female' else 0)
             self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
-            if line.payroll_kpi_amount:
-                self._safe_write(ws, current_row, 111, line.payroll_kpi_amount)
-            else:
-                self._safe_write(ws, current_row, 111, 0)
+            self._safe_write(ws, current_row, 111, line.payroll_kpi_amount or 0)
             self._safe_write(ws, current_row, 135, line.payroll_annual_bonus or 0)
             self._safe_write(ws, current_row, 138, line.payroll_pit_number_of_dependents or 0)
             self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
