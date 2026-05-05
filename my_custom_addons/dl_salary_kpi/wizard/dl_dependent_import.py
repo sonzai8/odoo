@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 import base64
 import io
 import openpyxl
+from .. import constants
 from datetime import datetime, date
 
 class DLDependentImport(models.TransientModel):
@@ -116,12 +117,12 @@ class DLDependentImport(models.TransientModel):
             <thead class="table-light">
                 <tr>
                     <th>Dòng</th>
-                    <th>Tên NV</th>
-                    <th>MST NV</th>
-                    <th>Tên NPT</th>
-                    <th>Quan hệ</th>
-                    <th>MST NPT</th>
-                    <th>CCCD NPT</th>
+                    <th>{constants.COL_FULL_NAME} NV</th>
+                    <th>{constants.COL_EMP_TAX_ID}</th>
+                    <th>{constants.COL_DEP_NAME}</th>
+                    <th>{constants.COL_RELATIONSHIP}</th>
+                    <th>{constants.COL_DEP_TAX_ID}</th>
+                    <th>{constants.COL_DEP_CCCD}</th>
                     <th>Trạng thái dữ liệu</th>
                 </tr>
             </thead>

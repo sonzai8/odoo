@@ -470,7 +470,7 @@ class SalaryKpiLine(models.Model):
     payroll_wage_night_holiday_390 = fields.Monetary(string='Lương TC đêm Lễ 390%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     
     payroll_total_wage = fields.Monetary(string='Tổng lương', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng lương = Tổng các khoản lương chi tiết (ngày, đêm, tăng ca...) + Thưởng doanh thu thực tế")
-    payroll_total_actual_income = fields.Monetary(string='Tổng thu nhập thực tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công)")
+    payroll_total_actual_income = fields.Monetary(string='Tổng TN T.tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công)")
 
     # --- CÁC KHOẢN KHẤU TRỪ ---
     payroll_deduction_bhxh = fields.Monetary(string='BHXH (8%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
@@ -481,6 +481,7 @@ class SalaryKpiLine(models.Model):
     
     # --- CÁC TRƯỜNG PHỤC VỤ THUẾ TNCN ---
     payroll_pit_taxable_income = fields.Monetary(string='Thu nhập chịu thuế (TNCT)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_pit_taxable_explanation = fields.Html(string='Diễn giải TNCT', compute='_compute_payroll_internal', store=True)
     payroll_pit_number_of_dependents = fields.Integer(string='Số người phụ thuộc', compute='_compute_payroll_internal', store=True)
     payroll_pit_total_deductions = fields.Monetary(string='Tổng các khoản giảm trừ', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     payroll_pit_assessable_income = fields.Monetary(string='Thu nhập tính thuế (TNTT)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
@@ -556,7 +557,7 @@ class SalaryKpiLine(models.Model):
             'payroll_annual_bonus': 0, 'payroll_revenue_bonus': 0, 'payroll_productivity_bonus': 0,
             'payroll_total_bonus': 0, 'payroll_total_regime_income': 0,
             # Lương chi tiết
-            'payroll_wage_day': 0, 'payroll_wage_day_150': 0, 'payroll_wage_night_130': 0,
+            'payroll_wage_day': 0, 'payroll_wage_leave': 0, 'payroll_wage_day_150': 0, 'payroll_wage_night_130': 0,
             'payroll_wage_night_200': 0, 'payroll_wage_night_210': 0, 'payroll_wage_night_sun_270': 0,
             'payroll_wage_day_sun_200': 0, 'payroll_wage_day_holiday_300': 0, 'payroll_wage_night_holiday_390': 0,
             'payroll_total_wage': 0,
@@ -798,8 +799,8 @@ class SalaryKpiLine(models.Model):
             # 3. Thưởng doanh thu & Năng suất (Theo chính sách QĐ 3108)
             revenue_bonus, productivity_bonus, rev_bonus_base, prod_bonus_base = payroll_logic.calculate_revenue_productivity_bonuses(rec)
             
-            # Tổng trợ cấp & thưởng năm = Ăn ca + Phụ cấp phụ nữ + Thưởng năm
-            total_bonus = meal_allowance + women_allowance + annual_bonus
+            # Tổng trợ cấp & thưởng năm = Ăn ca + Phụ cấp phụ nữ
+            total_bonus = meal_allowance + women_allowance
             
             # --- TÍNH TOÁN LƯƠNG CHẾ ĐỘ (THEO LÝ THUYẾT 26 CÔNG) ---
             meal_allowance_regime = rec.month_id.dl_meal_allowance or 0.0
@@ -821,27 +822,43 @@ class SalaryKpiLine(models.Model):
             # Tổng lương chi tiết (Chỉ bao gồm lương công, không bao gồm thưởng)
             total_detailed_wage = sum(wages.values())
             
-            # Tổng thu nhập thực tế = Lương chi tiết + Thưởng (DT + NS) + Trợ cấp thực tế + Tiền KPI
-            total_actual_income = (
-                total_detailed_wage + 
-                revenue_bonus + 
-                productivity_bonus + 
-                meal_allowance + 
-                women_allowance + 
-                max(0, rec.payroll_kpi_amount)
+            # Tính toán số tiền được miễn thuế (Miễn 100% cho OT, Lương phép và Chuyên cần)
+            exempt_ot_amount = (
+                wages['wage_day_150'] +
+                wages['wage_night_130'] +
+                wages['wage_night_200'] +
+                wages['wage_night_sun_270'] +
+                wages['wage_day_sun_200'] +
+                wages['wage_day_holiday_300'] +
+                wages['wage_night_holiday_390'] +
+                wages['wage_leave'] +
+                wages['wage_bonus_p']
             )
 
-            # 5. Khấu trừ & Thực lĩnh
-            # Thuế và bảo hiểm tính trên Thu nhập cơ bản (không bao gồm KPI/Cash cân đối)
-            # Thu nhập chịu thuế (không bao gồm KPI/Cash cân đối)
-            base_income = total_detailed_wage + revenue_bonus + productivity_bonus + meal_allowance + women_allowance
+            # --- PHẦN TÍNH TOÁN THUẾ VÀ KHẤU TRỪ ---
+            # Thu nhập chịu thuế = Lương chi tiết + Thưởng (DT + NS) + Thưởng Năm + Phụ cấp phụ nữ + Ăn ca
+            base_income = total_detailed_wage + revenue_bonus + productivity_bonus + annual_bonus + meal_allowance + women_allowance
             deductions = payroll_logic.calculate_deductions(rec, base_income, meal_allowance)
             
-            # Thực lĩnh cơ sở (Lk) = Thu nhập cơ bản - Khấu trừ
-            net_salary_base = base_income - deductions['total_deduction']
+            # Cập nhật TNCT chuẩn sau khi trừ phần miễn thuế OT, Lương phép, Chuyên cần
+            taxable_income = deductions['taxable_income'] - exempt_ot_amount
+            # Tính lại thuế TNCN dựa trên TNCT đã trừ các khoản miễn thuế
+            deductions = payroll_logic.calculate_deductions(rec, base_income - exempt_ot_amount, meal_allowance)
+
+            # --- PHẦN TÍNH TOÁN LK VÀ TỔNG THU NHẬP THỰC TẾ (LOGIC MỚI) ---
+            # 1. Gross Lk (Tổng lương & Thưởng hiệu quả chính quy)
+            gross_lk = total_detailed_wage + revenue_bonus + productivity_bonus
             
-            # Thực lĩnh cuối cùng = Thực lĩnh cơ sở + KPI + Cash (không được trừ tiền mặt)
-            net_salary_final = net_salary_base + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
+            # 2. Thực lĩnh ngoài (Lk) = Gross Lk 
+            net_salary_base = gross_lk 
+            
+            # 3. Tổng thu nhập thực tế = Lk + Ăn ca + Phụ cấp phụ nữ
+            total_actual_income = net_salary_base + meal_allowance + women_allowance
+            
+            # 4. Thực lĩnh cuối cùng (bao gồm cả các khoản bù KPI/Tiền mặt)
+            net_salary_final = total_actual_income + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
+            
+            # Gợi ý xử lý dữ liệu bất thường (Dựa trên Lk mới)
             
             # 6. Gợi ý xử lý dữ liệu bất thường
             anomaly_suggestion = ""
@@ -924,7 +941,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_rev_prod_bonus': revenue_bonus + productivity_bonus,
                 'payroll_total_bonus': total_bonus,
                 'payroll_total_regime_income': total_regime_income,
-                'payroll_wage_day': wages['wage_day'],
+                'payroll_wage_day': wages['wage_day'] + wages['wage_leave'], # Vẫn gộp để hiển thị UI
                 'payroll_wage_day_150': wages['wage_day_150'],
                 'payroll_wage_night_130': wages['wage_night_130'],
                 'payroll_wage_night_200': wages['wage_night_200'],
@@ -936,8 +953,12 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_wage': total_detailed_wage + revenue_bonus + productivity_bonus,
                 'payroll_total_actual_income': total_actual_income,
                 'payroll_income_explanation': self._get_income_explanation(
-                    total_detailed_wage, revenue_bonus, productivity_bonus, 
-                    meal_allowance, women_allowance, rec.payroll_kpi_amount
+                    gross_lk, deductions['total_deduction'], net_salary_base,
+                    meal_allowance, women_allowance, total_actual_income
+                ),
+                'payroll_pit_taxable_explanation': self._get_taxable_explanation(
+                    total_detailed_wage, revenue_bonus, productivity_bonus, annual_bonus,
+                    women_allowance, meal_allowance, exempt_ot_amount
                 ),
                 
                 # Cập nhật các khoản trừ & Thuế TNCN (Ép kiểu số nguyên)
@@ -977,30 +998,58 @@ class SalaryKpiLine(models.Model):
                 'payroll_kpi_amount_rounding_error': int(kpi_val - rounded_kpi),
             })
 
-    def _get_income_explanation(self, wage, rev, prod, meal, women, kpi):
-        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML (Luôn hiển thị số nguyên)"""
-        parts = []
+    def _get_income_explanation(self, gross_lk, deduction, lk, meal, women, total):
+        """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML cho Logic mới"""
         def fmt(val):
-            # Ép kiểu nguyên và định dạng phân cách hàng nghìn kiểu VN
             v = int(round(val or 0, 0))
             return "{:,.0f}".format(v).replace(",", ".")
             
-        if wage: parts.append(f"<b>{fmt(wage)}</b> (Lương CT)")
-        if rev: parts.append(f"<b>{fmt(rev)}</b> (Thưởng DT)")
-        if prod: parts.append(f"<b>{fmt(prod)}</b> (Thưởng NS)")
-        if meal: parts.append(f"<b>{fmt(meal)}</b> (Ăn ca)")
-        if women: parts.append(f"<b>{fmt(women)}</b> (Phụ nữ)")
-        if kpi: parts.append(f"<b>{fmt(kpi)}</b> (KPI)")
+        html = f"""
+        <div style='font-family: sans-serif; line-height: 1.6;'>
+            <div style='margin-bottom: 8px;'>
+                <b>1. Tính Thực lĩnh ngoài (Lk):</b><br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;{fmt(gross_lk)} (Tổng lương & Thưởng hiệu quả)<br/>
+                
+                &nbsp;&nbsp;= <span style='color: #2e7d32; font-weight: bold;'>{fmt(lk)}</span> (Lk)
+            </div>
+            <div>
+                <b>2. Tính Tổng thu nhập thực tế:</b><br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;{fmt(lk)} (Lk)<br/>
+                &nbsp;&nbsp;+ {fmt(meal)} (Ăn ca)<br/>
+                &nbsp;&nbsp;+ {fmt(women)} (Phụ cấp PN)<br/>
+                &nbsp;&nbsp;= <span style='color: #d32f2f; font-weight: bold; font-size: 1.1em;'>{fmt(total)}</span> (Tổng TN Thực tế)
+            </div>
+        </div>
+        """
+        return html
+
+    def _get_taxable_explanation(self, wage, rev, prod, annual, women, meal, exempt_ot):
+        """Hàm tạo chuỗi giải thích Thu nhập chịu thuế (TNCT)"""
+        def fmt(val):
+            v = int(round(val or 0, 0))
+            return "{:,.0f}".format(v).replace(",", ".")
+            
+        gross = wage + rev + prod + annual + women + meal
+        taxable = gross - meal - exempt_ot
         
-        if not parts: return ""
+        parts = []
+        if wage: parts.append(f"{fmt(wage)} (Lương)")
+        if rev: parts.append(f"{fmt(rev)} (T.DT)")
+        if prod: parts.append(f"{fmt(prod)} (T.NS)")
+        if annual: parts.append(f"{fmt(annual)} (T.Năm)")
+        if women: parts.append(f"{fmt(women)} (P.Nữ)")
+        if meal: parts.append(f"{fmt(meal)} (Ăn ca)")
         
         formula = " + ".join(parts)
-        # Tính tổng dựa trên các số đã làm tròn để khớp tuyệt đối với UI
-        total = (
-            int(round(wage or 0, 0)) + int(round(rev or 0, 0)) + int(round(prod or 0, 0)) + 
-            int(round(meal or 0, 0)) + int(round(women or 0, 0)) + int(round(kpi or 0, 0))
+        
+        html = (
+            f"<div style='font-size: 0.9em; color: #555;'>"
+            f"<div>&#8226; Tổng thu nhập gộp: {formula} = <b>{fmt(gross)}</b></div>"
+            f"<div style='margin-top: 3px;'>&#8226; Thu nhập chịu thuế: {fmt(gross)} (Gộp) - {fmt(meal)} (Ăn ca) - <span style='color: #d9534f;'>{fmt(exempt_ot)} (Miễn thuế OT & Lương Phép)</span> = <b style='color: #28a745;'>{fmt(taxable)}</b></div>"
+            f"<div style='font-size: 0.85em; font-style: italic; color: #777; margin-top: 2px;'>* Toàn bộ thu nhập từ tăng ca, làm đêm và lương nghỉ phép được miễn thuế.</div>"
+            f"</div>"
         )
-        return f"<div style='text-align: right; color: #444; font-size: 0.95em; border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px;'>{formula} = <span style='color: #d9534f; font-weight: bold;'>{fmt(total)}</span></div>"
+        return html
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',

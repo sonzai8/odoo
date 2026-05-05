@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 import base64
 import io
 import openpyxl
+from .. import constants
 from datetime import datetime, date
 
 class SalaryKpiTaxImport(models.TransientModel):
@@ -53,14 +54,19 @@ class SalaryKpiTaxImport(models.TransientModel):
         # Thử kiểm tra 3 dòng đầu tiên để tìm header
         for r in range(1, 4):
             row_vals = [str(ws.cell(row=r, column=c).value or '').strip() for c in range(1, 15)]
-            # Kiểm tra các cột then chốt: Họ tên (cột 3), MST (cột 10)
-            if "Họ tên" in row_vals[2] and "Mã số thuế" in row_vals[9]:
+            # Kiểm tra các cột then chốt: Họ và Tên (cột 3), MST (cột 10) - Không phân biệt hoa thường
+            val_c3 = row_vals[2].lower()
+            val_c10 = row_vals[9].lower()
+            header_full_name = constants.COL_FULL_NAME.lower()
+            header_tax_id = constants.COL_TAX_ID.lower()
+            
+            if "họ" in val_c3 and "tên" in val_c3 and "mã số thuế" in val_c10:
                 header_found = True
                 start_row = r + 1
                 break
         
         if not header_found:
-            raise UserError(_("Sai định dạng file Excel! Hệ thống không tìm thấy các cột 'Họ tên' và 'Mã số thuế' ở vị trí mong đợi. Vui lòng sử dụng file mẫu xuất từ hệ thống."))
+            raise UserError(_("Sai định dạng file Excel! Hệ thống không tìm thấy các cột '%s' và '%s' ở vị trí mong đợi.") % (constants.COL_FULL_NAME, constants.COL_TAX_ID))
 
         parsed_data = []
         # Bắt đầu đọc từ dòng sau tiêu đề
@@ -85,7 +91,7 @@ class SalaryKpiTaxImport(models.TransientModel):
             
             error = ""
             if not name:
-                error = "Thiếu Họ và tên."
+                error = _("Thiếu %s.") % constants.COL_FULL_NAME
             elif not dl_tax_id:
                 error = "Thiếu Mã số thuế."
             
@@ -142,12 +148,12 @@ class SalaryKpiTaxImport(models.TransientModel):
             <thead class="table-light">
                 <tr>
                     <th>Dòng</th>
-                    <th>ID NV</th>
-                    <th>Họ và tên</th>
-                    <th>Mã số thuế</th>
+                    <th>{constants.COL_ID_NV}</th>
+                    <th>{constants.COL_FULL_NAME}</th>
+                    <th>{constants.COL_TAX_ID}</th>
                     <th>CCCD</th>
-                    <th>Phòng ban thuế</th>
-                    <th>Lương thuế</th>
+                    <th>{constants.COL_TAX_DEPARTMENT}</th>
+                    <th>{constants.COL_TAX_BASE_SALARY}</th>
                     <th>Trạng thái</th>
                 </tr>
             </thead>

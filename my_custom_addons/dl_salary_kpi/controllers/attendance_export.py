@@ -4,6 +4,7 @@ from odoo.http import request
 import io
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, Protection
+from .. import constants
 from datetime import date
 import calendar
 
@@ -54,7 +55,11 @@ class AttendanceExportController(http.Controller):
         title_cell.font = title_font
         title_cell.alignment = alignment
 
-        headers_main = ["STT", "Mã NV", "Họ và tên", "Mã số thuế", "Ngày sinh", "Giới tính", "Phòng ban thuế", "Chức vụ", "Lương cơ bản"]
+        headers_main = [
+            constants.COL_STT, constants.COL_MA_NV, constants.COL_FULL_NAME, constants.COL_TAX_ID,
+            constants.COL_BIRTHDAY, constants.COL_GENDER, constants.COL_TAX_DEPARTMENT,
+            constants.COL_POSITION, constants.COL_BASE_SALARY
+        ]
         weekday_map = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
         last_day = calendar.monthrange(month.date_month.year, month.date_month.month)[1]
 
@@ -138,7 +143,11 @@ class AttendanceExportController(http.Controller):
             ws.cell(row=row, column=45, value=f'=COUNTIF(J{row}:AN{row},"P")').border = border
             row_num += 1
 
-        summary_headers = [("AO", "Công Ngày"), ("AP", "Công Đêm"), ("AQ", "Tổng Cộng"), ("AR", "Ngày Lễ"), ("AS", "Ngày Phép")]
+        summary_headers = [
+            ("AO", constants.COL_ATT_NORMAL), ("AP", constants.COL_ATT_NIGHT),
+            ("AQ", constants.COL_ATT_TOTAL), ("AR", constants.COL_ATT_HOLIDAY),
+            ("AS", constants.COL_ATT_LEAVE)
+        ]
         for i, (col_letter, text) in enumerate(summary_headers):
             col_idx = 41 + i
             cell = ws.cell(row=2, column=col_idx, value=text)
@@ -214,7 +223,11 @@ class AttendanceExportController(http.Controller):
         title_cell.font = title_font
         title_cell.alignment = alignment
 
-        headers_main = ["STT", "Mã NV", "Họ và tên", "Mã số thuế", "Ngày sinh", "Giới tính", "Phòng ban thuế", "Chức vụ", "Lương cơ bản"]
+        headers_main = [
+            constants.COL_STT, constants.COL_MA_NV, constants.COL_FULL_NAME, constants.COL_TAX_ID,
+            constants.COL_BIRTHDAY, constants.COL_GENDER, constants.COL_TAX_DEPARTMENT,
+            constants.COL_POSITION, constants.COL_BASE_SALARY
+        ]
         for col, text in enumerate(headers_main, 1):
             cell = ws.cell(row=2, column=col, value=text)
             cell.font = header_font
@@ -247,7 +260,10 @@ class AttendanceExportController(http.Controller):
                 cell_day.fill = sunday_fill
                 cell_wd.fill = sunday_fill
 
-        summary_headers = ["Công Ngày", "Công Đêm", "Tổng Cộng", "Ngày Lễ", "Ngày Phép"]
+        summary_headers = [
+            constants.COL_ATT_NORMAL, constants.COL_ATT_NIGHT, constants.COL_ATT_TOTAL,
+            constants.COL_ATT_HOLIDAY, constants.COL_ATT_LEAVE
+        ]
         for i, text in enumerate(summary_headers):
             col_idx = 41 + i
             cell = ws.cell(row=2, column=col_idx, value=text)
@@ -280,7 +296,7 @@ class AttendanceExportController(http.Controller):
             if is_sun:
                 cell_wd.font = Font(bold=True, color="FF0000")
 
-        ot_summary_headers = ["Tăng ca Ngày", "Tăng ca Đêm", "Tổng Tăng ca"]
+        ot_summary_headers = [constants.COL_OT_NORMAL, constants.COL_OT_NIGHT, constants.COL_OT_TOTAL]
         for i, text in enumerate(ot_summary_headers):
             col_idx = 77 + i
             cell = ws.cell(row=2, column=col_idx, value=text)

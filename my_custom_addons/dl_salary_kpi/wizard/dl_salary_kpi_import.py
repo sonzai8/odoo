@@ -4,6 +4,7 @@ from odoo.exceptions import UserError, ValidationError
 import base64
 import io
 import openpyxl
+from .. import constants
 
 class SalaryKpiImportWizard(models.TransientModel):
     _name = 'dl.salary.kpi.import.wizard'
@@ -61,7 +62,7 @@ class SalaryKpiImportWizard(models.TransientModel):
             try:
                 emp_id = int(row[1])
             except (ValueError, TypeError):
-                errors.append(f"Dòng {row_idx}: ID nhân viên '{row[2]}' không hợp lệ (phải là số).")
+                errors.append(f"Dòng {row_idx}: ID nhân viên '{row[1]}' không hợp lệ (phải là số).")
                 continue
             
             # Tìm line tương ứng trong tháng
@@ -73,7 +74,7 @@ class SalaryKpiImportWizard(models.TransientModel):
             emp_name_sys = line.employee_id.name.strip()
             if emp_name_sys != emp_name_excel:
                 # Nếu sai tên, báo lỗi để đảm bảo không nhập nhầm dòng
-                errors.append(f"Dòng {row_idx}: Tên không khớp. Hệ thống: '{emp_name_sys}', Excel: '{emp_name_excel}'. Vui lòng kiểm tra lại ID nhân viên.")
+                errors.append(f"Dòng {row_idx}: {constants.COL_FULL_NAME} không khớp. Hệ thống: '{emp_name_sys}', Excel: '{emp_name_excel}'. Vui lòng kiểm tra lại ID nhân viên.")
                 continue
 
             # Kiểm tra ngày nghỉ việc

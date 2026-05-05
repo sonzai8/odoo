@@ -81,6 +81,8 @@ def calculate_detailed_wages(rec):
     
     wages = {
         'wage_day': 0.0,
+        'wage_leave': 0.0,
+        'wage_bonus_p': 0.0,
         'wage_day_150': 0.0,
         'wage_night_130': 0.0,
         'wage_night_200': 0.0,
@@ -95,11 +97,14 @@ def calculate_detailed_wages(rec):
         att = getattr(rec, f'day_{i:02d}')
         ot_att = getattr(rec, f'ot_day_{i:02d}')
         
-        # Ca ngày thường & Nghỉ hưởng lương (P, PL)
-        if att and att.code in ['N', 'N/2', 'P', 'PL']:
-            # P và PL tính như 1 ngày công (8 giờ)
-            hours = 8.0 if att.code in ['N', 'P', 'PL'] else 4.0
+        # Ca ngày thường (N, N/2)
+        if att and att.code in ['N', 'N/2']:
+            hours = 8.0 if att.code == 'N' else 4.0
             wages['wage_day'] += hours * hourly_rate
+            
+        # Nghỉ hưởng lương (P, PL) - Được miễn thuế 100%
+        elif att and att.code in ['P', 'PL']:
+            wages['wage_leave'] += 8.0 * hourly_rate
         
         # Ca đêm thường (Tách 31.25% vào lương ngày, 68.75% vào lương đêm 130%)
         if att and att.code in ['Đ', 'Đ/2']:
@@ -125,9 +130,9 @@ def calculate_detailed_wages(rec):
                 elif code in ['CNĐ', 'CNĐ/2']: wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
                 elif code == 'LĐ': wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
                 
-    # Thưởng chuyên cần: Được cộng thẳng vào lương ca ngày (như 1 ngày P)
+    # Thưởng chuyên cần: Được tính riêng (Cộng vào thực lĩnh nhưng miễn thuế 100%)
     if getattr(rec, 'bonus_p_day', 0.0):
-        wages['wage_day'] += rec.bonus_p_day * 8.0 * hourly_rate
+        wages['wage_bonus_p'] += rec.bonus_p_day * 8.0 * hourly_rate
         
     return wages
 

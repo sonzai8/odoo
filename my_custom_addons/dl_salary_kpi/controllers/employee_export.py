@@ -4,6 +4,7 @@ from odoo.http import request
 import io
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, Protection
+from .. import constants
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -24,7 +25,12 @@ class EmployeeExportController(http.Controller):
         header_fill = openpyxl.styles.PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
         border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
 
-        headers = ["STT", "ID NV", "Họ và tên", "Tên riêng", "Số CCCD", "Ngày sinh", "Email", "SĐT", "Giới tính", "Mã số thuế", "Chức vụ thuế", "Phòng ban thuế", "Lương cơ bản thuế", "Ngày nghỉ việc"]
+        headers = [
+            constants.COL_STT, constants.COL_ID_NV, constants.COL_FULL_NAME, constants.COL_FIRST_NAME,
+            constants.COL_CCCD, constants.COL_BIRTHDAY, constants.COL_EMAIL, constants.COL_PHONE,
+            constants.COL_GENDER, constants.COL_TAX_ID, constants.COL_TAX_POSITION,
+            constants.COL_TAX_DEPARTMENT, constants.COL_TAX_BASE_SALARY, constants.COL_DEPARTURE_DATE
+        ]
         ws.row_dimensions[1].height = 30
         for col, text in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=text)
@@ -81,7 +87,11 @@ class EmployeeExportController(http.Controller):
             ws = wb.active
             ws.title = "Danh Sach Nguoi Phu Thuoc"
 
-            headers = ["STT", "Tên nhân viên", "Mã số thuế nhân viên", "Họ và tên người phụ thuộc", "Quan hệ", "Mã số thuế NPT", "CCCD NPT", "Còn hiệu lực", "Ghi chú"]
+            headers = [
+                constants.COL_STT, constants.COL_EMP_NAME, constants.COL_EMP_TAX_ID,
+                constants.COL_DEP_NAME, constants.COL_RELATIONSHIP, constants.COL_DEP_TAX_ID,
+                constants.COL_DEP_CCCD, constants.COL_IS_ACTIVE, constants.COL_NOTE
+            ]
             header_font = Font(bold=True)
             alignment = Alignment(horizontal='center', vertical='center')
             header_fill = openpyxl.styles.PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
