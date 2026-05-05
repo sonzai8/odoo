@@ -12,6 +12,32 @@
         </field>
     </record>
 
+    <!-- Server Action: Chốt KPI hàng loạt -->
+        <record id="action_dl_salary_kpi_line_lock_bulk" model="ir.actions.server">
+            <field name="name">Chốt điểm KPI</field>
+            <field name="model_id" ref="model_dl_salary_kpi_line"/>
+            <field name="binding_model_id" ref="model_dl_salary_kpi_line"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+                if records:
+                    records.action_lock_kpi_lines()
+            </field>
+        </record>
+
+        <!-- Server Action: Mở chốt KPI hàng loạt -->
+        <record id="action_dl_salary_kpi_line_unlock_bulk" model="ir.actions.server">
+            <field name="name">Mở chốt điểm KPI</field>
+            <field name="model_id" ref="model_dl_salary_kpi_line"/>
+            <field name="binding_model_id" ref="model_dl_salary_kpi_line"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+                if records:
+                    records.action_unlock_kpi_lines()
+            </field>
+        </record>
+
     <record id="view_dl_salary_kpi_month_form" model="ir.ui.view">
         <field name="name">dl.salary.kpi.month.form</field>
         <field name="model">dl.salary.kpi.month</field>
@@ -22,6 +48,10 @@
                     <button name="action_lock_ot" string="Chốt Công Làm thêm" type="object" class="btn-primary" invisible="state != 'lock_normal'"/>
                     <button name="action_lock_regime" string="Chốt Chế Độ" type="object" class="btn-primary" invisible="state != 'lock_ot'"/>
                     <button name="action_lock_kpi" string="Chốt KPI" type="object" class="btn-primary" invisible="state != 'lock_regime'"/>
+                    
+                    <!-- Nút mở Wizard chốt KPI theo Tổ -->
+                    <button name="action_open_lock_kpi_wizard" string="Chốt/Mở KPI theo Tổ" type="object" class="btn-warning" icon="fa-users" invisible="state != 'lock_regime'"/>
+                    
                     <button name="action_confirm" string="Xác nhận" type="object" class="btn-success" invisible="state != 'lock_kpi'"/>
                     
                     <button name="action_back_to_draft" string="Quay lại Dự thảo" type="object" invisible="state != 'lock_normal'"/>
@@ -105,7 +135,9 @@
                                     <field name="kpi_c4_5s" string="C4 (10)" optional="show" digits="[16,2]" readonly="1"/>
                                     <field name="kpi_c5_saving" string="C5 (5)" optional="show" digits="[16,2]" readonly="1"/>
                                     
-                                    <button name="action_generate_kpi_scores" string="Tính KPI" type="object" icon="fa-calculator" title="Tính toán lại KPI cho dòng này" invisible="parent.state in ['lock_kpi', 'confirmed']"/>
+                                    <field name="payroll_is_kpi_locked" string="Chốt KPI" widget="boolean_toggle" help="Nếu bật, điểm KPI sẽ không bị thay đổi khi tính toán lại hàng loạt."/>
+                                    
+                                    <button name="action_generate_kpi_scores" string="Tính KPI" type="object" icon="fa-calculator" title="Tính toán lại KPI cho dòng này" invisible="parent.state in ['lock_kpi', 'confirmed'] or payroll_is_kpi_locked"/>
                                     
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>

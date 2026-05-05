@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_lock_wizard_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.lock.wizard.form</field>
+        <field name="model">dl.salary.kpi.lock.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Chốt/Mở chốt KPI theo Tổ">
+                <group>
+                    <field name="month_id" invisible="1"/>
+                    <field name="department_id" options="{'no_create': True, 'no_open': True}"/>
+                    <field name="action_type" widget="radio" options="{'horizontal': true}"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary"/>
+                    <button string="Hủy bỏ" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_lock_wizard" model="ir.actions.act_window">
+        <field name="name">Chốt/Mở chốt KPI theo Tổ</field>
+        <field name="res_model">dl.salary.kpi.lock.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

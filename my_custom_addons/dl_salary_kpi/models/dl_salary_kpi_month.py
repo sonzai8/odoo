@@ -422,6 +422,19 @@ class SalaryKpiMonth(models.Model):
         self.write({'state': 'confirmed'})
         return True
 
+    def action_open_lock_kpi_wizard(self):
+        """Mở cửa sổ chốt/mở chốt KPI theo Tổ/Phòng ban"""
+        return {
+            'name': 'Chốt/Mở chốt KPI theo Tổ',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.lock.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_month_id': self.id,
+            }
+        }
+
     # Các hàm quay lại trạng thái trước
     def action_back_to_draft(self):
         """Khi quay lại dự thảo, xoá sạch mọi kết quả tính toán."""
@@ -930,11 +943,14 @@ class SalaryKpiMonth(models.Model):
             
         import random
         
-        # 1. Chuẩn bị danh sách nhân viên và quota
-        lines = list(self.line_ids)
+        # Ép Odoo lưu các thay đổi đang chờ (quan trọng cho việc tích chốt lẻ trên giao diện)
+        self.line_ids.flush_model(['payroll_is_kpi_locked'])
+        
+        # 1. Chuẩn bị danh sách nhân viên và quota (Chỉ tính cho những dòng CHƯA chốt)
+        lines = list(self.line_ids.filtered(lambda l: not l.payroll_is_kpi_locked))
         random.shuffle(lines) # Shuffle để việc phân bổ quota 70 được ngẫu nhiên
         
-        total_employees = len(lines)
+        total_employees = len(self.line_ids) # Vẫn giữ tổng số để tính Quota chuẩn
         quota_70 = total_employees // 2 # Tối đa 50% số người được điểm 70
         count_70 = 0
         

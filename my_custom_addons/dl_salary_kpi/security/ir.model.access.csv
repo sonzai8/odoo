@@ -26,3 +26,4 @@ access_dl_dependent_import_user,dl.dependent.import.user,model_dl_dependent_impo
 
 access_dl_salary_kpi_export_wizard_user,dl.salary.kpi.export.wizard.user,model_dl_salary_kpi_export_wizard,base.group_user,1,1,1,1
 access_dl_salary_kpi_quick_fix_wizard_manager,dl.salary.kpi.quick.fix.wizard.manager,model_dl_salary_kpi_quick_fix_wizard,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
+access_dl_salary_kpi_lock_wizard_user,dl.salary.kpi.lock.wizard.user,model_dl_salary_kpi_lock_wizard,base.group_user,1,1,1,1

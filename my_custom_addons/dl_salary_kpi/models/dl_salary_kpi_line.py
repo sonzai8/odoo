@@ -496,6 +496,7 @@ class SalaryKpiLine(models.Model):
     payroll_kpi_amount_rounded = fields.Monetary(string='Tiền KPI làm tròn', currency_field='currency_id', aggregator='sum')
     payroll_kpi_amount_rounding_error = fields.Monetary(string='Sai số KPI', currency_field='currency_id', aggregator='sum')
     payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id', aggregator='sum')
+    payroll_is_kpi_locked = fields.Boolean(string='Chốt KPI', default=False, help="Nếu tích chọn, điểm KPI của nhân viên này sẽ không bị thay đổi khi tính toán lại hàng loạt.")
     
     payroll_bank_transfer_amount = fields.Monetary(string='Tiền chuyển khoản', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_bank_transfer_amount_rounded = fields.Monetary(string='Tiền CK làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
@@ -584,6 +585,9 @@ class SalaryKpiLine(models.Model):
         for rec in self:
             if rec.month_id.state in ['lock_kpi', 'confirmed']:
                 raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
+            
+            if rec.payroll_is_kpi_locked:
+                continue
             
             ln = rec.payroll_internal_salary
             lk = rec.payroll_net_salary_base
@@ -702,6 +706,18 @@ class SalaryKpiLine(models.Model):
                 'kpi_c4_5s': kpi_vals[3],
                 'kpi_c5_saving': kpi_vals[4],
             })
+
+    def action_lock_kpi_lines(self):
+        """Hành động chốt điểm KPI cho các dòng được chọn"""
+        for rec in self:
+            rec.write({'payroll_is_kpi_locked': True})
+        return True
+
+    def action_unlock_kpi_lines(self):
+        """Hành động mở chốt điểm KPI cho các dòng được chọn"""
+        for rec in self:
+            rec.write({'payroll_is_kpi_locked': False})
+        return True
 
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
@@ -1081,6 +1097,22 @@ class SalaryKpiLine(models.Model):
     @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                     'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
                     'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31')
+    def write(self, vals):
+        """Chặn chỉnh sửa nếu dòng đã được chốt KPI, nhưng cho phép bỏ qua để hệ thống không bị lỗi"""
+        if not self.env.su:
+            # Nếu đang cố gắng mở chốt (chứa payroll_is_kpi_locked) thì cho phép ghi tất cả recs đó
+            if 'payroll_is_kpi_locked' in vals:
+                return super(SalaryKpiLine, self).write(vals)
+            
+            # Lọc ra những dòng CHƯA chốt để thực hiện ghi dữ liệu
+            unlocked_recs = self.filtered(lambda l: not l.payroll_is_kpi_locked)
+            if not unlocked_recs:
+                return True # Không làm gì cả nếu tất cả đều đã chốt
+            
+            return super(SalaryKpiLine, unlocked_recs).write(vals)
+            
+        return super(SalaryKpiLine, self).write(vals)
+
     def _check_shift_change(self):
         from . import attendance_logic
         for rec in self:
