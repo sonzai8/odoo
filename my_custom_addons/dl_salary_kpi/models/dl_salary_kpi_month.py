@@ -675,8 +675,15 @@ class SalaryKpiMonth(models.Model):
         # 1. Header
         self._safe_write(ws, 3, 1, f"Tháng {month_date.strftime('%m')} năm {month_date.strftime('%Y')}")
         self._safe_write(ws, 4, 7, self.dl_revenue)
-        self._safe_write(ws, 4, 11, int(month_date.strftime('%m')))
-        self._safe_write(ws, 4, 15, int(month_date.strftime('%Y')))
+        self._safe_write(ws, 4, 12, int(month_date.strftime('%m')))
+        self._safe_write(ws, 4, 16, int(month_date.strftime('%Y')))
+        
+        # Ghi tên khoản thưởng vào ô EC5 (Cột 133)
+        bonus_names = [b.name for b in self.bonus_line_ids]
+        if bonus_names:
+            self._safe_write(ws, 5, 133, " + ".join(bonus_names))
+        else:
+            self._safe_write(ws, 5, 133, "")
 
         # 2. Data
         current_row = 8
@@ -742,6 +749,16 @@ class SalaryKpiMonth(models.Model):
 
             # DP (120) Thuế TNCN
             self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
+            
+            # EC (133) Thưởng lễ
+            total_bonus = 0
+            for bonus in self.bonus_line_ids:
+                emp_sex = line.employee_id.sex
+                if bonus.gender == 'all' or \
+                   (bonus.gender == 'female' and emp_sex == 'female') or \
+                   (bonus.gender == 'male' and emp_sex == 'male'):
+                    total_bonus += bonus.amount
+            self._safe_write(ws, current_row, 133, total_bonus)
 
             t_after_map = time.time()
             time_map += (t_after_map - t_after_copy)
