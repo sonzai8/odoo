@@ -26,8 +26,10 @@ try:
     from openpyxl import load_workbook
     from openpyxl.cell.cell import MergedCell
     from openpyxl.formula.translate import Translator
+    from openpyxl.styles import PatternFill
 except ImportError:
     load_workbook = None
+    PatternFill = None
 
 class SalaryKpiMonth(models.Model):
     _name = 'dl.salary.kpi.month'
@@ -736,33 +738,35 @@ class SalaryKpiMonth(models.Model):
             self._safe_write(ws, current_row, 9, line.employee_id.dl_tax_base_salary or 0)
 
             last_day = monthrange(month_date.year, month_date.month)[1]
+            
+            # 1. Ghi mã công thực tế (Duyệt toàn bộ 31 cột)
             for day in range(1, 32):
                 col_idx = 9 + day
                 att_type = getattr(line, f'day_{day:02d}')
-                
-                # Logic rà soát công trống (Chỉ áp dụng khi Confirmed)
-                is_filled_cp = False
-                if self.state == 'confirmed' and day <= last_day:
-                    current_date = date(month_date.year, month_date.month, day)
-                    # Thứ 2 (0) đến Thứ 7 (5). Chủ Nhật là 6.
-                    if current_date.weekday() < 6 and not att_type:
-                        self._safe_write(ws, current_row, col_idx, "CP")
-                        # Tô màu vàng nhạt FFFFE0
-                        ws.cell(row=current_row, column=col_idx).fill = PatternFill(start_color='FFFFE0', end_color='FFFFE0', fill_type='solid')
-                        is_filled_cp = True
+                # Reset màu nền để tránh dính màu vàng từ hàng mẫu phía trên
+                ws.cell(row=current_row, column=col_idx).fill = PatternFill(fill_type=None)
+                self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
 
-                if not is_filled_cp:
-                    self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
-
+                # Ghi công làm thêm
                 if day <= last_day:
                     ot_att = getattr(line, f'ot_day_{day:02d}')
-                    col_ot = 45 + day
-                    self._safe_write(ws, current_row, col_ot, ot_att.code if ot_att else '')
+                    self._safe_write(ws, current_row, 45 + day, ot_att.code if ot_att else '')
 
-            if line.employee_id.sex == 'female':
-                self._safe_write(ws, current_row, 95, self.dl_women_allowance)
-            else:
-                self._safe_write(ws, current_row, 95, 0)
+            # 2. HẬU XỬ LÝ: Tự động rà soát và điền CP (Chỉ khi bảng lương đã CONFIRMED)
+            if self.state == 'confirmed':
+                for day in range(1, last_day + 1):
+                    current_date = date(month_date.year, month_date.month, day)
+                    col_idx = 9 + day
+                    cell = ws.cell(row=current_row, column=col_idx)
+                    
+                    # Nếu là ngày trong tuần (T2-T7) và chưa có mã công thực tế
+                    if current_date.weekday() < 6 and not cell.value:
+                        cell.value = "CP"
+                        # Tô màu vàng nhạt FFFFE0
+                        cell.fill = PatternFill(start_color='FFFFE0', end_color='FFFFE0', fill_type='solid')
+
+            # 3. Ghi các chỉ số tài chính và thưởng
+            self._safe_write(ws, current_row, 95, self.dl_women_allowance if line.employee_id.sex == 'female' else 0)
             self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
             if line.payroll_kpi_amount:
                 self._safe_write(ws, current_row, 111, line.payroll_kpi_amount)
