@@ -57,5 +57,5 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 pip install -r requirements.txt
 
 #
-python odoo-bin -c odoo.conf -u dl_salary_kpi -d odoo_db --stop-after-init
+python odoo-bin -c odoo.conf -u dl_salary_kpi -d odoo_db_production --stop-after-init
 python odoo-bin -c odoo.conf --dev=all
