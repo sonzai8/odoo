@@ -3,6 +3,15 @@
 > File này là entry point nhanh cho các kỹ năng (Skills) cốt lõi của hệ thống. Chi tiết đầy đủ nằm trong hệ thống Knowledge Items.
 
 ---
+## Quick Reference
+
+| Mục | Vị trí |
+|---|---|
+| **Kiến trúc module** | `~/.gemini/antigravity/knowledge/dl-salary-kpi-architecture/` |
+| **Quy chế thưởng (QĐ 3108/2025)** | `~/.gemini/antigravity/knowledge/dl-bonus-policy/` |
+| **UI Patterns & Lỗi thường gặp** | `~/.gemini/antigravity/knowledge/odoo19-ui-patterns/` |
+| **Workflow phát triển** | `~/.gemini/antigravity/knowledge/odoo19-dev-workflow/` |
+
 
 ## 1. EXCEL MAPPING (TEMPLATE_2026.xlsx)
 *Tài liệu tham chiếu chính cho logic Xuất báo cáo lương.*

@@ -4,20 +4,34 @@
         <field name="name">dl.salary.kpi.export.wizard.form</field>
         <field name="model">dl.salary.kpi.export.wizard</field>
         <field name="arch" type="xml">
-            <form string="Xuất bảng lương &amp; KPI">
-                <group>
-                    <field name="month_id" options="{'no_create': True, 'no_open': True}"/>
-                </group>
+            <form string="Chọn loại báo cáo Excel">
+                <div class="text-center mb-3">
+                    <p>Vui lòng chọn loại báo cáo bạn muốn tải về:</p>
+                </div>
+                <div class="d-flex justify-content-around mb-4">
+                    <button name="action_export_salary" 
+                            string="1. Báo cáo Lương &amp; KPI (Tổng hợp)" 
+                            type="object" 
+                            class="btn-primary btn-lg p-4" 
+                            icon="fa-file-text-o"
+                            style="width: 45%;"/>
+                    
+                    <button name="action_export_kpi_point" 
+                            string="2. Báo cáo KPI (Điểm &amp; Tiền)" 
+                            type="object" 
+                            class="btn-success btn-lg p-4" 
+                            icon="fa-users"
+                            style="width: 45%;"/>
+                </div>
                 <footer>
-                    <button name="action_export_xlsx" string="Xuất Excel" type="object" class="btn-primary"/>
-                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
     </record>
 
     <record id="action_dl_salary_kpi_export_wizard" model="ir.actions.act_window">
-        <field name="name">Xuất bảng lương &amp; KPI</field>
+        <field name="name">Xuất báo cáo Excel</field>
         <field name="res_model">dl.salary.kpi.export.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>

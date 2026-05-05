@@ -96,13 +96,13 @@ def calculate_detailed_wages(rec):
         ot_att = getattr(rec, f'ot_day_{i:02d}')
         
         # Ca ngày thường & Nghỉ hưởng lương (P, PL)
-        if att and att.code in ['N', 'N/1', 'N/2', 'P', 'PL']:
+        if att and att.code in ['N', 'N/2', 'P', 'PL']:
             # P và PL tính như 1 ngày công (8 giờ)
             hours = 8.0 if att.code in ['N', 'P', 'PL'] else 4.0
             wages['wage_day'] += hours * hourly_rate
         
         # Ca đêm thường (Tách 31.25% vào lương ngày, 68.75% vào lương đêm 130%)
-        if att and att.code in ['Đ', 'Đ/1', 'Đ/2']:
+        if att and att.code in ['Đ', 'Đ/2']:
             hours = 8.0 if att.code == 'Đ' else 4.0
             wages['wage_day'] += hours * 0.3125 * hourly_rate
             wages['wage_night_130'] += hours * 0.6875 * hourly_rate * 1.3

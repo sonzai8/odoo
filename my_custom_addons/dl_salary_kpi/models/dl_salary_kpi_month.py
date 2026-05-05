@@ -12,6 +12,10 @@ import logging
 import math
 import random
 
+from . import attendance_logic
+from . import payroll_logic
+from . import kpi_export_logic
+
 _logger = logging.getLogger(__name__)
 
 try:
@@ -810,3 +814,21 @@ class SalaryKpiMonth(models.Model):
                 line.action_generate_kpi_scores(max_allowed=69)
                 
         return True
+
+    def action_export_kpi_point_report(self):
+        """Xuất báo cáo điểm KPI theo mẫu TEMPLATE_KPI_2026.xlsx, chia sheet theo phòng ban."""
+        self.ensure_one()
+        file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
+        
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'type': 'binary',
+            'datas': file_data,
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'new',
+        }

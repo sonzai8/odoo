@@ -31,12 +31,13 @@
                     
                     <button name="action_recompute_all_data" string="Cập nhật toàn bộ dữ liệu" type="object" class="btn-secondary" icon="fa-refresh" groups="base.group_user" invisible="state == 'confirmed'"/>
                     
-                    <button name="action_export_salary_report" 
-                            string="Xuất báo cáo lương" 
-                            type="object" 
+                    <button name="%(dl_salary_kpi.action_dl_salary_kpi_export_wizard)d" 
+                            string="Xuất báo cáo (Excel)" 
+                            type="action" 
                             class="btn-success" 
                             icon="fa-file-excel-o"
-                            invisible="state not in ['lock_regime', 'lock_kpi', 'confirmed']"/>
+                            context="{'default_month_id': id}"
+                            invisible="state == 'draft'"/>
                     
                     <button name="action_back_to_draft" string="Quay lại Dự thảo" type="object" invisible="state != 'lock_normal'"/>
                     <button name="action_back_to_lock_normal" string="Quay lại Công Thường" type="object" invisible="state != 'lock_ot'"/>

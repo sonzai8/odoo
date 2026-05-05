@@ -420,7 +420,7 @@ class SalaryKpiLine(models.Model):
     total_ot_d_holiday = fields.Float(string='Giờ LT Lễ (Đêm)', compute='_compute_totals', store=True)
 
     # Các trường Tổng hợp Công - Lương (Payroll Summary)
-    bonus_p_day = fields.Float(string='Thưởng chuyên cần', compute='_compute_totals', store=True, help="Nếu làm trên 20 công (Ngày + Đêm) sẽ được tặng 1 công phép.")
+    bonus_p_day = fields.Float(string='Thưởng chuyên cần', compute='_compute_totals', store=True, help="Nếu làm từ 20 công (Ngày + Đêm) trở lên sẽ được tặng 1 công phép (Công N/2, Đ/2 tính 0.5 công).")
     total_attendance_month = fields.Float(string='Tổng công trong tháng', compute='_compute_totals', store=True, help="Tổng công ngày + đêm + công phép thưởng")
     
     payroll_n_ca_ngay = fields.Float(string='Công thường ca ngày', compute='_compute_totals', store=True)
