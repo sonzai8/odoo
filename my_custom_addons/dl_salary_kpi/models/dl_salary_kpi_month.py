@@ -192,54 +192,25 @@ class SalaryKpiMonth(models.Model):
     attendance_summary_html = fields.Html(string="Tổng hợp mã công", compute="_compute_quick_stats")
 
     # === Tổng lương toàn bộ (dùng để hiển thị phía trên danh sách, tính từ TẤT CẢ line_ids) ===
-    total_lk = fields.Monetary(
-        string='Tổng Thực lĩnh ngoài (Lk)',
-        compute='_compute_salary_totals',
-        currency_field='currency_id',
-        help="Tổng Thực lĩnh ngoài (Lk) của toàn bộ nhân viên trong tháng."
-    )
-    total_ln = fields.Monetary(
-        string='Tổng Lương trong (Ln)',
-        compute='_compute_salary_totals',
-        currency_field='currency_id',
-        help="Tổng Lương trong (Ln) nhập tay của toàn bộ nhân viên trong tháng."
-    )
-    total_bank_transfer = fields.Monetary(
-        string='Tổng Tiền chuyển khoản',
-        compute='_compute_salary_totals',
-        currency_field='currency_id',
-        help="Tổng tiền chuyển khoản của toàn bộ nhân viên."
-    )
-    total_bank_transfer_rounded = fields.Monetary(
-        string='Tổng CK làm tròn',
-        compute='_compute_salary_totals',
-        currency_field='currency_id'
-    )
-    total_bank_transfer_error = fields.Monetary(
-        string='Tổng sai số CK',
-        compute='_compute_salary_totals',
-        currency_field='currency_id'
-    )
-    total_cash_rounded = fields.Monetary(
-        string='Tổng tiền mặt tròn',
-        compute='_compute_salary_totals',
-        currency_field='currency_id'
-    )
-    total_cash_error = fields.Monetary(
-        string='Tổng sai số TM',
-        compute='_compute_salary_totals',
-        currency_field='currency_id'
-    )
-    total_kpi_amount = fields.Monetary(
-        string='Tổng tiền KPI',
-        compute='_compute_salary_totals',
-        currency_field='currency_id'
-    )
+    total_lk = fields.Monetary(string='Tổng Thực lĩnh ngoài (Lk)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_ln = fields.Monetary(string='Tổng Lương trong (Ln)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_bank_transfer = fields.Monetary(string='Tổng Tiền chuyển khoản', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_bank_transfer_rounded = fields.Monetary(string='Tổng CK làm tròn', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_bank_transfer_error = fields.Monetary(string='Tổng sai số CK', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_cash_rounded = fields.Monetary(string='Tổng tiền mặt tròn', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_cash_error = fields.Monetary(string="Tổng sai số Tiền mặt", compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_kpi_amount = fields.Monetary(string="Tổng tiền KPI", compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_kpi_error = fields.Monetary(string="Tổng sai số KPI", compute='_compute_salary_totals', currency_field='currency_id', store=True)
 
     @api.depends(
         'line_ids.payroll_net_salary_base',
         'line_ids.payroll_internal_salary',
-        'line_ids.payroll_bank_transfer_amount',
+        'line_ids.payroll_bank_transfer_amount_rounded',
+        'line_ids.payroll_bank_transfer_amount_rounding_error',
+        'line_ids.payroll_cash_amount_rounded',
+        'line_ids.payroll_cash_amount_rounding_error',
+        'line_ids.payroll_kpi_amount_rounded',
+        'line_ids.payroll_kpi_amount_rounding_error',
     )
     def _compute_salary_totals(self):
         """Tính tổng các chỉ số lương chính từ toàn bộ line_ids (không phân trang)."""
@@ -253,7 +224,8 @@ class SalaryKpiMonth(models.Model):
             rec.total_bank_transfer_error = sum(rec.line_ids.mapped('payroll_bank_transfer_amount_rounding_error'))
             rec.total_cash_rounded = sum(rec.line_ids.mapped('payroll_cash_amount_rounded'))
             rec.total_cash_error = sum(rec.line_ids.mapped('payroll_cash_amount_rounding_error'))
-            rec.total_kpi_amount = sum(rec.line_ids.mapped('payroll_kpi_amount'))
+            rec.total_kpi_amount = sum(rec.line_ids.mapped('payroll_kpi_amount_rounded'))
+            rec.total_kpi_error = sum(rec.line_ids.mapped('payroll_kpi_amount_rounding_error'))
 
 
 

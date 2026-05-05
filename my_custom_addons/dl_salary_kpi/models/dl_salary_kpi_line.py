@@ -493,6 +493,8 @@ class SalaryKpiLine(models.Model):
     payroll_internal_salary = fields.Monetary(string='Lương trong (Ln)', currency_field='currency_id', aggregator='sum', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
     payroll_kpi_score = fields.Float(string='Điểm KPI (Sinh ra)', digits=(16, 2), aggregator="avg")
     payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id', aggregator='sum')
+    payroll_kpi_amount_rounded = fields.Monetary(string='Tiền KPI làm tròn', currency_field='currency_id', aggregator='sum')
+    payroll_kpi_amount_rounding_error = fields.Monetary(string='Sai số KPI', currency_field='currency_id', aggregator='sum')
     payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id', aggregator='sum')
     
     payroll_bank_transfer_amount = fields.Monetary(string='Tiền chuyển khoản', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
@@ -961,12 +963,18 @@ class SalaryKpiLine(models.Model):
             cash_val = int(round(rec.payroll_cash_amount or 0, 0))
             rounded_cash = int(cash_val // 1000) * 1000
 
+            # Làm tròn Tiền KPI
+            kpi_val = int(round(rec.payroll_kpi_amount or 0, 0))
+            rounded_kpi = int(kpi_val // 1000) * 1000
+
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,
                 'payroll_bank_transfer_amount_rounded': rounded_transfer,
                 'payroll_bank_transfer_amount_rounding_error': int(transfer_val - rounded_transfer),
                 'payroll_cash_amount_rounded': rounded_cash,
                 'payroll_cash_amount_rounding_error': int(cash_val - rounded_cash),
+                'payroll_kpi_amount_rounded': rounded_kpi,
+                'payroll_kpi_amount_rounding_error': int(kpi_val - rounded_kpi),
             })
 
     def _get_income_explanation(self, wage, rev, prod, meal, women, kpi):

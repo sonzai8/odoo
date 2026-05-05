@@ -71,6 +71,7 @@
                                 <field name="total_cash_rounded" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" decoration-bf="1" decoration-success="1"/>
                                 <field name="total_cash_error" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" decoration-warning="1"/>
                                 <field name="total_kpi_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" decoration-bf="1" decoration-danger="1"/>
+                                <field name="total_kpi_error" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" decoration-warning="1"/>
                                 
                                 <field name="total_lk" invisible="1"/>
                                 <field name="total_ln" invisible="1"/>
@@ -86,6 +87,8 @@
                                     <field name="payroll_internal_salary" string="Lương trong (Ln)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" sum="Tổng"/>
                                     
                                     <field name="payroll_kpi_amount" string="Tiền KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1" sum="Tổng"/>
+                                    <field name="payroll_kpi_amount_rounded" string="KPI Làm tròn" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-muted="1" readonly="1" sum="Tổng"/>
+                                    <field name="payroll_kpi_amount_rounding_error" string="KPI Sai số" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" readonly="1" sum="Tổng"/>
                                     
                                     <field name="payroll_bank_transfer_amount" string="Tiền CK" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" decoration-info="1" readonly="1" sum="Tổng"/>
                                     <field name="payroll_bank_transfer_amount_rounded" string="CK Làm tròn" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-muted="1" readonly="1" sum="Tổng"/>
