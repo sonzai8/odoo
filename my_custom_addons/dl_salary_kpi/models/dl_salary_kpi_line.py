@@ -933,16 +933,6 @@ class SalaryKpiLine(models.Model):
                 wages['wage_bonus_p']
             )
 
-            # --- PHẦN TÍNH TOÁN THUẾ VÀ KHẤU TRỪ ---
-            # Thu nhập chịu thuế = Lương chi tiết + Thưởng (DT + NS) + Thưởng Năm + Phụ cấp phụ nữ + Ăn ca
-            base_income = total_detailed_wage + revenue_bonus + productivity_bonus + annual_bonus + meal_allowance + women_allowance
-            deductions = payroll_logic.calculate_deductions(rec, base_income, meal_allowance)
-            
-            # Cập nhật TNCT chuẩn sau khi trừ phần miễn thuế OT, Lương phép, Chuyên cần
-            taxable_income = deductions['taxable_income'] - exempt_ot_amount
-            # Tính lại thuế TNCN dựa trên TNCT đã trừ các khoản miễn thuế
-            deductions = payroll_logic.calculate_deductions(rec, base_income - exempt_ot_amount, meal_allowance)
-
             # --- PHẦN TÍNH TOÁN TLN VÀ TỔNG THU NHẬP THỰC TẾ (LOGIC MỚI) ---
             # 1. Gross TLN (Tổng lương & Thưởng hiệu quả chính quy)
             gross_lk = total_detailed_wage + revenue_bonus + productivity_bonus
@@ -952,6 +942,16 @@ class SalaryKpiLine(models.Model):
             
             # 3. Tổng thu nhập thực tế = TLN + Ăn ca + Phụ cấp phụ nữ + Tiền KPI (Nếu có)
             total_actual_income = net_salary_base + meal_allowance + women_allowance + max(0, rec.payroll_kpi_amount or 0)
+
+            # --- PHẦN TÍNH TOÁN THUẾ VÀ KHẤU TRỪ (Mới: Dựa trên Tổng TN thực tế + Thưởng năm) ---
+            # Thu nhập chịu thuế cơ sở = Tổng TN Thực tế + Thưởng Năm
+            base_income_for_tax = total_actual_income + annual_bonus
+            deductions = payroll_logic.calculate_deductions(rec, base_income_for_tax, meal_allowance)
+            
+            # Cập nhật TNCT chuẩn sau khi trừ phần miễn thuế OT, Lương phép, Chuyên cần
+            taxable_income = deductions['taxable_income'] - exempt_ot_amount
+            # Tính lại thuế TNCN dựa trên TNCT đã trừ các khoản miễn thuế
+            deductions = payroll_logic.calculate_deductions(rec, base_income_for_tax - exempt_ot_amount, meal_allowance)
             
             # 5. Lương trong mục tiêu trừ đi các khoản thưởng năm (để cân đối KPI chính xác)
             internal_salary_minus_bonus = max(0, rec.payroll_internal_salary - annual_bonus)
@@ -1059,7 +1059,7 @@ class SalaryKpiLine(models.Model):
                 ),
                 'payroll_pit_taxable_explanation': self._get_taxable_explanation(
                     total_detailed_wage, revenue_bonus, productivity_bonus, annual_bonus,
-                    women_allowance, meal_allowance, exempt_ot_amount
+                    women_allowance, meal_allowance, exempt_ot_amount, rec.payroll_kpi_amount
                 ),
                 
                 # Cập nhật các khoản trừ & Thuế TNCN (Ép kiểu số nguyên)
@@ -1133,13 +1133,13 @@ class SalaryKpiLine(models.Model):
         """
         return html
 
-    def _get_taxable_explanation(self, wage, rev, prod, annual, women, meal, exempt_ot):
+    def _get_taxable_explanation(self, wage, rev, prod, annual, women, meal, exempt_ot, kpi):
         """Hàm tạo chuỗi giải thích Thu nhập chịu thuế (TNCT)"""
         def fmt(val):
             v = int(round(val or 0, 0))
             return "{:,.0f}".format(v).replace(",", ".")
             
-        gross = wage + rev + prod + annual + women + meal
+        gross = wage + rev + prod + annual + women + meal + (kpi or 0.0)
         taxable = gross - meal - exempt_ot
         
         parts = []
@@ -1149,14 +1149,15 @@ class SalaryKpiLine(models.Model):
         if annual: parts.append(f"{fmt(annual)} (T.Năm)")
         if women: parts.append(f"{fmt(women)} (P.Nữ)")
         if meal: parts.append(f"{fmt(meal)} (Ăn ca)")
+        if kpi: parts.append(f"{fmt(kpi)} (KPI)")
         
         formula = " + ".join(parts)
         
         html = (
             f"<div style='font-size: 0.9em; color: #555;'>"
             f"<div>&#8226; Tổng thu nhập gộp: {formula} = <b>{fmt(gross)}</b></div>"
-            f"<div style='margin-top: 3px;'>&#8226; Thu nhập chịu thuế: {fmt(gross)} (Gộp) - {fmt(meal)} (Ăn ca) - <span style='color: #d9534f;'>{fmt(exempt_ot)} (Miễn thuế OT & Lương Phép)</span> = <b style='color: #28a745;'>{fmt(taxable)}</b></div>"
-            f"<div style='font-size: 0.85em; font-style: italic; color: #777; margin-top: 2px;'>* Toàn bộ thu nhập từ tăng ca, làm đêm và lương nghỉ phép được miễn thuế.</div>"
+            f"<div style='margin-top: 3px;'>&#8226; Thu nhập chịu thuế: {fmt(gross)} (Gộp) - {fmt(meal)} (Ăn ca) - <span style='color: #d9534f;'>{fmt(exempt_ot)} (Miễn thuế OT & Phép)</span> = <b style='color: #28a745;'>{fmt(taxable)}</b></div>"
+            f"<div style='font-size: 0.85em; font-style: italic; color: #777; margin-top: 2px;'>* Toàn bộ thu nhập từ tăng ca, làm đêm, lương nghỉ phép và thưởng chuyên cần được miễn thuế.</div>"
             f"</div>"
         )
         return html
