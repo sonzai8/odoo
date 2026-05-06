@@ -487,7 +487,7 @@ class SalaryKpiLine(models.Model):
     payroll_pit_assessable_income = fields.Monetary(string='Thu nhập tính thuế (TNTT)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
 
     payroll_total_deduction = fields.Monetary(string='Tổng các khoản trừ', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
-    payroll_net_salary_base = fields.Monetary(string='Thực lĩnh ngoài (Lk)', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_net_salary_base = fields.Monetary(string='Thực lĩnh ngoài(TLN)', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum', help="Tổng thu nhập thực tế dựa trên năng suất sản phẩm (Lương khoán).")
     payroll_net_salary = fields.Monetary(string='Thực lĩnh cuối cùng', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
 
     # --- TỰ ĐỘNG SINH ĐIỂM KPI ---
@@ -499,7 +499,14 @@ class SalaryKpiLine(models.Model):
     payroll_kpi_amount_rounding_error = fields.Monetary(string='Sai số KPI', currency_field='currency_id', aggregator='sum')
     payroll_cash_amount = fields.Monetary(string='Tiền mặt trả thêm', currency_field='currency_id', aggregator='sum')
     
-    payroll_bank_transfer_amount = fields.Monetary(string='Tiền chuyển khoản', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_bank_transfer_amount = fields.Monetary(
+        string='Tiền chuyển khoản', 
+        compute='_compute_payroll_internal', 
+        store=True, 
+        currency_field='currency_id', 
+        aggregator='sum',
+        help="Tổng số tiền thực tế sẽ chuyển khoản cho nhân viên. Bao gồm: Thực lĩnh ngoài(TLN) + Tiền KPI + Thưởng lễ tết (nếu có)."
+    )
     payroll_bank_transfer_amount_rounded = fields.Monetary(string='Tiền CK làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_bank_transfer_amount_rounding_error = fields.Monetary(string='Sai số CK', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_cash_amount_rounded = fields.Monetary(string='Tiền mặt làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
@@ -604,7 +611,7 @@ class SalaryKpiLine(models.Model):
                 cash = 0.0
             elif gap <= max_mk:
                 # Đủ sức dùng 100% KPI (Không dùng Tiền mặt)
-                # Cho phép điểm KPI lẻ để khớp hoàn toàn Ln = Lk + Mk
+                # Cho phép điểm KPI lẻ để khớp hoàn toàn Ln = TLN + Mk
                 p_final = 50.0 + 50.0 * gap / lk
                 mk = gap
                 cash = 0.0
@@ -847,14 +854,14 @@ class SalaryKpiLine(models.Model):
             # Tính lại thuế TNCN dựa trên TNCT đã trừ các khoản miễn thuế
             deductions = payroll_logic.calculate_deductions(rec, base_income - exempt_ot_amount, meal_allowance)
 
-            # --- PHẦN TÍNH TOÁN LK VÀ TỔNG THU NHẬP THỰC TẾ (LOGIC MỚI) ---
-            # 1. Gross Lk (Tổng lương & Thưởng hiệu quả chính quy)
+            # --- PHẦN TÍNH TOÁN TLN VÀ TỔNG THU NHẬP THỰC TẾ (LOGIC MỚI) ---
+            # 1. Gross TLN (Tổng lương & Thưởng hiệu quả chính quy)
             gross_lk = total_detailed_wage + revenue_bonus + productivity_bonus
             
-            # 2. Thực lĩnh ngoài (Lk) = Gross Lk (KHÔNG KHẤU TRỪ theo yêu cầu)
+            # 2. Thực lĩnh ngoài(TLN) = Gross TLN (KHÔNG KHẤU TRỪ theo yêu cầu)
             net_salary_base = gross_lk
             
-            # 3. Tổng thu nhập thực tế = Lk + Ăn ca + Phụ cấp phụ nữ
+            # 3. Tổng thu nhập thực tế = TLN + Ăn ca + Phụ cấp phụ nữ
             total_actual_income = net_salary_base + meal_allowance + women_allowance
             
             # 5. Lương trong mục tiêu trừ đi các khoản thưởng năm (để cân đối KPI chính xác)
@@ -863,7 +870,7 @@ class SalaryKpiLine(models.Model):
             # 6. Thực lĩnh cuối cùng (bao gồm cả các khoản bù KPI/Tiền mặt)
             net_salary_final = total_actual_income + max(0, rec.payroll_kpi_amount) + max(0, rec.payroll_cash_amount)
             
-            # Gợi ý xử lý dữ liệu bất thường (Dựa trên Lk mới)
+            # Gợi ý xử lý dữ liệu bất thường (Dựa trên TLN mới)
             
             # 6. Gợi ý xử lý dữ liệu bất thường
             anomaly_suggestion = ""
@@ -888,7 +895,7 @@ class SalaryKpiLine(models.Model):
                     v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
                     
                     if diff > -buffer:
-                        # Thực lĩnh ngoài (Lk) quá cao, cần GIẢM công
+                        # Thực lĩnh ngoài(TLN) quá cao, cần GIẢM công
                         c_05n = math.ceil(max(0, diff) / v_05n) if v_05n > 0 else 0
                         c_05d = math.ceil(max(0, diff) / v_05d) if v_05d > 0 else 0
                         c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
@@ -982,7 +989,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_internal_salary_minus_bonus': int(round(internal_salary_minus_bonus, 0)),
             })
                 
-            # Cập nhật các trường Tiền chuyển khoản: Lk + KPI + Thưởng năm
+            # Cập nhật các trường Tiền chuyển khoản: TLN + KPI + Thưởng năm
             # Đảm bảo transfer_val là số nguyên trước khi tính toán làm tròn
             transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
             rounded_transfer = int(transfer_val // 1000) * 1000
@@ -1326,6 +1333,6 @@ class SalaryKpiLine(models.Model):
     #             
     #             raise ValidationError(_(
     #                 "Dòng của %s: Tiền chuyển khoản (%s) đang cao hơn Lương nội bộ (%s) một khoảng %s. \n\n"
-    #                 "Lý do: Thực lĩnh ngoài (Lk) hoặc KPI (Mk) quá cao. \n"
+    #                 "Lý do: Thực lĩnh ngoài(TLN) hoặc KPI (Mk) quá cao. \n"
     #                 "Giải pháp: Hãy dùng nút 'Sửa nhanh' để giảm bớt ngày công hoặc giảm điểm KPI."
     #             ) % (rec.employee_name, fmt(rec.payroll_bank_transfer_amount), fmt(rec.payroll_internal_salary), fmt(diff)))

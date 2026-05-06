@@ -132,8 +132,8 @@ class SalaryKpiMonth(models.Model):
         """
         Lọc danh sách nhân viên có dữ liệu bất thường:
         - Lương trong (Ln) >= (Lương cơ bản + Lương cơ bản * 0.4).
-        - Thực lĩnh ngoài bị âm (Lk < 0).
-        - Thực lĩnh ngoài (Lk) > Lương trong (Ln).
+        - Thực lĩnh ngoài bị âm (TLN < 0).
+        - Thực lĩnh ngoài(TLN) > Lương trong (Ln).
         """
         for rec in self:
             anomalies = self.env['dl.salary.kpi.line']
@@ -195,7 +195,7 @@ class SalaryKpiMonth(models.Model):
     attendance_summary_html = fields.Html(string="Tổng hợp mã công", compute="_compute_quick_stats")
 
     # === Tổng lương toàn bộ (dùng để hiển thị phía trên danh sách, tính từ TẤT CẢ line_ids) ===
-    total_lk = fields.Monetary(string='Tổng Thực lĩnh ngoài (Lk)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_lk = fields.Monetary(string='Tổng Thực lĩnh ngoài(TLN)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
     total_ln = fields.Monetary(string='Tổng Lương trong (Ln)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
     total_bank_transfer = fields.Monetary(string='Tổng Tiền chuyển khoản', compute='_compute_salary_totals', currency_field='currency_id', store=True)
     total_bank_transfer_rounded = fields.Monetary(string='Tổng CK làm tròn', compute='_compute_salary_totals', currency_field='currency_id', store=True)
