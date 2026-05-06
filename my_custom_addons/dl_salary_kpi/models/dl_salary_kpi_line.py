@@ -470,7 +470,8 @@ class SalaryKpiLine(models.Model):
     payroll_wage_night_holiday_390 = fields.Monetary(string='Lương TC đêm Lễ 390%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
     
     payroll_total_wage = fields.Monetary(string='Tổng lương', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng lương = Tổng các khoản lương chi tiết (ngày, đêm, tăng ca...) + Thưởng doanh thu thực tế")
-    payroll_total_actual_income = fields.Monetary(string='Tổng TN T.tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công)")
+    payroll_total_actual_income = fields.Monetary(string='Tổng TN T.tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công) + Tiền KPI")
+    payroll_real_net_income = fields.Monetary(string='Thực lĩnh thực tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Thực lĩnh thực tế = Tổng thu nhập thực tế - Tổng các khoản khấu trừ")
 
     # --- CÁC KHOẢN KHẤU TRỪ ---
     payroll_deduction_bhxh = fields.Monetary(string='BHXH (8%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
@@ -949,8 +950,8 @@ class SalaryKpiLine(models.Model):
             # 2. Thực lĩnh ngoài(TLN) = Gross TLN (KHÔNG KHẤU TRỪ theo yêu cầu)
             net_salary_base = gross_lk
             
-            # 3. Tổng thu nhập thực tế = TLN + Ăn ca + Phụ cấp phụ nữ
-            total_actual_income = net_salary_base + meal_allowance + women_allowance
+            # 3. Tổng thu nhập thực tế = TLN + Ăn ca + Phụ cấp phụ nữ + Tiền KPI (Nếu có)
+            total_actual_income = net_salary_base + meal_allowance + women_allowance + max(0, rec.payroll_kpi_amount or 0)
             
             # 5. Lương trong mục tiêu trừ đi các khoản thưởng năm (để cân đối KPI chính xác)
             internal_salary_minus_bonus = max(0, rec.payroll_internal_salary - annual_bonus)
@@ -1041,7 +1042,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_rev_prod_bonus': revenue_bonus + productivity_bonus,
                 'payroll_total_bonus': total_bonus,
                 'payroll_total_regime_income': total_regime_income,
-                'payroll_wage_day': wages['wage_day'] + wages['wage_leave'], # Vẫn gộp để hiển thị UI
+                'payroll_wage_day': wages['wage_day'] + wages['wage_leave'] + wages.get('wage_bonus_p', 0.0), # Gộp cả lương phép và chuyên cần
                 'payroll_wage_day_150': wages['wage_day_150'],
                 'payroll_wage_night_130': wages['wage_night_130'],
                 'payroll_wage_night_200': wages['wage_night_200'],
@@ -1054,7 +1055,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_actual_income': total_actual_income,
                 'payroll_income_explanation': self._get_income_explanation(
                     gross_lk, deductions['total_deduction'], net_salary_base,
-                    meal_allowance, women_allowance, total_actual_income
+                    meal_allowance, women_allowance, rec.payroll_kpi_amount, total_actual_income
                 ),
                 'payroll_pit_taxable_explanation': self._get_taxable_explanation(
                     total_detailed_wage, revenue_bonus, productivity_bonus, annual_bonus,
@@ -1072,6 +1073,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_pit_total_deductions': int(round(deductions['total_pit_deductions'], 0)),
                 'payroll_pit_assessable_income': int(round(deductions['assessable_income'], 0)),
                 'payroll_total_deduction': int(round(deductions['total_deduction'], 0)),
+                'payroll_real_net_income': int((total_actual_income - deductions['total_deduction']) // 1000) * 1000,
                 'payroll_net_salary_base': int(round(net_salary_base, 0)),
                 'payroll_internal_salary_minus_bonus': int(round(internal_salary_minus_bonus, 0)),
             })
@@ -1103,7 +1105,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_net_salary': net_salary_final,
             })
 
-    def _get_income_explanation(self, gross_lk, deduction, lk, meal, women, total):
+    def _get_income_explanation(self, gross_lk, deduction, lk, meal, women, kpi, total):
         """Hàm hỗ trợ tạo chuỗi diễn giải chi tiết bằng HTML cho Logic mới (Lk = Gross)"""
         def fmt(val):
             v = int(round(val or 0, 0))
@@ -1118,10 +1120,14 @@ class SalaryKpiLine(models.Model):
             </div>
             <div>
                 <b>2. Tính Tổng thu nhập thực tế:</b><br/>
-                &nbsp;&nbsp;&nbsp;&nbsp;{fmt(lk)} (Lk)<br/>
-                &nbsp;&nbsp;+ {fmt(meal)} (Ăn ca)<br/>
-                &nbsp;&nbsp;+ {fmt(women)} (Phụ cấp PN)<br/>
-                &nbsp;&nbsp;= <span style='color: #d32f2f; font-weight: bold; font-size: 1.1em;'>{fmt(total)}</span> (Tổng TN Thực tế)
+                &nbsp;&nbsp;+ {fmt(kpi)} (Tiền KPI)<br/>
+                &nbsp;&nbsp;= <span style='color: #007bff; font-weight: bold;'>{fmt(total)}</span> (Tổng TN Thực tế)
+            </div>
+            <div>
+                <b>3. Thực lĩnh thực tế (Sau khấu trừ):</b><br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;{fmt(total)} (Tổng TN Thực tế)<br/>
+                &nbsp;&nbsp;- {fmt(deduction)} (Tổng các khoản trừ: BH + Thuế)<br/>
+                &nbsp;&nbsp;= <span style='color: #d32f2f; font-weight: bold; font-size: 1.1em;'>{fmt(int((total - deduction) // 1000) * 1000)}</span> (Thực lĩnh thực tế - Đã làm tròn xuống hàng nghìn)
             </div>
         </div>
         """
