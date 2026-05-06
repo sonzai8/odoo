@@ -16,12 +16,12 @@ class SalaryKpiLine(models.Model):
     dl_first_name = fields.Char(related='employee_id.dl_first_name', string='Tên riêng', store=True)
     identification_id = fields.Char(related='employee_id.identification_id', string='Số CCCD', store=True)
     
-    dl_tax_department_id = fields.Many2one('dl.tax.department', related='employee_id.dl_tax_department_id', string='Phòng ban', store=True)
+    dl_tax_department_id = fields.Many2one('dl.tax.department', related='employee_id.dl_tax_department_id', string='Phòng ban', store=True, help="Phòng ban hoặc bộ phận quản lý thuế/bảo hiểm của nhân viên. Dùng để phân loại khi xuất báo cáo thuế TNCN.")
     dl_tax_id = fields.Char(related='employee_id.dl_tax_id', string='Mã số thuế', store=True)
     birthday = fields.Date(related='employee_id.birthday', string='Ngày sinh')
     sex = fields.Selection(related='employee_id.sex', string='Giới tính')
     dl_tax_position = fields.Char(related='employee_id.dl_tax_position', string='Chức vụ')
-    dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản')
+    dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản', help="Mức lương căn cứ để tính đóng BHXH và thuế TNCN (Lương chính quy trên hợp đồng lao động).")
 
 
     # Chấm công 31 ngày (hiển thị mã công)
