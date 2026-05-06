@@ -22,7 +22,7 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
 
     # Thông tin tham khảo
     current_lk = fields.Monetary(related='line_id.payroll_net_salary_base', string='Thực lĩnh ngoài(TLN)', readonly=True, currency_field='currency_id')
-    target_salary = fields.Monetary(related='line_id.payroll_internal_salary', string='Lương trong (Ln)', readonly=True, currency_field='currency_id')
+    target_salary = fields.Monetary(related='line_id.payroll_internal_salary', string='Lương Nội Bộ (LNB)', readonly=True, currency_field='currency_id')
     currency_id = fields.Many2one('res.currency', related='line_id.currency_id')
 
     # Số lượng muốn thay đổi (người dùng nhập)

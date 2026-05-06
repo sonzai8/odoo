@@ -491,8 +491,8 @@ class SalaryKpiLine(models.Model):
     payroll_net_salary = fields.Monetary(string='Thực lĩnh cuối cùng', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
 
     # --- TỰ ĐỘNG SINH ĐIỂM KPI ---
-    payroll_internal_salary = fields.Monetary(string='Lương trong (Ln)', currency_field='currency_id', aggregator='sum', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
-    payroll_internal_salary_minus_bonus = fields.Monetary(string='Ln trừ thưởng năm', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_internal_salary = fields.Monetary(string='Lương Nội Bộ (LNB)', currency_field='currency_id', aggregator='sum', help="Lương thực tế muốn trả cho nhân viên (Target Salary)")
+    payroll_internal_salary_minus_bonus = fields.Monetary(string='LNB trừ thưởng năm', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_kpi_score = fields.Float(string='Điểm KPI (Sinh ra)', digits=(16, 2), aggregator="avg")
     payroll_kpi_amount = fields.Monetary(string='Tiền KPI (Cân đối)', currency_field='currency_id', aggregator='sum')
     payroll_kpi_amount_rounded = fields.Monetary(string='Tiền KPI làm tròn', currency_field='currency_id', aggregator='sum')
@@ -515,23 +515,109 @@ class SalaryKpiLine(models.Model):
 
     payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
     payroll_income_explanation = fields.Html(string='Diễn giải thu nhập', compute='_compute_payroll_internal', store=True)
+    payroll_calc_detail_html = fields.Html(string='Chi tiết tính toán KPI & Tiền mặt', compute='_compute_payroll_calc_detail')
 
-    @api.depends('payroll_net_salary_base', 'payroll_kpi_amount', 'payroll_cash_amount')
-    def _compute_final_rounding(self):
+    @api.depends('payroll_net_salary_base', 'payroll_kpi_amount', 'payroll_cash_amount', 'payroll_internal_salary', 'payroll_annual_bonus')
+    def _compute_payroll_calc_detail(self):
         for rec in self:
-            bank_transfer = (rec.payroll_net_salary_base or 0) + (rec.payroll_kpi_amount or 0)
-            rec.payroll_bank_transfer_amount = bank_transfer
+            ck_tron = rec.payroll_bank_transfer_amount_rounded or 0
+            tm_tron = rec.payroll_cash_amount_rounded or 0
+            tong_nhan = ck_tron + tm_tron
             
-            # Làm tròn xuống hàng nghìn cho Tiền chuyển khoản
-            rounded_bt = (bank_transfer // 1000) * 1000 if bank_transfer else 0
-            rec.payroll_bank_transfer_amount_rounded = rounded_bt
-            rec.payroll_bank_transfer_amount_rounding_error = bank_transfer - rounded_bt
+            lnb = rec.payroll_internal_salary or 0
+            tln = rec.payroll_net_salary_base or 0
+            kpi_amount = rec.payroll_kpi_amount or 0
+            annual_bonus = rec.payroll_annual_bonus or 0
+            meal = rec.payroll_meal_allowance or 0
+            women = rec.payroll_women_allowance or 0
             
-            # Làm tròn xuống hàng nghìn cho Tiền mặt
-            cash = rec.payroll_cash_amount or 0
-            rounded_cash = (cash // 1000) * 1000 if cash else 0
-            rec.payroll_cash_amount_rounded = rounded_cash
-            rec.payroll_cash_amount_rounding_error = cash - rounded_cash
+            # --- TÍNH TOÁN ĐỐI SOÁT LNB ---
+            # 1. Cân đối LNB (Chỉ trừ Thưởng năm)
+            gap_lnb = (lnb - annual_bonus) - tln
+            max_mk = tln * 0.4 # Giả định max 70 điểm là bù thêm 40% TLN
+            
+            # 2. LNB Thực nhận (sau làm tròn) = Tổng nhận - Ăn ca - Phụ cấp PN
+            lnb_thuc_nhan = tong_nhan - meal - women
+            chenh_lech_lnb = lnb_thuc_nhan - lnb
+            
+            reason = []
+            if abs(chenh_lech_lnb) > 0 and abs(chenh_lech_lnb) < 2000:
+                reason.append("Do làm tròn hàng nghìn (Round down) ở cả Tiền mặt và Chuyển khoản.")
+            if rec.payroll_kpi_score >= 69.9:
+                reason.append("Đã chạm trần KPI tối đa (70 điểm), phần còn lại được chuyển sang Tiền mặt.")
+                
+            style_color = "color: #28a745;" if abs(chenh_lech_lnb) < 2000 else "color: #dc3545;"
+            
+            # --- TÍNH TOÁN ĐỐI SOÁT ---
+            # So sánh TLN (Công thực tế) và LNB (Tổng nhận cuối cùng)
+            chenh_lech_tong = lnb - tln
+            
+            html = f"""
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; background-color: #f8f9fa; margin-top: 15px; width: 100%;">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <table class="table table-sm table-bordered bg-white">
+                            <tr class="bg-primary text-white"><th colspan="2" class="p-2">1. CƠ SỞ ĐỐI SOÁT (TLN vs LNB)</th></tr>
+                            <tr><td>Thực lĩnh ngoài thực tế (TLN)</td><td class="text-end"><b>{tln:,.0f}</b></td></tr>
+                            <tr><td>Lương Nội Bộ mục tiêu (LNB)</td><td class="text-end"><b>{lnb:,.0f}</b></td></tr>
+                            <tr class="table-warning"><td><b>Chênh lệch cần bù (LNB - TLN)</b></td><td class="text-end"><b>{chenh_lech_tong:,.0f}</b></td></tr>
+                        </table>
+                        <div class="text-muted" style="font-size: 11px;">
+                            <i>* Đây là số tiền công ty bù thêm cho nhân viên ngoài lương thực tế làm được.</i>
+                        </div>
+                    </div>
+                    <div style="flex: 1; min-width: 300px;">
+                        <table class="table table-sm table-bordered bg-white">
+                            <tr class="bg-success text-white"><th colspan="2" class="p-2">2. CHI TIẾT DÒNG TIỀN CHI TRẢ</th></tr>
+                            <tr><td>Tiền KPI (Phần chính)</td><td class="text-end">{kpi_amount:,.0f}</td></tr>
+                            <tr><td>Thưởng Lễ/Tết (Nếu có)</td><td class="text-end">{annual_bonus:,.0f}</td></tr>
+                            <tr class="table-info"><td><b>Tổng Chuyển Khoản (Đã tròn)</b></td><td class="text-end"><b>{ck_tron:,.0f}</b></td></tr>
+                            <tr class="table-danger"><td><b>Tổng Tiền Mặt (Đã tròn)</b></td><td class="text-end"><b>{tm_tron:,.0f}</b></td></tr>
+                        </table>
+                        <div class="text-muted" style="font-size: 11px;">
+                            <i>* Tiền mặt = LNB - Tiền chuyển khoản. Bao gồm các khoản trợ cấp và phần bù dư.</i>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 15px; background-color: #fff; border: 1px dashed #007bff; border-radius: 6px; padding: 10px;">
+                    <b style="color: #0056b3;">🔍 QUY TRÌNH TÍNH TOÁN &amp; ĐỐI SOÁT:</b>
+                    <div style="display: flex; gap: 10px; margin-top: 8px; font-size: 13px;">
+                        <div style="flex: 1; border-right: 1px solid #eee; padding-right: 10px;">
+                            <b style="color: #666;">BƯỚC 1: Tính Tiền KPI</b><br/>
+                            Gap = (LNB - Thưởng) - TLN<br/>
+                            = {gap_lnb:,.0f}<br/>
+                            => KPI = {kpi_amount:,.0f} ({rec.payroll_kpi_score}đ)
+                        </div>
+                        <div style="flex: 1; border-right: 1px solid #eee; padding-right: 10px;">
+                            <b style="color: #666;">BƯỚC 2: Tính Chuyển Khoản</b><br/>
+                            CK = TLN + KPI + Thưởng<br/>
+                            = {ck_tron:,.0f} (Đã làm tròn)
+                        </div>
+                        <div style="flex: 1;">
+                            <b style="color: #666;">BƯỚC 3: Tính Tiền Mặt</b><br/>
+                            TM = LNB - Chuyển Khoản<br/>
+                            = {lnb:,.0f} - {ck_tron:,.0f}<br/>
+                            = <b style="color: #d32f2f;">{tm_tron:,.0f}</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <table class="table table-bordered bg-white m-0 text-center">
+                        <tr class="table-dark">
+                            <td class="p-2" style="width: 25%;"><b>TỔNG THỰC NHẬN (CK + TM)</b></td>
+                            <td class="text-end p-2" style="width: 25%; font-size: 18px;"><b>{tong_nhan:,.0f}</b></td>
+                            <td class="p-2" style="width: 25%;"><b>MỤC TIÊU LNB</b></td>
+                            <td class="text-end p-2" style="width: 25%; font-size: 18px;"><b>{lnb:,.0f}</b></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            """
+            rec.payroll_calc_detail_html = html
+
+
 
     # --- CHI TIẾT TIÊU CHÍ KPI ---
     kpi_c1_productivity = fields.Float(string='Năng suất/Chất lượng (Max 40)', digits=(16, 2))
@@ -594,15 +680,17 @@ class SalaryKpiLine(models.Model):
             if rec.month_id.state in ['lock_kpi', 'confirmed']:
                 raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
             
-            # Lấy Ln đã trừ Thưởng năm để làm mốc cân đối KPI
-            ln_target = rec.payroll_internal_salary_minus_bonus
+            # Lấy LNB trừ đi Thưởng năm và TLN để tìm phần còn thiếu cần bù KPI/Tiền mặt
+            annual_bonus = rec.payroll_annual_bonus or 0
             lk = rec.payroll_net_salary_base
             
-            if not ln_target or lk <= 0:
+            # Gap là phần còn thiếu để đạt được (LNB - Thưởng năm)
+            # Theo yêu cầu: LNB đã bao gồm Thưởng năm, nhưng không bao gồm Ăn ca/Phụ cấp PN
+            gap = (rec.payroll_internal_salary - annual_bonus) - lk
+            
+            if rec.payroll_internal_salary_minus_bonus <= 0 or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
                 continue
-            
-            gap = ln_target - lk
             max_mk = lk * (max_allowed - 50) / 50.0
             
             if gap <= 0:
@@ -985,21 +1073,24 @@ class SalaryKpiLine(models.Model):
                 'payroll_pit_assessable_income': int(round(deductions['assessable_income'], 0)),
                 'payroll_total_deduction': int(round(deductions['total_deduction'], 0)),
                 'payroll_net_salary_base': int(round(net_salary_base, 0)),
-                'payroll_net_salary': int(round(net_salary_final, 0)),
                 'payroll_internal_salary_minus_bonus': int(round(internal_salary_minus_bonus, 0)),
             })
                 
-            # Cập nhật các trường Tiền chuyển khoản: TLN + KPI + Thưởng năm
+            # Cập nhật các trường Tiền chuyển khoản: TLN + KPI + Thưởng năm (Theo yêu cầu mới)
             # Đảm bảo transfer_val là số nguyên trước khi tính toán làm tròn
             transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
             rounded_transfer = int(transfer_val // 1000) * 1000
             
-            cash_val = int(round(rec.payroll_cash_amount or 0, 0))
+            # Tiền mặt = Lương Nội Bộ - Tiền chuyển khoản đã làm tròn (Để khớp tuyệt đối LNB)
+            cash_val = max(0, int(rec.payroll_internal_salary - rounded_transfer))
             rounded_cash = int(cash_val // 1000) * 1000
 
             # Làm tròn Tiền KPI
             kpi_val = int(round(rec.payroll_kpi_amount or 0, 0))
             rounded_kpi = int(kpi_val // 1000) * 1000
+
+            # Thực lĩnh cuối cùng = Tổng các khoản thực tế chi trả (Đã làm tròn)
+            net_salary_final = rounded_transfer + rounded_cash
 
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,
@@ -1009,6 +1100,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_cash_amount_rounding_error': int(cash_val - rounded_cash),
                 'payroll_kpi_amount_rounded': rounded_kpi,
                 'payroll_kpi_amount_rounding_error': int(kpi_val - rounded_kpi),
+                'payroll_net_salary': net_salary_final,
             })
 
     def _get_income_explanation(self, gross_lk, deduction, lk, meal, women, total):

@@ -196,7 +196,7 @@ class SalaryKpiMonth(models.Model):
 
     # === Tổng lương toàn bộ (dùng để hiển thị phía trên danh sách, tính từ TẤT CẢ line_ids) ===
     total_lk = fields.Monetary(string='Tổng Thực lĩnh ngoài(TLN)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
-    total_ln = fields.Monetary(string='Tổng Lương trong (Ln)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
+    total_ln = fields.Monetary(string='Tổng Lương Nội Bộ (LNB)', compute='_compute_salary_totals', currency_field='currency_id', store=True)
     total_bank_transfer = fields.Monetary(string='Tổng Tiền chuyển khoản', compute='_compute_salary_totals', currency_field='currency_id', store=True)
     total_bank_transfer_rounded = fields.Monetary(string='Tổng CK làm tròn', compute='_compute_salary_totals', currency_field='currency_id', store=True)
     total_bank_transfer_error = fields.Monetary(string='Tổng sai số CK', compute='_compute_salary_totals', currency_field='currency_id', store=True)

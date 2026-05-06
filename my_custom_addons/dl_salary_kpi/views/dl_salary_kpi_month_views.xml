@@ -77,15 +77,16 @@
                                 <field name="total_ln" invisible="1"/>
                                 <field name="total_bank_transfer" invisible="1"/>
                             </group>
-                            <field name="filtered_line_ids" readonly="0" nolabel="1" context="{'dialog_size': 'extra-large'}">
-                                <list editable="bottom" delete="0" limit="20">
+                            <field name="filtered_line_ids" readonly="1" nolabel="1" context="{'dialog_size': 'extra-large', 'create': 0, 'edit': 0, 'delete': 0}">
+                                <list delete="0" limit="20">
+                                    <button name="action_open_quick_fix" type="object" icon="fa-pencil" title="Sửa nhanh Lương Nội Bộ (LNB)" invisible="parent.month_state in ['lock_kpi', 'confirmed']"/>
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
                                     <field name="dl_tax_department_id" readonly="1" sticky="1" width="120px"/>
                                     <field name="dl_tax_base_salary" string="Lương CB Thuế" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show" readonly="1"/>
                                 <field name="payroll_net_salary_base" string="Thực lĩnh ngoài(TLN)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
-                                    <field name="payroll_internal_salary" string="Lương trong (Ln)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" sum="Tổng"/>
-                                    <field name="payroll_internal_salary_minus_bonus" string="Ln trừ thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="1" decoration-bf="1" sum="Tổng"/>
+                                    <field name="payroll_internal_salary" string="Lương Nội Bộ (LNB)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" sum="Tổng"/>
+                                    <field name="payroll_internal_salary_minus_bonus" string="LNB trừ thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="1" decoration-bf="1" sum="Tổng"/>
                                     
                                     <field name="payroll_kpi_amount" string="Tiền KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1" sum="Tổng"/>
                                     <field name="payroll_kpi_amount_rounded" string="KPI Làm tròn" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-muted="1" readonly="1" sum="Tổng"/>
@@ -733,24 +734,46 @@
                         <page string="Cân đối KPI &amp; Tiền mặt" name="kpi_balancing">
                             <group>
                                 <group string="Mục tiêu &amp; Cơ sở">
-                                    <field name="payroll_internal_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương trong (Ln)" decoration-info="1" decoration-bf="1" readonly="1"/>
-                                    <field name="payroll_internal_salary_minus_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" string="Ln trừ thưởng năm" decoration-warning="1" decoration-bf="1" readonly="1"/>
+                                    <field name="payroll_internal_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương Nội Bộ (LNB)" decoration-info="1" decoration-bf="1" readonly="1" default_focus="1"/>
+                                    <field name="payroll_internal_salary_minus_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" string="LNB trừ thưởng năm" decoration-warning="1" decoration-bf="1" readonly="1"/>
                                     <field name="payroll_net_salary_base" string="Thực lĩnh ngoài(TLN)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" invisible="1"/>
                                     <button name="action_generate_kpi_scores" string="Tính toán lại KPI" type="object" class="btn-primary" icon="fa-magic" invisible="month_state in ['lock_kpi', 'confirmed']"/>
                                 </group>
                                 <group string="Kết quả tính toán">
                                     <field name="payroll_kpi_score" widget="float" digits="[16,2]" decoration-warning="1" decoration-bf="1" readonly="1"/>
                                     <field name="payroll_kpi_amount" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="1" readonly="1"/>
+                                    <field name="payroll_bank_transfer_amount" string="Tiền chuyển khoản" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" readonly="1"/>
                                     <field name="payroll_cash_amount" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1" readonly="1"/>
                                 </group>
-                                <group string="Chi tiết Tiêu chí đánh giá">
-                                    <field name="kpi_c1_productivity" readonly="1"/>
-                                    <field name="kpi_c2_discipline" readonly="1"/>
-                                    <field name="kpi_c3_teamwork" readonly="1"/>
-                                    <field name="kpi_c4_5s" readonly="1"/>
-                                    <field name="kpi_c5_saving" readonly="1"/>
-                                </group>
                             </group>
+                            <field name="payroll_calc_detail_html" nolabel="1"/>
+                            <div class="o_horizontal_separator mt-4">Chi tiết Tiêu chí đánh giá</div>
+                            <div class="d-flex justify-content-between align-items-center w-100 p-3 mb-3" style="background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div class="text-center" style="flex: 1;">
+                                    <div class="text-muted mb-1" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">Năng suất (C1)</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #007bff;"><field name="kpi_c1_productivity" readonly="1" nolabel="1"/></div>
+                                </div>
+                                <div style="border-left: 1px solid #eee; height: 35px;"/>
+                                <div class="text-center" style="flex: 1;">
+                                    <div class="text-muted mb-1" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">Kỷ luật (C2)</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #007bff;"><field name="kpi_c2_discipline" readonly="1" nolabel="1"/></div>
+                                </div>
+                                <div style="border-left: 1px solid #eee; height: 35px;"/>
+                                <div class="text-center" style="flex: 1;">
+                                    <div class="text-muted mb-1" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">Làm việc nhóm (C3)</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #007bff;"><field name="kpi_c3_teamwork" readonly="1" nolabel="1"/></div>
+                                </div>
+                                <div style="border-left: 1px solid #eee; height: 35px;"/>
+                                <div class="text-center" style="flex: 1;">
+                                    <div class="text-muted mb-1" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">Vệ sinh/5S (C4)</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #007bff;"><field name="kpi_c4_5s" readonly="1" nolabel="1"/></div>
+                                </div>
+                                <div style="border-left: 1px solid #eee; height: 35px;"/>
+                                <div class="text-center" style="flex: 1;">
+                                    <div class="text-muted mb-1" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">Tiết kiệm (C5)</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #007bff;"><field name="kpi_c5_saving" readonly="1" nolabel="1"/></div>
+                                </div>
+                            </div>
                             <group class="oe_subtotal_footer oe_right">
                                 <field name="payroll_net_salary_base" string="Thực lĩnh ngoài(TLN)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                 <field name="payroll_kpi_amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
