@@ -692,13 +692,29 @@ class SalaryKpiLine(models.Model):
             if rec.payroll_internal_salary_minus_bonus <= 0 or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
                 continue
-            max_mk = lk * (max_allowed - 50) / 50.0
+            # --- KIỂM SOÁT ĐIỂM TỐI THIỂU & TỐI ĐA THEO LƯƠNG CƠ BẢN ---
+            base_salary = rec.dl_tax_base_salary
+            if base_salary < 4500000:
+                emp_max_kpi = min(55.0, float(max_allowed))
+                emp_min_kpi = 50.0
+            elif base_salary < 5000000:
+                emp_max_kpi = min(60.0, float(max_allowed))
+                emp_min_kpi = 55.0
+            else:
+                emp_max_kpi = min(70.0, float(max_allowed))
+                emp_min_kpi = 60.0
+                
+            # Đảm bảo max_allowed không nhỏ hơn 50
+            emp_max_kpi = max(50.0, emp_max_kpi)
+            emp_min_kpi = min(emp_min_kpi, emp_max_kpi)
+
+            emp_max_mk = lk * (emp_max_kpi - 50.0) / 50.0
             
             if gap <= 0:
                 p_final = 50.0
                 mk = 0.0
                 cash = 0.0
-            elif gap <= max_mk:
+            elif gap <= emp_max_mk:
                 # Đủ sức dùng 100% KPI (Không dùng Tiền mặt)
                 # Cho phép điểm KPI lẻ để khớp hoàn toàn Ln = TLN + Mk
                 p_final = 50.0 + 50.0 * gap / lk
@@ -706,13 +722,10 @@ class SalaryKpiLine(models.Model):
                 cash = 0.0
             else:
                 # Bắt buộc dùng Tiền mặt
-                cash_needed = gap - max_mk
+                cash_needed = gap - emp_max_mk
                 if cash_needed >= 1000000:
-                    # Tiền mặt đủ lớn, lấy ngẫu nhiên Điểm KPI trước
-                    if random.random() < 0.7:
-                        p_temp = random.uniform(60.0, float(max_allowed))
-                    else:
-                        p_temp = random.uniform(50.0, float(max_allowed))
+                    # Tiền mặt đủ lớn, lấy ngẫu nhiên Điểm KPI
+                    p_temp = random.uniform(emp_min_kpi, float(emp_max_kpi))
                     
                     mk_temp = lk * (p_temp - 50.0) / 50.0
                     cash_raw = gap - mk_temp
@@ -732,10 +745,10 @@ class SalaryKpiLine(models.Model):
                     else:
                         # Normal case: Lấy p_upper là điểm tối đa để vẫn còn 1tr Tiền mặt
                         p_upper = 50.0 + 50.0 * remaining_gap / lk
-                        if p_upper >= 60 and random.random() < 0.7:
-                            p_temp = random.uniform(60.0, float(min(max_allowed, p_upper)))
-                        else:
-                            p_temp = random.uniform(50.0, float(min(max_allowed, p_upper)))
+                        p_upper = min(emp_max_kpi, p_upper)
+                        effective_min = min(emp_min_kpi, p_upper)
+                        
+                        p_temp = random.uniform(float(effective_min), float(p_upper))
                         
                         mk_temp = lk * (p_temp - 50.0) / 50.0
                         cash_raw = gap - mk_temp
@@ -746,8 +759,8 @@ class SalaryKpiLine(models.Model):
                 
                 # --- KIỂM SOÁT BIÊN (CAPPING) ---
                 # Nếu sau khi làm tròn mà p_final vượt ngưỡng cho phép
-                if p_final > max_allowed:
-                    p_final = float(max_allowed)
+                if p_final > emp_max_kpi:
+                    p_final = float(emp_max_kpi)
                     mk = lk * (p_final - 50.0) / 50.0
                     cash = gap - mk
                 
