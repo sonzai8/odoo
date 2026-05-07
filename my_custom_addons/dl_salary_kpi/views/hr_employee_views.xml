@@ -14,7 +14,7 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
-                <page string="Cấu Hình Thuế" name="tax_config">
+                <page string="2 - Cấu Hình Thuế" name="tax_config">
                     <group>
                         <group string="Thông tin định danh thuế">
                             <field name="dl_tax_id"/>
@@ -27,7 +27,7 @@
                         </group>
                     </group>
                 </page>
-                <page string="Người phụ thuộc" name="dependents">
+                <page string="3 - Người phụ thuộc" name="dependents">
                     <field name="dependent_ids" nolabel="1">
                         <list limit="20" editable="bottom">
                             <field name="name"/>

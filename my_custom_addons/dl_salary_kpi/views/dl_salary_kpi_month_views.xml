@@ -55,7 +55,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Cân đối KPI &amp; Tiền mặt" name="kpi_balancing" invisible="state in ['draft', 'lock_normal']">
+                        <page string="5 - Cân đối KPI và Tiền mặt" name="kpi_balancing" invisible="state in ['draft', 'lock_normal']">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
                                     <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
@@ -79,11 +79,11 @@
                             </group>
                             <field name="filtered_line_ids" readonly="1" nolabel="1" context="{'dialog_size': 'extra-large', 'create': 0, 'edit': 0, 'delete': 0}">
                                 <list delete="0" limit="20">
-                                    <button name="action_open_quick_fix" type="object" icon="fa-pencil" title="Sửa nhanh Lương Nội Bộ (LNB)" invisible="parent.state in ['lock_kpi', 'confirmed']"/>
+                                    <button name="action_open_lnb_wizard" type="object" icon="fa-pencil" title="Sửa nhanh Lương Nội Bộ (LNB)" invisible="parent.state in ['lock_kpi', 'confirmed']"/>
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
                                     <field name="dl_tax_department_id" readonly="1" sticky="1" width="120px"/>
-                                    <field name="dl_tax_base_salary" string="Lương CB Thuế" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show" readonly="1"/>
+                                    <field name="dl_tax_base_salary" string="Lương CB Thuế" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show" readonly="1" sum="Tổng"/>
                                 <field name="payroll_net_salary_base" string="Thực lĩnh ngoài(TLN)" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/>
                                     <field name="payroll_internal_salary" string="Lương Nội Bộ (LNB)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-info="1" decoration-bf="1" sum="Tổng"/>
                                     <field name="payroll_internal_salary_minus_bonus" string="LNB trừ thưởng năm" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="1" decoration-bf="1" sum="Tổng"/>
@@ -95,6 +95,7 @@
                                     <field name="payroll_bank_transfer_amount" string="Tiền CK" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-bf="1" decoration-info="1" readonly="1" sum="Tổng"/>
                                     <field name="payroll_bank_transfer_amount_rounded" string="CK Làm tròn" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-muted="1" readonly="1" sum="Tổng"/>
                                     <field name="payroll_bank_transfer_amount_rounding_error" string="CK Sai số" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" readonly="1" sum="Tổng"/>
+                                    <field name="payroll_tracking_percentage" string="Theo Dõi %" optional="show" widget="percentage" readonly="1" decoration-bf="1" decoration-info="1" avg="Trung bình"/>
                                     
                                     <field name="payroll_cash_amount" string="Tiền mặt trả thêm" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="1" decoration-bf="1" readonly="1" sum="Tổng"/>
                                     <field name="payroll_cash_amount_rounded" string="Tiền mặt Làm tròn" optional="show" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-muted="1" readonly="1" sum="Tổng"/>
@@ -113,7 +114,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Chi tiết các khoản trừ" name="internal_payroll" invisible="state in ['draft', 'lock_normal']">
+                        <page string="6 - Chi tiết các khoản trừ" name="internal_payroll" invisible="state in ['draft', 'lock_normal']">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
                                     <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
@@ -150,7 +151,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Tổng Hợp Công - Lương" name="summary_payroll" invisible="state in ['draft', 'lock_normal']">
+                        <page string="7 - Tổng Hợp Công - Lương" name="summary_payroll" invisible="state in ['draft', 'lock_normal']">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
                                     <field name="filter_employee_name" placeholder="Nhập tên nhân viên..." default_focus="1"/>
@@ -181,7 +182,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Bảng công Thường" name="matrix_normal" invisible="state != 'draft'">
+                        <page string="8 - Bảng công Thường" name="matrix_normal" invisible="state != 'draft'">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
                                     <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
@@ -301,7 +302,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Bảng công làm thêm giờ" name="overtime_active" invisible="state == 'draft'">
+                        <page string="9 - Bảng công làm thêm giờ" name="overtime_active" invisible="state == 'draft'">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
                                     <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
@@ -363,7 +364,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Bảng công Thường (Xem)" name="matrix_normal_view" invisible="state == 'draft'">
+                        <page string="10 - Bảng công Thường (Xem)" name="matrix_normal_view" invisible="state == 'draft'">
                             <group string="🔍 Bộ lọc nhanh">
                                 <group>
                                     <field name="filter_employee_name" placeholder="Nhập tên nhân viên..."/>
@@ -418,7 +419,7 @@
                             </field>
                         </page>
                         
-                        <page string="Cấu Hình Chung" name="financial_balance">
+                        <page string="11 - Cấu Hình Chung" name="financial_balance">
                             <div class="d-flex flex-wrap gap-4 align-items-start w-100">
                                 <div class="flex-fill" style="min-width: 450px;">
                                     <group string="Thông tin tài chính" class="w-100">
@@ -442,7 +443,7 @@
                             </div>
                         </page>
 
-                        <page string="&#9888;&#65039; D&#7919; li&#7879;u B&#7845;t Th&#432;&#7901;ng" name="anomaly_data">
+                        <page string="12 - Dữ liệu Bất Thường" name="anomaly_data">
                             <field name="anomaly_line_ids" nolabel="1" readonly="1">
                                 <list string="Nhân viên có dữ liệu bất thường"
                                       decoration-danger="payroll_internal_salary &gt;= (payroll_net_salary_base * 1.4)"
@@ -544,7 +545,7 @@
                     </group>
                     
                     <notebook>
-                        <page string="Ma trận Chấm công" name="matrix">
+                        <page string="13 - Ma trận Chấm công" name="matrix">
                             <separator string="CÔNG THƯỜNG (Bắt đầu Thứ 2)" class="mt-4 mb-2"/>
                             <group col="5">
                                 <group string="Tuần 1" class="dl_day_group" col="2">
@@ -661,7 +662,7 @@
                                 </group>
                             </group>
                         </page>
-                        <page string="Chi tiết Lương &amp; Thưởng" name="payroll_details">
+                        <page string="14 - Chi tiết Lương và Thưởng" name="payroll_details">
                             <group>
                                 <group string="Chi tiết lương thưởng theo chế độ">
                                     <field name="tax_base_salary" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="tax_base_salary == 0"/>
@@ -710,7 +711,7 @@
                                 <field name="payroll_income_explanation" nolabel="1" colspan="2"/>
                             </group>
                         </page>
-                        <page string="Chi tiết Khấu trừ &amp; Thuế" name="deduction_pit_details">
+                        <page string="15 - Chi tiết Khấu trừ và Thuế" name="deduction_pit_details">
                             <group>
                                 <group string="Các khoản khấu trừ bảo hiểm">
                                     <field name="payroll_deduction_bhxh" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -734,7 +735,7 @@
                                 <field name="payroll_real_net_income" string="THỰC LĨNH THỰC TẾ" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-bf="1"/>
                             </group>
                         </page>
-                        <page string="Cân đối KPI &amp; Tiền mặt" name="kpi_balancing">
+                        <page string="16 - Cân đối KPI và Tiền mặt" name="kpi_balancing">
                             <group>
                                 <group string="Mục tiêu &amp; Cơ sở">
                                     <field name="payroll_internal_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương Nội Bộ (LNB)" decoration-info="1" decoration-bf="1" readonly="1" default_focus="1"/>
@@ -784,7 +785,7 @@
                                 <field name="payroll_net_salary" string="TỔNG THỰC LĨNH" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator" decoration-success="1" readonly="1"/>
                             </group>
                         </page>
-                        <page string="Tóm tắt Mã công" name="summary">
+                        <page string="17 - Tóm tắt Mã công" name="summary">
                             <separator string="TỔNG HỢP MÃ CÔNG TRONG THÁNG" class="mt-4 mb-2"/>
                             <group>
                                 <field name="attendance_type_ids" widget="many2many_tags" readonly="1"/>

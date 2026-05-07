@@ -56,7 +56,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Ghi chú" name="notes">
+                        <page string="4 - Ghi chú" name="notes">
                             <field name="note" placeholder="Thông tin bổ sung..."/>
                         </page>
                     </notebook>

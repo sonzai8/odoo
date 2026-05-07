@@ -28,7 +28,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Chi tiết các khoản thưởng">
+                        <page string="1 - Chi tiết các khoản thưởng">
                             <field name="line_ids">
                                 <list limit="20" editable="bottom">
                                     <field name="date"/>

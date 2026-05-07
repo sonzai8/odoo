@@ -510,6 +510,12 @@ class SalaryKpiLine(models.Model):
     )
     payroll_bank_transfer_amount_rounded = fields.Monetary(string='Tiền CK làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_bank_transfer_amount_rounding_error = fields.Monetary(string='Sai số CK', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+    payroll_tracking_percentage = fields.Float(
+        string='Theo Dõi %', 
+        compute='_compute_payroll_tracking_percentage', 
+        store=True,
+        help='Phần trăm tiền chuyển khoản so với lương cơ bản thuế'
+    )
     payroll_cash_amount_rounded = fields.Monetary(string='Tiền mặt làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_cash_amount_rounding_error = fields.Monetary(string='Sai số Tiền mặt', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     total_normal_weekday_days = fields.Integer(string='Tổng công thường T2-T7', compute='_compute_payroll_internal', store=True)
@@ -1434,6 +1440,21 @@ class SalaryKpiLine(models.Model):
             }
         }
 
+    def action_open_lnb_wizard(self):
+        """Mở Wizard Sửa nhanh Lương Nội Bộ (LNB)."""
+        self.ensure_one()
+        return {
+            'name': f'Sửa nhanh LNB - {self.employee_name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.lnb.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_line_id': self.id,
+                'default_new_lnb': self.payroll_internal_salary,
+            }
+        }
+
     # @api.constrains('payroll_bank_transfer_amount', 'payroll_internal_salary')
     # def _check_bank_transfer_limit(self):
     #     for rec in self:
@@ -1448,3 +1469,16 @@ class SalaryKpiLine(models.Model):
     #                 "Lý do: Thực lĩnh ngoài(TLN) hoặc KPI (Mk) quá cao. \n"
     #                 "Giải pháp: Hãy dùng nút 'Sửa nhanh' để giảm bớt ngày công hoặc giảm điểm KPI."
     #             ) % (rec.employee_name, fmt(rec.payroll_bank_transfer_amount), fmt(rec.payroll_internal_salary), fmt(diff)))
+
+    @api.depends('payroll_bank_transfer_amount', 'dl_tax_base_salary')
+    def _compute_payroll_tracking_percentage(self):
+        for rec in self:
+            if rec.payroll_bank_transfer_amount:
+                # Công thức yêu cầu: (Lương CB Thuế / Tiền CK) * 100
+                # Vì Odoo dùng widget="percentage" (tự nhân 100 khi hiển thị), 
+                # nên giá trị lưu trữ trong database phải là số thập phân (A/B).
+                # Ví dụ: 0.5 sẽ hiển thị là 50.00%
+                percentage_value = (rec.dl_tax_base_salary / rec.payroll_bank_transfer_amount) * 100
+                rec.payroll_tracking_percentage = round(percentage_value / 100.0, 4)
+            else:
+                rec.payroll_tracking_percentage = 0.0
