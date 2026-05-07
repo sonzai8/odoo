@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_wood_customer_import_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.customer.import.wizard.form</field>
+        <field name="model">dl.wood.customer.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập/Xuất Khách Hàng">
+                <sheet>
+                    <group>
+                        <label for="file_data" string="1. Xuất dữ liệu / Tải file mẫu"/>
+                        <div class="o_row">
+                            <button name="action_export_template" string="Bấm để Tải danh sách Khách hàng hiện tại" type="object" class="btn-link" icon="fa-download"/>
+                        </div>
+                        <separator string="2. Nhập dữ liệu từ file đã sửa"/>
+                        <field name="file_data" filename="file_name" string="Chọn file Excel"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Lưu ý:</strong> 
+                        <ul>
+                            <li>Cột <b>ID</b> dùng để cập nhật khách hàng đã có. Nếu để trống sẽ tạo mới.</li>
+                            <li>Đảm bảo các cột <b>Tên khách hàng</b> không được để trống.</li>
+                        </ul>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_import_customers" string="Xác nhận Nhập dữ liệu" type="object" class="btn-primary" invisible="not file_data"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_customer_import_wizard" model="ir.actions.act_window">
+        <field name="name">Nhập/Xuất Khách Hàng</field>
+        <field name="res_model">dl.wood.customer.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menu Con: Nhập/Xuất Dữ Liệu -->
+    <menuitem id="menu_dl_wood_customer_import"
+              name="Nhập/Xuất Dữ Liệu"
+              parent="menu_dl_wood_customer_root"
+              action="action_dl_wood_customer_import_wizard"
+              sequence="20"/>
+</odoo>

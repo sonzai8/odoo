@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dl_wood_dossier_user,dl.wood.dossier.user,model_dl_wood_dossier,base.group_user,1,1,1,1
+access_dl_dossier_ledger_user,dl.dossier.ledger.user,model_dl_dossier_ledger,base.group_user,1,1,1,1
+access_dl_co_declaration_user,dl.co.declaration.user,model_dl_co_declaration,base.group_user,1,1,1,1
+access_dl_wood_contract_template_user,dl.wood.contract.template.user,model_dl_wood_contract_template,base.group_user,1,1,1,1
+access_dl_wood_customer_import_wizard_user,dl.wood.customer.import.wizard.user,model_dl_wood_customer_import_wizard,base.group_user,1,1,1,1

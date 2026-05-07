@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== DOSSIER VIEWS ===================== -->
+    <record id="view_dl_wood_dossier_list" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.list</field>
+        <field name="model">dl.wood.dossier</field>
+        <field name="arch" type="xml">
+            <list string="Hồ Sơ Gỗ" decoration-danger="qty_available &lt;= 0">
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="partner_id"/>
+                <field name="date_received"/>
+                <field name="initial_qty" string="Ban Đầu (m³)"/>
+                <field name="remaining_qty" string="Tồn Thực (m³)" decoration-success="remaining_qty &gt; 0"/>
+                <field name="qty_reserved" string="Đang Giữ (m³)" decoration-warning="qty_reserved &gt; 0"/>
+                <field name="qty_available" string="Khả Dụng (m³)" decoration-danger="qty_available &lt;= 0" decoration-success="qty_available &gt; 0"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_dossier_form" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.form</field>
+        <field name="model">dl.wood.dossier</field>
+        <field name="arch" type="xml">
+            <form string="Hồ Sơ Gỗ">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Mã Hồ Sơ..."/></h1>
+                    </div>
+                    <group>
+                        <group string="Thông Tin Chính">
+                            <field name="product_id"/>
+                            <field name="partner_id"/>
+                            <field name="date_received"/>
+                            <field name="initial_qty" string="KL Ban Đầu (m³)"/>
+                        </group>
+                        <group string="Tồn Kho (Tự động tính)">
+                            <field name="remaining_qty" string="Tồn Thực Tế (m³)" readonly="1"/>
+                            <field name="qty_reserved" string="Đang Giữ Đơn (m³)" readonly="1"/>
+                            <field name="qty_available" string="Khả Dụng Bán (m³)" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lịch Sử Biến Động (Ledger)">
+                            <field name="ledger_ids" readonly="1">
+                                <list decoration-success="state=='done'" decoration-warning="state=='draft'" decoration-danger="state=='cancel'">
+                                    <field name="date"/>
+                                    <field name="sale_id"/>
+                                    <field name="actual_qty" string="Biến Động (m³)"/>
+                                    <field name="state" widget="badge"
+                                        decoration-success="state=='done'"
+                                        decoration-warning="state=='draft'"
+                                        decoration-danger="state=='cancel'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== SALE ORDER INHERIT ===================== -->
+    <record id="view_sale_order_wood_traceability" model="ir.ui.view">
+        <field name="name">sale.order.wood.traceability</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Kê Khai CO và Truy Xuất Gỗ" name="wood_traceability">
+                    <div class="mb-2">
+                        <button name="action_suggest_dossiers"
+                                string="Gợi ý hồ sơ gỗ (FIFO)"
+                                type="object"
+                                class="btn-primary"
+                                icon="fa-magic"
+                                invisible="state in ['sale', 'done', 'cancel']"
+                                title="Tự động tìm và gán hồ sơ gỗ theo nguyên tắc nhập trước – xuất trước"/>
+                    </div>
+                    <field name="co_declaration_ids"
+                           readonly="state in ['sale', 'done']">
+                        <list editable="bottom">
+                            <field name="finished_product_id"/>
+                            <field name="finished_qty" string="KL Thành Phẩm (m³)"/>
+                            <field name="dossier_id"
+                                   domain="[('qty_available', '>', 0)]"
+                                   context="{'form_view_ref': 'dl_wood_traceability.view_dl_wood_dossier_form'}"/>
+                            <field name="standard_ratio" string="Định Mức" readonly="1"/>
+                            <field name="actual_deduct_qty" string="KL Trừ Kho (m³)" readonly="1"
+                                   decoration-warning="actual_deduct_qty &gt; 0"/>
+                            <field name="co_index" string="Hệ Số CO"/>
+                            <field name="co_declare_qty" string="KL Khai Báo CO (m³)" readonly="1"/>
+                            <field name="ledger_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <!-- ===================== ACTIONS ===================== -->
+    <record id="action_dl_wood_dossier" model="ir.actions.act_window">
+        <field name="name">Hồ Sơ Gỗ</field>
+        <field name="res_model">dl.wood.dossier</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== MENUS ===================== -->
+    <menuitem id="menu_dl_wood_traceability_root"
+              name="Truy Xuất Gỗ"
+              sequence="80"/>
+    <menuitem id="menu_dl_wood_dossier"
+              name="Hồ Sơ Gỗ (Kiểm Lâm)"
+              parent="menu_dl_wood_traceability_root"
+              action="action_dl_wood_dossier"
+              sequence="10"/>
+</odoo>
