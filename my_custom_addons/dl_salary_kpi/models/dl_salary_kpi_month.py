@@ -312,6 +312,9 @@ class SalaryKpiMonth(models.Model):
 
     def _auto_load_employees(self):
         """Logic lấy toàn bộ nhân viên active (chưa nghỉ việc trước tháng này) và chấm công mặc định N (T2-T7)"""
+        if self.line_ids:
+            # Nếu đã có dữ liệu nhân viên rồi thì tuyệt đối không nạp lại để tránh làm thay đổi danh sách cố định
+            return False
         first_day = self.date_month.replace(day=1)
         domain = [
             ('active', '=', True),
@@ -321,6 +324,7 @@ class SalaryKpiMonth(models.Model):
         ]
         hr_employees = self.env['hr.employee'].search(domain)
         att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N')], limit=1)
+        att_type_nv = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'NV')], limit=1)
         
         last_day = monthrange(self.date_month.year, self.date_month.month)[1]
         
@@ -331,12 +335,20 @@ class SalaryKpiMonth(models.Model):
                 'identification_id': emp.identification_id,
                 'month_id': self.id,
             }
-            # Thiết lập chấm công mặc định N cho Thứ 2 - Thứ 7
-            if att_type_n:
-                for day in range(1, last_day + 1):
-                    d = date(self.date_month.year, self.date_month.month, day)
-                    if d.weekday() < 6:
-                        vals[f'day_{day:02d}'] = att_type_n.id
+            # Thiết lập chấm công
+            dep_date = fields.Date.to_date(emp.dl_departure_date)
+            for day in range(1, last_day + 1):
+                d = date(self.date_month.year, self.date_month.month, day)
+                
+                # Kiểm tra ngày nghỉ việc (Chỉ chấm NV vào các ngày thường T2-T7)
+                if dep_date and d >= dep_date:
+                    if att_type_nv and d.weekday() < 6:
+                        vals[f'day_{day:02d}'] = att_type_nv.id
+                    continue
+
+                # Mặc định N cho Thứ 2 - Thứ 7
+                if att_type_n and d.weekday() < 6:
+                    vals[f'day_{day:02d}'] = att_type_n.id
             lines.append(vals)
         
         if lines:
