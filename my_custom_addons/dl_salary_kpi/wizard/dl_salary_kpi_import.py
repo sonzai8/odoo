@@ -55,30 +55,33 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
 
-            if not row[1]: # Cột B là ID nhân viên
-                continue
-            
+            # Nhận diện nhân viên qua Tên và Mã số thuế
+            tax_id_excel = str(row[1]).strip() if row[1] else ""
+            # Xử lý trường hợp Excel tự động thêm .0 cho số
+            if tax_id_excel.endswith('.0'):
+                tax_id_excel = tax_id_excel[:-2]
+                
             emp_name_excel = str(row[2]).strip() if row[2] else ""
-            try:
-                emp_id = int(row[1])
-            except (ValueError, TypeError):
-                errors.append(f"Dòng {row_idx}: ID nhân viên '{row[1]}' không hợp lệ (phải là số).")
-                continue
             
-            # Tìm line tương ứng trong tháng
-            line = self.month_id.line_ids.filtered(lambda l: l.employee_id.id == emp_id)
+            if not emp_name_excel:
+                continue
+
+            # Tìm line tương ứng trong tháng dựa trên Tên và MST
+            line = self.month_id.line_ids.filtered(
+                lambda l: (l.employee_id.name or '').strip() == emp_name_excel and 
+                          (l.employee_id.dl_tax_id or '').strip() == tax_id_excel
+            )
+            
             if not line:
-                errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên ID {emp_id} trong bảng công tháng này.")
+                errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên '{emp_name_excel}' có MST '{tax_id_excel}' trong bảng công tháng này.")
                 continue
             
-            emp_name_sys = line.employee_id.name.strip()
-            if emp_name_sys != emp_name_excel:
-                # Nếu sai tên, báo lỗi để đảm bảo không nhập nhầm dòng
-                errors.append(f"Dòng {row_idx}: {constants.COL_FULL_NAME} không khớp. Hệ thống: '{emp_name_sys}', Excel: '{emp_name_excel}'. Vui lòng kiểm tra lại ID nhân viên.")
+            if len(line) > 1:
+                errors.append(f"Dòng {row_idx}: Tìm thấy {len(line)} nhân viên trùng Tên và MST ({emp_name_excel} - {tax_id_excel}). Vui lòng kiểm tra lại dữ liệu.")
                 continue
 
             # Kiểm tra ngày nghỉ việc
-            departure_date = line.employee_id.dl_departure_date
+            departure_date = fields.Date.to_date(line.employee_id.dl_departure_date)
             month_date = self.month_id.date_month
             year, month = month_date.year, month_date.month
 
@@ -93,19 +96,32 @@ class SalaryKpiImportWizard(models.TransientModel):
                 row_codes[day] = current_att.code if current_att else False
 
             # Ghi đè bằng dữ liệu từ Excel
-            # Công thường: Cột 10 (index 9). Làm thêm: Cột 46 (index 45)
-            col_offset = 9 if self.wizard_type == 'normal' else 45
+            # Công thường: Cột 8 (index 7). Làm thêm: Cột 44 (index 43)
+            col_offset = 7 if self.wizard_type == 'normal' else 43
             for day in range(1, 32):
                 field_name = f'day_{day:02d}' if self.wizard_type == 'normal' else f'ot_day_{day:02d}'
                 
                 # Check departure date
                 try:
                     d = date(year, month, day)
-                    # Kiểm tra ngày nghỉ việc
-                    if departure_date and d > departure_date:
-                        vals[field_name] = False
-                        row_codes[day] = False
+                    # Kiểm tra ngày nghỉ việc: Nếu ngày đang xét >= ngày nghỉ việc
+                    if departure_date and d >= departure_date:
+                        if self.wizard_type == 'normal':
+                            # Ép buộc dùng mã NV cho công thường cho TẤT CẢ các ngày từ khi nghỉ (trừ Chủ Nhật)
+                            if d.weekday() < 6:
+                                att_nv_id = att_type_map.get('NV')
+                                vals[field_name] = att_nv_id
+                                row_codes[day] = 'NV'
+                            else:
+                                vals[field_name] = False
+                                row_codes[day] = False
+                        else:
+                            # Đối với công làm thêm, sau khi nghỉ việc thì không có công LT
+                            vals[field_name] = False
+                            row_codes[day] = False
+                        
                         has_departure_skip = True
+                        # Quan trọng: continue ngay tại đây để không đọc dữ liệu từ Excel cho ngày này
                         continue
                     
                     # Quy tắc: Chấm công làm thêm chỉ cho phép vào ngày Chủ Nhật (bỏ qua check này khi import theo yêu cầu mới: cho phép import toàn bộ)
@@ -154,7 +170,7 @@ class SalaryKpiImportWizard(models.TransientModel):
                     cur = row_codes.get(i)
                     nxt = row_codes.get(i+1)
                     if cur == 'Đ' and nxt == 'N':
-                        errors.append(f"Dòng {row_idx} ({emp_name}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
+                        errors.append(f"Dòng {row_idx} ({emp_name_excel}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
 
             if vals and not errors:
                 import_data.append((line, vals))
@@ -237,5 +253,18 @@ class SalaryKpiImportWizard(models.TransientModel):
                 'title': _('Thành công'),
                 'message': _('Đã cập nhật Lương nội bộ cho %s nhân viên.') % len(import_data),
                 'type': 'success',
+            }
+        }
+
+    def action_import_internal_placeholder(self):
+        """Placeholder cho chức năng import công từ file nội bộ"""
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Đang Phát Triển',
+                'message': 'Đây là chức năng sẽ phát triển thêm. Nhập công từ file chấm công nội bộ. Không cần phải tốn thêm 1 bước chuẩn hoá công từ nội bộ ra công bên ngoài nữa.',
+                'type': 'warning',
+                'sticky': True,
             }
         }
