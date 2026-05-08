@@ -689,21 +689,31 @@ class SalaryKpiMonth(models.Model):
         new_cr = self.pool.cursor()
         self = self.with_env(self.env(cr=new_cr))
         try:
+            attachment = self.env['ir.attachment'].browse(attachment_id)
             if report_type == 'salary':
                 # Logic tạo file lương
-                attachment = self.env['ir.attachment'].browse(attachment_id)
-                # Tạm thời gán logic tạo file (giống action_export_salary_report nhưng không trả về action)
-                result = self._get_salary_report_data() # Hàm helper mới
+                result = self._get_salary_report_data()
                 attachment.write({'datas': result['datas']})
             elif report_type == 'kpi':
                 # Logic tạo file KPI
-                attachment = self.env['ir.attachment'].browse(attachment_id)
                 file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
                 attachment.write({'datas': file_data})
             
+            # Đánh dấu thành công
+            attachment.write({'description': 'SUCCESS'})
             new_cr.commit()
+            _logger.info("=== THREAD XUẤT FILE [%s] THÀNH CÔNG ===", report_type)
         except Exception as e:
             _logger.error("Lỗi khi tạo file Excel trong background: %s", str(e))
+            try:
+                attachment = self.env['ir.attachment'].browse(attachment_id)
+                attachment.write({
+                    'description': f"ERROR: {str(e)}",
+                    'datas': False
+                })
+                new_cr.commit()
+            except:
+                pass
             new_cr.rollback()
         finally:
             new_cr.close()
