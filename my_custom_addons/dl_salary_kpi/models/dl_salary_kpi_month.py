@@ -768,8 +768,8 @@ class SalaryKpiMonth(models.Model):
         # Định nghĩa style đỏ đậm với font Times New Roman, cỡ 16
         red_bold_font = Font(name='Times New Roman', size=16, color='FF0000', bold=True)
         
-        # Sắp xếp lines theo phòng ban trước khi nhóm
-        sorted_lines = self.line_ids.sorted(key=lambda l: (l.employee_id.dl_tax_department_id.name or '', l.employee_id.name or ''))
+        # Sắp xếp lines theo thứ tự phòng ban (sequence) trước khi nhóm
+        sorted_lines = self.line_ids.sorted(key=lambda l: (l.employee_id.dl_tax_department_id.sequence or 10, l.employee_id.dl_tax_department_id.name or '', l.employee_id.name or ''))
         
         current_row = 9
         summary_rows = [] # Lưu vị trí các dòng tổng của từng phòng ban

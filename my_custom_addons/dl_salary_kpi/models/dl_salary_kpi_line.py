@@ -1013,35 +1013,28 @@ class SalaryKpiLine(models.Model):
                         c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
                         c_d = math.ceil(max(0, diff) / v_d_full) if v_d_full > 0 else 0
                         
-                        if diff > 0:
-                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Thực lĩnh nội bộ. Cần giảm ít nhất:</div>"
-                        else:
-                            header = f"<div style='color: #f0ad4e; font-weight: bold;'>⚠️ Thực lĩnh ngoài sát Thực lĩnh nội bộ. Nên giảm bớt:</div>"
+                        if diff > -buffer:
+                            # Trường hợp Lương ngoài (TLN) >= Lương nội bộ (Ln)
+                            # Cần GIẢM công để Ln > TLN một khoảng đủ 52 điểm KPI
+                            # Target Gap = 0.04 * TLN => Target TLN = (Ln - Bonus) / 1.04
+                            target_tln = (rec.payroll_internal_salary - annual_bonus) / 1.04
+                            amount_to_reduce = max(0, net_salary_base - target_tln)
+                            
+                            c_05n_red = math.ceil(amount_to_reduce / v_05n) if v_05n > 0 else 0
+                            c_n_red = math.ceil(amount_to_reduce / v_n_full) if v_n_full > 0 else 0
+                            
+                            if diff > 0:
+                                header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Ln. Cần giảm công để đạt KPI (52đ):</div>"
+                            else:
+                                header = f"<div style='color: #f0ad4e; font-weight: bold;'>⚠️ Thực lĩnh ngoài sát Ln. Nên giảm công để đạt KPI (52đ):</div>"
 
-                        anomaly_suggestion = (
-                            header +
-                            f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                            f"<li>Giảm <b>{max(1, c_05n)}</b> lần <b>0.5N</b></li>"
-                            f"<li>Hoặc <b>{max(1, c_05d)}</b> lần <b>0.5Đ</b></li>"
-                            f"<li>Hoặc <b>{max(1, c_n)}</b> ngày <b>N</b></li>"
-                            f"</ul>"
-                        )
-                    elif rec.payroll_internal_salary >= (net_salary_base * 1.4):
-                        # Thực lĩnh nội bộ (Ln) quá cao, chênh lệch lớn, cần THÊM công
-                        gap = -diff
-                        c_05n = math.ceil(gap / v_05n) if v_05n > 0 else 0
-                        c_05d = math.ceil(gap / v_05d) if v_05d > 0 else 0
-                        c_n = math.ceil(gap / v_n_full) if v_n_full > 0 else 0
-                        
-                        header = f"<div style='color: #5cb85c; font-weight: bold;'>🟢 Chênh lệch quá lớn. Có thể thêm tối đa:</div>"
-                        anomaly_suggestion = (
-                            header +
-                            f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                            f"<li>Thêm <b>{max(1, c_05n)}</b> lần <b>0.5N</b></li>"
-                            f"<li>Hoặc <b>{max(1, c_05d)}</b> lần <b>0.5Đ</b></li>"
-                            f"<li>Hoặc <b>{max(1, c_n)}</b> ngày <b>N</b></li>"
-                            f"</ul>"
-                        )
+                            anomaly_suggestion = (
+                                header +
+                                f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                                f"<li>Giảm <b>{max(1, c_05n_red)}</b> lần <b>0.5N</b></li>"
+                                f"<li>Hoặc <b>{max(1, c_n_red)}</b> ngày <b>N</b></li>"
+                                f"</ul>"
+                            )
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({
