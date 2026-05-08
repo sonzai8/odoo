@@ -7,6 +7,7 @@ from openpyxl.styles import Font, Alignment, Border, Side, Protection, PatternFi
 from .. import constants
 from datetime import date
 import calendar
+from ..tools import no_accent_vietnamese
 
 class AttendanceExportController(http.Controller):
 
@@ -23,9 +24,6 @@ class AttendanceExportController(http.Controller):
         ws.title = "Bang Cham Cong"
         ws.freeze_panes = 'D4'
 
-        company_name = request.env.company.name or "Duc Lam"
-        title = f"FILE CHẤM CÔNG THÁNG {month.date_month.strftime('%m')} NĂM {month.date_month.strftime('%Y')} CÔNG TY {company_name}".upper()
-        
         title_font = Font(size=16, bold=True)
         header_font = Font(bold=True)
         border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
@@ -39,7 +37,23 @@ class AttendanceExportController(http.Controller):
         fill_departed = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
         no_fill = PatternFill(fill_type=None)
 
-        ws.row_dimensions[1].height = 30
+        ws.row_dimensions[1].height = 40
+        
+        # 1. Tiêu đề chính (A1:C1)
+        ws.merge_cells('A1:C1')
+        title_main = f"Chấm Công Thường Tháng {month.date_month.strftime('%m/%Y')}"
+        cell_title = ws['A1']
+        cell_title.value = title_main
+        cell_title.font = Font(size=14, bold=True)
+        cell_title.alignment = alignment
+        
+        # 2. Tên công ty (F1:AL1)
+        ws.merge_cells('F1:AL1')
+        cell_company = ws['F1']
+        cell_company.value = month.company_id.name or "CÔNG TY ĐỨC LÂM"
+        cell_company.font = Font(size=14, bold=True)
+        cell_company.alignment = alignment
+
         ws.column_dimensions['A'].width = 6
         ws.column_dimensions['B'].width = 15
         ws.column_dimensions['C'].width = 25
@@ -172,7 +186,9 @@ class AttendanceExportController(http.Controller):
         ws.auto_filter.ref = f"A3:AQ{last_data_row}"
         wb.save(output)
         output.seek(0)
-        filename = f"Bang_Cham_Cong_{month.date_month.strftime('%m_%Y')}.xlsx"
+        company_name = no_accent_vietnamese(month.company_id.name or "Duc_Lam")
+        export_date = date.today().strftime('%d_%m_%Y')
+        filename = f"Bang_Cham_Cong_{month.date_month.strftime('%m_%Y')}_{company_name}_{export_date}.xlsx"
         return request.make_response(output.getvalue(), headers=[('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), ('Content-Disposition', f'attachment; filename={filename}')])
 
     @http.route('/dl_salary_kpi/export_ot_attendance/<int:month_id>', type='http', auth='user')
@@ -201,7 +217,23 @@ class AttendanceExportController(http.Controller):
         fill_departed = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
         no_fill = PatternFill(fill_type=None)
 
-        ws.row_dimensions[1].height = 30
+        ws.row_dimensions[1].height = 40
+        
+        # 1. Tiêu đề chính (A1:C1)
+        ws.merge_cells('A1:C1')
+        title_main = f"Chấm Công Làm Thêm Tháng {month.date_month.strftime('%m/%Y')}"
+        cell_title = ws['A1']
+        cell_title.value = title_main
+        cell_title.font = Font(size=14, bold=True)
+        cell_title.alignment = alignment
+        
+        # 2. Tên công ty (F1:AL1)
+        ws.merge_cells('F1:AL1')
+        cell_company = ws['F1']
+        cell_company.value = month.company_id.name or "CÔNG TY ĐỨC LÂM"
+        cell_company.font = Font(size=14, bold=True)
+        cell_company.alignment = alignment
+
         ws.column_dimensions['A'].width = 6
         ws.column_dimensions['B'].width = 15
         ws.column_dimensions['C'].width = 25
@@ -394,5 +426,7 @@ class AttendanceExportController(http.Controller):
 
         wb.save(output)
         output.seek(0)
-        filename = f"Cong_Lam_Them_{month.date_month.strftime('%m_%Y')}.xlsx"
+        company_name = no_accent_vietnamese(month.company_id.name or "Duc_Lam")
+        export_date = date.today().strftime('%d_%m_%Y')
+        filename = f"Cong_Lam_Them_{month.date_month.strftime('%m_%Y')}_{company_name}_{export_date}.xlsx"
         return request.make_response(output.getvalue(), headers=[('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), ('Content-Disposition', f'attachment; filename={filename}')])

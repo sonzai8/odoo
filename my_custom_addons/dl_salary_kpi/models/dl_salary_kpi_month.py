@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from ..tools import no_accent_vietnamese
 from datetime import date
 from calendar import monthrange
 import base64
@@ -37,7 +38,7 @@ class SalaryKpiMonth(models.Model):
     _description = 'Cân đối bảng công tháng'
     _order = 'date_month desc'
 
-    name = fields.Char(string='Tên bản ghi', compute='_compute_name', store=True)
+    name = fields.Char(string='Tên bản ghi', store=True)
     date_month = fields.Date(string='Tháng/Năm', required=True, default=fields.Date.today)
     
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
@@ -173,13 +174,10 @@ class SalaryKpiMonth(models.Model):
             else:
                 rec.bonus_line_ids = False
 
-    @api.depends('date_month')
-    def _compute_name(self):
-        for rec in self:
-            if rec.date_month:
-                rec.name = f"Bảng công tháng {rec.date_month.strftime('%m/%Y')}"
-            else:
-                rec.name = "Mới"
+    @api.onchange('date_month')
+    def _onchange_date_month(self):
+        if self.date_month and self.state == 'draft':
+            self.name = f"Bảng công tháng {self.date_month.strftime('%m/%Y')}"
 
     # Các trường báo cáo nhanh
     total_employees = fields.Integer(string="Tổng nhân viên", compute="_compute_quick_stats")
@@ -623,7 +621,7 @@ class SalaryKpiMonth(models.Model):
         file_data = base64.b64encode(output.getvalue())
         output.close()
 
-        filename = f"MAU_NHAP_LUONG_NOI_BO_{self.date_month.strftime('%m_%Y')}.xlsx"
+        filename = no_accent_vietnamese(f"MAU_NHAP_LUONG_NOI_BO_{self.date_month.strftime('%m_%Y')}") + ".xlsx"
         attachment = self.env['ir.attachment'].create({
             'name': filename,
             'type': 'binary',
@@ -822,7 +820,9 @@ class SalaryKpiMonth(models.Model):
         file_data = base64.b64encode(output.getvalue())
         output.close()
         
-        filename = f"BC_LUONG_KPI_{month_date.strftime('%m_%Y')}.xlsx"
+        company_name = no_accent_vietnamese(self.company_id.name or "Duc_Lam").upper()
+        export_date = date.today().strftime('%d_%m_%Y')
+        filename = f"BC_LUONG_KPI_{month_date.strftime('%m_%Y')}_{company_name}_{export_date}.xlsx".upper()
         return {'datas': file_data, 'filename': filename}
 
     def action_export_salary_report(self):
@@ -864,10 +864,12 @@ class SalaryKpiMonth(models.Model):
         """
         self.ensure_one()
         month_str = self.date_month.strftime('%m_%Y')
+        company_name = no_accent_vietnamese(self.company_id.name or "Duc_Lam").upper()
+        export_date = date.today().strftime('%d_%m_%Y')
         
         # 1. Tạo sẵn 2 bản ghi Attachment rỗng
         salary_attachment = self.env['ir.attachment'].create({
-            'name': f"BC_LUONG_KPI_{month_str}.xlsx",
+            'name': f"BC_LUONG_KPI_{month_str}_{company_name}_{export_date}.xlsx".upper(),
             'type': 'binary',
             'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'res_model': 'dl.salary.kpi.month',
@@ -876,7 +878,7 @@ class SalaryKpiMonth(models.Model):
         })
         
         kpi_attachment = self.env['ir.attachment'].create({
-            'name': f"BC_KPI_DIEM_TIEN_{month_str}.xlsx",
+            'name': f"BC_KPI_DIEM_TIEN_{month_str}_{company_name}_{export_date}.xlsx".upper(),
             'type': 'binary',
             'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'res_model': 'dl.salary.kpi.month',

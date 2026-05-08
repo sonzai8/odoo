@@ -16,6 +16,14 @@
                         <separator string="2. Nhập dữ liệu từ file đã sửa"/>
                         <field name="file_data" filename="file_name" string="Chọn file Excel"/>
                         <field name="file_name" invisible="1"/>
+
+                        
+                        <separator string="3. Nhập dữ liệu từ file chấm công nội bộ"/>
+                        <label for="action_import_internal_placeholder" string="Chọn file công nội bộ"/>
+                        <div>
+                            <button name="action_import_internal_placeholder" string="Tải lên tập tin của bạn" type="object" class="btn-secondary" icon="fa-upload"/>
+                        </div>
+                        
                     </group>
                 </sheet>
                 <footer>

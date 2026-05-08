@@ -255,3 +255,16 @@ class SalaryKpiImportWizard(models.TransientModel):
                 'type': 'success',
             }
         }
+
+    def action_import_internal_placeholder(self):
+        """Placeholder cho chức năng import công từ file nội bộ"""
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Đang Phát Triển',
+                'message': 'Đây là chức năng sẽ phát triển thêm. Nhập công từ file chấm công nội bộ. Không cần phải tốn thêm 1 bước chuẩn hoá công từ nội bộ ra công bên ngoài nữa.',
+                'type': 'warning',
+                'sticky': True,
+            }
+        }

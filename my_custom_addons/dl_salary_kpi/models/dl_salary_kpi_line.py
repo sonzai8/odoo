@@ -658,7 +658,7 @@ class SalaryKpiLine(models.Model):
             'payroll_annual_bonus': 0, 'payroll_revenue_bonus': 0, 'payroll_productivity_bonus': 0,
             'payroll_total_bonus': 0, 'payroll_total_regime_income': 0,
             # Lương chi tiết
-            'payroll_wage_day': 0, 'payroll_wage_leave': 0, 'payroll_wage_day_150': 0, 'payroll_wage_night_130': 0,
+            'payroll_wage_day': 0, 'payroll_wage_day_150': 0, 'payroll_wage_night_130': 0,
             'payroll_wage_night_200': 0, 'payroll_wage_night_210': 0, 'payroll_wage_night_sun_270': 0,
             'payroll_wage_day_sun_200': 0, 'payroll_wage_day_holiday_300': 0, 'payroll_wage_night_holiday_390': 0,
             'payroll_total_wage': 0,

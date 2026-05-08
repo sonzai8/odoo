@@ -42,7 +42,7 @@
                         <button name="action_open_export_wizard" string="Xuất báo cáo" type="object" class="oe_stat_button" icon="fa-file-excel-o" invisible="state == 'lock_ot'"/>
                     </div>
                     <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                        <h1><field name="name" placeholder="Ví dụ: Bảng lương tháng 03..." readonly="state != 'draft'"/></h1>
                     </div>
                     <group>
                         <group>
