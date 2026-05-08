@@ -107,3 +107,7 @@ class DlWoodCustomerImportWizard(models.TransientModel):
                 'sticky': False,
             }
         }
+
+    def action_misa_import_placeholder(self):
+        """Placeholder cho chức năng nhập từ Misa"""
+        raise UserError(_("Chức năng này chưa hoạt động."))

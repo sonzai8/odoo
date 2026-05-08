@@ -14,6 +14,10 @@
                         <separator string="2. Nhập dữ liệu từ file đã sửa"/>
                         <field name="file_data" filename="file_name" string="Chọn file Excel"/>
                         <field name="file_name" invisible="1"/>
+                        <separator string="3. Nhập Danh sách khách hàng từ Misa"/>
+                        <div class="o_row">
+                            <button name="action_misa_import_placeholder" string="Bấm để Tải file của bạn lên" type="object" class="btn-link" icon="fa-upload"/>
+                        </div>
                     </group>
                     <div class="alert alert-info" role="alert">
                         <strong>Lưu ý:</strong> 

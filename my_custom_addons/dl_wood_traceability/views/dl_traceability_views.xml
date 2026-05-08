@@ -107,7 +107,7 @@
 
     <!-- ===================== MENUS ===================== -->
     <menuitem id="menu_dl_wood_traceability_root"
-              name="Truy Xuất Gỗ"
+              name="Trừ Lùi Nguyên Liệu"
               sequence="80"/>
     <menuitem id="menu_dl_wood_dossier"
               name="Hồ Sơ Gỗ (Kiểm Lâm)"

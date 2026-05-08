@@ -5,6 +5,11 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <!-- Thêm Mã khách hàng vào Form -->
+            <xpath expr="//field[@name='vat']" position="before">
+                <field name="x_customer_code" placeholder="Mã khách hàng phải đồng bộ với phần mềm Misa"/>
+            </xpath>
+            
             <notebook position="inside">
                 <page string="Hợp đồng mẫu" name="contract_templates">
                     <field name="dl_contract_ids">
@@ -26,6 +31,19 @@
                     </field>
                 </page>
             </notebook>
+        </field>
+    </record>
+
+    <!-- Kế thừa Danh sách (Tree/List) để hiển thị thêm thông tin -->
+    <record id="view_partner_tree_wood_traceability" model="ir.ui.view">
+        <field name="name">res.partner.list.wood.traceability</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='complete_name']" position="after">
+                <field name="x_customer_code" string="Mã khách hàng"/>
+                <field name="vat" string="Mã số thuế" optional="show"/>
+            </xpath>
         </field>
     </record>
 
