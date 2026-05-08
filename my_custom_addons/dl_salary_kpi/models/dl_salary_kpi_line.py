@@ -1006,36 +1006,31 @@ class SalaryKpiLine(models.Model):
                     # Giá trị Đ gộp = Lương Đ quy đổi (8h) + Ăn ca + Phụ nữ + Lương 0.5Đ đi kèm
                     v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
                     
-                    if diff > -buffer:
-                        # Thực lĩnh ngoài(TLN) quá cao, cần GIẢM công
+                    mk = (rec.payroll_internal_salary - annual_bonus) - net_salary_base
+                    if diff > -buffer or mk < -1:
+                        # Thực lĩnh ngoài(TLN) cao hoặc KPI âm, cần GIẢM công
                         c_05n = math.ceil(max(0, diff) / v_05n) if v_05n > 0 else 0
-                        c_05d = math.ceil(max(0, diff) / v_05d) if v_05d > 0 else 0
-                        c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
-                        c_d = math.ceil(max(0, diff) / v_d_full) if v_d_full > 0 else 0
+                        # Trường hợp Tiền KPI âm (mk < 0) hoặc Lương ngoài vượt Ln
+                        # Cần GIẢM công để Ln > TLN + Thưởng một khoảng đủ 52 điểm KPI
+                        # Target Gap = 0.04 * TLN => Target TLN = (Ln - Bonus) / 1.04
+                        target_tln = (rec.payroll_internal_salary - annual_bonus) / 1.04
+                        amount_to_reduce = max(0, net_salary_base - target_tln)
                         
-                        mk = (rec.payroll_internal_salary - annual_bonus) - net_salary_base
-                        if mk < -1 or diff > 0:
-                            # Trường hợp Tiền KPI âm (mk < 0) hoặc Lương ngoài vượt Ln
-                            # Cần GIẢM công để Ln > TLN + Thưởng một khoảng đủ 52 điểm KPI
-                            # Target Gap = 0.04 * TLN => Target TLN = (Ln - Bonus) / 1.04
-                            target_tln = (rec.payroll_internal_salary - annual_bonus) / 1.04
-                            amount_to_reduce = max(0, net_salary_base - target_tln)
-                            
-                            c_05n_red = math.ceil(amount_to_reduce / v_05n) if v_05n > 0 else 0
-                            c_n_red = math.ceil(amount_to_reduce / v_n_full) if v_n_full > 0 else 0
-                            
-                            if diff > 0:
-                                header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Ln. Cần giảm công để đạt KPI (52đ):</div>"
-                            else:
-                                header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần giảm công để đạt KPI (52đ):</div>"
+                        c_05n_red = math.ceil(amount_to_reduce / v_05n) if v_05n > 0 else 0
+                        c_n_red = math.ceil(amount_to_reduce / v_n_full) if v_n_full > 0 else 0
+                        
+                        if diff > 0:
+                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Ln. Cần giảm công để đạt KPI (52đ):</div>"
+                        else:
+                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần giảm công để đạt KPI (52đ):</div>"
 
-                            anomaly_suggestion = (
-                                header +
-                                f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                                f"<li>Giảm <b>{max(1, c_05n_red)}</b> lần <b>0.5N</b></li>"
-                                f"<li>Hoặc <b>{max(1, c_n_red)}</b> ngày <b>N</b></li>"
-                                f"</ul>"
-                            )
+                        anomaly_suggestion = (
+                            header +
+                            f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                            f"<li>Giảm <b>{max(1, c_05n_red)}</b> lần <b>0.5N</b></li>"
+                            f"<li>Hoặc <b>{max(1, c_n_red)}</b> ngày <b>N</b></li>"
+                            f"</ul>"
+                        )
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({

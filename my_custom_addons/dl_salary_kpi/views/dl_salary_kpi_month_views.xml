@@ -456,7 +456,8 @@
                                     <field name="dl_tax_base_salary" string="Lương CB" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="total_normal_weekday_days" string="Tổng công T2-T7" width="100px"/>
                                     <field name="payroll_net_salary_base" string="Thực lĩnh ngoài(TLN)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_net_salary_base &lt; 0" decoration-bf="1"/>
-                                    <field name="payroll_internal_salary" string="L&#432;&#417;ng n&#7897;i b&#7897;" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_internal_salary" string="Lương nội bộ" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="payroll_kpi_amount" string="Tiền KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_kpi_amount &lt; 0" decoration-bf="1"/>
                                     <field name="payroll_anomaly_suggestion" string="Gợi ý xử lý" widget="html"/>
                                     <button name="action_open_quick_fix" string="Sửa công" type="object" icon="fa-wrench" title="Mở popup sửa công" class="btn-link"/>
                                     <field name="currency_id" column_invisible="1"/>
