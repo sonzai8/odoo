@@ -170,7 +170,7 @@ class SalaryKpiImportWizard(models.TransientModel):
                     cur = row_codes.get(i)
                     nxt = row_codes.get(i+1)
                     if cur == 'Đ' and nxt == 'N':
-                        errors.append(f"Dòng {row_idx} ({emp_name}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
+                        errors.append(f"Dòng {row_idx} ({emp_name_excel}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
 
             if vals and not errors:
                 import_data.append((line, vals))
