@@ -15,15 +15,29 @@ class SalaryKpiExportWizard(models.TransientModel):
         self.ensure_one()
         att = self.salary_attachment_id
         if not att or not att.datas:
-            if att and att.description and att.description.startswith('ERROR:'):
-                raise UserError(_("Lỗi khi tạo báo cáo Lương: %s") % att.description.replace('ERROR: ', ''))
+            if att and att.description:
+                if att.description.startswith('ERROR:'):
+                    raise UserError(_("Lỗi khi tạo báo cáo Lương: %s") % att.description.replace('ERROR: ', ''))
+                
+                if att.description.startswith('PROGRESS:'):
+                    progress_info = att.description.replace('PROGRESS:', '')
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': _('Đang tạo báo cáo...'),
+                            'message': _('Tiến độ: Đã xử lý %s nhân viên. Vui lòng nhấn lại sau vài giây.') % progress_info,
+                            'sticky': False,
+                            'type': 'info',
+                        }
+                    }
             
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': _('Chờ chút...'),
-                    'message': _('Báo cáo lương đang được xử lý ngầm, vui lòng nhấn lại sau 10-20 giây.'),
+                    'message': _('Hệ thống đang bắt đầu chuẩn bị dữ liệu, vui lòng nhấn lại sau 10 giây.'),
                     'sticky': False,
                     'type': 'warning',
                 }

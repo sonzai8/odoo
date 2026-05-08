@@ -695,8 +695,8 @@ class SalaryKpiMonth(models.Model):
         try:
             attachment = self.env['ir.attachment'].browse(attachment_id)
             if report_type == 'salary':
-                # Logic tạo file lương
-                result = self._get_salary_report_data()
+                # Logic tạo file lương kèm cập nhật tiến trình
+                result = self._get_salary_report_data(attachment=attachment)
                 attachment.write({'datas': result['datas']})
             elif report_type == 'kpi':
                 # Logic tạo file KPI
@@ -722,7 +722,7 @@ class SalaryKpiMonth(models.Model):
         finally:
             new_cr.close()
 
-    def _get_salary_report_data(self):
+    def _get_salary_report_data(self, attachment=None):
         """Hàm nội bộ tách logic tạo dữ liệu Excel Lương để dùng cho cả Thread và Sync."""
         def int_to_roman(num):
             val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
@@ -775,6 +775,7 @@ class SalaryKpiMonth(models.Model):
         summary_rows = [] # Lưu vị trí các dòng tổng của từng phòng ban
         global_stt = 1
         dept_idx = 1
+        total_count = len(sorted_lines)
         
         # Nhóm theo phòng ban
         for dept, group_iter in itertools.groupby(sorted_lines, key=lambda l: l.employee_id.dl_tax_department_id):
@@ -882,6 +883,11 @@ class SalaryKpiMonth(models.Model):
                             total_bonus += bonus.amount
                 self._safe_write(ws, current_row, 133, total_bonus)
                 
+                # Cập nhật tiến trình sau mỗi 50 nhân viên
+                if attachment and global_stt % 50 == 0:
+                    attachment.write({'description': f"PROGRESS:{global_stt}/{total_count}"})
+                    self.env.cr.commit()
+
                 current_row += 1
                 global_stt += 1
             
