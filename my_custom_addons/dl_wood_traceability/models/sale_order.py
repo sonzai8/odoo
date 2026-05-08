@@ -12,7 +12,8 @@ from odoo.exceptions import UserError
 
 
 class SaleOrderWoodTraceability(models.Model):
-    _inherit = 'sale.order'
+    _name = 'sale.order'
+    _inherit = ['sale.order', 'dl.wood.log.mixin']
 
     co_declaration_ids = fields.One2many(
         'dl.co.declaration', 'sale_id', string='Bảng Kê Khai CO',

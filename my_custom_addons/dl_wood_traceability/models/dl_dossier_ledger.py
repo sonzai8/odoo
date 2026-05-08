@@ -15,6 +15,7 @@ from odoo import models, fields
 
 class DlDossierLedger(models.Model):
     _name = 'dl.dossier.ledger'
+    _inherit = ['dl.wood.log.mixin']
     _description = 'Sổ Cái Trừ Lùi Hồ Sơ Gỗ (Backend)'
     _order = 'date desc, id desc'
 

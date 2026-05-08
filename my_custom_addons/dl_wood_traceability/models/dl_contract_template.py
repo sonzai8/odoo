@@ -6,6 +6,7 @@ from odoo.modules import get_module_path
 
 class DlWoodContractTemplate(models.Model):
     _name = 'dl.wood.contract.template'
+    _inherit = ['dl.wood.log.mixin']
     _description = 'Mẫu hợp đồng khách hàng'
 
     name = fields.Char(string='Tên mẫu hợp đồng', required=True)

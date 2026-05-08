@@ -4,3 +4,6 @@ access_dl_dossier_ledger_user,dl.dossier.ledger.user,model_dl_dossier_ledger,bas
 access_dl_co_declaration_user,dl.co.declaration.user,model_dl_co_declaration,base.group_user,1,1,1,1
 access_dl_wood_contract_template_user,dl.wood.contract.template.user,model_dl_wood_contract_template,base.group_user,1,1,1,1
 access_dl_wood_customer_import_wizard_user,dl.wood.customer.import.wizard.user,model_dl_wood_customer_import_wizard,base.group_user,1,1,1,1
+access_dl_wood_log_user,dl.wood.log.user,model_dl_wood_log,base.group_user,1,0,0,0
+access_dl_wood_log_line_user,dl.wood.log.line.user,model_dl_wood_log_line,base.group_user,1,0,0,0
+access_dl_wood_log_config_admin,dl.wood.log.config.admin,model_dl_wood_log_config,base.group_system,1,1,1,1

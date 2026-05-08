@@ -10,6 +10,7 @@
         'security/ir.model.access.csv',
         'views/dl_traceability_views.xml',
         'views/res_partner_views.xml',
+        'views/dl_wood_log_views.xml',
         'wizard/dl_customer_import_wizard_views.xml',
     ],
     'installable': True,

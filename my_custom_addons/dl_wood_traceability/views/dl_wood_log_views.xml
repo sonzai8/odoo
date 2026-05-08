@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== LOG VIEWS ===================== -->
+    <record id="view_dl_wood_log_list" model="ir.ui.view">
+        <field name="name">dl.wood.log.list</field>
+        <field name="model">dl.wood.log</field>
+        <field name="arch" type="xml">
+            <list string="Nhật ký hoạt động" create="false" edit="false">
+                <field name="datetime" string="Thời gian"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="model_name"/>
+                <field name="res_name"/>
+                <field name="action" widget="badge" 
+                       decoration-info="action == 'create'" 
+                       decoration-warning="action == 'write'" 
+                       decoration-danger="action == 'unlink'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_log_form" model="ir.ui.view">
+        <field name="name">dl.wood.log.form</field>
+        <field name="model">dl.wood.log</field>
+        <field name="arch" type="xml">
+            <form string="Chi tiết Nhật ký" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="res_name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="model_id"/>
+                            <field name="res_id"/>
+                            <field name="action" widget="badge" 
+                                   decoration-info="action == 'create'" 
+                                   decoration-warning="action == 'write'" 
+                                   decoration-danger="action == 'unlink'"/>
+                        </group>
+                        <group>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="datetime"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết thay đổi" name="lines">
+                            <field name="line_ids">
+                                <list>
+                                    <field name="field_desc"/>
+                                    <field name="old_value" decoration-muted="1"/>
+                                    <field name="new_value" decoration-bf="1" decoration-success="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_log_search" model="ir.ui.view">
+        <field name="name">dl.wood.log.search</field>
+        <field name="model">dl.wood.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="res_name" string="Bản ghi hoặc ID"/>
+                <field name="user_id"/>
+                <field name="model_id"/>
+                <filter string="Tạo mới" name="create" domain="[('action', '=', 'create')]"/>
+                <filter string="Cập nhật" name="write" domain="[('action', '=', 'write')]"/>
+                <filter string="Xóa" name="unlink" domain="[('action', '=', 'unlink')]"/>
+                <group>
+                    <filter string="Người thực hiện" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Model" name="group_model" context="{'group_by': 'model_id'}"/>
+                    <filter string="Hành động" name="group_action" context="{'group_by': 'action'}"/>
+                </group>
+                <searchpanel>
+                    <field name="model_id" icon="fa-cube" enable_counters="1"/>
+                    <field name="action" icon="fa-bolt" enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================== CONFIG VIEWS ===================== -->
+    <record id="view_dl_wood_log_config_list" model="ir.ui.view">
+        <field name="name">dl.wood.log.config.list</field>
+        <field name="model">dl.wood.log.config</field>
+        <field name="arch" type="xml">
+            <list string="Cấu hình Nhật ký">
+                <field name="model_id"/>
+                <field name="log_create" widget="boolean_toggle"/>
+                <field name="log_write" widget="boolean_toggle"/>
+                <field name="log_unlink" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_log_config_form" model="ir.ui.view">
+        <field name="name">dl.wood.log.config.form</field>
+        <field name="model">dl.wood.log.config</field>
+        <field name="arch" type="xml">
+            <form string="Cấu hình Nhật ký">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Model &amp; Trạng thái">
+                            <field name="model_id" options="{'no_create': True}"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Hành động theo dõi">
+                            <field name="log_create"/>
+                            <field name="log_write"/>
+                            <field name="log_unlink"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Trường dữ liệu theo dõi" name="fields">
+                            <field name="field_ids" widget="many2many_tags" 
+                                   placeholder="Chọn các trường quan trọng..."
+                                   options="{'no_create': True}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== ACTIONS ===================== -->
+    <record id="action_dl_wood_log" model="ir.actions.act_window">
+        <field name="name">Nhật ký hoạt động</field>
+        <field name="res_model">dl.wood.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dl_wood_log_config" model="ir.actions.act_window">
+        <field name="name">Cấu hình Nhật ký</field>
+        <field name="res_model">dl.wood.log.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== MENUS ===================== -->
+    <menuitem id="menu_dl_wood_log_root"
+              name="Log Module"
+              parent="menu_dl_wood_traceability_root"
+              sequence="90"/>
+
+    <menuitem id="menu_dl_wood_log_entries"
+              name="Nhật ký hoạt động"
+              parent="menu_dl_wood_log_root"
+              action="action_dl_wood_log"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_log_config"
+              name="Cấu hình Log"
+              parent="menu_dl_wood_log_root"
+              action="action_dl_wood_log_config"
+              sequence="20"/>
+</odoo>

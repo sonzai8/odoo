@@ -16,6 +16,7 @@ from odoo.exceptions import ValidationError
 
 class DlCoDeclaration(models.Model):
     _name = 'dl.co.declaration'
+    _inherit = ['dl.wood.log.mixin']
     _description = 'Bảng Kê Khai CO Hải Quan (Frontend)'
     _rec_name = 'dossier_id'
 

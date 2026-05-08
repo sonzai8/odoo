@@ -11,6 +11,7 @@ from odoo import models, fields, api
 
 class DlWoodDossier(models.Model):
     _name = 'dl.wood.dossier'
+    _inherit = ['dl.wood.log.mixin']
     _description = 'Hồ Sơ Gỗ (Kiểm Lâm / Chủ Rừng)'
     _rec_name = 'name'
 
