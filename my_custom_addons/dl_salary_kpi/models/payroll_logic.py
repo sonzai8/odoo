@@ -12,23 +12,42 @@ def calculate_allowances(rec):
     return meal_allowance, women_allowance
 
 def calculate_annual_bonuses(rec):
-    """Tính toán các khoản thưởng cố định trong năm"""
-    b0803, b3004, b0209, btet, bother = 0.0, 0.0, 0.0, 0.0, 0.0
+    """Tính toán các khoản thưởng cố định trong năm (Thực tế và Tiềm năng)"""
+    # Actual (Thực nhận dựa trên công)
+    act = {'b0803': 0.0, 'b3004': 0.0, 'b0209': 0.0, 'btet': 0.0, 'bother': 0.0}
+    # Potential (Mức thưởng tối đa nếu đi làm)
+    pot = {'b0803': 0.0, 'b3004': 0.0, 'b0209': 0.0, 'btet': 0.0, 'bother': 0.0}
+    
     is_female = rec.employee_id.sex == 'female'
     
     for bl in rec.month_id.bonus_line_ids:
-        # Kiểm tra giới tính áp dụng
+        # 1. Kiểm tra giới tính
         if bl.gender == 'male' and not rec.employee_id.sex == 'male': continue
         if bl.gender == 'female' and not is_female: continue
         
         name = bl.name or ""
-        if '08/03' in name: b0803 += bl.amount
-        elif '30/04' in name: b3004 += bl.amount
-        elif '02/09' in name: b0209 += bl.amount
-        elif 'Tết' in name and 'Dương Lịch' in name: btet += bl.amount
-        else: bother += bl.amount
+        # Ghi nhận vào mức Tiềm năng (Luôn cộng)
+        if '08/03' in name: pot['b0803'] += bl.amount
+        elif '30/04' in name: pot['b3004'] += bl.amount
+        elif '02/09' in name: pot['b0209'] += bl.amount
+        elif 'Tết' in name and 'Dương Lịch' in name: pot['btet'] += bl.amount
+        else: pot['bother'] += bl.amount
+
+        # 2. KIỂM TRA ĐIỀU KIỆN NGHỈ VIỆC
+        # Chỉ cần nhân viên không nghỉ việc trước hoặc đúng ngày thưởng là được nhận
+        is_eligible = True
+        if bl.date and rec.employee_id.departure_date:
+            if rec.employee_id.departure_date <= bl.date:
+                is_eligible = False
         
-    return b0803, b3004, b0209, btet, bother
+        if is_eligible:
+            if '08/03' in name: act['b0803'] += bl.amount
+            elif '30/04' in name: act['b3004'] += bl.amount
+            elif '02/09' in name: act['b0209'] += bl.amount
+            elif 'Tết' in name and 'Dương Lịch' in name: act['btet'] += bl.amount
+            else: act['bother'] += bl.amount
+        
+    return act, pot
 
 POSITION_GROUP_MAP = {
     # QLCC
@@ -150,10 +169,27 @@ def calculate_deductions(rec, total_actual_income, meal_allowance):
     dependent_deduction = company.dl_pit_dependent_deduction or 6200000.0
     
     # 0. Bảo hiểm bắt buộc (Tính trên lương cơ bản thuế)
+    # KIỂM TRA DANH SÁCH CẮT BẢO HIỂM
+    insurance_stopped = rec.employee_id.id in rec.month_id.insurance_stop_ids.mapped('employee_id').ids
+    
     base_insurance = rec.dl_tax_base_salary or 0.0
-    bhxh = round(base_insurance * 0.08, 0)
-    bhyt = round(base_insurance * 0.015, 0)
-    bhtn = round(base_insurance * 0.01, 0)
+    
+    # Mức bảo hiểm dùng để tính GIẢM TRỪ THUẾ (Giữ nguyên logic cũ)
+    bhxh_for_tax = round(base_insurance * 0.08, 0)
+    bhyt_for_tax = round(base_insurance * 0.015, 0)
+    bhtn_for_tax = round(base_insurance * 0.01, 0)
+    insurance_for_tax = bhxh_for_tax + bhyt_for_tax + bhtn_for_tax
+
+    # Mức bảo hiểm THỰC TRỪ vào lương (Bằng 0 nếu bị cắt)
+    if insurance_stopped:
+        bhxh = 0.0
+        bhyt = 0.0
+        bhtn = 0.0
+    else:
+        bhxh = bhxh_for_tax
+        bhyt = bhyt_for_tax
+        bhtn = bhtn_for_tax
+        
     total_insurance = bhxh + bhyt + bhtn
 
     # 1. Thu nhập chịu thuế (TNCT)
@@ -163,7 +199,8 @@ def calculate_deductions(rec, total_actual_income, meal_allowance):
     
     # 2. Tổng các khoản giảm trừ
     num_dependents = len(rec.employee_id.dependent_ids)
-    total_deductions = total_insurance + personal_deduction + (num_dependents * dependent_deduction)
+    # SỬ DỤNG insurance_for_tax ĐỂ GIỮ NGUYÊN LOGIC THUẾ
+    total_deductions = insurance_for_tax + personal_deduction + (num_dependents * dependent_deduction)
     
     # 3. Thu nhập tính thuế (TNTT)
     assessable_income = max(0.0, taxable_income - total_deductions)

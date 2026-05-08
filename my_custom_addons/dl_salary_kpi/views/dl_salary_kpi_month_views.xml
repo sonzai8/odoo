@@ -464,6 +464,20 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="13 - Cắt Bảo Hiểm" name="insurance_stop">
+                            <field name="insurance_stop_ids" nolabel="1" readonly="state == 'confirmed'">
+                                <list editable="bottom">
+                                    <field name="employee_id" options="{'no_create': True}"/>
+                                    <field name="identification_id" width="120px"/>
+                                    <field name="dl_tax_id" width="110px"/>
+                                    <field name="dl_tax_department_id" width="130px"/>
+                                    <field name="dl_tax_position" width="120px"/>
+                                    <field name="dl_tax_base_salary" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="note"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
             </form>

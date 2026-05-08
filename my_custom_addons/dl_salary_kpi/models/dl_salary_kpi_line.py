@@ -688,12 +688,10 @@ class SalaryKpiLine(models.Model):
                 raise UserError("Bảng lương đã chốt KPI hoặc đã xác nhận, không thể tính toán lại.")
             
             # Lấy LNB trừ đi Thưởng năm và TLN để tìm phần còn thiếu cần bù KPI/Tiền mặt
-            annual_bonus = rec.payroll_annual_bonus or 0
             lk = rec.payroll_net_salary_base
-            
-            # Gap là phần còn thiếu để đạt được (LNB - Thưởng năm)
-            # Theo yêu cầu: LNB đã bao gồm Thưởng năm, nhưng không bao gồm Ăn ca/Phụ cấp PN
-            gap = (rec.payroll_internal_salary - annual_bonus) - lk
+            # Gap là phần còn thiếu để đạt được (LNB - Thưởng năm TIỀM NĂNG)
+            # Theo yêu cầu: LNB đã bao gồm Thưởng năm. Ta dùng LNB trừ thưởng tiềm năng để giữ Gap ổn định.
+            gap = rec.payroll_internal_salary_minus_bonus - lk
             
             if rec.payroll_internal_salary_minus_bonus <= 0 or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
@@ -909,8 +907,14 @@ class SalaryKpiLine(models.Model):
             # 1. Hỗ trợ & Phụ cấp
             meal_allowance, women_allowance = payroll_logic.calculate_allowances(rec)
             
-            # 2. Thưởng cố định năm
-            b0803, b3004, b0209, btet, bother = payroll_logic.calculate_annual_bonuses(rec)
+            # 2. Thưởng cố định năm (Chỉ lấy Thực tế dựa trên công)
+            act_bonus, pot_bonus = payroll_logic.calculate_annual_bonuses(rec)
+            
+            b0803 = act_bonus['b0803']
+            b3004 = act_bonus['b3004']
+            b0209 = act_bonus['b0209']
+            btet = act_bonus['btet']
+            bother = act_bonus['bother']
             annual_bonus = b0803 + b3004 + b0209 + btet + bother
             
             # 3. Thưởng doanh thu & Năng suất (Theo chính sách QĐ 3108)
@@ -972,7 +976,7 @@ class SalaryKpiLine(models.Model):
             # Tính lại thuế TNCN dựa trên TNCT đã trừ các khoản miễn thuế
             deductions = payroll_logic.calculate_deductions(rec, base_income_for_tax - exempt_ot_amount, meal_allowance)
             
-            # 5. Lương trong mục tiêu trừ đi các khoản thưởng năm (để cân đối KPI chính xác)
+            # 5. Lương trong mục tiêu trừ đi các khoản thưởng thực tế
             internal_salary_minus_bonus = max(0, rec.payroll_internal_salary - annual_bonus)
             
             # 6. Thực lĩnh cuối cùng (bao gồm cả các khoản bù KPI/Tiền mặt)

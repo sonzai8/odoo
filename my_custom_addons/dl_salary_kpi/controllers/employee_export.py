@@ -29,7 +29,8 @@ class EmployeeExportController(http.Controller):
             constants.COL_STT, constants.COL_ID_NV, constants.COL_FULL_NAME, constants.COL_FIRST_NAME,
             constants.COL_CCCD, constants.COL_BIRTHDAY, constants.COL_EMAIL, constants.COL_PHONE,
             constants.COL_GENDER, constants.COL_TAX_ID, constants.COL_TAX_POSITION,
-            constants.COL_TAX_DEPARTMENT, constants.COL_TAX_BASE_SALARY, constants.COL_DEPARTURE_DATE
+            constants.COL_TAX_DEPARTMENT, constants.COL_TAX_BASE_SALARY, constants.COL_DEPARTURE_DATE,
+            constants.COL_BANK_ACCOUNT, constants.COL_BANK_NAME
         ]
         ws.row_dimensions[1].height = 30
         for col, text in enumerate(headers, 1):
@@ -53,11 +54,13 @@ class EmployeeExportController(http.Controller):
         ws.column_dimensions['L'].width = 30
         ws.column_dimensions['M'].width = 20
         ws.column_dimensions['N'].width = 15
+        ws.column_dimensions['O'].width = 20
+        ws.column_dimensions['P'].width = 25
 
         for idx, emp in enumerate(employees, 1):
             row = idx + 1
             ws.row_dimensions[row].height = 25
-            data = [idx, emp.id, emp.name, emp.dl_first_name, emp.identification_id, emp.birthday, emp.email, emp.work_phone, 'Nam' if emp.sex == 'male' else 'Nữ' if emp.sex == 'female' else 'Khác', emp.dl_tax_id, emp.dl_tax_position, emp.dl_tax_department_id.name if emp.dl_tax_department_id else '', emp.dl_tax_base_salary, emp.dl_departure_date]
+            data = [idx, emp.id, emp.name, emp.dl_first_name, emp.identification_id, emp.birthday, emp.email, emp.work_phone, 'Nam' if emp.sex == 'male' else 'Nữ' if emp.sex == 'female' else 'Khác', emp.dl_tax_id, emp.dl_tax_position, emp.dl_tax_department_id.name if emp.dl_tax_department_id else '', emp.dl_tax_base_salary, emp.dl_departure_date, emp.x_bank_account, emp.x_bank_name]
             for col, value in enumerate(data, 1):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = border
@@ -69,7 +72,7 @@ class EmployeeExportController(http.Controller):
         from openpyxl.worksheet.table import Table, TableStyleInfo
         last_row = len(employees) + 1
         if last_row > 1:
-            table = Table(displayName="DanhSachNhanVienThue", ref=f"A1:N{last_row}")
+            table = Table(displayName="DanhSachNhanVienThue", ref=f"A1:P{last_row}")
             table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
             ws.add_table(table)
 
