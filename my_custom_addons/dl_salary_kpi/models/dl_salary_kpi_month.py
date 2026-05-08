@@ -805,14 +805,12 @@ class SalaryKpiMonth(models.Model):
                 if current_row > 8:
                     self._copy_row_formatting(ws, 8, current_row)
                 
+                # Định dạng font chữ cỡ 16 cho cột A -> I (thông tin nhân viên)
+                font_16 = Font(name='Times New Roman', size=16, color='000000')
+                
                 self._safe_write(ws, current_row, 1, global_stt)
                 self._safe_write(ws, current_row, 2, line.employee_id.dl_tax_id or '')
                 self._safe_write(ws, current_row, 3, line.employee_id.name)
-                
-                # Đảm bảo MST và Tên nhân viên không bị màu đỏ
-                black_font = Font(name='Times New Roman', color='000000', bold=False)
-                ws.cell(row=current_row, column=2).font = black_font
-                ws.cell(row=current_row, column=3).font = black_font
                 
                 birthday_str = line.employee_id.birthday.strftime('%d/%m/%Y') if line.employee_id.birthday else ''
                 self._safe_write(ws, current_row, 4, birthday_str)
@@ -822,6 +820,10 @@ class SalaryKpiMonth(models.Model):
                 self._safe_write(ws, current_row, 7, line.employee_id.dl_tax_department_id.name or '')
                 self._safe_write(ws, current_row, 8, line.employee_id.dl_tax_position or '')
                 self._safe_write(ws, current_row, 9, line.employee_id.dl_tax_base_salary or 0)
+
+                # Áp dụng font size 16 cho cột 1-9 (A-I)
+                for col_idx in range(1, 10):
+                    ws.cell(row=current_row, column=col_idx).font = font_16
 
                 last_day = monthrange(month_date.year, month_date.month)[1]
                 for day in range(1, 32):
