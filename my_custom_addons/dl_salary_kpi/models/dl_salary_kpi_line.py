@@ -1013,9 +1013,10 @@ class SalaryKpiLine(models.Model):
                         c_n = math.ceil(max(0, diff) / v_n_full) if v_n_full > 0 else 0
                         c_d = math.ceil(max(0, diff) / v_d_full) if v_d_full > 0 else 0
                         
-                        if diff > -buffer:
-                            # Trường hợp Lương ngoài (TLN) >= Lương nội bộ (Ln)
-                            # Cần GIẢM công để Ln > TLN một khoảng đủ 52 điểm KPI
+                        mk = (rec.payroll_internal_salary - annual_bonus) - net_salary_base
+                        if mk < -1 or diff > 0:
+                            # Trường hợp Tiền KPI âm (mk < 0) hoặc Lương ngoài vượt Ln
+                            # Cần GIẢM công để Ln > TLN + Thưởng một khoảng đủ 52 điểm KPI
                             # Target Gap = 0.04 * TLN => Target TLN = (Ln - Bonus) / 1.04
                             target_tln = (rec.payroll_internal_salary - annual_bonus) / 1.04
                             amount_to_reduce = max(0, net_salary_base - target_tln)
@@ -1026,7 +1027,7 @@ class SalaryKpiLine(models.Model):
                             if diff > 0:
                                 header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Ln. Cần giảm công để đạt KPI (52đ):</div>"
                             else:
-                                header = f"<div style='color: #f0ad4e; font-weight: bold;'>⚠️ Thực lĩnh ngoài sát Ln. Nên giảm công để đạt KPI (52đ):</div>"
+                                header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần giảm công để đạt KPI (52đ):</div>"
 
                             anomaly_suggestion = (
                                 header +
