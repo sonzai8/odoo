@@ -1006,13 +1006,10 @@ class SalaryKpiLine(models.Model):
                     # Giá trị Đ gộp = Lương Đ quy đổi (8h) + Ăn ca + Phụ nữ + Lương 0.5Đ đi kèm
                     v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
                     
-                    mk = (rec.payroll_internal_salary - annual_bonus) - net_salary_base
-                    if diff > -buffer or mk < -1:
-                        # Thực lĩnh ngoài(TLN) cao hoặc KPI âm, cần GIẢM công
-                        c_05n = math.ceil(max(0, diff) / v_05n) if v_05n > 0 else 0
-                        # Trường hợp Tiền KPI âm (mk < 0) hoặc Lương ngoài vượt Ln
-                        # Cần GIẢM công để Ln > TLN + Thưởng một khoảng đủ 52 điểm KPI
-                        # Target Gap = 0.04 * TLN => Target TLN = (Ln - Bonus) / 1.04
+                    mk_gap = (rec.payroll_internal_salary - annual_bonus) - net_salary_base
+                    
+                    if diff > -buffer or mk_gap < -1:
+                        # TRƯỜNG HỢP 1: TLN quá cao hoặc KPI âm -> Cần GIẢM công
                         target_tln = (rec.payroll_internal_salary - annual_bonus) / 1.04
                         amount_to_reduce = max(0, net_salary_base - target_tln)
                         
@@ -1020,17 +1017,41 @@ class SalaryKpiLine(models.Model):
                         c_n_red = math.ceil(amount_to_reduce / v_n_full) if v_n_full > 0 else 0
                         
                         if diff > 0:
-                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT Ln. Cần giảm công để đạt KPI (52đ):</div>"
+                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT LNB. Cần GIẢM công:</div>"
                         else:
-                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần giảm công để đạt KPI (52đ):</div>"
+                            header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần GIẢM công</div>"
 
                         anomaly_suggestion = (
                             header +
                             f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                            f"<li>Giảm <b>{max(1, c_05n_red)}</b> lần <b>0.5N</b></li>"
-                            f"<li>Hoặc <b>{max(1, c_n_red)}</b> ngày <b>N</b></li>"
+                            f"<li>Gợi ý: Giảm <b>{max(1, c_05n_red)}</b> lần <b>0.5N</b></li>"
+                            f"<li>Hoặc: Giảm <b>{max(1, c_n_red)}</b> ngày <b>N</b></li>"
                             f"</ul>"
                         )
+                    elif 0 < rec.payroll_cash_amount < 1000000:
+                        # TRƯỜNG HỢP 2: Tiền mặt lẻ (< 1M) -> Cần TĂNG công để bù Gap bằng KPI
+                        # Xác định mức trần KPI của nhân viên
+                        emp_max_kpi = 70.0
+                        if rec.dl_tax_base_salary < 4500000: emp_max_kpi = 55.0
+                        elif rec.dl_tax_base_salary < 5000000: emp_max_kpi = 60.0
+                        
+                        # Số tiền KPI tối đa có thể gánh
+                        max_mk = net_salary_base * (emp_max_kpi - 50.0) / 50.0
+                        # Số tiền cần bù vào TLN để Gap (mk_gap) nằm trọn trong KPI
+                        amount_to_add = mk_gap - max_mk
+                        
+                        if amount_to_add > 0:
+                            c_05n_add = math.ceil(amount_to_add / v_05n) if v_05n > 0 else 0
+                            c_n_add = math.ceil(amount_to_add / v_n_full) if v_n_full > 0 else 0
+                            
+                            header = f"<div style='color: #f0ad4e; font-weight: bold;'>🔻 Tiền mặt đang lẻ ({rec.payroll_cash_amount:,.0f} ₫). Cần TĂNG công để xóa tiền mặt:</div>"
+                            anomaly_suggestion = (
+                                header +
+                                f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                                f"<li>Gợi ý: Tăng <b>{max(1, c_05n_add)}</b> lần <b>0.5N</b></li>"
+                                f"<li>Hoặc: Tăng <b>{max(1, c_n_add)}</b> ngày <b>N</b></li>"
+                                f"</ul>"
+                            )
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({

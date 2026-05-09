@@ -146,6 +146,7 @@ class SalaryKpiMonth(models.Model):
                 anomalies = rec.line_ids.filtered(
                     lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
                     or l.payroll_kpi_amount < -1
+                    or (0 < l.payroll_cash_amount < 1000000)
                 )
             rec.anomaly_line_ids = anomalies
 
