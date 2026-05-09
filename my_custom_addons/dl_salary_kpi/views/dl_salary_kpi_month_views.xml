@@ -56,27 +56,26 @@
                     </group>
                     <notebook>
                         <page string="1 - Cấu Hình Chung" name="financial_balance">
-                            <div class="d-flex flex-wrap gap-4 align-items-start w-100">
-                                <div class="flex-fill" style="min-width: 450px;">
-                                    <group string="Thông tin tài chính" class="w-100">
-                                        <field name="dl_revenue" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
-                                        <field name="dl_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
-                                        <field name="dl_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
-                                    </group>
-                                </div>
-                                <div class="flex-fill" style="min-width: 450px; pointer-events: none;">
-                                    <group string="Thưởng lễ trong tháng" class="w-100">
-                                        <field name="bonus_line_ids" nolabel="1" readonly="1" options="{'no_open': True}">
-                                            <list create="0" edit="0" delete="0" export_xml="0" class="w-100" limit="20">
-                                                <field name="date" readonly="1" sortable="0" width="130px"/>
-                                                <field name="name" readonly="1" sortable="0" width="120px"/>
-                                                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" sortable="0" width="120px"/>
-                                                <field name="gender" readonly="1" sortable="0" width="150px"/>
-                                            </list>
-                                        </field>
-                                    </group>
-                                </div>
-                            </div>
+                            <group string="Thông tin tài chính" col="3">
+                                <group>
+                                    <field name="dl_revenue" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
+                                </group>
+                                <group>
+                                    <field name="dl_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
+                                </group>
+                                <group>
+                                    <field name="dl_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
+                                </group>
+                            </group>
+                            <separator string="Thưởng lễ trong tháng"/>
+                            <field name="bonus_line_ids" nolabel="1" readonly="1" options="{'no_open': True}">
+                                <list create="0" edit="0" delete="0" export_xml="0"  class="w-100 text-center" limit="20">
+                                    <field name="date" readonly="1" sortable="0" width="130px" class="text-center"/>
+                                    <field name="name" readonly="1" sortable="0" width="120px" class="text-center"/>
+                                    <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" sortable="0" width="120px" class="text-right"/>
+                                    <field name="gender" readonly="1" sortable="0" width="150px" class="text-center"/>
+                                </list>
+                            </field>
                         </page>
 
                         <page string="2 - Bảng công Thường" name="matrix_normal" invisible="state != 'draft'">
@@ -448,11 +447,19 @@
                             </field>
                         </page>
 
-                        <!-- Tạm ẩn Tab Chi tiết các khoản trừ theo yêu cầu người dùng
-                        <page string="Chi tiết các khoản trừ" name="internal_payroll" invisible="state in ['draft', 'lock_normal']">
-                             ...
+                        <page string="Chi tiết các khoản trừ" name="internal_payroll" invisible="1">
+                             <group>
+                                 <field name="line_ids" nolabel="1">
+                                     <list limit="20">
+                                         <field name="employee_id"/>
+                                         <field name="payroll_deduction_bhxh"/>
+                                         <field name="payroll_deduction_bhyt"/>
+                                         <field name="payroll_deduction_bhtn"/>
+                                         <field name="payroll_deduction_tncn"/>
+                                     </list>
+                                 </field>
+                             </group>
                         </page>
-                        -->
                     </notebook>
                 </sheet>
             </form>
