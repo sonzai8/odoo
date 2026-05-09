@@ -140,18 +140,18 @@ def export_kpi_point_excel(record):
         ws.merge_cells('A5:B5')
         
         # 2. Điền dữ liệu nhân viên (Bắt đầu từ hàng 6)
+        # Chúng ta sẽ không dùng insert_rows vì nó rất chậm. 
+        # Thay vào đó, chúng ta sẽ ghi trực tiếp vào các hàng và copy formatting nếu cần.
         data_row_start = 6
         
         for i, line in enumerate(lines):
             row_idx = data_row_start + i
             
-            # Nếu không phải dòng đầu tiên (i > 0), cần chèn hàng mới
+            # Chỉ sao chép định dạng cho các dòng sau dòng đầu tiên
             if i > 0:
-                ws.insert_rows(row_idx)
-                # Sao chép định dạng (Border, Font, etc.) từ hàng 6 xuống hàng mới chèn
                 _copy_row_formatting(ws, data_row_start, row_idx, copy_value=False)
             
-            # Ghi đè cứng dữ liệu vào các cột cố định
+            # Ghi dữ liệu vào các cột
             ws.cell(row=row_idx, column=1, value=i + 1)
             ws.cell(row=row_idx, column=2, value=line.employee_name or '')
             ws.cell(row=row_idx, column=3, value=line.kpi_c1_productivity or 0)
@@ -192,13 +192,13 @@ def export_kpi_point_excel(record):
         ws_amount.merge_cells('A5:B5')
         
         # 2. Điền dữ liệu nhân viên (Bắt đầu từ hàng 6 theo chuẩn template)
+        # Bỏ insert_rows để tăng tốc độ
         data_row_start_amount = 6
         
         for i, line in enumerate(lines):
             row_idx = data_row_start_amount + i
             
             if i > 0:
-                ws_amount.insert_rows(row_idx)
                 _copy_row_formatting(ws_amount, data_row_start_amount, row_idx, copy_value=False)
             
             # Ghi dữ liệu và công thức

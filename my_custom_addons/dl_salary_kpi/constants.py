@@ -18,6 +18,8 @@ COL_TAX_DEPARTMENT = "Phòng ban thuế"
 COL_BASE_SALARY = "Lương cơ bản"
 COL_TAX_BASE_SALARY = "Lương cơ bản thuế"
 COL_DEPARTURE_DATE = "Ngày nghỉ việc"
+COL_BANK_ACCOUNT = "Số Tài Khoản"
+COL_BANK_NAME = "Tên Ngân Hàng"
 
 # --- TIÊU ĐỀ NGƯỜI PHỤ THUỘC ---
 COL_EMP_NAME = "Họ và Tên nhân viên"

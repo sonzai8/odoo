@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 class SalaryKpiExportWizard(models.TransientModel):
     _name = 'dl.salary.kpi.export.wizard'
@@ -12,13 +13,31 @@ class SalaryKpiExportWizard(models.TransientModel):
     def action_export_salary(self):
         """Tải file báo cáo lương từ background thread."""
         self.ensure_one()
-        if not self.salary_attachment_id or not self.salary_attachment_id.datas:
+        att = self.salary_attachment_id
+        if not att or not att.datas:
+            if att and att.description:
+                if att.description.startswith('ERROR:'):
+                    raise UserError(_("Lỗi khi tạo báo cáo Lương: %s") % att.description.replace('ERROR: ', ''))
+                
+                if att.description.startswith('PROGRESS:'):
+                    progress_info = att.description.replace('PROGRESS:', '')
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': _('Đang tạo báo cáo...'),
+                            'message': _('Tiến độ: Đã xử lý %s nhân viên. Vui lòng nhấn lại sau vài giây.') % progress_info,
+                            'sticky': False,
+                            'type': 'info',
+                        }
+                    }
+            
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': _('Chờ chút...'),
-                    'message': _('Báo cáo đang được xử lý ngầm, vui lòng nhấn lại sau 10-20 giây.'),
+                    'message': _('Hệ thống đang bắt đầu chuẩn bị dữ liệu, vui lòng nhấn lại sau 10 giây.'),
                     'sticky': False,
                     'type': 'warning',
                 }
@@ -26,20 +45,24 @@ class SalaryKpiExportWizard(models.TransientModel):
             
         return {
             'type': 'ir.actions.act_url',
-            'url': f'/web/content/{self.salary_attachment_id.id}?download=true',
+            'url': f'/web/content/{att.id}?download=true',
             'target': 'new',
         }
 
     def action_export_kpi_point(self):
         """Tải file báo cáo KPI từ background thread."""
         self.ensure_one()
-        if not self.kpi_attachment_id or not self.kpi_attachment_id.datas:
+        att = self.kpi_attachment_id
+        if not att or not att.datas:
+            if att and att.description and att.description.startswith('ERROR:'):
+                raise UserError(_("Lỗi khi tạo báo cáo KPI: %s") % att.description.replace('ERROR: ', ''))
+
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': _('Chờ chút...'),
-                    'message': _('Báo cáo đang được xử lý ngầm, vui lòng nhấn lại sau 10-20 giây.'),
+                    'message': _('Báo cáo KPI đang được xử lý ngầm, vui lòng nhấn lại sau 10-20 giây.'),
                     'sticky': False,
                     'type': 'warning',
                 }
@@ -47,6 +70,6 @@ class SalaryKpiExportWizard(models.TransientModel):
 
         return {
             'type': 'ir.actions.act_url',
-            'url': f'/web/content/{self.kpi_attachment_id.id}?download=true',
+            'url': f'/web/content/{att.id}?download=true',
             'target': 'new',
         }

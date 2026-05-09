@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_employee_tree_inherit_tax" model="ir.ui.view">
+        <field name="name">hr.employee.tree.inherit.tax</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='work_email']" position="after">
+                <field name="x_bank_account" optional="show"/>
+                <field name="x_bank_name" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_employee_form_inherit_tax" model="ir.ui.view">
         <field name="name">hr.employee.form.inherit.tax</field>
         <field name="model">hr.employee</field>
@@ -16,9 +28,12 @@
             <xpath expr="//notebook" position="inside">
                 <page string="2 - Cấu Hình Thuế" name="tax_config">
                     <group>
-                        <group string="Thông tin định danh thuế">
+                        <group string="Định Danh - Ngân Hàng">
+                            <field name="identification_id"/>
                             <field name="dl_tax_id"/>
                             <field name="dl_tax_department_id"/>
+                            <field name="x_bank_account"/>
+                            <field name="x_bank_name"/>
                         </group>
                         <group string="Thông tin lương thuế">
                             <field name="dl_tax_position"/>

@@ -4,8 +4,12 @@ from odoo.exceptions import UserError
 import base64
 import io
 import openpyxl
+import time
+import logging
 from .. import constants
 from datetime import datetime, date
+
+_logger = logging.getLogger(__name__)
 
 class SalaryKpiTaxImport(models.TransientModel):
     _name = 'dl.salary.kpi.tax.import'
@@ -119,6 +123,8 @@ class SalaryKpiTaxImport(models.TransientModel):
                 'dl_tax_department_name': dept_name,
                 'dl_tax_base_salary': base_salary,
                 'dl_departure_date': self._parse_date(row[13]) if len(row) > 13 else False,
+                'x_bank_account': str(row[14]).strip() if len(row) > 14 and row[14] else '',
+                'x_bank_name': str(row[15]).strip() if len(row) > 15 and row[15] else '',
                 'error': error
             })
         return parsed_data
@@ -204,12 +210,50 @@ class SalaryKpiTaxImport(models.TransientModel):
         }
 
     def action_confirm_import(self):
+        t0 = time.time()
         parsed_data = self._read_excel_data()
+        t1 = time.time()
+        _logger.info("=== IMPORT LOG: Đọc và parse Excel mất: %.3fs ===", t1 - t0)
+
+        if not parsed_data:
+            return
         
         count_create = 0
         count_update = 0
         
-        # Cache phòng ban để tối ưu
+        # 1. Tối ưu tìm kiếm: Thu thập MST và Tên để search 1 lần
+        tax_ids = [r['dl_tax_id'] for r in parsed_data if r['dl_tax_id']]
+        names = [r['name'] for r in parsed_data if r['name']]
+        
+        # Tạo mapping để tìm nhanh nhân viên hiện có
+        existing_emps_by_id = {}
+        emp_ids_to_browse = [r['emp_id'] for r in parsed_data if r['emp_id']]
+        if emp_ids_to_browse:
+            emps = self.env['hr.employee'].browse(emp_ids_to_browse).exists()
+            existing_emps_by_id = {e.id: e for e in emps}
+            
+        existing_emps_by_key = {}
+        domain = ['|', ('dl_tax_id', 'in', tax_ids), ('name', 'in', names)]
+        all_emps = self.env['hr.employee'].search(domain)
+        for e in all_emps:
+            key = (e.name, e.dl_tax_id)
+            if key not in existing_emps_by_key:
+                existing_emps_by_key[key] = e
+        
+        t2 = time.time()
+        _logger.info("=== IMPORT LOG: Tìm kiếm và tạo Mapping mất: %.3fs ===", t2 - t1)
+
+        # 2. Tối ưu ghi dữ liệu: Tắt tracking và mail để tăng tốc
+        optimized_context = {
+            'tracking_disable': True, 
+            'mail_notrack': True,
+            'no_reset_password': True,
+            'prefetch_fields': False,
+            'recompute': False # Tạm dừng tính toán lại trong vòng lặp nếu có thể
+        }
+        Employee = self.env['hr.employee'].with_context(**optimized_context)
+        
+        # Cache phòng ban thuế
         dept_cache = {d.name: d.id for d in self.env['dl.tax.department'].search([])}
 
         for row in parsed_data:
@@ -217,7 +261,6 @@ class SalaryKpiTaxImport(models.TransientModel):
                 continue
 
             dept_id = dept_cache.get(row['dl_tax_department_name'])
-
             vals = {
                 'name': row['name'],
                 'birthday': row['birthday'],
@@ -231,30 +274,50 @@ class SalaryKpiTaxImport(models.TransientModel):
                 'dl_tax_department_id': dept_id,
                 'dl_tax_base_salary': row['dl_tax_base_salary'],
                 'dl_departure_date': row['dl_departure_date'],
+                'x_bank_account': row['x_bank_account'],
+                'x_bank_name': row['x_bank_name'],
             }
             
-            employee = False
-            if row['emp_id']:
-                employee = self.env['hr.employee'].browse(row['emp_id'])
-                if not employee.exists():
-                    employee = False
-            
-            if not employee and row['name'] and row['dl_tax_id']:
-                employee = self.env['hr.employee'].search([('name', '=', row['name']), ('dl_tax_id', '=', row['dl_tax_id'])], limit=1)
+            employee = existing_emps_by_id.get(row['emp_id'])
+            if not employee:
+                employee = existing_emps_by_key.get((row['name'], row['dl_tax_id']))
 
             if employee:
-                employee.write(vals)
-                count_update += 1
+                # ÉP CONTEXT TỐI ƯU CHO LỆNH WRITE
+                # Chỉ write nếu thực sự có dữ liệu thay đổi để tiết kiệm CPU
+                changed_vals = {}
+                for field, value in vals.items():
+                    old_val = getattr(employee, field)
+                    
+                    # Xử lý so sánh cho trường Many2one (Phòng ban)
+                    if field.endswith('_id') and hasattr(old_val, 'id') and not isinstance(old_val, str):
+                        old_val = old_val.id
+                    
+                    # Xử lý so sánh cho trường Ngày tháng
+                    if isinstance(old_val, date) and isinstance(value, str):
+                        value = self._parse_date(value)
+                    
+                    if old_val != value:
+                        changed_vals[field] = value
+                
+                if changed_vals:
+                    employee.with_context(**optimized_context).write(changed_vals)
+                    count_update += 1
             else:
-                self.env['hr.employee'].create(vals)
+                new_emp = Employee.create(vals)
+                existing_emps_by_key[(new_emp.name, new_emp.dl_tax_id)] = new_emp
                 count_create += 1
+        
+        t3 = time.time()
+        _logger.info("=== IMPORT LOG: Vòng lặp Ghi dữ liệu (Write/Create) mất: %.3fs ===", t3 - t2)
+        _logger.info("=== TOTAL IMPORT TIME: %.3fs ===", t3 - t0)
             
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Thành công'),
-                'message': _('Đã xử lý xong: %s cập nhật, %s thêm mới.') % (count_update, count_create),
+                'message': _('Tốc độ xử lý đã được tối ưu. Đã xong: %s cập nhật, %s thêm mới.') % (count_update, count_create),
                 'type': 'success',
                 'sticky': False,
             }

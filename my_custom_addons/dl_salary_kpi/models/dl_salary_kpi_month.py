@@ -15,7 +15,9 @@ import random
 import threading
 from datetime import date
 from calendar import monthrange
-from openpyxl.styles import PatternFill
+from openpyxl.styles import PatternFill, Font, Alignment
+from openpyxl.utils import get_column_letter
+import itertools
 
 from . import attendance_logic
 from . import payroll_logic
@@ -27,7 +29,7 @@ try:
     from openpyxl import load_workbook
     from openpyxl.cell.cell import MergedCell
     from openpyxl.formula.translate import Translator
-    from openpyxl.styles import PatternFill, Font
+    from openpyxl.styles import PatternFill, Font, Alignment
 except ImportError:
     load_workbook = None
     PatternFill = None
@@ -62,6 +64,8 @@ class SalaryKpiMonth(models.Model):
     
     # Các khoản thưởng áp dụng trong tháng
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
+
+    insurance_stop_ids = fields.One2many('dl.salary.kpi.insurance.stop', 'month_id', string='Danh sách cắt bảo hiểm')
 
     line_domain = fields.Char(compute='_compute_line_domain', readonly=True)
 
@@ -140,9 +144,9 @@ class SalaryKpiMonth(models.Model):
             anomalies = self.env['dl.salary.kpi.line']
             if rec.line_ids:
                 anomalies = rec.line_ids.filtered(
-                    lambda l: (l.payroll_net_salary_base > 0 and l.payroll_internal_salary >= (l.payroll_net_salary_base * 1.4))
-                    or l.payroll_net_salary_base < 0
-                    or (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
+                    lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
+                    or l.payroll_kpi_amount < -1
+                    or (0 < l.payroll_cash_amount < 1000000)
                 )
             rec.anomaly_line_ids = anomalies
 
@@ -689,27 +693,49 @@ class SalaryKpiMonth(models.Model):
         new_cr = self.pool.cursor()
         self = self.with_env(self.env(cr=new_cr))
         try:
+            attachment = self.env['ir.attachment'].browse(attachment_id)
             if report_type == 'salary':
-                # Logic tạo file lương
-                attachment = self.env['ir.attachment'].browse(attachment_id)
-                # Tạm thời gán logic tạo file (giống action_export_salary_report nhưng không trả về action)
-                result = self._get_salary_report_data() # Hàm helper mới
+                # Logic tạo file lương kèm cập nhật tiến trình
+                result = self._get_salary_report_data(attachment=attachment)
                 attachment.write({'datas': result['datas']})
             elif report_type == 'kpi':
                 # Logic tạo file KPI
-                attachment = self.env['ir.attachment'].browse(attachment_id)
                 file_data, filename = kpi_export_logic.export_kpi_point_excel(self)
                 attachment.write({'datas': file_data})
             
+            # Đánh dấu thành công
+            attachment.write({'description': 'SUCCESS'})
             new_cr.commit()
+            _logger.info("=== THREAD XUẤT FILE [%s] THÀNH CÔNG ===", report_type)
         except Exception as e:
             _logger.error("Lỗi khi tạo file Excel trong background: %s", str(e))
+            try:
+                attachment = self.env['ir.attachment'].browse(attachment_id)
+                attachment.write({
+                    'description': f"ERROR: {str(e)}",
+                    'datas': False
+                })
+                new_cr.commit()
+            except:
+                pass
             new_cr.rollback()
         finally:
             new_cr.close()
 
-    def _get_salary_report_data(self):
+    def _get_salary_report_data(self, attachment=None):
         """Hàm nội bộ tách logic tạo dữ liệu Excel Lương để dùng cho cả Thread và Sync."""
+        def int_to_roman(num):
+            val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+            syb = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+            roman_num = ''
+            i = 0
+            while  num > 0:
+                for _ in range(num // val[i]):
+                    roman_num += syb[i]
+                    num -= val[i]
+                i += 1
+            return roman_num
+
         if not load_workbook:
             raise UserError(_("Thư viện openpyxl chưa được cài đặt."))
 
@@ -739,82 +765,160 @@ class SalaryKpiMonth(models.Model):
         sample_col_idx = 10 # Cột J (Ngày 01)
         template_cp_fill = copy.copy(ws.cell(row=8, column=sample_col_idx).fill) if ws.cell(row=8, column=sample_col_idx).has_style else None
 
-        current_row = 8
-        for i, line in enumerate(self.line_ids):
-            if current_row > 8:
-                self._copy_row_formatting(ws, 8, current_row)
+        # Định nghĩa style đỏ đậm với font Times New Roman, cỡ 16
+        red_bold_font = Font(name='Times New Roman', size=16, color='FF0000', bold=True)
+        
+        # Sắp xếp lines theo thứ tự phòng ban (sequence) trước khi nhóm
+        sorted_lines = self.line_ids.sorted(key=lambda l: (l.employee_id.dl_tax_department_id.sequence or 10, l.employee_id.dl_tax_department_id.name or '', l.employee_id.name or ''))
+        
+        current_row = 9
+        summary_rows = [] # Lưu vị trí các dòng tổng của từng phòng ban
+        global_stt = 1
+        dept_idx = 1
+        total_count = len(sorted_lines)
+        
+        # Nhóm theo phòng ban
+        for dept, group_iter in itertools.groupby(sorted_lines, key=lambda l: l.employee_id.dl_tax_department_id):
+            dept_name = dept.name if dept else 'KHÁC'
+            group = list(group_iter)
             
-            self._safe_write(ws, current_row, 1, i + 1)
-            self._safe_write(ws, current_row, 2, line.employee_id.dl_tax_id or '')
-            self._safe_write(ws, current_row, 3, line.employee_id.name)
-            birthday_str = line.employee_id.birthday.strftime('%d/%m/%Y') if line.employee_id.birthday else ''
-            self._safe_write(ws, current_row, 4, birthday_str)
-            self._safe_write(ws, current_row, 5, line.employee_id.identification_id or '')
-            gender = 'Nam' if line.employee_id.sex == 'male' else 'Nữ' if line.employee_id.sex == 'female' else ''
-            self._safe_write(ws, current_row, 6, gender)
-            self._safe_write(ws, current_row, 7, line.employee_id.dl_tax_department_id.name or '')
-            self._safe_write(ws, current_row, 8, line.employee_id.dl_tax_position or '')
-            self._safe_write(ws, current_row, 9, line.employee_id.dl_tax_base_salary or 0)
-
-            last_day = monthrange(month_date.year, month_date.month)[1]
+            # --- 1. Xác định Dòng Tiêu đề (cũng là dòng Tổng bộ phận) ---
+            header_row = current_row
+            summary_rows.append(header_row)
             
-            # 1. Ghi mã công thực tế (Duyệt toàn bộ 31 cột)
-            for day in range(1, 32):
-                col_idx = 9 + day
-                att_type = getattr(line, f'day_{day:02d}')
-                # Chỉ ghi giá trị thô, chưa tô màu
-                self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
+            if header_row > 8:
+                self._copy_row_formatting(ws, 8, header_row)
+            
+            # Ghi STT La Mã vào cột A
+            ws.cell(row=header_row, column=1, value=int_to_roman(dept_idx)).font = red_bold_font
+            
+            ws.merge_cells(start_row=header_row, start_column=2, end_row=header_row, end_column=3)
+            cell_dept = ws.cell(row=header_row, column=2, value=dept_name.upper())
+            cell_dept.font = red_bold_font
+            cell_dept.alignment = Alignment(horizontal='center', vertical='center')
+            
+            current_row += 1
+            dept_idx += 1
+            dept_start_row = current_row # Dòng bắt đầu của nhân viên
+            
+            # --- 2. Ghi dữ liệu nhân viên trong phòng ban ---
+            for line in group:
+                if current_row > 8:
+                    self._copy_row_formatting(ws, 8, current_row)
+                
+                # Định dạng font chữ cỡ 16 cho cột A -> I (thông tin nhân viên)
+                font_16 = Font(name='Times New Roman', size=16, color='000000')
+                
+                self._safe_write(ws, current_row, 1, global_stt)
+                self._safe_write(ws, current_row, 2, line.employee_id.dl_tax_id or '')
+                self._safe_write(ws, current_row, 3, line.employee_id.name)
+                
+                birthday_str = line.employee_id.birthday.strftime('%d/%m/%Y') if line.employee_id.birthday else ''
+                self._safe_write(ws, current_row, 4, birthday_str)
+                self._safe_write(ws, current_row, 5, line.employee_id.identification_id or '')
+                gender = 'Nam' if line.employee_id.sex == 'male' else 'Nữ' if line.employee_id.sex == 'female' else ''
+                self._safe_write(ws, current_row, 6, gender)
+                self._safe_write(ws, current_row, 7, line.employee_id.dl_tax_department_id.name or '')
+                self._safe_write(ws, current_row, 8, line.employee_id.dl_tax_position or '')
+                self._safe_write(ws, current_row, 9, line.employee_id.dl_tax_base_salary or 0)
 
-                # Ghi công làm thêm
-                if day <= last_day:
-                    ot_att = getattr(line, f'ot_day_{day:02d}')
-                    self._safe_write(ws, current_row, 45 + day, ot_att.code if ot_att else '')
+                # Áp dụng font size 16 cho cột 1-9 (A-I)
+                for col_idx in range(1, 10):
+                    ws.cell(row=current_row, column=col_idx).font = font_16
 
-            # 2. HẬU XỬ LÝ ĐIỀN CP: Tự động rà soát (Chỉ khi đã CONFIRMED)
-            if self.state == 'confirmed':
-                for day in range(1, last_day + 1):
-                    current_date = date(month_date.year, month_date.month, day)
+                last_day = monthrange(month_date.year, month_date.month)[1]
+                for day in range(1, 32):
+                    col_idx = 9 + day
+                    att_type = getattr(line, f'day_{day:02d}')
+                    self._safe_write(ws, current_row, col_idx, att_type.code if att_type else '')
+                    if day <= last_day:
+                        ot_att = getattr(line, f'ot_day_{day:02d}')
+                        self._safe_write(ws, current_row, 45 + day, ot_att.code if ot_att else '')
+
+                if self.state == 'confirmed':
+                    for day in range(1, last_day + 1):
+                        current_date = date(month_date.year, month_date.month, day)
+                        col_idx = 9 + day
+                        cell = ws.cell(row=current_row, column=col_idx)
+                        if current_date.weekday() < 6 and not cell.value:
+                            cell.value = "CP"
+
+                for day in range(1, 32):
                     col_idx = 9 + day
                     cell = ws.cell(row=current_row, column=col_idx)
-                    # Nếu là ngày trong tuần (T2-T7) và chưa có mã công
-                    if current_date.weekday() < 6 and not cell.value:
-                        cell.value = "CP"
-
-            # 3. HẬU XỬ LÝ TÔ MÀU: Duyệt lại toàn bộ 31 ngày để áp dụng Style đồng nhất
-            for day in range(1, 32):
-                col_idx = 9 + day
-                cell = ws.cell(row=current_row, column=col_idx)
-                code = str(cell.value) if cell.value else ''
-                
-                if code in COLOR_MAP:
-                    cell.fill = PatternFill(start_color=COLOR_MAP[code], end_color=COLOR_MAP[code], fill_type='solid')
-                    if code == 'KP':
-                        cell.font = Font(color='FFFFFF', bold=True)
+                    code = str(cell.value) if cell.value else ''
+                    if code in COLOR_MAP:
+                        cell.fill = PatternFill(start_color=COLOR_MAP[code], end_color=COLOR_MAP[code], fill_type='solid')
+                        if code == 'KP':
+                            cell.font = Font(color='FFFFFF', bold=True)
+                        else:
+                            cell.font = Font(color='000000')
                     else:
+                        cell.fill = PatternFill(fill_type=None)
                         cell.font = Font(color='000000')
-                else:
-                    # Reset về nền trắng và chữ đen cho các mã khác
-                    cell.fill = PatternFill(fill_type=None)
-                    cell.font = Font(color='000000')
 
-            # 4. Ghi các chỉ số tài chính và thưởng
-            self._safe_write(ws, current_row, 95, self.dl_women_allowance if line.employee_id.sex == 'female' else 0)
-            self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
-            self._safe_write(ws, current_row, 111, line.payroll_kpi_amount or 0)
-            # Cột 135 (EE) bỏ qua vì có công thức sẵn
-            self._safe_write(ws, current_row, 136, line.payroll_pit_number_of_dependents or 0) # Cột EF
-            self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
+                self._safe_write(ws, current_row, 95, self.dl_women_allowance if line.employee_id.sex == 'female' else 0)
+                self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
+                self._safe_write(ws, current_row, 111, line.payroll_kpi_amount or 0)
+                self._safe_write(ws, current_row, 136, line.payroll_pit_number_of_dependents or 0)
+                self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
+
+                insurance_stopped = line.employee_id.id in self.insurance_stop_ids.mapped('employee_id').ids
+                if insurance_stopped:
+                    self._safe_write(ws, current_row, 116, 0)
+                
+                self._safe_write(ws, current_row, 143, line.payroll_internal_salary or 0)
+                self._safe_write(ws, current_row, 144, line.payroll_bank_transfer_amount_rounded or 0)
+                self._safe_write(ws, current_row, 145, line.payroll_cash_amount_rounded or 0)
+                self._safe_write(ws, current_row, 146, line.employee_id.x_bank_account or '')
+                self._safe_write(ws, current_row, 147, line.employee_id.x_bank_name or '')
+                
+                total_bonus = 0
+                for bonus in self.bonus_line_ids:
+                    emp_sex = line.employee_id.sex
+                    if bonus.gender == 'all' or (bonus.gender == 'female' and emp_sex == 'female') or (bonus.gender == 'male' and emp_sex == 'male'):
+                        is_eligible = True
+                        if bonus.date and line.employee_id.departure_date:
+                            if line.employee_id.departure_date <= bonus.date:
+                                is_eligible = False
+                        if is_eligible:
+                            total_bonus += bonus.amount
+                self._safe_write(ws, current_row, 133, total_bonus)
+                
+                # Cập nhật tiến trình sau mỗi 50 nhân viên
+                if attachment and global_stt % 50 == 0:
+                    attachment.write({'description': f"PROGRESS:{global_stt}/{total_count}"})
+                    self.env.cr.commit()
+
+                current_row += 1
+                global_stt += 1
             
-            total_bonus = 0
-            for bonus in self.bonus_line_ids:
-                emp_sex = line.employee_id.sex
-                if bonus.gender == 'all' or \
-                   (bonus.gender == 'female' and emp_sex == 'female') or \
-                   (bonus.gender == 'male' and emp_sex == 'male'):
-                    total_bonus += bonus.amount
-            self._safe_write(ws, current_row, 133, total_bonus)
-            current_row += 1
+            dept_end_row = current_row - 1
+            
+            # --- 3. Ghi công thức SUM ngược lên dòng Header ---
+            for col in range(77, 146):
+                col_letter = get_column_letter(col)
+                # Công thức sum vùng dữ liệu nhân viên của phòng ban này
+                formula = f"=SUM({col_letter}{dept_start_row}:{col_letter}{dept_end_row})"
+                cell_sum = ws.cell(row=header_row, column=col)
+                cell_sum.value = formula
+                cell_sum.font = red_bold_font
 
+        # --- 4. Ghi dòng Grand Total (Tổng cộng hệ thống) ---
+        if current_row > 8:
+            self._copy_row_formatting(ws, 8, current_row)
+        
+        ws.cell(row=current_row, column=3, value="TỔNG CỘNG").font = red_bold_font
+        for col in range(77, 146):
+            col_letter = get_column_letter(col)
+            if summary_rows:
+                # Cộng các dòng Header/Summary của từng phòng ban
+                formula_parts = [f"{col_letter}{r}" for r in summary_rows]
+                formula = f"=SUM({','.join(formula_parts)})"
+                cell_grand = ws.cell(row=current_row, column=col)
+                cell_grand.value = formula
+                cell_grand.font = red_bold_font
+        
         output = io.BytesIO()
         wb.save(output)
         file_data = base64.b64encode(output.getvalue())
@@ -964,3 +1068,20 @@ class SalaryKpiMonth(models.Model):
                 line.action_generate_kpi_scores(max_allowed=69)
                 
         return True
+
+class InsuranceStop(models.Model):
+    _name = 'dl.salary.kpi.insurance.stop'
+    _description = 'Danh sách cắt bảo hiểm tháng'
+
+    month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng lương', ondelete='cascade')
+    currency_id = fields.Many2one(related='month_id.currency_id', string='Tiền tệ', readonly=True)
+    employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
+    
+    # Thông tin liên quan (readonly)
+    identification_id = fields.Char(related='employee_id.identification_id', string='Số CCCD', readonly=True)
+    dl_tax_id = fields.Char(related='employee_id.dl_tax_id', string='Mã số thuế', readonly=True)
+    dl_tax_department_id = fields.Many2one(related='employee_id.dl_tax_department_id', string='Phòng ban', readonly=True)
+    dl_tax_position = fields.Char(related='employee_id.dl_tax_position', string='Chức vụ', readonly=True)
+    dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản', readonly=True)
+    
+    note = fields.Text(string='Ghi chú (Lý do cắt)')
