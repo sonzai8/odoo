@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="species_thong" model="dl.wood.species">
+            <field name="name">Gỗ thông</field>
+            <field name="name_en">Pine Wood</field>
+            <field name="name_sci">Pinus</field>
+            <field name="material_name">Gỗ thông tròn</field>
+            <field name="code">THONG</field>
+            <field name="note">Gỗ thông nhập khẩu hoặc khai thác nội địa</field>
+        </record>
+
+        <record id="species_keo" model="dl.wood.species">
+            <field name="name">Gỗ keo</field>
+            <field name="name_en">Acacia Wood</field>
+            <field name="name_sci">Acacia mangium</field>
+            <field name="material_name">Gỗ keo nguyên liệu</field>
+            <field name="code">KEO</field>
+            <field name="note">Nguyên liệu chính cho sản xuất ván dăm/ván ép</field>
+        </record>
+
+        <record id="species_bach_dan" model="dl.wood.species">
+            <field name="name">Gỗ bạch đàn</field>
+            <field name="name_en">Eucalyptus Wood</field>
+            <field name="name_sci">Eucalyptus</field>
+            <field name="material_name">Gỗ bạch đàn tròn</field>
+            <field name="code">BDAN</field>
+            <field name="note">Gỗ cứng, dùng cho các sản phẩm yêu cầu độ bền cao</field>
+        </record>
+
+        <record id="species_cui" model="dl.wood.species">
+            <field name="name">Củi (Sản phẩm phụ)</field>
+            <field name="name_en">Firewood</field>
+            <field name="material_name">Củi đốt lò</field>
+            <field name="code">CUI</field>
+            <field name="note">Dùng để đốt lò sấy hoặc lò hơi</field>
+        </record>
+    </data>
+</odoo>

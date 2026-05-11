@@ -7,3 +7,12 @@ access_dl_wood_customer_import_wizard_user,dl.wood.customer.import.wizard.user,m
 access_dl_wood_log_user,dl.wood.log.user,model_dl_wood_log,base.group_user,1,0,0,0
 access_dl_wood_log_line_user,dl.wood.log.line.user,model_dl_wood_log_line,base.group_user,1,0,0,0
 access_dl_wood_log_config_admin,dl.wood.log.config.admin,model_dl_wood_log_config,base.group_system,1,1,1,1
+access_dl_woodpro_config_user,dl.woodpro.config.user,model_dl_woodpro_config,base.group_user,1,1,1,1
+access_dl_wood_species_user,dl.wood.species.user,model_dl_wood_species,base.group_user,1,1,1,1
+access_dl_wood_dossier_line_user,dl.wood.dossier.line.user,model_dl_wood_dossier_line,base.group_user,1,1,1,1
+access_dl_wood_dossier_attachment_user,dl.wood.dossier.attachment.user,model_dl_wood_dossier_attachment,base.group_user,1,1,1,1
+access_dl_wood_exploitation_location_user,dl.wood.exploitation.location.user,model_dl_wood_exploitation_location,base.group_user,1,1,1,1
+access_dl_wood_species_grade_user,dl.wood.species.grade.user,model_dl_wood_species_grade,base.group_user,1,1,1,1
+access_dl_wood_sale_order_user,dl.wood.sale.order.user,model_dl_wood_sale_order,base.group_user,1,1,1,1
+access_dl_wood_production_order_user,dl.wood.production.order.user,model_dl_wood_production_order,base.group_user,1,1,1,1
+access_dl_wood_production_line_user,dl.wood.production.line.user,model_dl_wood_production_line,base.group_user,1,1,1,1

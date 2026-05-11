@@ -40,6 +40,13 @@ class DlDossierLedger(models.Model):
         index=True,
         help='Đơn bán hàng là nguồn gốc gây ra giao dịch này.',
     )
+    production_id = fields.Many2one(
+        'dl.wood.production.order',
+        string='Lệnh Sản Xuất',
+        ondelete='set null',
+        index=True,
+        help='Lệnh sản xuất là nguồn gốc gây ra giao dịch này.',
+    )
     product_id = fields.Many2one(
         'product.product',
         related='dossier_id.product_id',

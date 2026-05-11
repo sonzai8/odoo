@@ -42,10 +42,10 @@
         <field name="target">new</field>
     </record>
 
-    <!-- Menu Con: Nhập/Xuất Dữ Liệu -->
-    <menuitem id="menu_dl_wood_customer_import"
+    <!-- Menu Nhập/Xuất Dữ Liệu đã bị ẩn theo yêu cầu -->
+    <!-- <menuitem id="menu_dl_wood_customer_import"
               name="Nhập/Xuất Dữ Liệu"
-              parent="menu_dl_wood_customer_root"
+              parent="menu_dl_wood_traceability_root"
               action="action_dl_wood_customer_import_wizard"
-              sequence="20"/>
+              sequence="30"/> -->
 </odoo>

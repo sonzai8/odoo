@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- 1. Sử dụng lại Category từ dl_wood_payroll để gom nhóm cho dễ nhìn -->
+        <record id="module_category_dl_wood_traceability" model="ir.module.category">
+            <field name="name">Truy xuất nguồn gốc gỗ</field>
+            <field name="parent_id" ref="dl_wood_payroll.module_category_dl_payroll"/>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- 2. Đặc quyền (Privilege) cho module này - Chuẩn Odoo 19 -->
+        <record id="privilege_dl_wood_traceability" model="res.groups.privilege">
+            <field name="name">Truy xuất nguồn gốc gỗ</field>
+            <field name="category_id" ref="module_category_dl_wood_traceability"/>
+        </record>
+
+        <!-- 3. Nhóm quyền Quản Lý Hồ Sơ Gỗ -->
+        <record id="group_dl_wood_dossier_manager" model="res.groups">
+            <field name="name">Quản Lý Hồ Sơ Gỗ</field>
+            <field name="privilege_id" ref="privilege_dl_wood_traceability"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

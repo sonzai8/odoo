@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================= -->
+    <!-- KHÁCH HÀNG (res.partner)  -->
+    <!-- ========================= -->
+    <record id="view_dl_wood_customer_list" model="ir.ui.view">
+        <field name="name">dl.wood.customer.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Khách hàng mua gỗ">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="street"/>
+                <field name="city"/>
+                <field name="state_id"/>
+                <field name="x_customer_code"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_customer" model="ir.actions.act_window">
+        <field name="name">Khách hàng</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_is_wood_customer', '=', True)]</field>
+        <field name="context">{'default_x_is_wood_customer': True}</field>
+        <field name="view_id" ref="view_dl_wood_customer_list"/>
+    </record>
+
+    <!-- ============================= -->
+    <!-- ĐƠN ĐẶT HÀNG (dl.wood.sale.order) -->
+    <!-- ============================= -->
+    <record id="view_dl_wood_sale_order_form" model="ir.ui.view">
+        <field name="name">dl.wood.sale.order.form</field>
+        <field name="model">dl.wood.sale.order</field>
+        <field name="arch" type="xml">
+            <form string="Đơn đặt hàng gỗ">
+                <header>
+                    <button name="action_confirm" string="Xác nhận" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_done" string="Hoàn thành" type="object"
+                            class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_cancel" string="Hủy" type="object"
+                            invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_draft" string="Đặt lại" type="object"
+                            invisible="state not in ('cancelled',)"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_productions" type="object"
+                                class="oe_stat_button" icon="fa-cogs"
+                                invisible="production_count == 0">
+                            <field name="production_count" widget="statinfo" string="Lệnh SX"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin đơn hàng">
+                            <field name="partner_id"/>
+                            <field name="date_order"/>
+                        </group>
+                        <group string="Ghi chú">
+                            <field name="note" nolabel="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lệnh sản xuất">
+                            <field name="production_order_ids" context="{'default_sale_order_id': id}">
+                                <list string="Lệnh sản xuất" editable="bottom">
+                                    <field name="name" readonly="1"/>
+                                    <field name="product_id"/>
+                                    <field name="qty_planned"/>
+                                    <field name="qty_done"/>
+                                    <field name="uom_id" optional="hide"/>
+                                    <field name="date_planned"/>
+                                    <field name="total_volume_actual" optional="show"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'draft'"
+                                           decoration-warning="state == 'in_progress'"
+                                           decoration-success="state == 'done'"
+                                           decoration-danger="state == 'cancelled'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_sale_order_list" model="ir.ui.view">
+        <field name="name">dl.wood.sale.order.list</field>
+        <field name="model">dl.wood.sale.order</field>
+        <field name="arch" type="xml">
+            <list string="Đơn đặt hàng gỗ"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-info="state == 'confirmed'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="date_order"/>
+                <field name="production_count" string="Lệnh SX"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_sale_order_search" model="ir.ui.view">
+        <field name="name">dl.wood.sale.order.search</field>
+        <field name="model">dl.wood.sale.order</field>
+        <field name="arch" type="xml">
+            <search string="Tìm đơn đặt hàng">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <separator/>
+                <filter string="Dự thảo" name="filter_draft" domain="[('state','=','draft')]"/>
+                <filter string="Đã xác nhận" name="filter_confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="Hoàn thành" name="filter_done" domain="[('state','=','done')]"/>
+                <separator/>
+                <filter string="Theo Khách hàng" name="group_by_partner" context="{'group_by':'partner_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_sale_order" model="ir.actions.act_window">
+        <field name="name">Đơn đặt hàng</field>
+        <field name="res_model">dl.wood.sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dl_wood_sale_order_search"/>
+    </record>
+
+    <!-- ===================================== -->
+    <!-- LỆNH SẢN XUẤT (dl.wood.production.order) -->
+    <!-- ===================================== -->
+    <record id="view_dl_wood_production_order_form" model="ir.ui.view">
+        <field name="name">dl.wood.production.order.form</field>
+        <field name="model">dl.wood.production.order</field>
+        <field name="arch" type="xml">
+            <form string="Lệnh sản xuất gỗ">
+                <header>
+                    <button name="action_start" string="Bắt đầu SX" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_done" string="Hoàn thành" type="object"
+                            class="oe_highlight" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Hủy" type="object"
+                            invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_draft" string="Đặt lại" type="object"
+                            invisible="state not in ('cancelled',)"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin sản xuất">
+                            <field name="sale_order_id"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="product_id"/>
+                            <field name="uom_id" readonly="1"/>
+                        </group>
+                        <group string="Số lượng &amp; Thời gian">
+                            <field name="qty_planned"/>
+                            <field name="qty_done"/>
+                            <field name="date_planned"/>
+                            <field name="date_done" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Tiêu hao Nguyên vật liệu">
+                            <field name="line_ids">
+                                <list string="NVL tiêu hao" editable="bottom">
+                                    <field name="species_id"/>
+                                    <field name="dossier_id"
+                                           domain="[('state', '!=', 'cancelled')]"
+                                           context="{'default_species_id': species_id}"/>
+                                    <field name="volume_planned"/>
+                                    <field name="volume_actual"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="total_volume_planned" readonly="1"/>
+                                <field name="total_volume_actual" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="Ghi chú">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_production_order_list" model="ir.ui.view">
+        <field name="name">dl.wood.production.order.list</field>
+        <field name="model">dl.wood.production.order</field>
+        <field name="arch" type="xml">
+            <list string="Lệnh sản xuất"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-warning="state == 'in_progress'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <field name="product_id"/>
+                <field name="qty_planned"/>
+                <field name="qty_done"/>
+                <field name="total_volume_actual" string="KL NVL (m³)"/>
+                <field name="date_planned"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_production_order_search" model="ir.ui.view">
+        <field name="name">dl.wood.production.order.search</field>
+        <field name="model">dl.wood.production.order</field>
+        <field name="arch" type="xml">
+            <search string="Tìm lệnh sản xuất">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="sale_order_id"/>
+                <separator/>
+                <filter string="Dự thảo" name="filter_draft" domain="[('state','=','draft')]"/>
+                <filter string="Đang SX" name="filter_inprogress" domain="[('state','=','in_progress')]"/>
+                <filter string="Hoàn thành" name="filter_done" domain="[('state','=','done')]"/>
+                <separator/>
+                <filter string="Theo Khách hàng" name="group_by_partner" context="{'group_by':'partner_id'}"/>
+                <filter string="Theo Sản phẩm" name="group_by_product" context="{'group_by':'product_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_production_order" model="ir.actions.act_window">
+        <field name="name">Lệnh sản xuất</field>
+        <field name="res_model">dl.wood.production.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dl_wood_production_order_search"/>
+    </record>
+
+    <!-- ========================= -->
+    <!-- SEQUENCES (Tự sinh mã)    -->
+    <!-- ========================= -->
+    <record id="seq_dl_wood_sale_order_temp" model="ir.sequence">
+        <field name="name">Đơn đặt hàng gỗ (Tạm thời)</field>
+        <field name="code">dl.wood.sale.order.temp</field>
+        <field name="prefix">DL-DH-</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_dl_wood_sale_order" model="ir.sequence">
+        <field name="name">Đơn đặt hàng gỗ</field>
+        <field name="code">dl.wood.sale.order</field>
+        <field name="prefix">SO-GỖ/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_dl_wood_production_order" model="ir.sequence">
+        <field name="name">Lệnh sản xuất gỗ</field>
+        <field name="code">dl.wood.production.order</field>
+        <field name="prefix">LSX/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- ========================= -->
+    <!-- MENU CẤU TRÚC             -->
+    <!-- ========================= -->
+    <menuitem id="menu_dl_wood_production"
+              name="Sản xuất"
+              parent="menu_dl_wood_traceability_root"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_wood_customer"
+              name="Khách hàng"
+              parent="menu_dl_wood_production"
+              action="action_dl_wood_customer"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_sale_order"
+              name="Đơn đặt hàng"
+              parent="menu_dl_wood_production"
+              action="action_dl_wood_sale_order"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_wood_production_order"
+              name="Lệnh sản xuất"
+              parent="menu_dl_wood_production"
+              action="action_dl_wood_production_order"
+              sequence="30"/>
+
+</odoo>

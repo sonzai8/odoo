@@ -1,76 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_partner_form_wood_traceability" model="ir.ui.view">
-        <field name="name">res.partner.form.wood.traceability</field>
+    <record id="view_dl_forest_owner_list" model="ir.ui.view">
+        <field name="name">res.partner.forest.owner.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Chủ rừng" create="0" delete="1">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="street" string="Địa chỉ"/>
+                <field name="x_woodpro_id" string="ID WoodPro" readonly="1"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_partner_form_dl_wood_exploitation" model="ir.ui.view">
+        <field name="name">res.partner.form.dl.wood.exploitation</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <!-- Thêm Mã khách hàng vào Form -->
-            <xpath expr="//field[@name='vat']" position="before">
-                <field name="x_customer_code" placeholder="Mã khách hàng phải đồng bộ với phần mềm Misa"/>
-            </xpath>
-            
-            <notebook position="inside">
-                <page string="Hợp đồng mẫu" name="contract_templates">
-                    <field name="dl_contract_ids">
+            <xpath expr="//page[@name='internal_notes']" position="after">
+                <page string="Địa Điểm Khai Thác">
+                    <field name="x_is_wood_supplier" invisible="1"/>
+                    <field name="exploitation_location_ids">
                         <list editable="bottom">
+                            <field name="is_main" widget="boolean_favorite" nolabel="1"/>
                             <field name="name"/>
-                            <field name="file_upload" filename="file_name" string="Tải lên mẫu (.doc)"/>
-                            <field name="file_name" column_invisible="1"/>
-                            <field name="file_url" string="Đường dẫn trên server"/>
-                            <button name="action_download_file" string="Tải về" type="object" icon="fa-download" invisible="not file_url"/>
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="state_id"/>
+                            <field name="note"/>
                         </list>
-                        <form>
-                            <group>
-                                <field name="name"/>
-                                <field name="file_upload" filename="file_name"/>
-                                <field name="file_name" invisible="1"/>
-                                <field name="file_url" readonly="1"/>
-                            </group>
-                        </form>
                     </field>
                 </page>
-            </notebook>
-        </field>
-    </record>
-
-    <!-- Kế thừa Danh sách (Tree/List) để hiển thị thêm thông tin -->
-    <record id="view_partner_tree_wood_traceability" model="ir.ui.view">
-        <field name="name">res.partner.list.wood.traceability</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_tree"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='complete_name']" position="after">
-                <field name="x_customer_code" string="Mã khách hàng"/>
-                <field name="vat" string="Mã số thuế" optional="show"/>
             </xpath>
         </field>
     </record>
 
-    <!-- Action cho khách hàng -->
-    <record id="action_dl_wood_customer" model="ir.actions.act_window">
-        <field name="name">Khách Hàng</field>
-        <field name="res_model">res.partner</field>
-        <field name="view_mode">list,kanban,form</field>
-        <field name="domain">[('customer_rank', '>', 0)]</field>
-        <field name="context">{'default_customer_rank': 1}</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Tạo khách hàng đầu tiên!
-            </p>
+    <record id="view_dl_forest_owner_search" model="ir.ui.view">
+        <field name="name">res.partner.forest.owner.search</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Đối tác">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="x_woodpro_id"/>
+                <filter string="Chủ Rừng" name="filter_forest_owner" domain="[('x_is_wood_supplier', '=', 'owner')]"/>
+                <filter string="Nhà Cung Cấp" name="filter_supplier" domain="[('x_is_wood_supplier', '=', 'supplier')]"/>
+                <separator/>
+                <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                <searchpanel>
+                    <field name="x_is_wood_supplier" string="Loại đối tác" select="multi" icon="fa-users"/>
+                </searchpanel>
+            </search>
         </field>
     </record>
 
-    <!-- Menu Cha: Quản Lý Khách Hàng -->
-    <menuitem id="menu_dl_wood_customer_root"
-              name="Quản Lý Khách Hàng"
+    <record id="action_dl_wood_forest_owner" model="ir.actions.act_window">
+        <field name="name">Chủ Rừng</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_is_wood_supplier', '=', 'owner')]</field>
+        <field name="context">{'default_x_is_wood_supplier': 'owner', 'search_default_filter_forest_owner': 1}</field>
+        <field name="view_id" ref="view_dl_forest_owner_list"/>
+        <field name="search_view_id" ref="view_dl_forest_owner_search"/>
+    </record>
+
+    <record id="action_dl_wood_supplier" model="ir.actions.act_window">
+        <field name="name">Nhà Cung Cấp Gỗ</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_is_wood_supplier', '=', 'supplier')]</field>
+        <field name="context">{'default_x_is_wood_supplier': 'supplier', 'search_default_filter_supplier': 1}</field>
+        <field name="view_id" ref="view_dl_forest_owner_list"/>
+        <field name="search_view_id" ref="view_dl_forest_owner_search"/>
+    </record>
+
+    <!-- Menu cha gom Chủ Rừng và Nhà Cung Cấp Gỗ -->
+    <menuitem id="menu_dl_wood_partners"
+              name="Đối Tác"
               parent="menu_dl_wood_traceability_root"
               sequence="20"/>
 
-    <!-- Menu Con: Danh Sách Khách Hàng -->
-    <menuitem id="menu_dl_wood_customer"
-              name="Danh Sách Khách Hàng"
-              parent="menu_dl_wood_customer_root"
-              action="action_dl_wood_customer"
+    <menuitem id="menu_dl_wood_forest_owner"
+              name="Chủ Rừng"
+              parent="menu_dl_wood_partners"
+              action="action_dl_wood_forest_owner"
               sequence="10"/>
+    <menuitem id="menu_dl_wood_supplier"
+              name="Nhà Cung Cấp Gỗ"
+              parent="menu_dl_wood_partners"
+              action="action_dl_wood_supplier"
+              sequence="20"/>
 </odoo>
