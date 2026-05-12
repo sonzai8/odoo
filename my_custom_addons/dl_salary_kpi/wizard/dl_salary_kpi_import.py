@@ -55,15 +55,18 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
 
-            # Nhận diện nhân viên qua Tên và Mã số thuế
             tax_id_excel = str(row[1]).strip() if row[1] else ""
-            # Xử lý trường hợp Excel tự động thêm .0 cho số
             if tax_id_excel.endswith('.0'):
                 tax_id_excel = tax_id_excel[:-2]
                 
             emp_name_excel = str(row[2]).strip() if row[2] else ""
             
             if not emp_name_excel:
+                continue
+
+            # Validate độ dài MST/CCCD (Hỗ trợ CMT 9 số, MST 10/13 số, CCCD 12 số)
+            if tax_id_excel and len(tax_id_excel) not in [9, 10, 12, 13]:
+                errors.append(f"Dòng {row_idx}: Mã số (MST/CCCD) '{tax_id_excel}' không đúng định dạng (phải là 9, 10, 12 hoặc 13 số).")
                 continue
 
             # Tìm line tương ứng trong tháng dựa trên Tên và MST
@@ -215,11 +218,16 @@ class SalaryKpiImportWizard(models.TransientModel):
             # Làm sạch chuỗi CCCD (nếu là số thì bỏ .0)
             if cccd.endswith('.0'):
                 cccd = cccd[:-2]
+
+            # Validate độ dài CCCD (Hỗ trợ CMT 9 số, MST 10/13 số, CCCD 12 số)
+            if len(cccd) not in [9, 10, 12, 13]:
+                errors.append(f"Dòng {row_idx}: Số CCCD '{cccd}' không đúng định dạng (phải là 9, 10, 12 hoặc 13 số).")
+                continue
                 
             emp_name_excel = str(row[2]).strip() if row[2] else ""
             
-            # Tìm line tương ứng dựa trên identification_id
-            line = self.month_id.line_ids.filtered(lambda l: l.identification_id == cccd)
+            # Tìm line tương ứng dựa trên identification_id (Trim cả hai đầu)
+            line = self.month_id.line_ids.filtered(lambda l: (l.identification_id or '').strip() == cccd)
             if not line:
                 errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên có CCCD '{cccd}' trong bảng công tháng này.")
                 continue
