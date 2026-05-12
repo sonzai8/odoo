@@ -273,6 +273,12 @@ class DlWoodproConfig(models.Model):
                         }
                         if not dossier: dossier = dossier_obj.create(vals)
                         else: dossier.line_ids.unlink(); dossier.write(vals)
+
+                        # Logic tự động chuyển trạng thái dựa trên tồn kho thực tế
+                        if dossier.remaining_qty < 3.0:
+                            dossier.write({'state': 'closed'})
+                        else:
+                            dossier.write({'state': 'in_use'})
                     self._sync_dossier_attachments(dossier, headers)
                     total_synced += 1
                 if page >= res_data.get('totalPages', 1): break
@@ -294,8 +300,6 @@ class DlWoodproConfig(models.Model):
             prod_order_obj = self.env['dl.wood.production.order']
             prod_line_obj = self.env['dl.wood.production.product.line']
             species_obj = self.env['dl.wood.species']
-            country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
-            vn_states = self.env['res.country.state'].search([('country_id', '=', country_vn.id)]) if country_vn else []
             page, limit, total_synced = 1, 50, 0
             with tools.mute_logger('odoo.models.unlink'):
                 while True:
@@ -311,125 +315,133 @@ class DlWoodproConfig(models.Model):
                         _logger.debug(f"Đồng bộ đơn hàng WoodPro ID: {production_id}")
                         
                         partner = partner_obj.search([('name', '=', receiver_name)], limit=1)
-                    if not partner:
-                        partner = partner_obj.create({'name': receiver_name, 'phone': item.get('receiverPhone'), 'x_is_wood_customer': True})
-                    
-                    sale_order = sale_order_obj.search([('x_woodpro_id', '=', production_id)], limit=1)
-                    if not sale_order:
-                        sale_order = sale_order_obj.create({
-                            'name': invoice_code or f"TEMP-{production_id}", 'partner_id': partner.id,
-                            'x_invoice_code': invoice_code, 'x_woodpro_id': production_id, 'state': 'done'
-                        })
-                    
-                    prod_order = prod_order_obj.search([('x_woodpro_id', '=', production_id)], limit=1)
-                    if not prod_order:
-                        prod_order = prod_order_obj.create({'name': production_code or _('Mới'), 'sale_order_id': sale_order.id, 'x_woodpro_id': production_id})
-                    elif self.x_sync_mode == 'overwrite':
-                        self.env['dl.dossier.ledger'].search([('production_id', '=', prod_order.id)]).unlink()
-                        prod_order.product_line_ids.unlink()
-
-                    # LOGIC MỚI: GOM NHÓM THEO SẢN PHẨM VÀ BÓC TÁCH CHUYẾN
-                    grouped_products = {}
-                    all_trips_data = [] # Lưu trữ thông tin chuyến để tạo sau
-                    
-                    for detail in item.get('productionDetails', []):
-                        product_code = detail.get('product', {}).get('code')
-                        if not product_code: continue
+                        if not partner:
+                            partner = partner_obj.create({
+                                'name': receiver_name, 
+                                'phone': item.get('receiverPhone'), 
+                                'x_is_wood_customer': True
+                            })
                         
-                        if product_code not in grouped_products:
-                            product = self.env['product.product'].search([('default_code', '=', product_code)], limit=1)
-                            if not product:
-                                product = self.env['product.product'].create({
-                                    'name': detail.get('product', {}).get('name'), 'default_code': product_code,
-                                    'type': 'consu', 'is_storable': True, 'is_wood_product': True
-                                })
-                            grouped_products[product_code] = {
-                                'product_id': product.id,
-                                'conversion_rate': self._safe_float(detail.get('conversion'), 1.3),
-                                'boms': {} # miningId -> {species, volume, rate, norm}
-                            }
+                        sale_order = sale_order_obj.search([('x_woodpro_id', '=', production_id)], limit=1)
+                        if not sale_order:
+                            sale_order = sale_order_obj.create({
+                                'name': invoice_code or f"TEMP-{production_id}", 
+                                'partner_id': partner.id,
+                                'date_order': (item.get('createdAt') or fields.Date.today())[:10],
+                                'x_invoice_code': invoice_code, 
+                                'x_woodpro_id': production_id, 
+                                'state': 'done'
+                            })
+                        elif self.x_sync_mode == 'overwrite':
+                            sale_order.write({
+                                'date_order': (item.get('createdAt') or fields.Date.today())[:10]
+                            })
                         
-                        # Thu thập dữ liệu chuyến
-                        manifests = detail.get('manifestNum', [])
-                        license_plates = detail.get('licensePlate', [])
-                        
-                        # Một detail có thể có nhiều manifest/xe? Thường là 1-1 trong API mới
-                        all_trips_data.append({
-                            'product_id': grouped_products[product_code]['product_id'],
-                            'manifest_num': manifests[0] if manifests else '',
-                            'quantity': self._safe_float(detail.get('quantity', 0.0)),
-                            'license_plate': license_plates[0] if license_plates else '',
-                            'date_ship': self._safe_datetime(item.get('timeAt')),
-                            'x_woodpro_id': detail.get('id')
-                        })
-
-                        # Thu thập thông tin từ BOM
-                        for bom in detail.get('boms', []):
-                            mining_id = bom.get('miningId')
-                            if not mining_id: continue
-                            
-                            rate = self._safe_float(bom.get('rate'), field_name="Tỷ lệ %")
-                            norm = self._safe_float(bom.get('conversion'), field_name="Định mức")
-                            
-                            if mining_id not in grouped_products[product_code]['boms']:
-                                species_name = bom.get('nameSci') or bom.get('subWood', {}).get('wood', {}).get('name')
-                                species = species_obj.search([('name', '=', species_name)], limit=1)
-                                if not species and species_name: species = species_obj.create({'name': species_name})
-                                grouped_products[product_code]['boms'][mining_id] = {
-                                    'species_id': species.id if species else False,
-                                    'rate': rate,
-                                    'norm': norm
-                                }
-                            else:
-                                grouped_products[product_code]['boms'][mining_id]['rate'] = rate
-                                grouped_products[product_code]['boms'][mining_id]['norm'] = norm
-
-                    # 1. Cập nhật các chuyến vận chuyển trước (để compute qty nhảy đúng)
-                    prod_order.trip_ids.unlink()
-                    trip_vals = []
-                    for t in all_trips_data:
-                        trip_vals.append((0, 0, t))
-                    if trip_vals: prod_order.write({'trip_ids': trip_vals})
-
-                    # 2. Tạo/Cập nhật các dòng thành phẩm
-                    for p_code, p_data in grouped_products.items():
-                        prod_line = prod_line_obj.search([
-                            ('production_order_id', '=', prod_order.id),
-                            ('product_id', '=', p_data['product_id'])
-                        ], limit=1)
-                        
-                        line_vals = {
-                            'production_order_id': prod_order.id, 'product_id': p_data['product_id'],
-                            'x_conversion_rate': p_data['conversion_rate']
+                        prod_order = prod_order_obj.search([('x_woodpro_id', '=', production_id)], limit=1)
+                        order_vals = {
+                            'name': production_code or _('Mới'),
+                            'sale_order_id': sale_order.id,
+                            'x_woodpro_id': production_id,
+                            'date_order': self._safe_datetime(item.get('createdAt'))
                         }
-                        if not prod_line: prod_line = prod_line_obj.create(line_vals)
-                        else: prod_line.write(line_vals)
+                        if not prod_order:
+                            prod_order = prod_order_obj.create(order_vals)
+                        elif self.x_sync_mode == 'overwrite':
+                            prod_order.write(order_vals)
+                            self.env['dl.dossier.ledger'].search([('production_id', '=', prod_order.id)]).unlink()
+                            prod_order.product_line_ids.unlink()
+
+                        # LOGIC: GOM NHÓM THEO SẢN PHẨM VÀ BÓC TÁCH CHUYẾN
+                        grouped_products = {}
+                        all_trips_data = []
                         
-                        # TÍNH TỔNG SỐ LƯỢNG THỦ CÔNG ĐỂ TÍNH BOM (Tránh lỗi chưa compute xong)
-                        manual_total_qty = sum([t['quantity'] for t in all_trips_data if t['product_id'] == p_data['product_id']])
-
-                        # Cập nhật BOMs (Tính toán khối lượng dựa trên Qty x Norm x Rate%)
-                        prod_line.material_line_ids.unlink()
-                        material_vals = []
-                        for m_id, m_data in p_data['boms'].items():
-                            dossier = self.env['dl.wood.dossier'].search([('x_woodpro_id', '=', m_id)], limit=1)
+                        for detail in item.get('productionDetails', []):
+                            product_code = detail.get('product', {}).get('code')
+                            if not product_code: continue
                             
-                            # Công thức: Volume = Tổng SL chuyến x Định mức x Tỷ lệ %
-                            vol_calc = manual_total_qty * m_data['norm'] * (m_data['rate'] / 100.0)
+                            if product_code not in grouped_products:
+                                product = self.env['product.product'].search([('default_code', '=', product_code)], limit=1)
+                                if not product:
+                                    product = self.env['product.product'].create({
+                                        'name': detail.get('product', {}).get('name'), 
+                                        'default_code': product_code,
+                                        'type': 'consu', 'is_storable': True, 'is_wood_product': True
+                                    })
+                                grouped_products[product_code] = {
+                                    'product_id': product.id,
+                                    'conversion_rate': self._safe_float(detail.get('conversion'), 1.3),
+                                    'boms': {}
+                                }
                             
-                            material_vals.append((0, 0, {
-                                'species_id': m_data['species_id'], 'dossier_id': dossier.id if dossier else False,
-                                'volume_planned': vol_calc, 'volume_actual': vol_calc,
-                                'x_rate': m_data['rate'],
-                                'x_norm': m_data['norm'],
-                            }))
-                        if material_vals: prod_line.write({'material_line_ids': material_vals})
+                            manifests = detail.get('manifestNum', [])
+                            license_plates = detail.get('licensePlate', [])
+                            all_trips_data.append({
+                                'product_id': grouped_products[product_code]['product_id'],
+                                'manifest_num': manifests[0] if manifests else '',
+                                'quantity': self._safe_float(detail.get('quantity', 0.0)),
+                                'license_plate': license_plates[0] if license_plates else '',
+                                'date_ship': self._safe_datetime(item.get('timeAt')),
+                                'x_woodpro_id': detail.get('id')
+                            })
 
-                    # Đảm bảo trừ kho và tạo sổ cái nếu là lệnh mới hoặc chế độ ghi đè
-                    if prod_order.state != 'done' or self.x_sync_mode == 'overwrite':
-                        prod_order.write({'state': 'done'})
-                        prod_order._action_deduct_materials(force=True)
-                    total_synced += 1
+                            for bom in detail.get('boms', []):
+                                mining_id = bom.get('miningId')
+                                if not mining_id: continue
+                                rate = self._safe_float(bom.get('rate'))
+                                norm = self._safe_float(bom.get('conversion'))
+                                
+                                if mining_id not in grouped_products[product_code]['boms']:
+                                    species_name = bom.get('nameSci') or bom.get('subWood', {}).get('wood', {}).get('name')
+                                    species = species_obj.search([('name', '=', species_name)], limit=1)
+                                    if not species and species_name: species = species_obj.create({'name': species_name})
+                                    grouped_products[product_code]['boms'][mining_id] = {
+                                        'species_id': species.id if species else False,
+                                        'rate': rate,
+                                        'norm': norm
+                                    }
+                                else:
+                                    grouped_products[product_code]['boms'][mining_id]['rate'] = rate
+                                    grouped_products[product_code]['boms'][mining_id]['norm'] = norm
+
+                        # 1. Cập nhật các chuyến vận chuyển
+                        prod_order.trip_ids.unlink()
+                        trip_vals = [(0, 0, t) for t in all_trips_data]
+                        if trip_vals: prod_order.write({'trip_ids': trip_vals})
+
+                        # 2. Cập nhật dòng thành phẩm & BOM
+                        for p_code, p_data in grouped_products.items():
+                            prod_line = prod_line_obj.search([
+                                ('production_order_id', '=', prod_order.id),
+                                ('product_id', '=', p_data['product_id'])
+                            ], limit=1)
+                            
+                            line_vals = {
+                                'production_order_id': prod_order.id, 
+                                'product_id': p_data['product_id'],
+                                'x_conversion_rate': p_data['conversion_rate']
+                            }
+                            if not prod_line: prod_line = prod_line_obj.create(line_vals)
+                            else: prod_line.write(line_vals)
+                            
+                            manual_total_qty = sum([t['quantity'] for t in all_trips_data if t['product_id'] == p_data['product_id']])
+                            prod_line.material_line_ids.unlink()
+                            material_vals = []
+                            for m_id, m_data in p_data['boms'].items():
+                                dossier = self.env['dl.wood.dossier'].search([('x_woodpro_id', '=', m_id)], limit=1)
+                                norm_to_use = dossier.x_default_norm if dossier else m_data['norm']
+                                vol_calc = manual_total_qty * norm_to_use * (m_data['rate'] / 100.0)
+                                material_vals.append((0, 0, {
+                                    'species_id': m_data['species_id'], 
+                                    'dossier_id': dossier.id if dossier else False,
+                                    'volume_planned': vol_calc, 'volume_actual': vol_calc,
+                                    'x_rate': m_data['rate'], 'x_norm': norm_to_use,
+                                }))
+                            if material_vals: prod_line.write({'material_line_ids': material_vals})
+
+                        if prod_order.state != 'done' or self.x_sync_mode == 'overwrite':
+                            prod_order.write({'state': 'done'})
+                            prod_order._action_deduct_materials(force=True)
+                        total_synced += 1
                     if page >= data.get('result', {}).get('totalPages', 1): break
                     page += 1
             return self._show_notification(_('Thành công'), _('Đã gom nhóm và đồng bộ %s đơn hàng.') % total_synced)

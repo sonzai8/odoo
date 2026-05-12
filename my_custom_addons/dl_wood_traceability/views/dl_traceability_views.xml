@@ -16,7 +16,7 @@
                   decoration-muted="state == 'draft'"
                   decoration-warning="state == 'exploiting'"
                   decoration-info="state == 'in_use'"
-                  decoration-success="state == 'confirmed'">
+                  decoration-success="state == 'closed'">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="x_start_date" optional="show"/>
@@ -38,9 +38,9 @@
         <field name="arch" type="xml">
             <form string="Hồ Sơ Gỗ">
                 <header>
-                    <button name="action_confirm" string="Xác Nhận" type="object" class="oe_highlight" 
-                            invisible="state == 'confirmed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,in_use,summary,confirmed"/>
+                    <button name="action_confirm" string="Đóng hồ sơ" type="object" class="oe_highlight" 
+                            invisible="state == 'closed'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,in_use,summary,closed"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -55,16 +55,17 @@
                         <group string="Thông Tin Chính">
                             <field name="partner_id"/>
                             <field name="date_received"/>
-                            <field name="x_start_date"/>
-                            <field name="x_end_date"/>
                             <field name="x_addendum_num"/>
                             <field name="initial_qty"/>
+                            <field name="x_default_norm"/>
                             <field name="x_woodpro_id" readonly="1"/>
                         </group>
                         <group string="Thông Tin Khai Thác">
                             <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
                             <field name="x_mining_method"/>
                             <field name="x_area"/>
+                            <field name="x_start_date"/>
+                            <field name="x_end_date"/>
                         </group>
                         <group string="Quản lý Tồn kho">
                             <field name="remaining_qty" readonly="1" class="fw-bold text-primary" style="font-size: 1.1em;"/>
@@ -102,6 +103,7 @@
                                     <field name="qty_before" string="Tồn trước"/>
                                     <field name="actual_qty" string="Biến động" decoration-danger="actual_qty &lt; 0" decoration-success="actual_qty &gt; 0"/>
                                     <field name="qty_after" string="Tồn sau"/>
+                                    <field name="x_norm" string="Định mức" optional="show"/>
                                     <field name="note"/>
                                     <field name="state" widget="badge" decoration-success="state=='done'" decoration-warning="state=='draft'"/>
                                 </list>
@@ -137,7 +139,7 @@
                         <list editable="bottom">
                             <field name="finished_product_id"/>
                             <field name="finished_qty"/>
-                            <field name="dossier_id" domain="[('qty_available', '>', 0)]"/>
+                            <field name="dossier_id" domain="[('qty_available', '>', 0), ('state', '!=', 'closed')]"/>
                             <field name="standard_ratio" readonly="1"/>
                             <field name="actual_deduct_qty" readonly="1"/>
                             <field name="co_index"/>

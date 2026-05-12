@@ -124,6 +124,7 @@ class DlWoodDossier(models.Model):
         digits=(16, 2),
         help='Tổng khối lượng gỗ được cấp phép ban đầu trong hồ sơ.',
     )
+    x_default_norm = fields.Float(string='Định mức mặc định', default=1.3, digits=(16, 2))
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
     x_mining_address = fields.Char(string='Địa chỉ khai thác (Gốc)', help='Địa chỉ text lấy từ API WoodPro')
     
@@ -141,7 +142,7 @@ class DlWoodDossier(models.Model):
         ('exploiting', 'Đang Khai Thác'),
         ('in_use', 'Đang Sử Dụng'),
         ('summary', 'Tổng Kết'),
-        ('confirmed', 'Xác Nhận')
+        ('closed', 'Đóng')
     ], string='Trạng thái', default='draft')
 
     x_area = fields.Float(string='Diện tích (ha)', digits=(16, 2))
@@ -196,11 +197,11 @@ class DlWoodDossier(models.Model):
             _logger.info(f"WOODPRO: Tự động chuyển {len(exploiting_dossiers)} hồ sơ sang Tổng Kết")
 
     def action_confirm(self):
-        """Nút bấm để xác nhận hồ sơ gỗ"""
+        """Nút bấm để Đóng hồ sơ gỗ"""
         for record in self:
-            if record.state == 'confirmed':
+            if record.state == 'closed':
                 continue
-            record.write({'state': 'confirmed'})
+            record.write({'state': 'closed'})
 
     # -------------------------------------------------------------------------
     # Ledger Relation (Append-only log)

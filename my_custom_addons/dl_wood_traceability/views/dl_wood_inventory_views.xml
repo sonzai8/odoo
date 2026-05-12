@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_wood_dossier_inventory_form" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.inventory.form</field>
+        <field name="model">dl.wood.dossier.inventory</field>
+        <field name="arch" type="xml">
+            <form string="Phiếu kiểm kê hồ sơ gỗ">
+                <header>
+                    <button name="action_confirm" string="Xác nhận số liệu sổ sách" type="object" class="oe_highlight" 
+                            invisible="state != 'draft'"/>
+                    <button name="action_done" string="Hoàn thành kiểm kê" type="object" class="oe_highlight" 
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_cancel" string="Hủy phiếu &amp; Hoàn kho" type="object" 
+                            invisible="state not in ['confirmed', 'done']"
+                            confirm="Hệ thống sẽ tạo bản ghi đối ứng để hoàn trả tồn kho. Bạn có chắc chắn muốn hủy?"/>
+                    <button name="action_draft" string="Đặt lại dự thảo" type="object" 
+                            invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="user_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="note" placeholder="Ví dụ: Chốt số liệu tồn kho đầu kỳ năm 2026..." readonly="state in ['done', 'cancel']"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết hồ sơ kiểm kê">
+                            <field name="line_ids" readonly="state in ['done', 'cancel']">
+                                <list editable="bottom">
+                                    <field name="dossier_id" options="{'no_create': True}" readonly="parent.state != 'draft'"/>
+                                    <field name="current_state" widget="badge"/>
+                                    <field name="theoretical_qty"/>
+                                    <field name="real_qty" readonly="parent.state == 'done'"/>
+                                    <field name="difference" decoration-danger="difference &lt; 0" decoration-success="difference &gt; 0"/>
+                                    <field name="new_state" readonly="parent.state == 'done'"/>
+                                    <field name="reason" readonly="parent.state == 'done'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_dossier_inventory_list" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.inventory.list</field>
+        <field name="model">dl.wood.dossier.inventory</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách phiếu kiểm kê">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="user_id"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'draft'" 
+                       decoration-warning="state == 'confirmed'"
+                       decoration-success="state == 'done'" 
+                       decoration-danger="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_dossier_inventory" model="ir.actions.act_window">
+        <field name="name">Kiểm kê hồ sơ gỗ</field>
+        <field name="res_model">dl.wood.dossier.inventory</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+          <p class="o_view_nocontent_smiling_face">
+            Tạo phiếu kiểm kê đầu tiên
+          </p><p>
+            Chuyển qua quy trình 3 bước chuyên nghiệp: Dự thảo -> Chốt số liệu sổ sách -> Hoàn thành ghi sổ.
+          </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_dl_wood_dossier_inventory" 
+              name="Kiểm kê hồ sơ" 
+              parent="menu_dl_wood_input_materials" 
+              action="action_dl_wood_dossier_inventory" 
+              sequence="50"/>
+</odoo>

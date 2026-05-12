@@ -164,6 +164,7 @@
                         <group string="Thông tin chung">
                             <field name="sale_order_id" readonly="state != 'draft'"/>
                             <field name="partner_id" readonly="state != 'draft' and sale_order_id"/>
+                            <field name="date_order" readonly="1"/>
                             <field name="date_planned"/>
                             <field name="date_done" readonly="1"/>
                         </group>
@@ -309,7 +310,7 @@
     <menuitem id="menu_dl_wood_production"
               name="Sản xuất"
               parent="menu_dl_wood_traceability_root"
-              sequence="30"/>
+              sequence="11"/>
 
     <menuitem id="menu_dl_wood_customer"
               name="Khách hàng"

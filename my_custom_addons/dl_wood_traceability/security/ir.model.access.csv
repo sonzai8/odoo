@@ -22,3 +22,6 @@ access_dl_wood_product_norm_manager,dl.wood.product.norm manager,model_dl_wood_p
 access_dl_wood_product_norm_user,dl.wood.product.norm user,model_dl_wood_product_norm,base.group_user,1,0,0,0
 access_dl_link_production_wizard_user,dl.link.production.wizard.user,model_dl_link_production_wizard,base.group_user,1,1,1,1
 access_dl_wood_production_trip_user,dl.wood.production.trip.user,model_dl_wood_production_trip,base.group_user,1,1,1,1
+access_dl_wood_dossier_inventory_manager,dl.wood.dossier.inventory manager,model_dl_wood_dossier_inventory,group_dl_wood_dossier_manager,1,1,1,1
+access_dl_wood_dossier_inventory_line_manager,dl.wood.dossier.inventory.line manager,model_dl_wood_dossier_inventory_line,group_dl_wood_dossier_manager,1,1,1,1
+access_dl_wood_dossier_inventory_user,dl.wood.dossier.inventory user,model_dl_wood_dossier_inventory,base.group_user,1,0,0,0

@@ -54,6 +54,13 @@ class DlDossierLedger(models.Model):
         index=True,
         help='Lệnh sản xuất là nguồn gốc gây ra giao dịch này.',
     )
+    inventory_id = fields.Many2one(
+        'dl.wood.dossier.inventory',
+        string='Phiếu Kiểm Kê',
+        ondelete='set null',
+        index=True,
+        help='Phiếu kiểm kê gây ra biến động tồn kho này.',
+    )
     product_id = fields.Many2one(
         'product.product',
         related='dossier_id.product_id',
@@ -72,6 +79,7 @@ class DlDossierLedger(models.Model):
         help='Số lượng biến động. Lưu số ÂM khi xuất kho (ví dụ: -20 m³), số DƯƠNG khi hoàn trả.',
     )
     qty_after = fields.Float(string='Tồn sau (m³)', digits=(16, 2))
+    x_norm = fields.Float(string='Định mức', digits=(16, 2), help='Định mức sử dụng tại thời điểm phát sinh.')
     note = fields.Char(string='Ghi chú/Mô tả')
     state = fields.Selection(
         selection=[

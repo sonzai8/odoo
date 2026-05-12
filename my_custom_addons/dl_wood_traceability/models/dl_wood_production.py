@@ -95,6 +95,7 @@ class DlWoodProductionOrder(models.Model):
     )
     
     date_planned = fields.Date(string='Ngày dự kiến', default=fields.Date.context_today)
+    date_order = fields.Datetime(string='Ngày đặt hàng')
     date_done = fields.Date(string='Ngày hoàn thành')
     
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
@@ -179,8 +180,10 @@ class DlWoodProductionOrder(models.Model):
                     'qty_before': dossier.remaining_qty,
                     'actual_qty': -vol,
                     'qty_after': dossier.remaining_qty - vol,
+                    'x_norm': m_line.x_norm,
                     'note': f"Sản xuất: {p_line.product_id.name} (Lệnh: {self.name})",
                     'state': 'done',
+                    'date': self.date_order or fields.Datetime.now(),
                 })
         
         # Cập nhật số lượng LSX cho các hồ sơ gỗ bị ảnh hưởng
@@ -245,13 +248,32 @@ class DlWoodProductionLine(models.Model):
     production_order_id = fields.Many2one(related='product_line_id.production_order_id', store=True)
     
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', required=True)
-    dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ sơ gỗ', index=True)
+    dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ sơ gỗ', index=True, domain=[('state', '!=', 'closed')])
+    
+    @api.constrains('dossier_id')
+    def _check_dossier_state(self):
+        for rec in self:
+            if rec.dossier_id and rec.dossier_id.state == 'closed':
+                raise ValidationError(_('Hồ sơ gỗ "%s" đã ĐÓNG, không thể sử dụng để sản xuất!') % rec.dossier_id.name)
     
     volume_planned = fields.Float(string='Khối lượng kế hoạch (m³)', digits=(16, 2))
     volume_actual = fields.Float(string='Khối lượng thực tế (m³)', digits=(16, 2))
     x_rate = fields.Float(string='Tỷ lệ (%)', digits=(16, 2))
     x_norm = fields.Float(string='Định mức', digits=(16, 2))
     note = fields.Char(string='Ghi chú')
+
+    @api.onchange('dossier_id')
+    def _onchange_dossier_id(self):
+        if self.dossier_id:
+            self.x_norm = self.dossier_id.x_default_norm
+            self._onchange_calc_volume()
+
+    @api.onchange('x_rate', 'x_norm', 'product_line_id.qty_planned')
+    def _onchange_calc_volume(self):
+        for rec in self:
+            qty = rec.product_line_id.qty_planned or 0.0
+            rec.volume_planned = qty * rec.x_norm * (rec.x_rate / 100.0)
+            rec.volume_actual = rec.volume_planned
 
 class DlWoodProductionTrip(models.Model):
     _name = 'dl.wood.production.trip'
