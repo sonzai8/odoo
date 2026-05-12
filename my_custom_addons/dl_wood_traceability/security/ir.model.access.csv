@@ -16,3 +16,9 @@ access_dl_wood_species_grade_user,dl.wood.species.grade.user,model_dl_wood_speci
 access_dl_wood_sale_order_user,dl.wood.sale.order.user,model_dl_wood_sale_order,base.group_user,1,1,1,1
 access_dl_wood_production_order_user,dl.wood.production.order.user,model_dl_wood_production_order,base.group_user,1,1,1,1
 access_dl_wood_production_line_user,dl.wood.production.line.user,model_dl_wood_production_line,base.group_user,1,1,1,1
+access_dl_wood_production_product_line_user,dl.wood.production.product.line.user,model_dl_wood_production_product_line,base.group_user,1,1,1,1
+access_dl_wood_production_line_manager,dl.wood.production.line manager,model_dl_wood_production_line,group_dl_wood_dossier_manager,1,1,1,1
+access_dl_wood_product_norm_manager,dl.wood.product.norm manager,model_dl_wood_product_norm,group_dl_wood_dossier_manager,1,1,1,1
+access_dl_wood_product_norm_user,dl.wood.product.norm user,model_dl_wood_product_norm,base.group_user,1,0,0,0
+access_dl_link_production_wizard_user,dl.link.production.wizard.user,model_dl_link_production_wizard,base.group_user,1,1,1,1
+access_dl_wood_production_trip_user,dl.wood.production.trip.user,model_dl_wood_production_trip,base.group_user,1,1,1,1

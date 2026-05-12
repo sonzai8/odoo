@@ -35,10 +35,17 @@ class DlDossierLedger(models.Model):
     )
     sale_id = fields.Many2one(
         'sale.order',
+        string='Đơn Bán Hàng (Odoo)',
+        ondelete='set null',
+        index=True,
+        help='Đơn bán hàng chuẩn của Odoo.',
+    )
+    wood_sale_id = fields.Many2one(
+        'dl.wood.sale.order',
         string='Đơn Bán Hàng',
         ondelete='set null',
         index=True,
-        help='Đơn bán hàng là nguồn gốc gây ra giao dịch này.',
+        help='Đơn bán hàng gỗ của xưởng.',
     )
     production_id = fields.Many2one(
         'dl.wood.production.order',
@@ -58,11 +65,14 @@ class DlDossierLedger(models.Model):
     # -------------------------------------------------------------------------
     # Transaction Data
     # -------------------------------------------------------------------------
+    qty_before = fields.Float(string='Tồn trước (m³)', digits=(16, 2))
     actual_qty = fields.Float(
         string='Khối Lượng Biến Động (m³)',
-        digits=(16, 4),
+        digits=(16, 2),
         help='Số lượng biến động. Lưu số ÂM khi xuất kho (ví dụ: -20 m³), số DƯƠNG khi hoàn trả.',
     )
+    qty_after = fields.Float(string='Tồn sau (m³)', digits=(16, 2))
+    note = fields.Char(string='Ghi chú/Mô tả')
     state = fields.Selection(
         selection=[
             ('draft', 'Đang Giữ Hàng (Reserved)'),

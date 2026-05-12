@@ -13,3 +13,4 @@ from . import product_template
 from . import stock_move_line
 from . import dl_wood_exploitation_location
 from . import dl_wood_production
+from . import dl_wood_product_norm

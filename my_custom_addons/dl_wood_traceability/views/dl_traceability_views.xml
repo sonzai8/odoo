@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="action_view_production_orders_from_dossier" model="ir.actions.act_window">
+        <field name="name">Lệnh sản xuất sử dụng hồ sơ</field>
+        <field name="res_model">dl.wood.production.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('product_line_ids.material_line_ids.dossier_id', '=', active_id)]</field>
+        <field name="context">{'search_default_dossier_id': active_id}</field>
+    </record>
+
     <record id="view_dl_wood_dossier_list" model="ir.ui.view">
         <field name="name">dl.wood.dossier.list</field>
         <field name="model">dl.wood.dossier</field>
         <field name="arch" type="xml">
             <list string="Hồ Sơ Gỗ" decoration-danger="qty_available &lt;= 0"
-                  decoration-info="state == 'draft'"
+                  decoration-muted="state == 'draft'"
                   decoration-warning="state == 'exploiting'"
+                  decoration-info="state == 'in_use'"
                   decoration-success="state == 'confirmed'">
                 <field name="name"/>
                 <field name="partner_id"/>
@@ -16,6 +25,7 @@
                 <field name="date_received"/>
                 <field name="initial_qty"/>
                 <field name="remaining_qty"/>
+                <field name="production_count" string="Số LSX" sum="Tổng LSX"/>
                 <field name="qty_reserved"/>
                 <field name="qty_available"/>
             </list>
@@ -30,9 +40,14 @@
                 <header>
                     <button name="action_confirm" string="Xác Nhận" type="object" class="oe_highlight" 
                             invisible="state == 'confirmed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,summary,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,in_use,summary,confirmed"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_view_production_orders_from_dossier)d" type="action" class="oe_stat_button" icon="fa-wrench">
+                            <field name="production_count" string="Lệnh SX" widget="statinfo"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Mã Hồ Sơ..."/></h1>
                     </div>
@@ -46,11 +61,15 @@
                             <field name="initial_qty"/>
                             <field name="x_woodpro_id" readonly="1"/>
                         </group>
-                        <group string="Thông tin khai thác">
-                            <field name="partner_address" readonly="1"/>
+                        <group string="Thông Tin Khai Thác">
                             <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
                             <field name="x_mining_method"/>
                             <field name="x_area"/>
+                        </group>
+                        <group string="Quản lý Tồn kho">
+                            <field name="remaining_qty" readonly="1" class="fw-bold text-primary" style="font-size: 1.1em;"/>
+                            <field name="qty_reserved" readonly="1" class="text-warning"/>
+                            <field name="qty_available" readonly="1" class="fw-bold text-success" style="font-size: 1.1em;"/>
                         </group>
                     </group>
                     <notebook>
@@ -78,19 +97,15 @@
                             <field name="ledger_ids" readonly="1">
                                 <list string="Lịch sử biến động" create="false" edit="false" delete="false" decoration-success="state=='done'" decoration-warning="state=='draft'">
                                     <field name="date"/>
-                                    <field name="sale_id" optional="show"/>
+                                    <field name="wood_sale_id" optional="show"/>
                                     <field name="production_id" optional="show"/>
-                                    <field name="actual_qty"/>
+                                    <field name="qty_before" string="Tồn trước"/>
+                                    <field name="actual_qty" string="Biến động" decoration-danger="actual_qty &lt; 0" decoration-success="actual_qty &gt; 0"/>
+                                    <field name="qty_after" string="Tồn sau"/>
+                                    <field name="note"/>
                                     <field name="state" widget="badge" decoration-success="state=='done'" decoration-warning="state=='draft'"/>
                                 </list>
                             </field>
-                        </page>
-                        <page string="Tồn Kho">
-                            <group>
-                                <field name="remaining_qty" readonly="1"/>
-                                <field name="qty_reserved" readonly="1"/>
-                                <field name="qty_available" readonly="1"/>
-                            </group>
                         </page>
                         <page string="Tệp Đính Kèm (WoodPro)">
                             <field name="attachment_ids" readonly="1">
@@ -155,6 +170,7 @@
                             <field name="password" password="1"/>
                         </group>
                         <group string="Trạng thái">
+                            <field name="x_sync_mode" widget="radio"/>
                             <field name="token"/>
                             <field name="last_sync_date" readonly="1"/>
                         </group>
@@ -265,7 +281,7 @@
     <menuitem id="menu_dl_wood_dossier" name="Hồ Sơ Gỗ" parent="menu_dl_wood_input_materials" action="action_dl_wood_dossier" sequence="10"/>
     <menuitem id="menu_dl_wood_species" name="Loại Gỗ Thu Mua" parent="menu_dl_wood_input_materials" action="action_dl_wood_species" sequence="20"/>
     <menuitem id="menu_dl_wood_product" 
-              name="Sản phẩm Gỗ" 
+              name="Thành Phẩm" 
               parent="menu_dl_wood_traceability_root" 
               action="action_dl_wood_product_template" 
               sequence="16"/>

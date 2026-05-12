@@ -1,125 +1,110 @@
-# -*- coding: utf-8 -*-
+import logging
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 
+_logger = logging.getLogger(__name__)
 
 class DlWoodSaleOrder(models.Model):
-    """Đơn đặt hàng gỗ thành phẩm từ khách hàng."""
     _name = 'dl.wood.sale.order'
-    _description = 'Đơn đặt hàng gỗ'
-    _order = 'date_order desc, name desc'
+    _description = 'Đơn bán hàng gỗ'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'date_order desc, id desc'
 
-    name = fields.Char(
-        string='Mã đơn hàng', required=True, copy=False,
-        default=lambda self: _('Mới'), index=True
-    )
-    partner_id = fields.Many2one(
-        'res.partner', string='Khách hàng', required=True,
-        domain=[('x_is_wood_customer', '=', True)],
-        index=True
-    )
+    name = fields.Char(string='Số đơn hàng', required=True, copy=False, default=lambda self: _('Mới'))
+    partner_id = fields.Many2one('res.partner', string='Khách hàng', required=True)
     date_order = fields.Date(string='Ngày đặt hàng', default=fields.Date.context_today)
-    x_invoice_code = fields.Char(string='Số hóa đơn', index=True)
-    x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
     note = fields.Text(string='Ghi chú')
-    production_order_ids = fields.One2many(
-        'dl.wood.production.order', 'sale_order_id',
-        string='Lệnh sản xuất'
-    )
-    production_count = fields.Integer(
-        string='Số lệnh SX', compute='_compute_production_count'
-    )
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('confirmed', 'Đã xác nhận'),
         ('done', 'Hoàn thành'),
         ('cancelled', 'Đã hủy'),
-    ], string='Trạng thái', default='draft', index=True)
+    ], string='Trạng thái', default='draft')
+    
+    x_invoice_code = fields.Char(string='Mã hóa đơn', index=True)
+    x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+    
+    production_order_ids = fields.One2many('dl.wood.production.order', 'sale_order_id', string='Lệnh sản xuất')
+    production_count = fields.Integer(string='Số LSX', compute='_compute_production_count')
 
-    @api.depends('production_order_ids')
     def _compute_production_count(self):
         for rec in self:
             rec.production_count = len(rec.production_order_ids)
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get('name', _('Mới')) == _('Mới'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('dl.wood.sale.order') or _('Mới')
-        return super().create(vals_list)
-
     def action_confirm(self):
-        """Xác nhận đơn đặt hàng."""
-        self.ensure_one()
-        self.state = 'confirmed'
+        self.write({'state': 'confirmed'})
 
     def action_done(self):
-        """Đánh dấu hoàn thành."""
-        self.ensure_one()
-        self.state = 'done'
+        self.write({'state': 'done'})
 
     def action_cancel(self):
-        """Hủy đơn đặt hàng."""
-        self.ensure_one()
-        self.state = 'cancelled'
+        self.write({'state': 'cancelled'})
 
     def action_draft(self):
-        """Về trạng thái dự thảo."""
-        self.ensure_one()
-        self.state = 'draft'
+        self.write({'state': 'draft'})
 
     def action_view_productions(self):
-        """Mở danh sách lệnh sản xuất của đơn hàng này."""
         self.ensure_one()
         return {
-            'name': _('Lệnh sản xuất - %s') % self.name,
+            'name': _('Lệnh sản xuất'),
             'type': 'ir.actions.act_window',
             'res_model': 'dl.wood.production.order',
             'view_mode': 'list,form',
             'domain': [('sale_order_id', '=', self.id)],
-            'context': {'default_sale_order_id': self.id, 'default_partner_id': self.partner_id.id},
+            'context': {'default_sale_order_id': self.id},
         }
 
+    def action_open_link_production_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _('Chọn lệnh sản xuất có sẵn'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.link.production.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_sale_order_id': self.id}
+        }
 
 class DlWoodProductionOrder(models.Model):
-    """Lệnh sản xuất - sản xuất một mặt hàng và tiêu hao nguyên vật liệu."""
     _name = 'dl.wood.production.order'
     _description = 'Lệnh sản xuất gỗ'
-    _order = 'date_planned desc, name desc'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'date_planned desc, id desc'
 
     name = fields.Char(
         string='Mã lệnh SX', required=True, copy=False,
         default=lambda self: _('Mới'), index=True
     )
     sale_order_id = fields.Many2one(
-        'dl.wood.sale.order', string='Đơn đặt hàng', ondelete='cascade', index=True
+        'dl.wood.sale.order', string='Đơn bán hàng', ondelete='set null', index=True
     )
     partner_id = fields.Many2one(
-        'res.partner', related='sale_order_id.partner_id',
-        string='Khách hàng', store=True, index=True
+        'res.partner', string='Khách hàng', index=True,
+        help="Khách hàng đặt hàng hoặc khách hàng dự kiến cho lệnh sản xuất này."
     )
-    product_id = fields.Many2one(
-        'product.product', string='Sản phẩm sản xuất', required=True,
-        domain=[('type', 'in', ['consu', 'product'])]
+
+    @api.onchange('sale_order_id')
+    def _onchange_sale_order_id(self):
+        if self.sale_order_id and self.sale_order_id.partner_id:
+            self.partner_id = self.sale_order_id.partner_id
+    
+    # LSX giờ đây chứa danh sách sản phẩm
+    product_line_ids = fields.One2many(
+        'dl.wood.production.product.line', 'production_order_id',
+        string='Danh sách sản phẩm thành phẩm'
     )
-    qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 2), default=1.0)
-    qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2))
-    uom_id = fields.Many2one(
-        'uom.uom', related='product_id.uom_id', string='Đơn vị tính', readonly=True
-    )
+    
     date_planned = fields.Date(string='Ngày dự kiến', default=fields.Date.context_today)
     date_done = fields.Date(string='Ngày hoàn thành')
+    
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
     note = fields.Text(string='Ghi chú')
-    line_ids = fields.One2many(
-        'dl.wood.production.line', 'production_order_id',
-        string='Tiêu hao nguyên vật liệu'
-    )
+    
     total_volume_planned = fields.Float(
-        string='Tổng KL kế hoạch (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Tổng KL nguyên liệu kế hoạch (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
     )
     total_volume_actual = fields.Float(
-        string='Tổng KL thực tế (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Tổng KL nguyên liệu thực tế (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
     )
     state = fields.Selection([
         ('draft', 'Dự thảo'),
@@ -128,11 +113,16 @@ class DlWoodProductionOrder(models.Model):
         ('cancelled', 'Đã hủy'),
     ], string='Trạng thái', default='draft', index=True)
 
-    @api.depends('line_ids.volume_planned', 'line_ids.volume_actual')
+    @api.depends('product_line_ids.material_line_ids.volume_planned', 'product_line_ids.material_line_ids.volume_actual')
     def _compute_total_volume(self):
         for rec in self:
-            rec.total_volume_planned = sum(rec.line_ids.mapped('volume_planned'))
-            rec.total_volume_actual = sum(rec.line_ids.mapped('volume_actual'))
+            total_p = 0.0
+            total_a = 0.0
+            for p_line in rec.product_line_ids:
+                total_p += sum(p_line.material_line_ids.mapped('volume_planned'))
+                total_a += sum(p_line.material_line_ids.mapped('volume_actual'))
+            rec.total_volume_planned = total_p
+            rec.total_volume_actual = total_a
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -142,74 +132,141 @@ class DlWoodProductionOrder(models.Model):
         return super().create(vals_list)
 
     def action_start(self):
-        """Bắt đầu sản xuất."""
         self.ensure_one()
+        if not self.product_line_ids:
+            raise ValidationError(_("Vui lòng thêm ít nhất một sản phẩm vào lệnh sản xuất."))
         self.state = 'in_progress'
 
     def action_done(self):
-        """Hoàn thành lệnh sản xuất và trừ lùi nguyên liệu."""
         self.ensure_one()
-        if not self.line_ids:
-            raise UserError(_('Vui lòng nhập chi tiết tiêu hao nguyên vật liệu trước khi hoàn thành.'))
+        # Thực hiện trừ kho nguyên liệu từ tất cả các dòng sản phẩm
         self._action_deduct_materials()
-        self.date_done = fields.Date.today()
         self.state = 'done'
+        self.date_done = fields.Date.today()
 
     def action_cancel(self):
-        """Hủy lệnh sản xuất (không hoàn lại nguyên liệu nếu đã done)."""
-        self.ensure_one()
-        if self.state == 'done':
-            raise UserError(_('Không thể hủy lệnh sản xuất đã hoàn thành. Vui lòng liên hệ quản trị viên.'))
-        self.state = 'cancelled'
+        self.write({'state': 'cancelled'})
 
     def action_draft(self):
-        """Về trạng thái dự thảo."""
-        self.ensure_one()
-        self.state = 'draft'
+        self.write({'state': 'draft'})
+
+    # Liên kết với các chuyến vận chuyển
+    trip_ids = fields.One2many('dl.wood.production.trip', 'production_order_id', string='Lịch sử vận chuyển')
 
     def _action_deduct_materials(self, force=False):
-        """Trừ khối lượng gỗ thực tế từ các hồ sơ gỗ liên quan"""
-        for line in self.line_ids:
-            if not line.dossier_id:
-                continue
-            
-            vol = line.volume_actual
-            dossier = line.dossier_id
-            
-            if not force and dossier.remaining_qty < vol:
-                raise ValidationError(_(
-                    'Hồ sơ gỗ "%s" không đủ tồn kho!\n'
-                    'Tồn kho hiện tại: %.2f m³ — Cần trừ: %.2f m³'
-                ) % (dossier.name, dossier.remaining_qty, vol))
-            
-            # Trừ số lượng tồn kho
-            dossier.remaining_qty -= vol
-            
-            # Tạo bản ghi vào sổ cái (Ledger) để hiện trong tab Lịch sử biến động
-            self.env['dl.dossier.ledger'].create({
-                'dossier_id': dossier.id,
-                'production_id': self.id,
-                'actual_qty': -vol, # Số âm vì là xuất nguyên liệu
-                'state': 'done',
-                'date': fields.Datetime.now(),
-            })
+        """Lặp qua tất cả các dòng sản phẩm và trừ kho Hồ sơ gỗ tương ứng thông qua Sổ cái"""
+        affected_dossiers = self.env['dl.wood.dossier']
+        for p_line in self.product_line_ids:
+            for m_line in p_line.material_line_ids:
+                if not m_line.dossier_id:
+                    continue
+                
+                vol = m_line.volume_actual
+                dossier = m_line.dossier_id
+                affected_dossiers |= dossier
+                
+                if not force and dossier.remaining_qty < vol:
+                    raise ValidationError(_(
+                        'Thành phẩm: %s\nHồ sơ gỗ "%s" không đủ tồn kho!\n'
+                        'Tồn hiện tại: %.2f m³ — Cần trừ: %.2f m³'
+                    ) % (p_line.product_id.name, dossier.name, dossier.remaining_qty, vol))
+                
+                # Tạo sổ cái (remaining_qty và các trường tồn kho khác sẽ tự động cập nhật nhờ @api.depends)
+                self.env['dl.dossier.ledger'].create({
+                    'dossier_id': dossier.id,
+                    'production_id': self.id,
+                    'wood_sale_id': self.sale_order_id.id,
+                    'qty_before': dossier.remaining_qty,
+                    'actual_qty': -vol,
+                    'qty_after': dossier.remaining_qty - vol,
+                    'note': f"Sản xuất: {p_line.product_id.name} (Lệnh: {self.name})",
+                    'state': 'done',
+                })
+        
+        # Cập nhật số lượng LSX cho các hồ sơ gỗ bị ảnh hưởng
+        if affected_dossiers:
+            affected_dossiers._compute_production_count()
 
+class DlWoodProductionProductLine(models.Model):
+    _name = 'dl.wood.production.product.line'
+    _description = 'Dòng sản phẩm trong Lệnh sản xuất'
+
+    production_order_id = fields.Many2one('dl.wood.production.order', string='Lệnh sản xuất', ondelete='cascade')
+    product_id = fields.Many2one('product.product', string='Sản phẩm', required=True)
+    uom_id = fields.Many2one('uom.uom', related='product_id.uom_id', string='ĐVT', readonly=True)
+    
+    qty_planned = fields.Float(string='SL kế hoạch', digits=(16, 2), compute='_compute_trip_quantities', store=True)
+    qty_done = fields.Float(string='SL thực tế', digits=(16, 2), compute='_compute_trip_quantities', store=True)
+    
+    x_conversion_rate = fields.Float(string='Hệ số quy đổi', default=1.3)
+    x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+    
+    @api.depends('production_order_id.trip_ids.quantity', 'production_order_id.trip_ids.product_id')
+    def _compute_trip_quantities(self):
+        """Tính tổng số lượng từ các chuyến vận chuyển thuộc về sản phẩm này"""
+        for line in self:
+            trips = line.production_order_id.trip_ids.filtered(lambda t: t.product_id == line.product_id)
+            total = sum(trips.mapped('quantity'))
+            line.qty_planned = total
+            line.qty_done = total
+
+    material_line_ids = fields.One2many(
+        'dl.wood.production.line', 'product_line_id',
+        string='Tiêu hao Hồ sơ gỗ'
+    )
+
+    @api.onchange('product_id', 'qty_planned', 'x_conversion_rate')
+    def _onchange_product_id_load_norms(self):
+        """Tự động nạp định mức từ sản phẩm khi thay đổi"""
+        if not self.product_id or not self.qty_planned:
+            return
+            
+        if self.production_order_id.state == 'draft':
+            norms = self.product_id.product_tmpl_id.x_norm_ids
+            if not norms:
+                return
+                
+            new_lines = []
+            for norm in norms:
+                planned_vol = self.qty_planned * norm.norm_quantity * self.x_conversion_rate
+                new_lines.append((0, 0, {
+                    'species_id': norm.species_id.id,
+                    'volume_planned': planned_vol,
+                    'volume_actual': planned_vol,
+                    'note': f'Định mức: {norm.norm_quantity} x Hệ số: {self.x_conversion_rate}'
+                }))
+            self.material_line_ids = new_lines
 
 class DlWoodProductionLine(models.Model):
-    """Chi tiết tiêu hao nguyên vật liệu của một lệnh sản xuất."""
     _name = 'dl.wood.production.line'
-    _description = 'Chi tiết NVL tiêu hao lệnh sản xuất'
+    _description = 'Chi tiết tiêu hao nguyên liệu'
 
-    production_order_id = fields.Many2one(
-        'dl.wood.production.order', string='Lệnh sản xuất',
-        ondelete='cascade', required=True, index=True
-    )
+    product_line_id = fields.Many2one('dl.wood.production.product.line', string='Dòng sản phẩm', ondelete='cascade')
+    production_order_id = fields.Many2one(related='product_line_id.production_order_id', store=True)
+    
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', required=True)
-    dossier_id = fields.Many2one(
-        'dl.wood.dossier', string='Hồ sơ gỗ nguồn',
-        domain="[('species_lines_species_id', '=', species_id)]",
-        help='Hồ sơ gỗ mà nguyên liệu được lấy từ đó để sản xuất.'
-    )
-    volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
-    volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
+    dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ sơ gỗ', index=True)
+    
+    volume_planned = fields.Float(string='Khối lượng kế hoạch (m³)', digits=(16, 2))
+    volume_actual = fields.Float(string='Khối lượng thực tế (m³)', digits=(16, 2))
+    x_rate = fields.Float(string='Tỷ lệ (%)', digits=(16, 2))
+    x_norm = fields.Float(string='Định mức', digits=(16, 2))
     note = fields.Char(string='Ghi chú')
+
+class DlWoodProductionTrip(models.Model):
+    _name = 'dl.wood.production.trip'
+    _description = 'Chuyến vận chuyển thành phẩm'
+    _order = 'date_ship desc, id desc'
+
+    production_order_id = fields.Many2one('dl.wood.production.order', string='Lệnh sản xuất', ondelete='cascade')
+    product_id = fields.Many2one('product.product', string='Sản phẩm')
+    
+    manifest_num = fields.Char(string='Số bảng kê')
+    quantity = fields.Float(string='Số lượng', digits=(16, 2))
+    
+    license_plate = fields.Char(string='Biển số xe')
+    driver_name = fields.Char(string='Tài xế')
+    date_ship = fields.Date(string='Ngày vận chuyển')
+    
+    note = fields.Char(string='Ghi chú')
+    x_woodpro_id = fields.Char(string='ID WoodPro (Trip)', index=True)

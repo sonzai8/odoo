@@ -19,6 +19,7 @@
         'views/mrp_production_views.xml',
         'views/stock_picking_views.xml',
         'wizard/dl_customer_import_wizard_views.xml',
+        'wizard/dl_link_production_wizard_views.xml',
     ],
     'installable': True,
     'application': False,

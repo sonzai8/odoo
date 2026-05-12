@@ -13,7 +13,31 @@
                 </span>
             </xpath>
 
-            <!-- Làm readonly trường tracking nếu là sản phẩm gỗ -->
+            <!-- Đưa Đơn vị tính lên vị trí dễ thấy trong Thông tin chung -->
+            <xpath expr="//field[@name='type']" position="after">
+                <field name="uom_id" string="Đơn vị tính" groups="uom.group_uom"/>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Thông tin gỗ" name="wood_info" invisible="not is_wood_product">
+                    <group>
+                        <field name="x_thickness"/>
+                        <field name="x_width"/>
+                        <field name="x_length"/>
+                    </group>
+                </page>
+                <page string="Định mức nguyên liệu" name="wood_norms" invisible="not is_wood_product">
+                    <field name="x_norm_ids">
+                        <list editable="bottom">
+                            <field name="species_id"/>
+                            <field name="norm_quantity"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+            <!-- Làm readonly trường tracking nếu là thành phẩm -->
             <xpath expr="//field[@name='tracking']" position="attributes">
                 <attribute name="readonly">is_wood_product</attribute>
                 <attribute name="force_save">1</attribute>
@@ -22,20 +46,20 @@
     </record>
 
     <record id="action_dl_wood_product_template" model="ir.actions.act_window">
-        <field name="name">Sản phẩm Gỗ</field>
+        <field name="name">Thành Phẩm</field>
         <field name="res_model">product.template</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('is_wood_product', '=', True)]</field>
         <field name="context">{'default_is_wood_product': True}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Tạo sản phẩm gỗ đầu tiên của bạn.
+                Tạo thành phẩm đầu tiên của bạn.
             </p>
         </field>
     </record>
 
     <menuitem id="menu_dl_wood_product" 
-              name="Sản phẩm Gỗ" 
+              name="Thành Phẩm" 
               parent="menu_dl_wood_traceability_root" 
               action="action_dl_wood_product_template" 
               sequence="15"/>

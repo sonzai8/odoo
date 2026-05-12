@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_link_production_wizard_form" model="ir.ui.view">
+        <field name="name">dl.link.production.wizard.form</field>
+        <field name="model">dl.link.production.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Chọn lệnh sản xuất có sẵn">
+                <group>
+                    <field name="sale_order_id" readonly="1" invisible="1"/>
+                    <p class="text-muted">
+                        Vui lòng chọn các lệnh sản xuất hiện có chưa gắn với đơn hàng nào để đưa vào đơn hàng này.
+                    </p>
+                    <field name="production_order_ids" nolabel="1">
+                        <list string="Danh sách lệnh sản xuất">
+                            <field name="name"/>
+                            <field name="partner_id"/>
+                            <field name="date_planned"/>
+                            <field name="total_volume_actual" string="Khối lượng (m³)"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </group>
+                <footer>
+                    <button name="action_link_productions" string="Gán vào đơn hàng" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_link_production_wizard" model="ir.actions.act_window">
+        <field name="name">Chọn lệnh sản xuất có sẵn</field>
+        <field name="res_model">dl.link.production.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -139,11 +139,26 @@ class DlWoodDossier(models.Model):
     state = fields.Selection([
         ('draft', 'Dự Thảo'),
         ('exploiting', 'Đang Khai Thác'),
+        ('in_use', 'Đang Sử Dụng'),
         ('summary', 'Tổng Kết'),
         ('confirmed', 'Xác Nhận')
     ], string='Trạng thái', default='draft')
 
     x_area = fields.Float(string='Diện tích (ha)', digits=(16, 2))
+    production_count = fields.Integer(
+        string='Số LSX',
+        compute='_compute_production_count',
+        store=True,
+        help='Số lượng lệnh sản xuất đã tiêu hao hồ sơ gỗ này.'
+    )
+
+    def _compute_production_count(self):
+        for rec in self:
+            # Tìm các dòng nguyên liệu dùng hồ sơ này
+            lines = self.env['dl.wood.production.line'].search([('dossier_id', '=', rec.id)])
+            # Lấy danh sách ID LSX duy nhất
+            order_ids = lines.mapped('production_order_id').ids
+            rec.production_count = len(set(order_ids))
 
     line_ids = fields.One2many(
         'dl.wood.dossier.line',
@@ -203,21 +218,21 @@ class DlWoodDossier(models.Model):
         string='Tồn Kho Thực Tế (m³)',
         compute='_compute_stock_quantities',
         store=True,
-        digits=(16, 4),
+        digits=(16, 2),
         help='Tồn kho sau khi đã xác nhận xuất. = initial_qty + sum(actual_qty) của các dòng state=done.',
     )
     qty_reserved = fields.Float(
         string='Đang Giữ Đơn (m³)',
         compute='_compute_stock_quantities',
         store=True,
-        digits=(16, 4),
+        digits=(16, 2),
         help='Khối lượng đang bị giữ bởi các đơn hàng chờ xử lý (state=draft).',
     )
     qty_available = fields.Float(
         string='Khả Dụng Để Bán (m³)',
         compute='_compute_stock_quantities',
         store=True,
-        digits=(16, 4),
+        digits=(16, 2),
         help='Khối lượng còn có thể phân bổ cho đơn hàng mới. = remaining_qty - qty_reserved.',
     )
 

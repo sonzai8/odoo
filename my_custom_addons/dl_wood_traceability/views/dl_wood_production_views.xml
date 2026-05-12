@@ -36,7 +36,7 @@
         <field name="name">dl.wood.sale.order.form</field>
         <field name="model">dl.wood.sale.order</field>
         <field name="arch" type="xml">
-            <form string="Đơn đặt hàng gỗ">
+            <form string="Đơn bán hàng gỗ">
                 <header>
                     <button name="action_confirm" string="Xác nhận" type="object"
                             class="oe_highlight" invisible="state != 'draft'"/>
@@ -71,15 +71,16 @@
                     </group>
                     <notebook>
                         <page string="Lệnh sản xuất">
+                            <div class="mb-2">
+                                <button name="action_open_link_production_wizard" type="object" 
+                                        string="Chọn LSX có sẵn" class="btn-secondary" icon="fa-link"
+                                        invisible="state in ('done', 'cancelled')"/>
+                            </div>
                             <field name="production_order_ids" context="{'default_sale_order_id': id}">
                                 <list string="Lệnh sản xuất" editable="bottom">
                                     <field name="name" readonly="1"/>
-                                    <field name="product_id"/>
-                                    <field name="qty_planned"/>
-                                    <field name="qty_done"/>
-                                    <field name="uom_id" optional="hide"/>
                                     <field name="date_planned"/>
-                                    <field name="total_volume_actual" optional="show"/>
+                                    <field name="total_volume_actual" string="Tổng KL NVL (m³)"/>
                                     <field name="state" widget="badge"
                                            decoration-info="state == 'draft'"
                                            decoration-warning="state == 'in_progress'"
@@ -98,7 +99,7 @@
         <field name="name">dl.wood.sale.order.list</field>
         <field name="model">dl.wood.sale.order</field>
         <field name="arch" type="xml">
-            <list string="Đơn đặt hàng gỗ"
+            <list string="Đơn bán hàng gỗ"
                   decoration-muted="state == 'cancelled'"
                   decoration-info="state == 'confirmed'"
                   decoration-success="state == 'done'">
@@ -129,7 +130,7 @@
     </record>
 
     <record id="action_dl_wood_sale_order" model="ir.actions.act_window">
-        <field name="name">Đơn đặt hàng</field>
+        <field name="name">Đơn bán hàng</field>
         <field name="res_model">dl.wood.sale.order</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_dl_wood_sale_order_search"/>
@@ -160,36 +161,68 @@
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
-                        <group string="Thông tin sản xuất">
-                            <field name="sale_order_id"/>
-                            <field name="partner_id" readonly="1"/>
-                            <field name="product_id"/>
-                            <field name="uom_id" readonly="1"/>
-                        </group>
-                        <group string="Số lượng &amp; Thời gian">
-                            <field name="qty_planned"/>
-                            <field name="qty_done"/>
+                        <group string="Thông tin chung">
+                            <field name="sale_order_id" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft' and sale_order_id"/>
                             <field name="date_planned"/>
                             <field name="date_done" readonly="1"/>
                         </group>
+                        <group string="Thống kê tiêu hao">
+                            <field name="total_volume_planned" readonly="1"/>
+                            <field name="total_volume_actual" readonly="1"/>
+                        </group>
                     </group>
                     <notebook>
-                        <page string="Tiêu hao Nguyên vật liệu">
-                            <field name="line_ids">
-                                <list string="NVL tiêu hao" editable="bottom">
-                                    <field name="species_id"/>
-                                    <field name="dossier_id"
-                                           domain="[('state', '!=', 'cancelled')]"
-                                           context="{'default_species_id': species_id}"/>
-                                    <field name="volume_planned"/>
-                                    <field name="volume_actual"/>
+                        <page string="Thành phẩm sản xuất">
+                            <field name="product_line_ids">
+                                <list string="Sản phẩm">
+                                    <field name="product_id"/>
+                                    <field name="qty_planned" readonly="1" force_save="1"/>
+                                    <field name="qty_done" readonly="1" force_save="1"/>
+                                    <field name="uom_id"/>
+                                    <field name="x_conversion_rate" optional="hide"/>
+                                </list>
+                                <form string="Chi tiết sản phẩm &amp; Tiêu hao">
+                                    <group>
+                                        <group>
+                                            <field name="product_id"/>
+                                            <field name="uom_id" readonly="1"/>
+                                            <field name="x_conversion_rate"/>
+                                        </group>
+                                        <group>
+                                            <field name="qty_planned" readonly="1" force_save="1"/>
+                                            <field name="qty_done" readonly="1" force_save="1"/>
+                                        </group>
+                                    </group>
+                                    <separator string="Hồ sơ gỗ tiêu hao (Nguyên liệu)"/>
+                                    <field name="material_line_ids">
+                                        <list string="Nguyên liệu" editable="bottom">
+                                            <field name="species_id"/>
+                                            <field name="dossier_id"
+                                                   domain="[('state', '!=', 'cancelled')]"
+                                                   context="{'default_species_id': species_id}"/>
+                                            <field name="x_rate" string="Tỷ lệ (%)"/>
+                                            <field name="x_norm" string="Định mức"/>
+                                            <field name="volume_planned"/>
+                                            <field name="volume_actual"/>
+                                            <field name="note"/>
+                                        </list>
+                                    </field>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Lịch sử vận chuyển (Chuyến)">
+                            <field name="trip_ids">
+                                <list editable="bottom">
+                                    <field name="date_ship"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity" sum="Tổng số lượng"/>
+                                    <field name="manifest_num"/>
+                                    <field name="license_plate"/>
+                                    <field name="driver_name"/>
                                     <field name="note"/>
                                 </list>
                             </field>
-                            <group class="oe_subtotal_footer">
-                                <field name="total_volume_planned" readonly="1"/>
-                                <field name="total_volume_actual" readonly="1"/>
-                            </group>
                         </page>
                         <page string="Ghi chú">
                             <field name="note"/>
@@ -211,10 +244,7 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="sale_order_id"/>
-                <field name="product_id"/>
-                <field name="qty_planned"/>
-                <field name="qty_done"/>
-                <field name="total_volume_actual" string="KL NVL (m³)"/>
+                <field name="total_volume_actual" string="Tổng KL NVL (m³)"/>
                 <field name="date_planned"/>
                 <field name="state" widget="badge"/>
             </list>
@@ -228,7 +258,6 @@
             <search string="Tìm lệnh sản xuất">
                 <field name="name"/>
                 <field name="partner_id"/>
-                <field name="product_id"/>
                 <field name="sale_order_id"/>
                 <separator/>
                 <filter string="Dự thảo" name="filter_draft" domain="[('state','=','draft')]"/>
@@ -236,7 +265,6 @@
                 <filter string="Hoàn thành" name="filter_done" domain="[('state','=','done')]"/>
                 <separator/>
                 <filter string="Theo Khách hàng" name="group_by_partner" context="{'group_by':'partner_id'}"/>
-                <filter string="Theo Sản phẩm" name="group_by_product" context="{'group_by':'product_id'}"/>
             </search>
         </field>
     </record>
@@ -252,7 +280,7 @@
     <!-- SEQUENCES (Tự sinh mã)    -->
     <!-- ========================= -->
     <record id="seq_dl_wood_sale_order_temp" model="ir.sequence">
-        <field name="name">Đơn đặt hàng gỗ (Tạm thời)</field>
+        <field name="name">Đơn bán hàng gỗ (Tạm thời)</field>
         <field name="code">dl.wood.sale.order.temp</field>
         <field name="prefix">DL-DH-</field>
         <field name="padding">5</field>
@@ -260,7 +288,7 @@
     </record>
 
     <record id="seq_dl_wood_sale_order" model="ir.sequence">
-        <field name="name">Đơn đặt hàng gỗ</field>
+        <field name="name">Đơn bán hàng gỗ</field>
         <field name="code">dl.wood.sale.order</field>
         <field name="prefix">SO-GỖ/%(year)s/</field>
         <field name="padding">4</field>
@@ -290,7 +318,7 @@
               sequence="10"/>
 
     <menuitem id="menu_dl_wood_sale_order"
-              name="Đơn đặt hàng"
+              name="Đơn bán hàng"
               parent="menu_dl_wood_production"
               action="action_dl_wood_sale_order"
               sequence="20"/>

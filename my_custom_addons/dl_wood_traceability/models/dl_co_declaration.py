@@ -42,18 +42,18 @@ class DlCoDeclaration(models.Model):
     # -------------------------------------------------------------------------
     # Quantity & Ratio Fields
     # -------------------------------------------------------------------------
-    finished_qty = fields.Float(string='KL Thành Phẩm (m³)', digits=(16, 4))
+    finished_qty = fields.Float(string='KL Thành Phẩm (m³)', digits=(16, 2))
     standard_ratio = fields.Float(
-        string='Định Mức Thực Tế', default=1.1, readonly=True, digits=(16, 4),
+        string='Định Mức Thực Tế', default=1.1, readonly=True, digits=(16, 2),
         help='Cấu hình sẵn, không cho phép sửa.',
     )
     actual_deduct_qty = fields.Float(
-        string='KL Trừ Kho TT (m³)', compute='_compute_qty_fields', store=True, digits=(16, 4),
+        string='KL Trừ Kho TT (m³)', compute='_compute_qty_fields', store=True, digits=(16, 2),
         help='= finished_qty × standard_ratio',
     )
-    co_index = fields.Float(string='Hệ Số CO', default=1.3, digits=(16, 4))
+    co_index = fields.Float(string='Hệ Số CO', default=1.3, digits=(16, 2))
     co_declare_qty = fields.Float(
-        string='KL Khai Báo CO (m³)', compute='_compute_qty_fields', store=True, digits=(16, 4),
+        string='KL Khai Báo CO (m³)', compute='_compute_qty_fields', store=True, digits=(16, 2),
         help='= finished_qty × co_index',
     )
 
