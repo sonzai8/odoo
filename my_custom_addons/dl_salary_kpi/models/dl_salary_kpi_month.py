@@ -66,6 +66,20 @@ class SalaryKpiMonth(models.Model):
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
 
     insurance_stop_ids = fields.One2many('dl.salary.kpi.insurance.stop', 'month_id', string='Danh sách cắt bảo hiểm')
+    x_copy_insurance_month_id = fields.Many2one('dl.salary.kpi.month', string='Copy từ bảng lương')
+    x_insurance_stop_count = fields.Integer(string='Số lượng cắt bảo hiểm', compute='_compute_insurance_stop_count')
+
+    @api.depends('insurance_stop_ids')
+    def _compute_insurance_stop_count(self):
+        for rec in self:
+            rec.x_insurance_stop_count = len(rec.insurance_stop_ids)
+
+    @api.depends('name', 'insurance_stop_ids')
+    def _compute_display_name(self):
+        for rec in self:
+            count = len(rec.insurance_stop_ids)
+            count_str = f"({count} nhân viên)" if count > 0 else "(Trống)"
+            rec.display_name = f"{rec.name or ''} - {count_str}"
 
     line_domain = fields.Char(compute='_compute_line_domain', readonly=True)
 
@@ -446,6 +460,44 @@ class SalaryKpiMonth(models.Model):
         # Cập nhật lại thống kê tháng sau khi reset dòng con
         self._compute_quick_stats()
         return True
+
+    def action_copy_insurance_list(self):
+        """Copy danh sách cắt bảo hiểm từ bảng lương khác"""
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_("Bạn chỉ có thể copy danh sách ở trạng thái Dự thảo!"))
+        
+        if not self.x_copy_insurance_month_id:
+            raise UserError(_("Vui lòng chọn bảng lương nguồn để copy!"))
+            
+        source_month = self.x_copy_insurance_month_id
+        if not source_month.insurance_stop_ids:
+            raise UserError(_("Bảng lương nguồn không có danh sách cắt bảo hiểm!"))
+
+        # Xóa danh sách cũ
+        self.insurance_stop_ids.unlink()
+        
+        # Copy danh sách mới
+        new_lines = []
+        for line in source_month.insurance_stop_ids:
+            new_lines.append((0, 0, {
+                'employee_id': line.employee_id.id,
+                'note': line.note,
+            }))
+            
+        if new_lines:
+            self.write({'insurance_stop_ids': new_lines})
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã copy %s nhân viên từ %s') % (len(new_lines), source_month.name),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
     def action_back_to_lock_normal(self):
         self.action_recompute_all_data()
