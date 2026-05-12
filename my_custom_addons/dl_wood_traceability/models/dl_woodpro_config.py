@@ -8,6 +8,21 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+class DlWoodproCompany(models.Model):
+    _name = 'dl.woodpro.company'
+    _description = 'Công ty trên WoodPro'
+    _order = 'name asc'
+
+    name = fields.Char(string='Tên công ty', required=True)
+    wp_id = fields.Char(string='ID WoodPro', required=True)
+    code = fields.Char(string='Mã số thuế')
+    phone = fields.Char(string='Số điện thoại')
+    address = fields.Char(string='Địa chỉ')
+
+    _sql_constraints = [
+        ('unique_wp_id', 'unique(wp_id)', 'ID WoodPro phải là duy nhất!')
+    ]
+
 class DlWoodproConfig(models.Model):
     _name = 'dl.woodpro.config'
     _description = 'Cấu hình đồng bộ WoodPro'
@@ -25,9 +40,19 @@ class DlWoodproConfig(models.Model):
         ('overwrite', 'Ghi đè (Làm mới dữ liệu đã tồn tại)')
     ], string='Chế độ đồng bộ', default='update', required=True)
 
+    company_ids = fields.Many2many('dl.woodpro.company', 'dl_woodpro_config_company_rel', 'config_id', 'company_id', 
+                                   string='Công ty đồng bộ', help="Chọn các công ty cần lấy dữ liệu. Nếu để trống sẽ lấy tất cả.")
+
     _sql_constraints = [
         ('unique_name', 'unique(name)', 'Tên cấu hình phải là duy nhất!')
     ]
+
+    def _get_wp_params(self, base_params=None):
+        params = base_params or {}
+        if self.company_ids:
+            # WoodPro API yêu cầu định dạng: companyIds[]=id1&companyIds[]=id2
+            params['companyIds[]'] = self.company_ids.mapped('wp_id')
+        return params
 
     def _safe_float(self, value, default=0.0, field_name=""):
         """Chuyển đổi sang float an toàn và ghi log chi tiết"""
@@ -105,6 +130,41 @@ class DlWoodproConfig(models.Model):
         except Exception as e:
             raise UserError(_("Lỗi kết nối API: %s") % str(e))
 
+    def action_sync_companies(self):
+        self.ensure_one()
+        url = f"{self.base_url}/companies"
+        try:
+            if not self.token: self.action_login()
+            headers = {'Content-Type': 'application/json', 'Cookie': f'id={self.token}', 'User-Agent': 'Odoo/19.0'}
+            company_obj = self.env['dl.woodpro.company']
+            page, limit, total_synced = 1, 100, 0
+            while True:
+                response = requests.get(url, headers=headers, params={'page': page, 'limit': limit}, timeout=20)
+                if response.status_code != 200: break
+                data = response.json()
+                res = data.get('result', {})
+                items = res.get('items', []) if isinstance(res, dict) else []
+                if not items: break
+                for item in items:
+                    wp_id = item.get('id')
+                    if not wp_id: continue
+                    company = company_obj.search([('wp_id', '=', wp_id)], limit=1)
+                    vals = {
+                        'name': item.get('name'),
+                        'wp_id': wp_id,
+                        'code': item.get('code'),
+                        'phone': item.get('phone'),
+                        'address': item.get('formatAddress'),
+                    }
+                    if company: company.write(vals)
+                    else: company_obj.create(vals)
+                    total_synced += 1
+                if page >= res.get('totalPages', 1): break
+                page += 1
+            return self._show_notification(_('Thành công'), _('Đã đồng bộ %s công ty từ WoodPro.') % total_synced)
+        except Exception as e:
+            raise UserError(_("Lỗi đồng bộ danh sách công ty: %s") % str(e))
+
     def action_sync_forest_owners(self):
         self.ensure_one()
         url = f"{self.base_url}/forestOwners"
@@ -116,7 +176,8 @@ class DlWoodproConfig(models.Model):
             country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
             vn_states = self.env['res.country.state'].search([('country_id', '=', country_vn.id)]) if country_vn else []
             while True:
-                response = requests.get(url, headers=headers, params={'page': page, 'limit': limit}, timeout=20)
+                params = self._get_wp_params({'page': page, 'limit': limit})
+                response = requests.get(url, headers=headers, params=params, timeout=20)
                 if response.status_code != 200: break
                 data = response.json()
                 res = data.get('result', {})
@@ -160,7 +221,8 @@ class DlWoodproConfig(models.Model):
             product_tmpl_obj = self.env['product.template']
             page, limit, total_synced = 1, 50, 0
             while True:
-                response = requests.get(url, headers=headers, params={'page': page, 'limit': limit}, timeout=20)
+                params = self._get_wp_params({'page': page, 'limit': limit})
+                response = requests.get(url, headers=headers, params=params, timeout=20)
                 if response.status_code != 200: break
                 data = response.json()
                 res_data = data.get('result', data) if isinstance(data.get('result'), dict) else data
@@ -213,7 +275,8 @@ class DlWoodproConfig(models.Model):
             country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
             page, limit, total_synced = 1, 50, 0
             while True:
-                response = requests.get(url, headers=headers, params={'page': page, 'limit': limit}, timeout=20)
+                params = self._get_wp_params({'page': page, 'limit': limit})
+                response = requests.get(url, headers=headers, params=params, timeout=20)
                 if response.status_code != 200: break
                 data = response.json()
                 res_data = data.get('result', data) if isinstance(data.get('result'), dict) else data
@@ -303,7 +366,8 @@ class DlWoodproConfig(models.Model):
             page, limit, total_synced = 1, 50, 0
             with tools.mute_logger('odoo.models.unlink'):
                 while True:
-                    response = requests.get(url, headers=headers, params={'page': page, 'limit': limit}, timeout=20)
+                    params = self._get_wp_params({'page': page, 'limit': limit})
+                    response = requests.get(url, headers=headers, params=params, timeout=20)
                     if response.status_code != 200: break
                     data = response.json()
                     items = data.get('result', {}).get('items', [])

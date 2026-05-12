@@ -158,6 +158,7 @@
             <form string="Cấu hình WoodPro">
                 <header>
                     <button name="action_login" string="Login" type="object" class="btn-primary"/>
+                    <button name="action_sync_companies" string="Lấy danh sách công ty" type="object" class="btn-info" icon="fa-building-o"/>
                     <button name="action_sync_forest_owners" string="Đồng bộ Chủ rừng &amp; NCC" type="object" class="btn-secondary"/>
                     <button name="action_sync_products" string="Đồng bộ Sản phẩm" type="object" class="btn-secondary"/>
                     <button name="action_sync_minings" string="Đồng bộ Hồ sơ gỗ" type="object" class="btn-secondary"/>
@@ -176,6 +177,9 @@
                             <field name="token"/>
                             <field name="last_sync_date" readonly="1"/>
                         </group>
+                    </group>
+                    <group string="Bộ lọc Đồng bộ">
+                        <field name="company_ids" widget="many2many_tags" options="{'no_create': True}"/>
                     </group>
                     <notebook>
                         <page string="Nhật ký Debug">
@@ -346,4 +350,31 @@
               parent="menu_dl_wood_config_root"
               action="action_dl_woodpro_config"
               sequence="10"/>
+
+    <!-- Danh sách công ty WoodPro -->
+    <record id="view_dl_woodpro_company_list" model="ir.ui.view">
+        <field name="name">dl.woodpro.company.list</field>
+        <field name="model">dl.woodpro.company</field>
+        <field name="arch" type="xml">
+            <list string="Công ty WoodPro" create="false">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="phone"/>
+                <field name="address"/>
+                <field name="wp_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dl_woodpro_company" model="ir.actions.act_window">
+        <field name="name">Danh sách Công ty WoodPro</field>
+        <field name="res_model">dl.woodpro.company</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_dl_woodpro_company"
+              name="Công ty WoodPro"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_woodpro_company"
+              sequence="20"/>
 </odoo>
