@@ -69,6 +69,98 @@ class SalaryKpiMonth(models.Model):
     x_copy_insurance_month_id = fields.Many2one('dl.salary.kpi.month', string='Copy từ bảng lương')
     x_insurance_stop_count = fields.Integer(string='Số lượng cắt bảo hiểm', compute='_compute_insurance_stop_count')
 
+    def _register_hook(self):
+        """Khởi tạo dữ liệu mặc định cho các công ty mới hoặc thiếu dữ liệu."""
+        super()._register_hook()
+        self._init_multi_company_defaults()
+
+    @api.model
+    def _init_multi_company_defaults(self):
+        _logger.info("=== Đang kiểm tra dữ liệu mặc định cho đa công ty ===")
+        # Sử dụng sudo để có quyền tạo dữ liệu hệ thống
+        companies = self.env['res.company'].sudo().search([])
+        for company in companies:
+            # 1. Khởi tạo Phòng ban thuế
+            _logger.info(">>> Kiểm tra/Bổ sung Phòng ban thuế cho công ty: %s", company.name)
+            tax_depts = ['Kinh Doanh', 'Lái Xe', 'Công Nhật', 'Quản Lý Sản Xuất', 'Sản Xuất', 'Quản Lý']
+            for name in tax_depts:
+                if not self.env['dl.tax.department'].sudo().search_count([
+                    ('name', '=', name),
+                    ('company_id', '=', company.id)
+                ]):
+                    self.env['dl.tax.department'].sudo().create({
+                        'name': name,
+                        'company_id': company.id,
+                        'sequence': 10
+                    })
+            
+            # 2. Khởi tạo Mã chấm công
+            _logger.info(">>> Kiểm tra/Bổ sung Mã chấm công cho công ty: %s", company.name)
+            # Cập nhật company_id cho các bản ghi cũ đang bị trống (False) thuộc công ty mặc định hoặc công ty đầu tiên
+            self.env['dl.salary.kpi.attendance.type'].sudo().search([('company_id', '=', False)]).write({'company_id': company.id})
+            
+            att_types = [
+                # --- CÔNG THƯỜNG ---
+                {'code': 'N', 'name': 'Công ngày (8h)', 'weight': 1.0, 'apply_to': 'normal', 'sequence': 10},
+                {'code': 'N/2', 'name': 'Công ngày (4h)', 'weight': 0.5, 'apply_to': 'normal', 'sequence': 11},
+                {'code': 'Đ', 'name': 'Công đêm (8h)', 'weight': 1.0, 'apply_to': 'normal', 'sequence': 20},
+                {'code': 'Đ/2', 'name': 'Công đêm (4h)', 'weight': 0.5, 'apply_to': 'normal', 'sequence': 21},
+                {'code': 'P', 'name': 'Nghỉ phép hưởng lương', 'weight': 1.0, 'apply_to': 'normal', 'sequence': 30},
+                {'code': 'PL', 'name': 'Nghỉ lễ/Tết hưởng lương', 'weight': 1.0, 'apply_to': 'normal', 'sequence': 40},
+                {'code': 'CP', 'name': 'Nghỉ có phép (Không lương)', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 50},
+                {'code': 'KP', 'name': 'Nghỉ không phép (Trừ KPI)', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 60},
+                {'code': 'Ô', 'name': 'Nghỉ ốm (BHXH)', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 70},
+                {'code': 'CÔ', 'name': 'Con ốm (BHXH)', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 80},
+                {'code': 'TS', 'name': 'Nghỉ thai sản', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 90},
+                {'code': 'DS', 'name': 'Nghỉ dưỡng sức', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 100},
+                {'code': 'ĐC', 'name': 'Ngày đổi ca', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 110},
+                {'code': 'CN', 'name': 'Cho nghỉ (Không lương)', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 120},
+                {'code': 'DL', 'name': 'Nghỉ du lịch', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 130},
+                {'code': 'NV', 'name': 'Ngày nghỉ việc', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 140},
+                
+                # --- TĂNG CA ---
+                {'code': '0.5N', 'name': 'Tăng ca ngày (0.5h)', 'weight': 0.0625, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 200},
+                {'code': '0.5Đ', 'name': 'Tăng ca đêm (0.5h)', 'weight': 0.0625, 'apply_to': 'overtime', 'ot_type': 'night', 'sequence': 201},
+                {'code': 'CNN', 'name': 'Tăng ca Chủ Nhật ngày (8h)', 'weight': 1.0, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 210},
+                {'code': 'CNN/2', 'name': 'Tăng ca Chủ Nhật ngày (4h)', 'weight': 0.5, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 211},
+                {'code': 'CNĐ', 'name': 'Tăng ca Chủ Nhật đêm (8h)', 'weight': 1.0, 'apply_to': 'overtime', 'ot_type': 'night', 'sequence': 220},
+                {'code': 'CNĐ/2', 'name': 'Tăng ca Chủ Nhật đêm (4h)', 'weight': 0.5, 'apply_to': 'overtime', 'ot_type': 'night', 'sequence': 221},
+                {'code': 'LN', 'name': 'Tăng ca Lễ ngày (8h)', 'weight': 1.0, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 230},
+                {'code': 'LĐ', 'name': 'Tăng ca Lễ đêm (8h)', 'weight': 1.0, 'apply_to': 'overtime', 'ot_type': 'night', 'sequence': 231},
+                {'code': '1LN', 'name': 'Làm thêm Lễ ngày (8h) - Cũ', 'weight': 1.0, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 240},
+                {'code': '0.5LN', 'name': 'Làm thêm Lễ ngày (4h) - Cũ', 'weight': 0.5, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 241},
+            ]
+            for vals in att_types:
+                # 1. Dọn dẹp bản ghi trùng lặp (nếu có nhiều hơn 1 bản ghi cùng code cho 1 công ty)
+                existing = self.env['dl.salary.kpi.attendance.type'].sudo().search([
+                    ('code', '=', vals['code']),
+                    ('company_id', '=', company.id)
+                ])
+                if len(existing) > 1:
+                    _logger.warning(">>> Phát hiện trùng lặp mã %s cho công ty %s. Đang dọn dẹp...", vals['code'], company.name)
+                    # Giữ lại bản ghi đầu tiên, xóa các bản ghi còn lại
+                    to_delete = existing[1:]
+                    to_delete.unlink()
+                    existing = existing[0]
+                
+                # 2. Cập nhật hoặc tạo mới
+                if existing:
+                    # Cập nhật trọng số và tên nếu sai (đặc biệt cho 0.5N, 0.5Đ)
+                    if vals['code'] in ['0.5N', '0.5Đ'] and (existing.weight != vals['weight'] or existing.name != vals['name']):
+                        existing.write({
+                            'weight': vals['weight'],
+                            'name': vals['name'],
+                            'apply_to': vals['apply_to'],
+                            'ot_type': vals['ot_type']
+                        })
+                else:
+                    try:
+                        with self.env.cr.savepoint():
+                            vals['company_id'] = company.id
+                            self.env['dl.salary.kpi.attendance.type'].sudo().create(vals)
+                    except Exception:
+                        _logger.warning(">>> Không thể tạo mã công %s cho công ty %s (có thể đã tồn tại)", vals['code'], company.name)
+
     @api.depends('insurance_stop_ids')
     def _compute_insurance_stop_count(self):
         for rec in self:
@@ -350,8 +442,13 @@ class SalaryKpiMonth(models.Model):
             ('dl_departure_date', '>=', first_day)
         ]
         hr_employees = self.env['hr.employee'].search(domain)
-        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N')], limit=1)
-        att_type_nv = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'NV')], limit=1)
+        # Tìm mã chấm công theo đúng công ty của bảng lương
+        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', 'N'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
+        att_type_nv = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', 'NV'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
         
         last_day = monthrange(self.date_month.year, self.date_month.month)[1]
         
@@ -548,8 +645,13 @@ class SalaryKpiMonth(models.Model):
     def _action_init_overtime_suggestions(self):
         """Khởi tạo dữ liệu gợi ý công làm thêm dựa trên công thường (N -> 0.5N, Đ -> 0.5Đ)"""
         from datetime import date
-        n_ot = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N')], limit=1)
-        d_ot = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ')], limit=1)
+        # Tìm mã chấm công làm thêm theo đúng công ty
+        n_ot = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', '0.5N'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
+        d_ot = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', '0.5Đ'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
         month_date = self.date_month
         year, month = month_date.year, month_date.month
         

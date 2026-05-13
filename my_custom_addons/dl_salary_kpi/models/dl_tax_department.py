@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 from odoo.models import Constraint
 
 class DlTaxDepartment(models.Model):
@@ -13,4 +13,18 @@ class DlTaxDepartment(models.Model):
     active = fields.Boolean(string='Đang hoạt động', default=True)
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
-    _name_unique = Constraint('unique(name)', 'Tên phòng ban đã tồn tại!')
+    @api.model
+    def _name_search(self, name, domain=None, operator='ilike', limit=None, order=None):
+        domain = domain or []
+        if name:
+            # Ưu tiên tìm trong công ty hiện tại trước
+            company_domain = [('name', operator, name), ('company_id', '=', self.env.company.id)]
+            ids = self._search(company_domain + domain, limit=limit, order=order)
+            if ids:
+                return ids
+        return super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)
+
+    _name_company_unique = models.Constraint(
+        'unique(name, company_id)',
+        'Tên phòng ban đã tồn tại trong công ty này!'
+    )

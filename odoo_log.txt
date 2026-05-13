@@ -1,0 +1,174 @@
+2026-05-13 03:26:35,325 109 WARNING ? odoo.tools.config: unknown option 'xmlrpc_port' in the config file at /Users/sonzai/dev/odoo 19/odoo/odoo.conf, option stored as-is, without parsing 
+2026-05-13 03:26:35,326 109 WARNING ? odoo.tools.config: missing --http-interface/http_interface, using 0.0.0.0 by default, will change to 127.0.0.1 in 20.0 
+2026-05-13 03:26:35,326 109 INFO ? odoo: Odoo version 19.0 
+2026-05-13 03:26:35,326 109 INFO ? odoo: Using configuration file at /Users/sonzai/dev/odoo 19/odoo/odoo.conf 
+2026-05-13 03:26:35,326 109 INFO ? odoo: addons paths: _NamespacePath(['/Users/sonzai/dev/odoo 19/odoo/odoo/addons', '/Users/sonzai/Library/Application Support/Odoo/addons/19.0', '/Users/sonzai/dev/odoo 19/odoo/addons', '/Users/sonzai/dev/odoo 19/odoo/my_custom_addons']) 
+2026-05-13 03:26:35,326 109 INFO ? odoo: database: odoo@localhost:5432 
+2026-05-13 03:26:35,480 109 WARNING ? py.warnings: /Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/PyPDF2/__init__.py:21: DeprecationWarning: PyPDF2 is deprecated. Please move to the pypdf library instead.
+  File "/Users/sonzai/dev/odoo 19/odoo/./odoo-bin", line 6, in <module>
+    odoo.cli.main()
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/cli/command.py", line 133, in main
+    command().run(args)
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/cli/server.py", line 127, in run
+    main(args)
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/cli/server.py", line 118, in main
+    rc = server.start(preload=config['db_name'], stop=stop)
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/service/server.py", line 1580, in start
+    load_server_wide_modules()
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/service/server.py", line 1500, in load_server_wide_modules
+    load_openerp_module(m)
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/modules/module.py", line 505, in load_openerp_module
+    __import__(qualname)
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/addons/base/__init__.py", line 4, in <module>
+    from . import models
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/addons/base/models/__init__.py", line 12, in <module>
+    from . import ir_actions_report
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/addons/base/models/ir_actions_report.py", line 32, in <module>
+    from odoo.tools.pdf import PdfFileReader, PdfFileWriter, PdfReadError
+  File "/Users/sonzai/dev/odoo 19/odoo/odoo/tools/pdf/__init__.py", line 33, in <module>
+    import PyPDF2.filters  # needed after PyPDF2 2.0.0 and before 2.11.0
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/PyPDF2/__init__.py", line 21, in <module>
+    warnings.warn(
+ 
+2026-05-13 03:26:35,666 109 INFO odoo_db odoo.modules.loading: loading 1 modules... 
+2026-05-13 03:26:35,669 109 INFO odoo_db odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-05-13 03:26:35,684 109 INFO odoo_db odoo.modules.loading: updating modules list 
+2026-05-13 03:26:35,688 109 INFO odoo_db odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-05-13 03:26:36,699 109 INFO odoo_db odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Cân Đối Lương & KPI Đức Lâm'] to user __system__ #1 via n/a 
+2026-05-13 03:26:36,699 109 INFO odoo_db odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Cân Đối Lương & KPI Đức Lâm'] to user __system__ #1 via n/a 
+2026-05-13 03:26:37,444 109 INFO odoo_db odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-05-13 03:26:37,471 109 WARNING odoo_db odoo.modules.module_graph: module dl_wood_traceability: not installable, skipped 
+2026-05-13 03:26:37,472 109 INFO odoo_db odoo.modules.loading: loading 87 modules... 
+2026-05-13 03:26:38,047 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,047 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,047 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,047 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,048 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,048 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,048 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,048 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,048 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,048 109 WARNING odoo_db odoo.registry: Model attribute '_sql_constraints' is no longer supported, please define model.Constraint on the model. 
+2026-05-13 03:26:38,058 109 INFO odoo_db odoo.modules.loading: Loading module dl_salary_kpi (86/87) 
+2026-05-13 03:26:38,227 109 INFO odoo_db odoo.registry: module dl_salary_kpi: creating or updating database tables 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_02_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_03_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_04_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_05_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_06_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_07_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_08_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_09_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_10_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_11_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_12_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_13_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_14_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_15_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_16_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_17_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_18_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_19_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_20_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_21_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,301 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_22_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_23_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_24_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_25_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_26_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_27_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_28_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_29_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_30_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (day_31_code, day_01_code) of dl.salary.kpi.line() have the same label: Mã ký hiệu. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_01, day_01) of dl.salary.kpi.line() have the same label: 01. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_02, day_02) of dl.salary.kpi.line() have the same label: 02. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_03, day_03) of dl.salary.kpi.line() have the same label: 03. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_04, day_04) of dl.salary.kpi.line() have the same label: 04. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_05, day_05) of dl.salary.kpi.line() have the same label: 05. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_06, day_06) of dl.salary.kpi.line() have the same label: 06. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_07, day_07) of dl.salary.kpi.line() have the same label: 07. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_08, day_08) of dl.salary.kpi.line() have the same label: 08. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_09, day_09) of dl.salary.kpi.line() have the same label: 09. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_10, day_10) of dl.salary.kpi.line() have the same label: 10. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_11, day_11) of dl.salary.kpi.line() have the same label: 11. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_12, day_12) of dl.salary.kpi.line() have the same label: 12. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_13, day_13) of dl.salary.kpi.line() have the same label: 13. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_14, day_14) of dl.salary.kpi.line() have the same label: 14. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_15, day_15) of dl.salary.kpi.line() have the same label: 15. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_16, day_16) of dl.salary.kpi.line() have the same label: 16. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_17, day_17) of dl.salary.kpi.line() have the same label: 17. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_18, day_18) of dl.salary.kpi.line() have the same label: 18. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_19, day_19) of dl.salary.kpi.line() have the same label: 19. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_20, day_20) of dl.salary.kpi.line() have the same label: 20. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_21, day_21) of dl.salary.kpi.line() have the same label: 21. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_22, day_22) of dl.salary.kpi.line() have the same label: 22. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_23, day_23) of dl.salary.kpi.line() have the same label: 23. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_24, day_24) of dl.salary.kpi.line() have the same label: 24. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_25, day_25) of dl.salary.kpi.line() have the same label: 25. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_26, day_26) of dl.salary.kpi.line() have the same label: 26. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_27, day_27) of dl.salary.kpi.line() have the same label: 27. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_28, day_28) of dl.salary.kpi.line() have the same label: 28. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_29, day_29) of dl.salary.kpi.line() have the same label: 29. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_30, day_30) of dl.salary.kpi.line() have the same label: 30. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,302 109 WARNING odoo_db odoo.addons.base.models.ir_model: Two fields (ot_day_31, day_31) of dl.salary.kpi.line() have the same label: 31. [Modules: dl_salary_kpi and dl_salary_kpi] 
+2026-05-13 03:26:38,415 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/security/ir.model.access.csv 
+2026-05-13 03:26:38,678 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/security/salary_kpi_security.xml 
+2026-05-13 03:26:38,690 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/data/attendance_type_data.xml 
+2026-05-13 03:26:39,014 109 INFO odoo_db odoo.models.unlink: User #1 deleted ir.model.data records with IDs: [1180673, 1180672] 
+2026-05-13 03:26:39,017 109 INFO odoo_db odoo.models.unlink: User #1 deleted dl.salary.kpi.attendance.type records with IDs: [108, 109] 
+2026-05-13 03:26:39,049 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/data/dl_tax_department_data.xml 
+2026-05-13 03:26:39,056 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/attendance_type_views.xml 
+2026-05-13 03:26:39,084 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/dl_tax_department_views.xml 
+2026-05-13 03:26:39,099 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/hr_employee_views.xml 
+2026-05-13 03:26:39,215 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/wizard/dl_salary_kpi_import_views.xml 
+2026-05-13 03:26:39,225 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/wizard/dl_salary_kpi_tax_import_views.xml 
+2026-05-13 03:26:39,236 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/wizard/dl_dependent_import_views.xml 
+2026-05-13 03:26:39,246 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/wizard/dl_salary_kpi_export_wizard_views.xml 
+2026-05-13 03:26:39,255 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/wizard/dl_salary_kpi_quick_fix_wizard_views.xml 
+2026-05-13 03:26:39,264 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/wizard/dl_salary_kpi_lnb_wizard_views.xml 
+2026-05-13 03:26:39,274 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/dl_salary_kpi_month_views.xml 
+2026-05-13 03:26:39,342 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/hr_employee_tax_views.xml 
+2026-05-13 03:26:39,355 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/dl_salary_kpi_bonus_views.xml 
+2026-05-13 03:26:39,371 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/dl_dependent_views.xml 
+2026-05-13 03:26:39,395 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/res_config_settings_views.xml 
+2026-05-13 03:26:39,469 109 INFO odoo_db odoo.modules.loading: loading dl_salary_kpi/views/menus.xml 
+2026-05-13 03:26:39,530 109 INFO odoo_db odoo.addons.base.models.ir_module: module dl_salary_kpi: no translation for language vi_VN 
+2026-05-13 03:26:39,543 109 INFO odoo_db odoo.modules.loading: Module dl_salary_kpi loaded in 1.48s, 861 queries (+861 other) 
+2026-05-13 03:26:39,546 109 INFO odoo_db odoo.modules.loading: 87 modules loaded in 2.07s, 861 queries (+861 extra) 
+2026-05-13 03:26:39,547 109 WARNING odoo_db odoo.modules.module_graph: module dl_wood_traceability: not installable, skipped 
+2026-05-13 03:26:39,548 109 INFO odoo_db odoo.modules.loading: loading 87 modules... 
+2026-05-13 03:26:39,548 109 INFO odoo_db odoo.modules.loading: 87 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-05-13 03:26:39,676 109 ERROR odoo_db odoo.modules.loading: Some modules are not loaded, some dependencies or manifest may be missing: ['dl_wood_traceability'] 
+2026-05-13 03:26:39,720 109 INFO odoo_db odoo.modules.loading: Model dl.co.declaration is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,724 109 INFO odoo_db odoo.modules.loading: Model dl.dossier.ledger is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,730 109 INFO odoo_db odoo.modules.loading: Model dl.link.production.wizard is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.contract.template is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.customer.import.wizard is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.dossier is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.dossier.attachment is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.dossier.inventory is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.dossier.inventory.line is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.dossier.line is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,743 109 INFO odoo_db odoo.modules.loading: Model dl.wood.exploitation.location is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.log is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.log.config is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.log.line is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.log.mixin is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.product.norm is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.production.line is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.production.order is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.production.product.line is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.production.trip is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.sale.order is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.species is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.wood.species.grade is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.woodpro.company is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:39,744 109 INFO odoo_db odoo.modules.loading: Model dl.woodpro.config is declared but cannot be loaded! (Perhaps a module was partially removed or renamed) 
+2026-05-13 03:26:40,506 109 INFO odoo_db odoo.modules.loading: Modules loaded. 
+2026-05-13 03:26:40,510 109 INFO odoo_db odoo.addons.dl_salary_kpi.models.dl_salary_kpi_month: === Đang kiểm tra dữ liệu mặc định cho đa công ty === 
+2026-05-13 03:26:40,525 109 INFO odoo_db odoo.registry: Registry changed, signaling through the database 
+2026-05-13 03:26:40,527 109 INFO odoo_db odoo.registry: Registry loaded in 4.913s 
+2026-05-13 03:26:40,527 109 INFO odoo_db odoo.service.server: Initiating shutdown 
+2026-05-13 03:26:40,527 109 INFO odoo_db odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-05-13 03:26:40,527 109 INFO odoo_db odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  

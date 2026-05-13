@@ -25,22 +25,22 @@
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
 
-        <!-- Record Rule for dl.tax.department: Cho phép Đọc tất cả để tránh lỗi Forbidden khi xuất báo cáo -->
-        <record id="dl_tax_department_multi_company_read_rule" model="ir.rule">
-            <field name="name">Phòng ban thuế: đọc tất cả</field>
+        <!-- Record Rule for dl.tax.department: Đọc toàn cục (perm_read=False), Ghi giới hạn theo công ty -->
+        <record id="dl_tax_department_multi_company_rule" model="ir.rule">
+            <field name="name">Phòng ban thuế: đa công ty</field>
             <field name="model_id" ref="model_dl_tax_department"/>
             <field name="global" eval="True"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="False"/>
-            <field name="perm_create" eval="False"/>
-            <field name="perm_unlink" eval="False"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
         </record>
 
-        <!-- Record Rule for dl.tax.department: Giới hạn quyền ghi theo công ty -->
-        <record id="dl_tax_department_multi_company_write_rule" model="ir.rule">
-            <field name="name">Phòng ban thuế: ghi theo công ty</field>
-            <field name="model_id" ref="model_dl_tax_department"/>
+        <!-- Record Rule for dl.salary.kpi.attendance.type: Đọc toàn cục (perm_read=False), Ghi giới hạn theo công ty -->
+        <record id="dl_salary_kpi_attendance_type_multi_company_rule" model="ir.rule">
+            <field name="name">Mã chấm công: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_attendance_type"/>
             <field name="global" eval="True"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="False"/>

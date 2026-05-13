@@ -140,11 +140,12 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
             except ValueError:
                 return False
 
-        # Load types
-        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N')], limit=1)
-        att_type_d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'Đ')], limit=1)
-        att_type_05n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N')], limit=1)
-        att_type_05d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ')], limit=1)
+        # Load types theo đúng công ty
+        company_id = line.company_id.id
+        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N'), ('company_id', '=', company_id)], limit=1)
+        att_type_d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'Đ'), ('company_id', '=', company_id)], limit=1)
+        att_type_05n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N'), ('company_id', '=', company_id)], limit=1)
+        att_type_05d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ'), ('company_id', '=', company_id)], limit=1)
 
         # VALIDATION: Total N + D <= 27
         total_n = line.total_n + self.change_n
