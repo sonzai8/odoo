@@ -1234,7 +1234,7 @@ class SalaryKpiLine(models.Model):
 
             # --- LOGIC NEO DỮ LIỆU BẤT THƯỜNG (STICKY FLAG) ---
             is_currently_anomaly = (rec.payroll_internal_salary > 0 and net_salary_base > rec.payroll_internal_salary) \
-                                   or (rec.payroll_internal_salary == 0 and net_salary_base > 0) \
+                                   or (rec.month_id.x_has_imported_internal_salary and rec.month_id.x_is_recalculated and rec.payroll_internal_salary == 0 and net_salary_base > 0) \
                                    or kpi_val < -1 \
                                    or (0 < cash_val < 1000000)
             
@@ -1749,8 +1749,11 @@ class SalaryKpiLine(models.Model):
                     vals[f'day_{i:02d}'] = False
                     vals[f'ot_day_{i:02d}'] = False
                 rec.write(vals)
+                # Tính toán lại ngay lập tức để cập nhật số lượng công và tiền thực lĩnh
+                rec._compute_totals()
                 rec._compute_payroll_internal()
             else:
                 # 2. Logic Wing Magic (Tự cân đối công)
                 rec.action_run_wing_magic_logic()
+        
         return True

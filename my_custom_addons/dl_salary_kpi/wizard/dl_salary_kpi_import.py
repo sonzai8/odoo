@@ -184,6 +184,9 @@ class SalaryKpiImportWizard(models.TransientModel):
         # Nếu không có lỗi nào thì mới tiến hành lưu
         for line, vals in import_data:
             line.write(vals)
+        
+        # Reset trạng thái tính toán lại
+        self.month_id.write({'x_is_recalculated': False})
 
         msg = _('Đã cập nhật dữ liệu cho %s nhân viên.') % len(import_data)
         if count_skipped_departure > 0:
@@ -249,6 +252,9 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         for line, vals in import_data:
             line.write(vals)
+
+        # Reset trạng thái tính toán lại để không báo lỗi Ln=0 ngay lập tức
+        self.month_id.write({'x_is_recalculated': False})
 
         return {
             'type': 'ir.actions.client',

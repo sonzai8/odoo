@@ -70,6 +70,14 @@ class SalaryKpiMonth(models.Model):
     x_insurance_stop_count = fields.Integer(string='Số lượng cắt bảo hiểm', compute='_compute_insurance_stop_count')
 
     # Logic khởi tạo tự động đã được chuyển sang nút bấm thủ công trong Cấu hình để đảm bảo an toàn.
+    x_is_recalculated = fields.Boolean(string='Đã tính toán lại toàn bộ', default=False)
+    x_has_imported_internal_salary = fields.Boolean(string='Đã nhập lương nội bộ', compute='_compute_has_imported_internal_salary', store=True)
+
+    @api.depends('line_ids.payroll_internal_salary')
+    def _compute_has_imported_internal_salary(self):
+        for rec in self:
+            # Nếu có ít nhất 1 dòng có lương nội bộ > 0 thì coi như đã nhập
+            rec.x_has_imported_internal_salary = any(line.payroll_internal_salary > 0 for line in rec.line_ids)
 
     @api.depends('insurance_stop_ids')
     def _compute_insurance_stop_count(self):
@@ -171,7 +179,7 @@ class SalaryKpiMonth(models.Model):
             if rec.line_ids:
                 anomalies = rec.line_ids.filtered(
                     lambda l: l.x_has_anomaly and not l.x_is_anomaly_resolved
-                )
+                ).sorted(key=lambda l: (l.dl_tax_department_id.name or '', l.employee_name or ''))
                 # Đánh số thứ tự 1, 2, 3... cho danh sách hiển thị trong tab
                 for i, line in enumerate(anomalies, 1):
                     line.x_sequence = i
@@ -426,6 +434,7 @@ class SalaryKpiMonth(models.Model):
                 
                 # Tính toán lại tổng công
                 rec.line_ids._compute_totals()
+                rec.write({'x_is_recalculated': True})
                 t4 = time.time()
                 _logger.info("=== BENCHMARK CHỐT CÔNG [%s]: _compute_totals mất %.2fs ===", rec.name, t4 - t3)
                 
@@ -1146,6 +1155,9 @@ class SalaryKpiMonth(models.Model):
                 # Nếu đã hết quota, chỉ cho phép random tới tối đa 69
                 line.action_generate_kpi_scores(max_allowed=69)
                 
+        # 3. Kích hoạt tính toán lại toàn bộ để cập nhật bảng cân đối
+        self.action_recompute_all_data()
+        self.write({'x_is_recalculated': True})
         return True
 
 class InsuranceStop(models.Model):
