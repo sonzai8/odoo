@@ -30,6 +30,7 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
     payroll_kpi_amount_rounded = fields.Monetary(related='line_id.payroll_kpi_amount_rounded', string='Tiền KPI thực tế', readonly=True, currency_field='currency_id')
     payroll_bank_transfer_amount_rounded = fields.Monetary(related='line_id.payroll_bank_transfer_amount_rounded', string='Tiền CK thực tế', readonly=True, currency_field='currency_id')
     payroll_cash_amount_rounded = fields.Monetary(related='line_id.payroll_cash_amount_rounded', string='Tiền mặt thực tế', readonly=True, currency_field='currency_id')
+    company_id = fields.Many2one('res.company', related='line_id.company_id', readonly=True)
 
     # Số lượng muốn thay đổi (người dùng nhập)
     change_n = fields.Integer(string='Thay đổi công N', default=0,
@@ -48,6 +49,84 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
     current_ot_d = fields.Integer(string='0.5Đ hiện tại', compute='_compute_current_values', store=False)
 
     suggestion_html = fields.Html(related='line_id.payroll_anomaly_suggestion', string='Gợi ý xử lý', readonly=True)
+
+    # --- MA TRẬN CHẤM CÔNG TRONG POPUP ---
+    # Công thường
+    day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01', domain="[('company_id', '=', company_id)]")
+    day_02 = fields.Many2one('dl.salary.kpi.attendance.type', string='02', domain="[('company_id', '=', company_id)]")
+    day_03 = fields.Many2one('dl.salary.kpi.attendance.type', string='03', domain="[('company_id', '=', company_id)]")
+    day_04 = fields.Many2one('dl.salary.kpi.attendance.type', string='04', domain="[('company_id', '=', company_id)]")
+    day_05 = fields.Many2one('dl.salary.kpi.attendance.type', string='05', domain="[('company_id', '=', company_id)]")
+    day_06 = fields.Many2one('dl.salary.kpi.attendance.type', string='06', domain="[('company_id', '=', company_id)]")
+    day_07 = fields.Many2one('dl.salary.kpi.attendance.type', string='07', domain="[('company_id', '=', company_id)]")
+    day_08 = fields.Many2one('dl.salary.kpi.attendance.type', string='08', domain="[('company_id', '=', company_id)]")
+    day_09 = fields.Many2one('dl.salary.kpi.attendance.type', string='09', domain="[('company_id', '=', company_id)]")
+    day_10 = fields.Many2one('dl.salary.kpi.attendance.type', string='10', domain="[('company_id', '=', company_id)]")
+    day_11 = fields.Many2one('dl.salary.kpi.attendance.type', string='11', domain="[('company_id', '=', company_id)]")
+    day_12 = fields.Many2one('dl.salary.kpi.attendance.type', string='12', domain="[('company_id', '=', company_id)]")
+    day_13 = fields.Many2one('dl.salary.kpi.attendance.type', string='13', domain="[('company_id', '=', company_id)]")
+    day_14 = fields.Many2one('dl.salary.kpi.attendance.type', string='14', domain="[('company_id', '=', company_id)]")
+    day_15 = fields.Many2one('dl.salary.kpi.attendance.type', string='15', domain="[('company_id', '=', company_id)]")
+    day_16 = fields.Many2one('dl.salary.kpi.attendance.type', string='16', domain="[('company_id', '=', company_id)]")
+    day_17 = fields.Many2one('dl.salary.kpi.attendance.type', string='17', domain="[('company_id', '=', company_id)]")
+    day_18 = fields.Many2one('dl.salary.kpi.attendance.type', string='18', domain="[('company_id', '=', company_id)]")
+    day_19 = fields.Many2one('dl.salary.kpi.attendance.type', string='19', domain="[('company_id', '=', company_id)]")
+    day_20 = fields.Many2one('dl.salary.kpi.attendance.type', string='20', domain="[('company_id', '=', company_id)]")
+    day_21 = fields.Many2one('dl.salary.kpi.attendance.type', string='21', domain="[('company_id', '=', company_id)]")
+    day_22 = fields.Many2one('dl.salary.kpi.attendance.type', string='22', domain="[('company_id', '=', company_id)]")
+    day_23 = fields.Many2one('dl.salary.kpi.attendance.type', string='23', domain="[('company_id', '=', company_id)]")
+    day_24 = fields.Many2one('dl.salary.kpi.attendance.type', string='24', domain="[('company_id', '=', company_id)]")
+    day_25 = fields.Many2one('dl.salary.kpi.attendance.type', string='25', domain="[('company_id', '=', company_id)]")
+    day_26 = fields.Many2one('dl.salary.kpi.attendance.type', string='26', domain="[('company_id', '=', company_id)]")
+    day_27 = fields.Many2one('dl.salary.kpi.attendance.type', string='27', domain="[('company_id', '=', company_id)]")
+    day_28 = fields.Many2one('dl.salary.kpi.attendance.type', string='28', domain="[('company_id', '=', company_id)]")
+    day_29 = fields.Many2one('dl.salary.kpi.attendance.type', string='29', domain="[('company_id', '=', company_id)]")
+    day_30 = fields.Many2one('dl.salary.kpi.attendance.type', string='30', domain="[('company_id', '=', company_id)]")
+    day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31', domain="[('company_id', '=', company_id)]")
+
+    # Làm thêm
+    ot_day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01 ', domain="[('company_id', '=', company_id)]")
+    ot_day_02 = fields.Many2one('dl.salary.kpi.attendance.type', string='02 ', domain="[('company_id', '=', company_id)]")
+    ot_day_03 = fields.Many2one('dl.salary.kpi.attendance.type', string='03 ', domain="[('company_id', '=', company_id)]")
+    ot_day_04 = fields.Many2one('dl.salary.kpi.attendance.type', string='04 ', domain="[('company_id', '=', company_id)]")
+    ot_day_05 = fields.Many2one('dl.salary.kpi.attendance.type', string='05 ', domain="[('company_id', '=', company_id)]")
+    ot_day_06 = fields.Many2one('dl.salary.kpi.attendance.type', string='06 ', domain="[('company_id', '=', company_id)]")
+    ot_day_07 = fields.Many2one('dl.salary.kpi.attendance.type', string='07 ', domain="[('company_id', '=', company_id)]")
+    ot_day_08 = fields.Many2one('dl.salary.kpi.attendance.type', string='08 ', domain="[('company_id', '=', company_id)]")
+    ot_day_09 = fields.Many2one('dl.salary.kpi.attendance.type', string='09 ', domain="[('company_id', '=', company_id)]")
+    ot_day_10 = fields.Many2one('dl.salary.kpi.attendance.type', string='10 ', domain="[('company_id', '=', company_id)]")
+    ot_day_11 = fields.Many2one('dl.salary.kpi.attendance.type', string='11 ', domain="[('company_id', '=', company_id)]")
+    ot_day_12 = fields.Many2one('dl.salary.kpi.attendance.type', string='12 ', domain="[('company_id', '=', company_id)]")
+    ot_day_13 = fields.Many2one('dl.salary.kpi.attendance.type', string='13 ', domain="[('company_id', '=', company_id)]")
+    ot_day_14 = fields.Many2one('dl.salary.kpi.attendance.type', string='14 ', domain="[('company_id', '=', company_id)]")
+    ot_day_15 = fields.Many2one('dl.salary.kpi.attendance.type', string='15 ', domain="[('company_id', '=', company_id)]")
+    ot_day_16 = fields.Many2one('dl.salary.kpi.attendance.type', string='16 ', domain="[('company_id', '=', company_id)]")
+    ot_day_17 = fields.Many2one('dl.salary.kpi.attendance.type', string='17 ', domain="[('company_id', '=', company_id)]")
+    ot_day_18 = fields.Many2one('dl.salary.kpi.attendance.type', string='18 ', domain="[('company_id', '=', company_id)]")
+    ot_day_19 = fields.Many2one('dl.salary.kpi.attendance.type', string='19 ', domain="[('company_id', '=', company_id)]")
+    ot_day_20 = fields.Many2one('dl.salary.kpi.attendance.type', string='20 ', domain="[('company_id', '=', company_id)]")
+    ot_day_21 = fields.Many2one('dl.salary.kpi.attendance.type', string='21 ', domain="[('company_id', '=', company_id)]")
+    ot_day_22 = fields.Many2one('dl.salary.kpi.attendance.type', string='22 ', domain="[('company_id', '=', company_id)]")
+    ot_day_23 = fields.Many2one('dl.salary.kpi.attendance.type', string='23 ', domain="[('company_id', '=', company_id)]")
+    ot_day_24 = fields.Many2one('dl.salary.kpi.attendance.type', string='24 ', domain="[('company_id', '=', company_id)]")
+    ot_day_25 = fields.Many2one('dl.salary.kpi.attendance.type', string='25 ', domain="[('company_id', '=', company_id)]")
+    ot_day_26 = fields.Many2one('dl.salary.kpi.attendance.type', string='26 ', domain="[('company_id', '=', company_id)]")
+    ot_day_27 = fields.Many2one('dl.salary.kpi.attendance.type', string='27 ', domain="[('company_id', '=', company_id)]")
+    ot_day_28 = fields.Many2one('dl.salary.kpi.attendance.type', string='28 ', domain="[('company_id', '=', company_id)]")
+    ot_day_29 = fields.Many2one('dl.salary.kpi.attendance.type', string='29 ', domain="[('company_id', '=', company_id)]")
+    ot_day_30 = fields.Many2one('dl.salary.kpi.attendance.type', string='30 ', domain="[('company_id', '=', company_id)]")
+    ot_day_31 = fields.Many2one('dl.salary.kpi.attendance.type', string='31 ', domain="[('company_id', '=', company_id)]")
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super(SalaryKpiQuickFixWizard, self).default_get(fields_list)
+        line_id = self.env.context.get('active_id') or res.get('line_id')
+        if line_id:
+            line = self.env['dl.salary.kpi.line'].browse(line_id)
+            for i in range(1, 32):
+                res[f'day_{i:02d}'] = getattr(line, f'day_{i:02d}').id if getattr(line, f'day_{i:02d}') else False
+                res[f'ot_day_{i:02d}'] = getattr(line, f'ot_day_{i:02d}').id if getattr(line, f'ot_day_{i:02d}') else False
+        return res
 
     def _get_work_boundaries(self):
         """Trả về (first_day, last_day) là index của ngày có công đầu tiên và cuối cùng."""
@@ -122,9 +201,11 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
         self.ensure_one()
         line = self.line_id
 
-        if self.change_n == 0 and self.change_d == 0 and self.change_ot_n == 0 and self.change_ot_d == 0:
-            raise ValidationError(_("Vui lòng nhập số lượng công cần thay đổi (khác 0)!"))
-
+        # Chỉ kiểm tra nếu KHÔNG có thay đổi nào trong ma trận (so với ban đầu)
+        # Để đơn giản, ta cứ cho phép bấm Xác nhận nếu người dùng muốn "Lưu ma trận"
+        # Ta chỉ chặn nếu cả 4 ô nhập số đều là 0 VÀ không có tham số 'from_magic'
+        
+        # vals chứa các thay đổi từ 4 ô nhập số lượng
         vals = {}
         protected = self._get_protected_days(check_boundaries=True)
         first_boundary, last_boundary = self._get_work_boundaries()
@@ -274,25 +355,37 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
             for d in eligible[:count]:
                 vals[f'ot_day_{d:02d}'] = att_type_05d.id
 
-        # === GHI DỮ LIỆU ===
-        if vals:
-            _logger.info(
-                "=== QUICK FIX [%s - %s]: Cập nhật %d trường: %s ===",
-                line.employee_name, line.identification_id,
-                len(vals), list(vals.keys())
-            )
-            line.write(vals)
+        # 1. Tính toán các thay đổi từ ô nhập số lượng (vals)
+        # (Giữ nguyên logic random tìm ngày để thêm/giảm như cũ)
+        # ... logic này đã chạy và tạo ra dict `vals` ...
+        
+        # 2. Lấy dữ liệu HIỆN TẠI trên ma trận của Wizard (người dùng có thể đã sửa tay)
+        wizard_matrix_vals = {}
+        for i in range(1, 32):
+            f_day = f'day_{i:02d}'
+            f_ot = f'ot_day_{i:02d}'
+            wizard_matrix_vals[f_day] = self[f_day].id if self[f_day] else False
+            wizard_matrix_vals[f_ot] = self[f_ot].id if self[f_ot] else False
             
-            # Tính lại kết quả thực tế và KPI ngay lập tức
+        # 3. Ghi đè các thay đổi từ "Điều chỉnh nhanh" (vals) vào ma trận của Wizard
+        # Điều này giúp hợp nhất cả sửa tay và sửa tự động
+        for k, v in vals.items():
+            wizard_matrix_vals[k] = v
+
+        if wizard_matrix_vals:
+            _logger.info("=== LƯU THAY ĐỔI CHO %s ===", line.employee_name)
+            line.write(wizard_matrix_vals)
+            
+            # Tính lại kết quả
             line.action_generate_kpi_scores(max_allowed=70)
             
-            # Reset các giá trị điều chỉnh về 0 để có thể sửa tiếp nếu muốn
+            # Reset ô nhập số
             self.write({
-                'change_n': 0,
-                'change_d': 0,
-                'change_ot_n': 0,
-                'change_ot_d': 0,
+                'change_n': 0, 'change_d': 0, 'change_ot_n': 0, 'change_ot_d': 0,
             })
+            
+            # Cập nhật lại các trường ma trận trên chính Wizard để đồng bộ hiển thị
+            self.write(wizard_matrix_vals)
 
         # KHÔNG ĐÓNG POPUP, MỞ LẠI CHÍNH MÌNH ĐỂ XEM KẾT QUẢ THỰC TẾ
         return {
@@ -302,6 +395,119 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
             'res_id': self.id,
             'view_mode': 'form',
             'target': 'new',
-            'size': 'xl',
+            'size': 'extra-large',
             'context': self.env.context,
         }
+
+    def action_wing_magic(self):
+        """
+        PHÉP THUẬT WING: Tự động cân đối công để KPI hết âm và ưu tiên CK.
+        """
+        self.ensure_one()
+        line = self.line_id
+        protected = self._get_protected_days(check_boundaries=True)
+        company_id = line.company_id.id
+        
+        # Load types
+        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N'), ('company_id', '=', company_id)], limit=1)
+        att_type_d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'Đ'), ('company_id', '=', company_id)], limit=1)
+        att_type_05n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N'), ('company_id', '=', company_id)], limit=1)
+        att_type_05d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ'), ('company_id', '=', company_id)], limit=1)
+
+        def get_current_state():
+            line.action_generate_kpi_scores(max_allowed=70)
+            return line.payroll_kpi_amount, line.payroll_cash_amount
+
+        # VÒNG LẶP 1: Xử lý KPI âm -> Cắt công
+        kpi, cash = get_current_state()
+        iterations = 0
+        while kpi < -100 and iterations < 30: # -100 để tránh sai số float
+            iterations += 1
+            # 1. Thử cắt 0.5N/0.5Đ trước
+            ot_days = [i for i in range(1, 32) if i not in protected and getattr(line, f'ot_day_{i:02d}')]
+            if ot_days:
+                d = random.choice(ot_days)
+                line.write({f'ot_day_{d:02d}': False})
+            else:
+                # 2. Thử cắt N/Đ
+                main_days = [i for i in range(1, 32) if i not in protected and getattr(line, f'day_{i:02d}') and getattr(line, f'day_{i:02d}').code in ('N', 'Đ')]
+                if main_days:
+                    d = random.choice(main_days)
+                    line.write({f'day_{d:02d}': False, f'ot_day_{d:02d}': False})
+                else:
+                    break # Không còn gì để cắt
+            kpi, cash = get_current_state()
+
+        # VÒNG LẶP 2: Tối ưu tiền mặt -> Thêm công
+        # Nếu Cash > 0 (tức là còn tiền mặt) và LNB còn dư địa so với TLN
+        kpi, cash = get_current_state()
+        iterations = 0
+        first_b, last_b = self._get_work_boundaries()
+        
+        while cash > 1000 and iterations < 30:
+            iterations += 1
+            # Thử thêm 0.5N vào ngày đã có N
+            can_add_ot = [i for i in range(1, 32) if i not in protected and first_b <= i <= last_b 
+                          and getattr(line, f'day_{i:02d}') and getattr(line, f'day_{i:02d}').code == 'N' 
+                          and not getattr(line, f'ot_day_{i:02d}')]
+            if can_add_ot:
+                d = random.choice(can_add_ot)
+                line.write({f'ot_day_{d:02d}': att_type_05n.id})
+            else:
+                # Thử thêm N vào ngày trống
+                year = line.month_id.date_month.year
+                month = line.month_id.date_month.month
+                can_add_n = []
+                for i in range(first_b, last_b + 1):
+                    if i in protected or getattr(line, f'day_{i:02d}'): continue
+                    try:
+                        if datetime.date(year, month, i).weekday() < 6:
+                            can_add_n.append(i)
+                    except: pass
+                
+                if can_add_n and (line.total_n + line.total_d < 27):
+                    d = random.choice(can_add_n)
+                    line.write({f'day_{d:02d}': att_type_n.id})
+                else:
+                    break
+            
+            kpi, cash = get_current_state()
+            if kpi > (line.payroll_internal_salary * 0.4): # Giới hạn không để KPI quá cao gây nghi ngờ
+                break
+
+        # Cập nhật lại wizard sau phép thuật
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Điều chỉnh công nhanh'),
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'size': 'extra-large',
+            'context': self.env.context,
+        }
+    # --- LIVE EDIT CHO MA TRẬN ---
+    @api.onchange('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                  'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
+                  'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
+                  'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
+                  'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+    def _onchange_matrix_live_edit(self):
+        """Khi thay đổi trên ma trận, ghi ngay vào line_id."""
+        if not self.line_id:
+            return
+        vals = {}
+        # Lấy tên field vừa thay đổi (Odoo không cho biết trực tiếp field nào trigger onchange dễ dàng ở đây)
+        # nên ta cứ loop qua hết và so sánh hoặc ghi đè toàn bộ.
+        for i in range(1, 32):
+            f_day = f'day_{i:02d}'
+            f_ot = f'ot_day_{i:02d}'
+            vals[f_day] = self[f_day].id if self[f_day] else False
+            vals[f_ot] = self[f_ot].id if self[f_ot] else False
+        
+        self.line_id.write(vals)
+        # Tạm thời không gọi recalculate ở onchange để tránh lag, 
+        # người dùng bấm nút Wing hoặc popup sẽ tự refresh khi mở lại.
+        # Hoặc gọi nhẹ:
+        self.line_id.action_generate_kpi_scores(max_allowed=70)

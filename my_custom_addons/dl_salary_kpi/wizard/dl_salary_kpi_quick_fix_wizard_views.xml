@@ -37,7 +37,7 @@
 
                 <div class="row mb-2">
                     <div class="col-6">
-                        <group string="🔧 CÔNG CHÍNH (N, Đ)" class="mt-0">
+                        <group string="🔧 ĐIỀU CHỈNH NHANH (SỐ LƯỢNG)" class="mt-0">
                             <div class="d-flex align-items-center gap-2">
                                 <label for="change_n" string="N (+/-)" style="width: 50px;"/>
                                 <field name="change_n" type="number" nolabel="1" class="oe_inline" style="width: 40px;"/>
@@ -50,11 +50,7 @@
                                 <span class="text-muted small">/ Có: </span>
                                 <field name="current_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
                             </div>
-                        </group>
-                    </div>
-                    <div class="col-6 border-start">
-                        <group string="🔧 LÀM THÊM (0.5N, 0.5Đ)" class="mt-0">
-                            <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2 mt-1">
                                 <label for="change_ot_n" string="0.5N (+/-)" style="width: 55px;"/>
                                 <field name="change_ot_n" type="number" nolabel="1" class="oe_inline" style="width: 40px;"/>
                                 <span class="text-muted small">/ Có: </span>
@@ -66,9 +62,98 @@
                                 <span class="text-muted small">/ Có: </span>
                                 <field name="current_ot_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
                             </div>
+                            <div class="mt-2 text-center">
+                                <button name="action_apply_quick_fix" string="⚡ CHẠY ĐIỀU CHỈNH SỐ LƯỢNG" type="object" class="btn-primary w-100 py-1" icon="fa-bolt" confirm="Hệ thống sẽ tự động tìm ngày để cộng/trừ công theo số lượng bạn vừa nhập. Bạn có muốn tiếp tục?"/>
+                            </div>
                         </group>
                     </div>
+                    <div class="col-6 border-start d-flex flex-column justify-content-center align-items-center bg-light">
+                        <div class="text-center p-3">
+                            <h5 class="text-uppercase fw-bold text-primary mb-3">✨ Phép Thuật Wing</h5>
+                            <p class="text-muted small mb-4">Tự động cân đối để KPI hết âm và ưu tiên trả lương chuyển khoản (Tiền mặt về 0).</p>
+                            <button name="action_wing_magic" string="Kích hoạt Phép Thuật" type="object" class="btn-info btn-lg shadow-sm" icon="fa-magic" confirm="Hệ thống sẽ tự động thêm/giảm công để cân đối. Bạn có chắc chắn muốn thực hiện?"/>
+                        </div>
+                    </div>
                 </div>
+
+                <notebook>
+                    <page string="📅 MA TRẬN CHẤM CÔNG CHI TIẾT (SỬA TAY)" name="matrix_adjust">
+                        <div class="alert alert-warning py-1 mb-2 small text-center">
+                            <i class="fa fa-info-circle"/> <b>CHẾ ĐỘ LƯU TỨC THÌ:</b> Bạn sửa đến đâu, hệ thống lưu ngay đến đó. Xong chỉ việc tắt popup!
+                        </div>
+                        
+                        <!-- BLOCK 1: 01-08 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 01 đến ngày 08</div>
+                        <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td>01</td><td>02</td><td>03</td><td>04</td><td>05</td><td>06</td><td>07</td><td>08</td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_01" nolabel="1"/></td><td><field name="day_02" nolabel="1"/></td><td><field name="day_03" nolabel="1"/></td><td><field name="day_04" nolabel="1"/></td><td><field name="day_05" nolabel="1"/></td><td><field name="day_06" nolabel="1"/></td><td><field name="day_07" nolabel="1"/></td><td><field name="day_08" nolabel="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_01" nolabel="1"/></td><td><field name="ot_day_02" nolabel="1"/></td><td><field name="ot_day_03" nolabel="1"/></td><td><field name="ot_day_04" nolabel="1"/></td><td><field name="ot_day_05" nolabel="1"/></td><td><field name="ot_day_06" nolabel="1"/></td><td><field name="ot_day_07" nolabel="1"/></td><td><field name="ot_day_08" nolabel="1"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- BLOCK 2: 09-16 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 09 đến ngày 16</div>
+                        <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td>09</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td>16</td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_09" nolabel="1"/></td><td><field name="day_10" nolabel="1"/></td><td><field name="day_11" nolabel="1"/></td><td><field name="day_12" nolabel="1"/></td><td><field name="day_13" nolabel="1"/></td><td><field name="day_14" nolabel="1"/></td><td><field name="day_15" nolabel="1"/></td><td><field name="day_16" nolabel="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_09" nolabel="1"/></td><td><field name="ot_day_10" nolabel="1"/></td><td><field name="ot_day_11" nolabel="1"/></td><td><field name="ot_day_12" nolabel="1"/></td><td><field name="ot_day_13" nolabel="1"/></td><td><field name="ot_day_14" nolabel="1"/></td><td><field name="ot_day_15" nolabel="1"/></td><td><field name="ot_day_16" nolabel="1"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- BLOCK 3: 17-24 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 17 đến ngày 24</div>
+                        <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td>17</td><td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_17" nolabel="1"/></td><td><field name="day_18" nolabel="1"/></td><td><field name="day_19" nolabel="1"/></td><td><field name="day_20" nolabel="1"/></td><td><field name="day_21" nolabel="1"/></td><td><field name="day_22" nolabel="1"/></td><td><field name="day_23" nolabel="1"/></td><td><field name="day_24" nolabel="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_17" nolabel="1"/></td><td><field name="ot_day_18" nolabel="1"/></td><td><field name="ot_day_19" nolabel="1"/></td><td><field name="ot_day_20" nolabel="1"/></td><td><field name="ot_day_21" nolabel="1"/></td><td><field name="ot_day_22" nolabel="1"/></td><td><field name="ot_day_23" nolabel="1"/></td><td><field name="ot_day_24" nolabel="1"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- BLOCK 4: 25-31 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 25 đến cuối tháng</div>
+                        <table class="table table-sm table-bordered matrix-table mb-0" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td>
+                                <td class="bg-white border-0"></td> <!-- Filler -->
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_25" nolabel="1"/></td><td><field name="day_26" nolabel="1"/></td><td><field name="day_27" nolabel="1"/></td><td><field name="day_28" nolabel="1"/></td><td><field name="day_29" nolabel="1"/></td><td><field name="day_30" nolabel="1"/></td><td><field name="day_31" nolabel="1"/></td>
+                                <td class="bg-white border-0"></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_25" nolabel="1"/></td><td><field name="ot_day_26" nolabel="1"/></td><td><field name="ot_day_27" nolabel="1"/></td><td><field name="ot_day_28" nolabel="1"/></td><td><field name="ot_day_29" nolabel="1"/></td><td><field name="ot_day_30" nolabel="1"/></td><td><field name="ot_day_31" nolabel="1"/></td>
+                                <td class="bg-white border-0"></td>
+                            </tr>
+                        </table>
+                    </page>
+                </notebook>
 
                 <!-- Bảng Kết quả thực tế -->
                 <div class="mt-3 border-top pt-2">
@@ -96,10 +181,6 @@
                         </tbody>
                     </table>
                 </div>
-                <footer>
-                    <button name="action_apply_quick_fix" string="Xác nhận điều chỉnh" type="object" class="btn-primary" icon="fa-check"/>
-                    <button string="Hủy" class="btn-secondary" special="cancel"/>
-                </footer>
             </form>
         </field>
     </record>
