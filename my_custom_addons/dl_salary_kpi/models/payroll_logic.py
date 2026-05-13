@@ -139,7 +139,7 @@ def calculate_detailed_wages(rec):
             if ot_att.ot_type == 'day':
                 if code == '0.5N': wages['wage_day_150'] += hours * hourly_rate * 1.5
                 elif code in ['CNN', 'CNN/2']: wages['wage_day_sun_200'] += hours * hourly_rate * 2.0
-                elif code == 'LN': wages['wage_day_holiday_300'] += hours * hourly_rate * 3.0
+                elif code in ['LN', '1LN', '0.5LN']: wages['wage_day_holiday_300'] += hours * hourly_rate * 3.0
             
             elif ot_att.ot_type == 'night':
                 if code == '0.5Đ':

@@ -161,7 +161,7 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
         # --- XỬ LÝ SỐ ÂM (GIẢM CÔNG) ---
         if self.change_n < 0:
             count = abs(self.change_n)
-            eligible = [d for d in range(1, last_day + 1) if d not in protected and get_current_code('day', d) == 'N']
+            eligible = [d for d in range(1, last_day_in_month + 1) if d not in protected and get_current_code('day', d) == 'N']
             if count > len(eligible):
                 raise ValidationError(_(f"Không đủ công N để giảm! Yêu cầu: {count}, Có thể: {len(eligible)}"))
             random.shuffle(eligible)
@@ -171,7 +171,7 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
 
         if self.change_d < 0:
             count = abs(self.change_d)
-            eligible = [d for d in range(1, last_day + 1) if d not in protected and get_current_code('day', d) == 'Đ']
+            eligible = [d for d in range(1, last_day_in_month + 1) if d not in protected and get_current_code('day', d) == 'Đ']
             if count > len(eligible):
                 raise ValidationError(_(f"Không đủ công Đ để giảm! Yêu cầu: {count}, Có thể: {len(eligible)}"))
             random.shuffle(eligible)
@@ -188,7 +188,7 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
 
         if self.change_ot_n < 0:
             count = abs(self.change_ot_n)
-            eligible = [d for d in range(1, last_day + 1) if d not in protected and get_current_code('ot_day', d) == '0.5N' and d not in temp_removed_days]
+            eligible = [d for d in range(1, last_day_in_month + 1) if d not in protected and get_current_code('ot_day', d) == '0.5N' and d not in temp_removed_days]
             if count > len(eligible):
                 raise ValidationError(_(f"Không đủ công 0.5N để giảm! Yêu cầu: {count}, Có thể: {len(eligible)}"))
             random.shuffle(eligible)
@@ -198,7 +198,7 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
 
         if self.change_ot_d < 0:
             count = abs(self.change_ot_d)
-            eligible = [d for d in range(1, last_day + 1) if d not in protected and get_current_code('ot_day', d) == '0.5Đ' and d not in temp_removed_days]
+            eligible = [d for d in range(1, last_day_in_month + 1) if d not in protected and get_current_code('ot_day', d) == '0.5Đ' and d not in temp_removed_days]
             if count > len(eligible):
                 raise ValidationError(_(f"Không đủ công 0.5Đ để giảm! Yêu cầu: {count}, Có thể: {len(eligible)}"))
             random.shuffle(eligible)

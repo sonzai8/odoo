@@ -11,6 +11,7 @@ class SalaryKpiLine(models.Model):
 
     month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng bảng công', ondelete='cascade')
     month_state = fields.Selection(related='month_id.state', string='Trạng thái tháng', store=True)
+    company_id = fields.Many2one('res.company', string='Công ty', related='month_id.company_id', store=True, readonly=True)
     employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
     employee_name = fields.Char(related='employee_id.name', string='Tên nhân viên', store=True)
     dl_first_name = fields.Char(related='employee_id.dl_first_name', string='Tên riêng', store=True)
@@ -1068,8 +1069,10 @@ class SalaryKpiLine(models.Model):
 
                         if diff > 0:
                             header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT LNB. Cần GIẢM công:</div>"
-                        else:
+                        elif mk_gap < 0:
                             header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần GIẢM công</div>"
+                        else:
+                            header = f"<div style='color: #f0ad4e; font-weight: bold;'>🔸 Tiền KPI đang thấp. Nên GIẢM công để tăng tiền KPI:</div>"
 
                         anomaly_suggestion = header + f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
                         if c_05n_red > 0:
@@ -1356,6 +1359,27 @@ class SalaryKpiLine(models.Model):
             day_idx = attendance_logic.check_sunday_attendance_violation(rec)
             if day_idx:
                 raise ValidationError(_("Ngày %02d là Chủ Nhật. Không được phép chấm công thường vào ngày này. Vui lòng chấm vào phần Làm thêm giờ.") % day_idx)
+    @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
+                    'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
+                    'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
+                    'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
+                    'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
+                    'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+    def _check_holiday_attendance_pl(self):
+        """
+        Ràng buộc: Nếu chấm công làm thêm là 1LN hoặc 0.5LN (Lễ)
+        thì công thường của ngày đó bắt buộc phải là PL (Phép Lễ).
+        """
+        for rec in self:
+            for i in range(1, 32):
+                ot_att = getattr(rec, f'ot_day_{i:02d}')
+                if ot_att and ot_att.code in ['1LN', '0.5LN']:
+                    norm_att = getattr(rec, f'day_{i:02d}')
+                    if not norm_att or norm_att.code != 'PL':
+                        raise ValidationError(_(
+                            "Nhân viên %s: Ngày %02d có công làm thêm là %s (Lễ). "
+                            "Yêu cầu công thường của ngày này phải là PL (Phép Lễ) để đảm bảo đúng chế độ."
+                        ) % (rec.employee_id.name, i, ot_att.code))
 
     # @api.constrains('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
     #                 'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',

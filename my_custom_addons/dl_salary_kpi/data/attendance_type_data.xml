@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <data noupdate="0">
+        <!-- Xóa bản ghi cũ tạo bằng code (không có XML ID) để tránh trùng lặp code -->
+        <delete model="dl.salary.kpi.attendance.type" search="[('code', 'in', ['1LN', '0.5LN'])]"/>
+    </data>
+
     <data noupdate="1">
         <record id="att_type_n" model="dl.salary.kpi.attendance.type">
             <field name="code">N</field>
@@ -152,6 +157,22 @@
             <field name="weight">1.0</field>
             <field name="apply_to">overtime</field>
             <field name="ot_type">night</field>
+            <field name="sequence">212</field>
+        </record>
+        <record id="att_type_1ln" model="dl.salary.kpi.attendance.type">
+            <field name="code">1LN</field>
+            <field name="name">Công làm ngày Lễ (8h)</field>
+            <field name="weight">1.0</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">day</field>
+            <field name="sequence">210</field>
+        </record>
+        <record id="att_type_05ln" model="dl.salary.kpi.attendance.type">
+            <field name="code">0.5LN</field>
+            <field name="name">Công làm nửa ngày Lễ (4h)</field>
+            <field name="weight">0.5</field>
+            <field name="apply_to">overtime</field>
+            <field name="ot_type">day</field>
             <field name="sequence">212</field>
         </record>
     </data>

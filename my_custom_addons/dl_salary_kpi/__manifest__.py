@@ -8,6 +8,7 @@
     'depends': ['base','hr', 'dl_wood_payroll'],
     'data': [
         'security/ir.model.access.csv',
+        'security/salary_kpi_security.xml',
         'data/attendance_type_data.xml',
         'data/dl_tax_department_data.xml',
         'views/attendance_type_views.xml',

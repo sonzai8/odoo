@@ -11,5 +11,6 @@ class DlTaxDepartment(models.Model):
     code = fields.Char(string='Mã phòng ban')
     sequence = fields.Integer(string='Thứ tự', default=10)
     active = fields.Boolean(string='Đang hoạt động', default=True)
+    company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
     _name_unique = Constraint('unique(name)', 'Tên phòng ban đã tồn tại!')

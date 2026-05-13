@@ -7,6 +7,9 @@
             <list string="Cân đối bảng công" limit="20">
                 <field name="date_month"/>
                 <field name="name"/>
+                <field name="company_id"/>
+                <field name="x_line_count" sum="Tổng nhân viên"/>
+                <field name="x_anomaly_count" string="Bất thường" sum="Tổng bất thường" decoration-danger="x_anomaly_count > 0" decoration-bf="x_anomaly_count > 0"/>
                 <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirmed'"/>
             </list>
         </field>
@@ -49,7 +52,7 @@
                             <field name="date_month" readonly="state != 'draft'"/>
                             <field name="dl_revenue" widget="monetary" readonly="state != 'draft'" options="{'currency_field': 'currency_id'}"/>
                             <!-- <field name="dl_production_volume" readonly="state != 'draft'"/> -->
-                            <field name="company_id" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="line_domain" invisible="1"/>
                         </group>

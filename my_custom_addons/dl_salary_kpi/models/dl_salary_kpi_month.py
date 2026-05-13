@@ -100,6 +100,15 @@ class SalaryKpiMonth(models.Model):
         string='Dữ liệu bất thường'
     )
 
+    x_line_count = fields.Integer(string='Tổng NV', compute='_compute_counts', store=True)
+    x_anomaly_count = fields.Integer(string='Số lượng bất thường', compute='_compute_counts', store=True)
+
+    @api.depends('line_ids', 'line_ids.x_has_anomaly', 'line_ids.x_is_anomaly_resolved')
+    def _compute_counts(self):
+        for rec in self:
+            rec.x_line_count = len(rec.line_ids)
+            rec.x_anomaly_count = len(rec.line_ids.filtered(lambda l: l.x_has_anomaly and not l.x_is_anomaly_resolved))
+
     @api.depends('filter_employee_name', 'filter_department_id', 'filter_position')
     def _compute_line_domain(self):
         # Giữ lại logic domain để dùng nếu cần, nhưng ưu tiên filtered_line_ids

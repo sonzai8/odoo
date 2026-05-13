@@ -1,4 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dl_salary_kpi_month_admin,dl.salary.kpi.month.admin,model_dl_salary_kpi_month,base.group_system,1,1,1,1
+access_dl_salary_kpi_line_admin,dl.salary.kpi.line.admin,model_dl_salary_kpi_line,base.group_system,1,1,1,1
+access_dl_tax_department_admin,dl.tax.department.admin,model_dl_tax_department,base.group_system,1,1,1,1
 access_dl_salary_kpi_attendance_type_admin,dl.salary.kpi.attendance.type.admin,model_dl_salary_kpi_attendance_type,base.group_system,1,1,1,1
 access_dl_salary_kpi_attendance_type_manager,dl.salary.kpi.attendance.type.manager,model_dl_salary_kpi_attendance_type,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
 access_dl_salary_kpi_attendance_type_user,dl.salary.kpi.attendance.type.user,model_dl_salary_kpi_attendance_type,base.group_user,1,0,0,0

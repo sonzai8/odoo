@@ -64,10 +64,6 @@ class SalaryKpiImportWizard(models.TransientModel):
             if not emp_name_excel:
                 continue
 
-            # Validate độ dài MST/CCCD (Hỗ trợ CMT 9 số, MST 10/13 số, CCCD 12 số)
-            if tax_id_excel and len(tax_id_excel) not in [9, 10, 12, 13]:
-                errors.append(f"Dòng {row_idx}: Mã số (MST/CCCD) '{tax_id_excel}' không đúng định dạng (phải là 9, 10, 12 hoặc 13 số).")
-                continue
 
             # Tìm line tương ứng trong tháng dựa trên Tên và MST
             line = self.month_id.line_ids.filtered(
@@ -219,9 +215,9 @@ class SalaryKpiImportWizard(models.TransientModel):
             if cccd.endswith('.0'):
                 cccd = cccd[:-2]
 
-            # Validate độ dài CCCD (Hỗ trợ CMT 9 số, MST 10/13 số, CCCD 12 số)
-            if len(cccd) not in [9, 10, 12, 13]:
-                errors.append(f"Dòng {row_idx}: Số CCCD '{cccd}' không đúng định dạng (phải là 9, 10, 12 hoặc 13 số).")
+            # Validate độ dài CCCD chuẩn (9 số CMND cũ hoặc 12 số CCCD mới)
+            if len(cccd) not in [9, 12]:
+                errors.append(f"Dòng {row_idx}: Số CCCD '{cccd}' không đúng định dạng (phải là 9 hoặc 12 số).")
                 continue
                 
             emp_name_excel = str(row[2]).strip() if row[2] else ""

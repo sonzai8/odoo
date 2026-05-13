@@ -45,7 +45,7 @@ def calculate_attendance_totals(rec, att_map=None):
                 ot_n += hours
                 if code == '0.5N': ot_n_normal += hours
                 elif code in ['CNN', 'CNN/2']: ot_n_sun += hours
-                elif code == 'LN': ot_n_holiday += hours
+                elif code in ['LN', '1LN', '0.5LN']: ot_n_holiday += hours
             elif ot_type == 'night':
                 ot_d += hours
                 if code == '0.5Đ':
