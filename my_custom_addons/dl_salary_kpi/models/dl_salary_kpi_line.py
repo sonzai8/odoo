@@ -7,7 +7,7 @@ from odoo.exceptions import ValidationError
 class SalaryKpiLine(models.Model):
     _name = 'dl.salary.kpi.line'
     _description = 'Dòng chấm công tháng'
-    _order = 'dl_tax_department_id, dl_first_name'
+    _order = 'dl_tax_department_sequence, dl_first_name'
 
     month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng bảng công', ondelete='cascade')
     month_state = fields.Selection(related='month_id.state', string='Trạng thái tháng', store=True)
@@ -18,6 +18,7 @@ class SalaryKpiLine(models.Model):
     identification_id = fields.Char(related='employee_id.identification_id', string='Số CCCD', store=True)
     
     dl_tax_department_id = fields.Many2one('dl.tax.department', related='employee_id.dl_tax_department_id', string='Phòng ban', store=True, help="Phòng ban hoặc bộ phận quản lý thuế/bảo hiểm của nhân viên. Dùng để phân loại khi xuất báo cáo thuế TNCN.")
+    dl_tax_department_sequence = fields.Integer(related='dl_tax_department_id.sequence', string='Thứ tự phòng ban', store=True)
     dl_tax_id = fields.Char(related='employee_id.dl_tax_id', string='Mã số thuế', store=True)
     birthday = fields.Date(related='employee_id.birthday', string='Ngày sinh')
     sex = fields.Selection(related='employee_id.sex', string='Giới tính')
@@ -461,14 +462,36 @@ class SalaryKpiLine(models.Model):
 
     # --- CÁC KHOẢN LƯƠNG CHI TIẾT ---
     payroll_wage_day = fields.Monetary(string='Lương ca ngày', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Lương ca ngày = (Số công ca ngày thường N + Số ngày nghỉ hưởng lương P, PL) * Đơn giá lương giờ")
+    payroll_wage_day_exp = fields.Char(string='Diễn giải lương ngày', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_day_150 = fields.Monetary(string='Lương TC ngày 150%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_day_150_exp = fields.Char(string='Diễn giải TC ngày 150%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_night_130 = fields.Monetary(string='Lương ca đêm thường 130%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_night_130_exp = fields.Char(string='Diễn giải ca đêm 130%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_night_200 = fields.Monetary(string='Lương TC đêm 200% (Ko ngày)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_night_200_exp = fields.Char(string='Diễn giải TC đêm 200%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_night_210 = fields.Monetary(string='Lương TC đêm 210% (Có ngày)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_night_210_exp = fields.Char(string='Diễn giải TC đêm 210%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_night_sun_270 = fields.Monetary(string='Lương TC đêm CN 270%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_night_sun_270_exp = fields.Char(string='Diễn giải TC đêm CN 270%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_day_sun_200 = fields.Monetary(string='Lương CN ca ngày 200%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_day_sun_200_exp = fields.Char(string='Diễn giải CN ca ngày 200%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_day_holiday_300 = fields.Monetary(string='Lương Lễ ca ngày 300%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_day_holiday_300_exp = fields.Char(string='Diễn giải Lễ ca ngày 300%', compute='_compute_payroll_internal', store=True)
+    
     payroll_wage_night_holiday_390 = fields.Monetary(string='Lương TC đêm Lễ 390%', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
+    payroll_wage_night_holiday_390_exp = fields.Char(string='Diễn giải TC đêm Lễ 390%', compute='_compute_payroll_internal', store=True)
+    
+    payroll_revenue_bonus_exp = fields.Char(string='Diễn giải thưởng doanh thu', compute='_compute_payroll_internal', store=True)
+    payroll_productivity_bonus_exp = fields.Char(string='Diễn giải thưởng năng suất', compute='_compute_payroll_internal', store=True)
+    payroll_meal_allowance_exp = fields.Char(string='Diễn giải ăn ca', compute='_compute_payroll_internal', store=True)
+    payroll_women_allowance_exp = fields.Char(string='Diễn giải phụ cấp phụ nữ', compute='_compute_payroll_internal', store=True)
     
     payroll_total_wage = fields.Monetary(string='Tổng lương', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng lương = Tổng các khoản lương chi tiết (ngày, đêm, tăng ca...) + Thưởng doanh thu thực tế")
     payroll_total_actual_income = fields.Monetary(string='Tổng TN T.tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công) + Tiền KPI")
@@ -1110,6 +1133,8 @@ class SalaryKpiLine(models.Model):
                                 anomaly_suggestion += f"<li><i>Không còn chỗ trống trong biên ({first_boundary}->{last_boundary}) để thêm</i></li>"
                             anomaly_suggestion += "</ul>"
 
+            hourly_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0.0
+            
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({
                 'total_normal_weekday_days': normal_weekdays,
@@ -1132,15 +1157,38 @@ class SalaryKpiLine(models.Model):
                 'payroll_total_rev_prod_bonus': revenue_bonus + productivity_bonus,
                 'payroll_total_bonus': total_bonus,
                 'payroll_total_regime_income': total_regime_income,
-                'payroll_wage_day': wages['wage_day'] + wages['wage_leave'] + wages.get('wage_bonus_p', 0.0), # Gộp cả lương phép và chuyên cần
+                'payroll_wage_day': wages['wage_day'] + wages['wage_leave'] + wages.get('wage_bonus_p', 0.0),
+                'payroll_wage_day_exp': f"({wages['count_day']/8.0:g} công N + {wages['count_leave']/8.0:g} công P/PL + {wages['count_bonus_p']/8.0:g} công CC) x {hourly_rate:,.0f} x 8h",
+                
                 'payroll_wage_day_150': wages['wage_day_150'],
+                'payroll_wage_day_150_exp': f"{wages['count_day_150']:g}h x {hourly_rate:,.0f} x 150%",
+                
                 'payroll_wage_night_130': wages['wage_night_130'],
+                'payroll_wage_night_130_exp': f"{wages['count_night_130']:g}h x {hourly_rate:,.0f} x 130%",
+                
                 'payroll_wage_night_200': wages['wage_night_200'],
+                'payroll_wage_night_200_exp': f"{wages['count_night_200']:g}h x {hourly_rate:,.0f} x 200%",
+                
                 'payroll_wage_night_210': wages['wage_night_210'],
+                'payroll_wage_night_210_exp': f"{wages['count_night_210']:g}h x {hourly_rate:,.0f} x 210%",
+                
                 'payroll_wage_night_sun_270': wages['wage_night_sun_270'],
+                'payroll_wage_night_sun_270_exp': f"{wages['count_night_sun_270']:g}h x {hourly_rate:,.0f} x 270%",
+                
                 'payroll_wage_day_sun_200': wages['wage_day_sun_200'],
+                'payroll_wage_day_sun_200_exp': f"{wages['count_day_sun_200']:g}h x {hourly_rate:,.0f} x 200%",
+                
                 'payroll_wage_day_holiday_300': wages['wage_day_holiday_300'],
+                'payroll_wage_day_holiday_300_exp': f"{wages['count_day_holiday_300']:g}h x {hourly_rate:,.0f} x 300%",
+                
                 'payroll_wage_night_holiday_390': wages['wage_night_holiday_390'],
+                'payroll_wage_night_holiday_390_exp': f"{wages['count_night_holiday_390']:g}h x {hourly_rate:,.0f} x 390%",
+                
+                'payroll_revenue_bonus_exp': f"{rev_bonus_base:,.0f} x {rec.total_n + rec.total_d:g}/26 công",
+                'payroll_productivity_bonus_exp': f"{prod_bonus_base:,.0f} x {rec.total_n + rec.total_d:g}/26 công",
+                'payroll_meal_allowance_exp': f"{rec.month_id.dl_meal_allowance or 0:,.0f} x {rec.total_n + rec.total_d:g}/26 công",
+                'payroll_women_allowance_exp': f"{rec.month_id.dl_women_allowance or 0:,.0f} x {rec.total_n + rec.total_d:g}/26 công" if rec.employee_id.sex == 'female' else "",
+                
                 'payroll_total_wage': total_detailed_wage + revenue_bonus + productivity_bonus,
                 'payroll_total_actual_income': total_actual_income,
                 'payroll_income_explanation': self._get_income_explanation(

@@ -99,17 +99,17 @@ def calculate_detailed_wages(rec):
     hourly_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0
     
     wages = {
-        'wage_day': 0.0,
-        'wage_leave': 0.0,
-        'wage_bonus_p': 0.0,
-        'wage_day_150': 0.0,
-        'wage_night_130': 0.0,
-        'wage_night_200': 0.0,
-        'wage_night_210': 0.0,
-        'wage_night_sun_270': 0.0,
-        'wage_day_sun_200': 0.0,
-        'wage_day_holiday_300': 0.0,
-        'wage_night_holiday_390': 0.0,
+        'wage_day': 0.0, 'count_day': 0.0,
+        'wage_leave': 0.0, 'count_leave': 0.0,
+        'wage_bonus_p': 0.0, 'count_bonus_p': 0.0,
+        'wage_day_150': 0.0, 'count_day_150': 0.0,
+        'wage_night_130': 0.0, 'count_night_130': 0.0,
+        'wage_night_200': 0.0, 'count_night_200': 0.0,
+        'wage_night_210': 0.0, 'count_night_210': 0.0,
+        'wage_night_sun_270': 0.0, 'count_night_sun_270': 0.0,
+        'wage_day_sun_200': 0.0, 'count_day_sun_200': 0.0,
+        'wage_day_holiday_300': 0.0, 'count_day_holiday_300': 0.0,
+        'wage_night_holiday_390': 0.0, 'count_night_holiday_390': 0.0,
     }
     
     for i in range(1, 32):
@@ -120,16 +120,21 @@ def calculate_detailed_wages(rec):
         if att and att.code in ['N', 'N/2']:
             hours = 8.0 if att.code == 'N' else 4.0
             wages['wage_day'] += hours * hourly_rate
+            wages['count_day'] += hours
             
         # Nghỉ hưởng lương (P, PL) - Được miễn thuế 100%
         elif att and att.code in ['P', 'PL']:
             wages['wage_leave'] += 8.0 * hourly_rate
+            wages['count_leave'] += 8.0
         
         # Ca đêm thường (Tách 31.25% vào lương ngày, 68.75% vào lương đêm 130%)
         if att and att.code in ['Đ', 'Đ/2']:
             hours = 8.0 if att.code == 'Đ' else 4.0
             wages['wage_day'] += hours * 0.3125 * hourly_rate
+            wages['count_day'] += hours * 0.3125
+            
             wages['wage_night_130'] += hours * 0.6875 * hourly_rate * 1.3
+            wages['count_night_130'] += hours * 0.6875
         
         # Làm thêm giờ
         if ot_att:
@@ -137,21 +142,33 @@ def calculate_detailed_wages(rec):
             code = ot_att.code or ""
             
             if ot_att.ot_type == 'day':
-                if code == '0.5N': wages['wage_day_150'] += hours * hourly_rate * 1.5
-                elif code in ['CNN', 'CNN/2']: wages['wage_day_sun_200'] += hours * hourly_rate * 2.0
-                elif code in ['LN', '1LN', '0.5LN']: wages['wage_day_holiday_300'] += hours * hourly_rate * 3.0
+                if code == '0.5N': 
+                    wages['wage_day_150'] += hours * hourly_rate * 1.5
+                    wages['count_day_150'] += hours
+                elif code in ['CNN', 'CNN/2']: 
+                    wages['wage_day_sun_200'] += hours * hourly_rate * 2.0
+                    wages['count_day_sun_200'] += hours
+                elif code in ['LN', '1LN', '0.5LN']: 
+                    wages['wage_day_holiday_300'] += hours * hourly_rate * 3.0
+                    wages['count_day_holiday_300'] += hours
             
             elif ot_att.ot_type == 'night':
                 if code == '0.5Đ':
-                    # Tất cả làm thêm đêm 0.5Đ hiện tại thống nhất tính 200%
                     wages['wage_night_200'] += hours * hourly_rate * 2.0
+                    wages['count_night_200'] += hours
                     wages['wage_night_210'] = 0.0
-                elif code in ['CNĐ', 'CNĐ/2']: wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
-                elif code == 'LĐ': wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
+                elif code in ['CNĐ', 'CNĐ/2']: 
+                    wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
+                    wages['count_night_sun_270'] += hours
+                elif code == 'LĐ': 
+                    wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
+                    wages['count_night_holiday_390'] += hours
                 
     # Thưởng chuyên cần: Được tính riêng (Cộng vào thực lĩnh nhưng miễn thuế 100%)
     if getattr(rec, 'bonus_p_day', 0.0):
-        wages['wage_bonus_p'] += rec.bonus_p_day * 8.0 * hourly_rate
+        hours = rec.bonus_p_day * 8.0
+        wages['wage_bonus_p'] += hours * hourly_rate
+        wages['count_bonus_p'] += hours
         
     return wages
 

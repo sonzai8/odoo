@@ -87,7 +87,7 @@ class SalaryKpiMonth(models.Model):
 
     # === Trường lọc tạm thời ===
     filter_employee_name = fields.Char(string='Tìm theo tên', store=False)
-    filter_department_id = fields.Many2one('dl.tax.department', string='Lọc phòng ban', store=False)
+    filter_department_id = fields.Many2one('dl.tax.department', string='Lọc phòng ban', store=False, domain="[('company_id', '=', company_id)]")
     filter_position = fields.Char(string='Lọc chức vụ', store=False)
     filtered_line_ids = fields.One2many(
         'dl.salary.kpi.line',
@@ -139,7 +139,7 @@ class SalaryKpiMonth(models.Model):
             if record.filter_position:
                 keyword = record.filter_position.lower()
                 lines = lines.filtered(lambda l: keyword in (l.dl_tax_position or '').lower())
-            record.filtered_line_ids = lines
+            record.filtered_line_ids = lines.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or ''))
 
     def _inverse_filtered_line_ids(self):
         """Đồng bộ thay đổi từ danh sách đã lọc ngược lại line_ids gốc."""
@@ -676,7 +676,7 @@ class SalaryKpiMonth(models.Model):
         # Dữ liệu từ dòng 4
         row_idx = 4
         stt = 1
-        for line in self.line_ids:
+        for line in self.line_ids.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or '')):
             # A: STT
             ws.cell(row=row_idx, column=1, value=stt).border = thin_border
             # B: CCCD

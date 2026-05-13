@@ -341,6 +341,7 @@
                                     <field name="dl_tax_base_salary" sticky="1" width="100px"/>
                                     <field name="payroll_n_ca_ngay" string="Công Ngày" sum="Tổng"/>
                                     <field name="payroll_d_gio_ban_ngay" string="Giờ Đêm -> Ngày" sum="Tổng"/>
+                                    <field name="total_pl" string="Phép Lễ" sum="Tổng" decoration-info="total_pl > 0"/>
                                     <field name="bonus_p_day" string="Nghỉ Hưởng Lương" sum="Tổng" decoration-success="bonus_p_day > 0"/>
                                     <field name="payroll_ot_n_150" string="TC Ngày (150%)" sum="Tổng"/>
                                     <field name="payroll_ot_d_130" string="TC Đêm (130%)" sum="Tổng"/>
@@ -374,7 +375,7 @@
                                 <field name="total_bank_transfer" invisible="1"/>
                             </group>
                             <field name="filtered_line_ids" readonly="1" nolabel="1" context="{'dialog_size': 'extra-large', 'create': 0, 'edit': 0, 'delete': 0}">
-                                <list delete="0" limit="20" default_order="payroll_kpi_amount asc">
+                                <list delete="0" limit="20">
                                     <button name="action_open_lnb_wizard" type="object" icon="fa-pencil" title="Sửa nhanh Lương Nội Bộ (LNB)" invisible="parent.state in ['lock_kpi', 'confirmed']"/>
                                     <field name="identification_id" readonly="1" sticky="1" width="50px"/>
                                     <field name="employee_name" readonly="1" sticky="1" width="180px"/>
@@ -497,6 +498,7 @@
 
                 <searchpanel>
                     <field name="month_id" icon="fa-calendar" enable_counters="1"/>
+                    <field name="dl_tax_department_id" icon="fa-users" enable_counters="1"/>
                     <field name="attendance_type_ids" string="Mã chấm công" select="multi" icon="fa-tags" enable_counters="1"/>
                 </searchpanel>
             </search>
@@ -545,6 +547,7 @@
                         <group string="Tổng hợp công">
                             <field name="payroll_n_ca_ngay" string="Công Ngày"/>
                             <field name="payroll_d_gio_ban_ngay" string="Giờ Đêm -> Ngày"/>
+                            <field name="total_pl" string="Phép lễ (PL)" decoration-info="total_pl > 0"/>
                             <field name="bonus_p_day" string="Nghỉ Hưởng Lương" decoration-success="bonus_p_day > 0"/>
                         </group>
                     </group>
@@ -680,19 +683,44 @@
                                 </group>
                                 <group string="Chi tiết lương thưởng theo thực tế">
                                     <field name="payroll_wage_day" string="Lương Ngày + Nghỉ Lương" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_day == 0"/>
+                                    <field name="payroll_wage_day_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_day == 0"/>
+                                    
                                     <field name="payroll_wage_day_150" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_day_150 == 0"/>
+                                    <field name="payroll_wage_day_150_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_day_150 == 0"/>
+                                    
                                     <field name="payroll_wage_night_130" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_night_130 == 0"/>
+                                    <field name="payroll_wage_night_130_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_night_130 == 0"/>
+                                    
                                     <field name="payroll_wage_night_200" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_night_200 == 0"/>
+                                    <field name="payroll_wage_night_200_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_night_200 == 0"/>
+                                    
                                     <field name="payroll_wage_night_210" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_night_210 == 0"/>
+                                    <field name="payroll_wage_night_210_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_night_210 == 0"/>
+                                    
                                     <field name="payroll_wage_night_sun_270" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_night_sun_270 == 0"/>
+                                    <field name="payroll_wage_night_sun_270_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_night_sun_270 == 0"/>
+                                    
                                     <field name="payroll_wage_day_sun_200" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_day_sun_200 == 0"/>
+                                    <field name="payroll_wage_day_sun_200_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_day_sun_200 == 0"/>
+                                    
                                     <field name="payroll_wage_day_holiday_300" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_day_holiday_300 == 0"/>
+                                    <field name="payroll_wage_day_holiday_300_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_day_holiday_300 == 0"/>
+                                    
                                     <field name="payroll_wage_night_holiday_390" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_wage_night_holiday_390 == 0"/>
+                                    <field name="payroll_wage_night_holiday_390_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_wage_night_holiday_390 == 0"/>
                                     <field name="payroll_revenue_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_revenue_bonus == 0"/>
+                                    <field name="payroll_revenue_bonus_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_revenue_bonus == 0"/>
+                                    
                                     <field name="payroll_productivity_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_productivity_bonus == 0"/>
+                                    <field name="payroll_productivity_bonus_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_productivity_bonus == 0"/>
+                                    
                                     <field name="payroll_total_rev_prod_bonus" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="1" decoration-bf="1" invisible="payroll_total_rev_prod_bonus == 0"/>
+                                    
                                     <field name="payroll_meal_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_meal_allowance == 0"/>
+                                    <field name="payroll_meal_allowance_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_meal_allowance == 0"/>
+                                    
                                     <field name="payroll_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" invisible="payroll_women_allowance == 0"/>
+                                    <field name="payroll_women_allowance_exp" nolabel="1" colspan="2" class="text-muted small ps-5 mb-2" invisible="payroll_women_allowance == 0"/>
                                 </group>
                             </group>
                             <group string="Thưởng Lễ/Tết &amp; Thưởng khác" invisible="payroll_annual_bonus == 0">

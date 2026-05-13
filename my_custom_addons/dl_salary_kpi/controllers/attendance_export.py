@@ -100,7 +100,7 @@ class AttendanceExportController(http.Controller):
                 cell_wd.fill = sunday_fill
 
         row_num = 4
-        for i, line in enumerate(month.line_ids, 1):
+        for i, line in enumerate(month.line_ids.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or '')), 1):
             ws.row_dimensions[row_num].height = 30
             ws.cell(row=row_num, column=1, value=i).border = border
             ws.cell(row=row_num, column=2, value=line.dl_tax_id).border = border
@@ -331,7 +331,7 @@ class AttendanceExportController(http.Controller):
             ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 15
 
         row_num = 4
-        for i, line in enumerate(month.line_ids, 1):
+        for i, line in enumerate(month.line_ids.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or '')), 1):
             ws.row_dimensions[row_num].height = 30
             ws.cell(row=row_num, column=1, value=i).border = border
             ws.cell(row=row_num, column=2, value=line.dl_tax_id).border = border
