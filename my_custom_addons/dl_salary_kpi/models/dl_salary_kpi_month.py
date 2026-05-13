@@ -287,7 +287,11 @@ class SalaryKpiMonth(models.Model):
             month = rec.date_month.month
             
             # Tìm cấu hình thưởng của năm
-            bonus_year = self.env['dl.salary.kpi.bonus.year'].search([('year', '=', year), ('active', '=', True)], limit=1)
+            bonus_year = self.env['dl.salary.kpi.bonus.year'].search([
+                ('year', '=', year), 
+                ('active', '=', True),
+                ('company_id', '=', rec.company_id.id)
+            ], limit=1)
             if bonus_year:
                 # Lọc các dòng thưởng có tháng trùng với tháng đang cân đối
                 lines = bonus_year.line_ids.filtered(lambda l: l.date.month == month and l.active)

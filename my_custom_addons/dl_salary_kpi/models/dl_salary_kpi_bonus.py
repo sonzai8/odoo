@@ -15,7 +15,7 @@ class SalaryKpiBonusYear(models.Model):
     active = fields.Boolean(string='Đang hoạt động', default=True)
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
-    _year_unique = Constraint('unique(year)', 'Cấu hình cho năm này đã tồn tại!')
+    _year_unique = Constraint('unique(year, company_id)', 'Cấu hình cho năm này của công ty đã tồn tại!')
 
     @api.depends('year')
     def _compute_name(self):
