@@ -14,6 +14,36 @@ class DlTaxDepartment(models.Model):
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
     @api.model
+    def _seed_default_data(self):
+        """Hàm hỗ trợ khởi tạo dữ liệu an toàn, gọi từ XML function."""
+        # Danh sách phòng ban chuẩn
+        tax_depts = [
+            {'name': 'Quản Lý', 'sequence': 10},
+            {'name': 'Kinh Doanh', 'sequence': 20},
+            {'name': 'Lái Xe', 'sequence': 30},
+            {'name': 'Công Nhật', 'sequence': 40},
+            {'name': 'Quản Lý Sản Xuất', 'sequence': 50},
+            {'name': 'Sản Xuất', 'sequence': 60},
+        ]
+        
+        companies = self.env['res.company'].sudo().search([])
+        for company in companies:
+            for dept in tax_depts:
+                # Kiểm tra xem phòng ban này đã tồn tại trong công ty chưa
+                existing = self.sudo().search([
+                    ('name', '=', dept['name']),
+                    ('company_id', '=', company.id)
+                ], limit=1)
+                
+                if not existing:
+                    self.sudo().create({
+                        'name': dept['name'],
+                        'sequence': dept['sequence'],
+                        'company_id': company.id
+                    })
+        return True
+
+    @api.model
     def _name_search(self, name, domain=None, operator='ilike', limit=None, order=None):
         domain = domain or []
         if name:

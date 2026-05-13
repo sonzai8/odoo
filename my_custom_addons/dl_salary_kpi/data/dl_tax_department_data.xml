@@ -1,29 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-        <record id="tax_dept_manager" model="dl.tax.department">
-            <field name="name">Quản Lý</field>
-            <field name="sequence">10</field>
-        </record>
-        <record id="tax_dept_sales" model="dl.tax.department">
-            <field name="name">Kinh Doanh</field>
-            <field name="sequence">20</field>
-        </record>
-        <record id="tax_dept_driver" model="dl.tax.department">
-            <field name="name">Lái Xe</field>
-            <field name="sequence">30</field>
-        </record>
-        <record id="tax_dept_daily" model="dl.tax.department">
-            <field name="name">Công Nhật</field>
-            <field name="sequence">40</field>
-        </record>
-        <record id="tax_dept_production_manager" model="dl.tax.department">
-            <field name="name">Quản Lý Sản Xuất</field>
-            <field name="sequence">50</field>
-        </record>
-        <record id="tax_dept_production" model="dl.tax.department">
-            <field name="name">Sản Xuất</field>
-            <field name="sequence">60</field>
-        </record>
+        <!-- Khai báo cứng dữ liệu thông qua hàm kiểm tra an toàn -->
+        <function model="dl.tax.department" name="_seed_default_data"/>
     </data>
 </odoo>

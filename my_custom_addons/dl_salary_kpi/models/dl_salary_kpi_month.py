@@ -82,17 +82,7 @@ class SalaryKpiMonth(models.Model):
         for company in companies:
             # 1. Khởi tạo Phòng ban thuế
             _logger.info(">>> Kiểm tra/Bổ sung Phòng ban thuế cho công ty: %s", company.name)
-            tax_depts = ['Kinh Doanh', 'Lái Xe', 'Công Nhật', 'Quản Lý Sản Xuất', 'Sản Xuất', 'Quản Lý']
-            for name in tax_depts:
-                if not self.env['dl.tax.department'].sudo().search_count([
-                    ('name', '=', name),
-                    ('company_id', '=', company.id)
-                ]):
-                    self.env['dl.tax.department'].sudo().create({
-                        'name': name,
-                        'company_id': company.id,
-                        'sequence': 10
-                    })
+            self.env['dl.tax.department'].sudo()._seed_default_data()
             
             # 2. Khởi tạo Mã chấm công
             _logger.info(">>> Kiểm tra/Bổ sung Mã chấm công cho công ty: %s", company.name)
