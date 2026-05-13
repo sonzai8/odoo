@@ -1234,6 +1234,7 @@ class SalaryKpiLine(models.Model):
 
             # --- LOGIC NEO DỮ LIỆU BẤT THƯỜNG (STICKY FLAG) ---
             is_currently_anomaly = (rec.payroll_internal_salary > 0 and net_salary_base > rec.payroll_internal_salary) \
+                                   or (rec.payroll_internal_salary == 0 and net_salary_base > 0) \
                                    or kpi_val < -1 \
                                    or (0 < cash_val < 1000000)
             
@@ -1632,3 +1633,124 @@ class SalaryKpiLine(models.Model):
                 rec.payroll_tracking_percentage = round(percentage_value / 100.0, 4)
             else:
                 rec.payroll_tracking_percentage = 0.0
+
+    # --- LOGIC PHÉP THUẬT WING (CHUYỂN TỪ WIZARD SANG) ---
+    def _get_work_boundaries(self):
+        """Trả về (first_day, last_day) là index của ngày có công đầu tiên và cuối cùng."""
+        first_day = 0
+        last_day = 0
+        for i in range(1, 32):
+            if getattr(self, f'day_{i:02d}', False):
+                if first_day == 0:
+                    first_day = i
+                last_day = i
+        return first_day, last_day
+
+    def _get_protected_days(self, check_boundaries=True):
+        """Lấy danh sách các ngày không được phép XÓA công."""
+        from calendar import monthrange
+        protected = set()
+        month_date = self.month_id.date_month
+        last_day_in_month = monthrange(month_date.year, month_date.month)[1]
+
+        # 1. Bảo vệ các ngày quanh ĐC (Đổi công)
+        for i in range(1, last_day_in_month + 1):
+            att = getattr(self, f'day_{i:02d}')
+            if att and getattr(att, 'code', False) == 'ĐC':
+                protected.add(i)
+                if i > 1: protected.add(i - 1)
+                if i < last_day_in_month: protected.add(i + 1)
+        
+        # 2. Bảo vệ ngày đầu tiên và cuối cùng đi làm
+        if check_boundaries:
+            first, last = self._get_work_boundaries()
+            if first: protected.add(first)
+            if last: protected.add(last)
+        return protected
+
+    def action_run_wing_magic_logic(self):
+        """
+        Logic cốt lõi của Phép thuật Wing: Tự động thêm/bớt công để khớp Ln.
+        """
+        import random
+        import datetime
+        from odoo.exceptions import UserError
+        
+        for rec in self:
+            protected = rec._get_protected_days(check_boundaries=True)
+            company_id = rec.company_id.id
+            
+            # Load types
+            att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N'), ('company_id', '=', company_id)], limit=1)
+            att_type_05n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N'), ('company_id', '=', company_id)], limit=1)
+
+            def update_and_get_state():
+                rec.action_generate_kpi_scores(max_allowed=70)
+                return rec.payroll_kpi_amount, rec.payroll_cash_amount
+
+            # VÒNG LẶP 1: Xử lý KPI âm -> Cắt công
+            kpi, cash = update_and_get_state()
+            iterations = 0
+            while kpi < -100 and iterations < 30:
+                iterations += 1
+                ot_days = [i for i in range(1, 32) if i not in protected and getattr(rec, f'ot_day_{i:02d}')]
+                if ot_days:
+                    d = random.choice(ot_days)
+                    rec.write({f'ot_day_{d:02d}': False})
+                else:
+                    main_days = [i for i in range(1, 32) if i not in protected and getattr(rec, f'day_{i:02d}') and getattr(rec, f'day_{i:02d}').code in ('N', 'Đ')]
+                    if main_days:
+                        d = random.choice(main_days)
+                        rec.write({f'day_{d:02d}': False, f'ot_day_{d:02d}': False})
+                    else:
+                        break
+                kpi, cash = update_and_get_state()
+
+            # VÒNG LẶP 2: Tối ưu tiền mặt -> Thêm công
+            kpi, cash = update_and_get_state()
+            iterations = 0
+            first_b, last_b = rec._get_work_boundaries()
+            while cash > 1000 and iterations < 30:
+                iterations += 1
+                can_add_ot = [i for i in range(1, 32) if i not in protected and first_b <= i <= last_b 
+                              and getattr(rec, f'day_{i:02d}') and getattr(rec, f'day_{i:02d}').code == 'N' 
+                              and not getattr(rec, f'ot_day_{i:02d}')]
+                if can_add_ot:
+                    d = random.choice(can_add_ot)
+                    rec.write({f'ot_day_{d:02d}': att_type_05n.id})
+                else:
+                    year, month = rec.month_id.date_month.year, rec.month_id.date_month.month
+                    can_add_n = []
+                    for i in range(first_b, last_b + 1):
+                        if i in protected or getattr(rec, f'day_{i:02d}'): continue
+                        try:
+                            if datetime.date(year, month, i).weekday() < 6:
+                                can_add_n.append(i)
+                        except: pass
+                    
+                    if can_add_n and (rec.total_n + rec.total_d < 27):
+                        d = random.choice(can_add_n)
+                        rec.write({f'day_{d:02d}': att_type_n.id})
+                    else:
+                        break
+                kpi, cash = update_and_get_state()
+                if kpi > (rec.payroll_internal_salary * 0.4): break
+        return True
+
+    def action_wing_magic_anomaly_fix(self):
+        """
+        Phương thức cho nút 'Tự Động' tại Tab 6: Unify logic.
+        """
+        for rec in self:
+            # 1. Logic xóa sạch nếu Ln = 0
+            if rec.payroll_internal_salary == 0 and rec.payroll_net_salary_base > 0:
+                vals = {'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0, 'x_is_anomaly_resolved': True}
+                for i in range(1, 32):
+                    vals[f'day_{i:02d}'] = False
+                    vals[f'ot_day_{i:02d}'] = False
+                rec.write(vals)
+                rec._compute_payroll_internal()
+            else:
+                # 2. Logic Wing Magic (Tự cân đối công)
+                rec.action_run_wing_magic_logic()
+        return True

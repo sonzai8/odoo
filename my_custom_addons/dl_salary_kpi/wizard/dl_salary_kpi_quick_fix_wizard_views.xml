@@ -62,9 +62,6 @@
                                 <span class="text-muted small">/ Có: </span>
                                 <field name="current_ot_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
                             </div>
-                            <div class="mt-2 text-center">
-                                <button name="action_apply_quick_fix" string="⚡ CHẠY ĐIỀU CHỈNH SỐ LƯỢNG" type="object" class="btn-primary w-100 py-1" icon="fa-bolt" confirm="Hệ thống sẽ tự động tìm ngày để cộng/trừ công theo số lượng bạn vừa nhập. Bạn có muốn tiếp tục?"/>
-                            </div>
                         </group>
                     </div>
                     <div class="col-6 border-start d-flex flex-column justify-content-center align-items-center bg-light">

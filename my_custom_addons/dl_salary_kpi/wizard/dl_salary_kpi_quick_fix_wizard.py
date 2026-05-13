@@ -401,79 +401,26 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
 
     def action_wing_magic(self):
         """
-        PHÉP THUẬT WING: Tự động cân đối công để KPI hết âm và ưu tiên CK.
+        PHÉP THUẬT WING: Gọi logic dùng chung từ Model.
         """
         self.ensure_one()
-        line = self.line_id
-        protected = self._get_protected_days(check_boundaries=True)
-        company_id = line.company_id.id
+        self.line_id.action_run_wing_magic_logic()
         
-        # Load types
-        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N'), ('company_id', '=', company_id)], limit=1)
-        att_type_d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'Đ'), ('company_id', '=', company_id)], limit=1)
-        att_type_05n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N'), ('company_id', '=', company_id)], limit=1)
-        att_type_05d = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ'), ('company_id', '=', company_id)], limit=1)
+        # Cập nhật lại ma trận trên Wizard để đồng bộ hiển thị
+        for i in range(1, 32):
+            self[f'day_{i:02d}'] = getattr(self.line_id, f'day_{i:02d}').id if getattr(self.line_id, f'day_{i:02d}') else False
+            self[f'ot_day_{i:02d}'] = getattr(self.line_id, f'ot_day_{i:02d}').id if getattr(self.line_id, f'ot_day_{i:02d}') else False
 
-        def get_current_state():
-            line.action_generate_kpi_scores(max_allowed=70)
-            return line.payroll_kpi_amount, line.payroll_cash_amount
-
-        # VÒNG LẶP 1: Xử lý KPI âm -> Cắt công
-        kpi, cash = get_current_state()
-        iterations = 0
-        while kpi < -100 and iterations < 30: # -100 để tránh sai số float
-            iterations += 1
-            # 1. Thử cắt 0.5N/0.5Đ trước
-            ot_days = [i for i in range(1, 32) if i not in protected and getattr(line, f'ot_day_{i:02d}')]
-            if ot_days:
-                d = random.choice(ot_days)
-                line.write({f'ot_day_{d:02d}': False})
-            else:
-                # 2. Thử cắt N/Đ
-                main_days = [i for i in range(1, 32) if i not in protected and getattr(line, f'day_{i:02d}') and getattr(line, f'day_{i:02d}').code in ('N', 'Đ')]
-                if main_days:
-                    d = random.choice(main_days)
-                    line.write({f'day_{d:02d}': False, f'ot_day_{d:02d}': False})
-                else:
-                    break # Không còn gì để cắt
-            kpi, cash = get_current_state()
-
-        # VÒNG LẶP 2: Tối ưu tiền mặt -> Thêm công
-        # Nếu Cash > 0 (tức là còn tiền mặt) và LNB còn dư địa so với TLN
-        kpi, cash = get_current_state()
-        iterations = 0
-        first_b, last_b = self._get_work_boundaries()
-        
-        while cash > 1000 and iterations < 30:
-            iterations += 1
-            # Thử thêm 0.5N vào ngày đã có N
-            can_add_ot = [i for i in range(1, 32) if i not in protected and first_b <= i <= last_b 
-                          and getattr(line, f'day_{i:02d}') and getattr(line, f'day_{i:02d}').code == 'N' 
-                          and not getattr(line, f'ot_day_{i:02d}')]
-            if can_add_ot:
-                d = random.choice(can_add_ot)
-                line.write({f'ot_day_{d:02d}': att_type_05n.id})
-            else:
-                # Thử thêm N vào ngày trống
-                year = line.month_id.date_month.year
-                month = line.month_id.date_month.month
-                can_add_n = []
-                for i in range(first_b, last_b + 1):
-                    if i in protected or getattr(line, f'day_{i:02d}'): continue
-                    try:
-                        if datetime.date(year, month, i).weekday() < 6:
-                            can_add_n.append(i)
-                    except: pass
-                
-                if can_add_n and (line.total_n + line.total_d < 27):
-                    d = random.choice(can_add_n)
-                    line.write({f'day_{d:02d}': att_type_n.id})
-                else:
-                    break
-            
-            kpi, cash = get_current_state()
-            if kpi > (line.payroll_internal_salary * 0.4): # Giới hạn không để KPI quá cao gây nghi ngờ
-                break
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Điều chỉnh công nhanh'),
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'size': 'extra-large',
+            'context': self.env.context,
+        }
 
         # Cập nhật lại wizard sau phép thuật
         return {

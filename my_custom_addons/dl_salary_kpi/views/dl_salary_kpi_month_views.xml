@@ -416,22 +416,23 @@
                             <field name="anomaly_line_ids" nolabel="1" readonly="1">
                                 <list string="Nhân viên có dữ liệu bất thường"
                                       decoration-warning="payroll_net_salary_base &lt; 0"
-                                      decoration-danger="payroll_cash_amount &gt; 0 and payroll_cash_amount &lt; 1000000"
+                                      decoration-danger="payroll_cash_amount_rounded &gt; 0 and payroll_cash_amount_rounded &lt; 1000000"
                                       limit="20">
                                     <field name="x_sequence" width="40px" string="STT"/>
-                                    <field name="identification_id" string="Số CCCD" sticky="1" width="110px"/>
                                     <field name="employee_name" string="Họ và tên" sticky="1" width="150px"/>
-                                    <field name="dl_tax_position" string="Chức vụ" optional="hide"/>
-                                    <field name="dl_tax_id" string="Mã số thuế" optional="hide"/>
-                                    <field name="dl_tax_base_salary" string="Lương CB" widget="monetary" options="{'currency_field': 'currency_id'}" optional="hide"/>
-                                    <field name="total_normal_weekday_days" string="Tổng công T2-T7" width="80px"/>
-                                    <field name="payroll_net_salary_base" string="Thực lĩnh ngoài(TLN)" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_net_salary_base &lt; 0" decoration-bf="1" width="100px"/>
-                                    <field name="payroll_internal_salary" string="Lương nội bộ" widget="monetary" options="{'currency_field': 'currency_id'}" width="100px"/>
-                                    <field name="payroll_kpi_amount" string="Tiền KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_kpi_amount &lt; 0" decoration-bf="1" width="100px"/>
-                                    <field name="payroll_cash_amount" string="Tiền mặt lẻ" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="payroll_cash_amount &gt; 0 and payroll_cash_amount &lt; 1000000" decoration-bf="1" width="100px"/>
-                                    <field name="payroll_anomaly_suggestion" string="Gợi ý xử lý" widget="html" width="400px"/>
+                                    <field name="dl_tax_department_id" string="Phòng ban" width="100px"/>
+                                    <field name="dl_tax_position" string="Chức vụ" width="100px"/>
+                                    <field name="payroll_net_salary_base" string="TLN" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_net_salary_base &lt; 0" decoration-bf="1" width="80px"/>
+                                    <field name="payroll_internal_salary" string="Ln" widget="monetary" options="{'currency_field': 'currency_id'}" width="80px"/>
+                                    <field name="payroll_kpi_amount" string="KPI" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-danger="payroll_kpi_amount &lt; 0" decoration-bf="1" width="80px"/>
+                                    <field name="payroll_bank_transfer_amount_rounded" string="CK" widget="monetary" options="{'currency_field': 'currency_id'}" width="80px"/>
+                                    <field name="payroll_cash_amount_rounded" string="Tiền mặt" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-warning="payroll_cash_amount_rounded &gt; 0 and payroll_cash_amount_rounded &lt; 1000000" decoration-bf="1" width="80px"/>
+                                    <field name="payroll_anomaly_suggestion" string="Gợi ý xử lý" widget="html" width="300px"/>
+                                    
                                     <button name="action_open_quick_fix" string="Sửa công" type="object" icon="fa-wrench" title="Mở popup sửa công" class="btn-link" width="100px"/>
+                                    <button name="action_wing_magic_anomaly_fix" string="Tự Động" type="object" icon="fa-magic" title="Chạy logic tự động cân đối (Wing Magic)" class="btn-info" width="100px" invisible="parent.state in ['lock_kpi', 'confirmed']"/>
                                     <button name="action_toggle_anomaly_resolved" string="Xác nhận" type="object" icon="fa-check" title="Xác nhận đã cân đối xong để ẩn khỏi danh sách" class="btn-success" invisible="x_is_anomaly_resolved"/>
+                                    
                                     <field name="x_is_anomaly_resolved" column_invisible="1"/>
                                     <field name="currency_id" column_invisible="1"/>
                                 </list>
