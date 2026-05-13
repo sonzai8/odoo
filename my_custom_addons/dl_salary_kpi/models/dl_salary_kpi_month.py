@@ -143,25 +143,27 @@ class SalaryKpiMonth(models.Model):
 
     @api.depends(
         'line_ids',
-        'line_ids.payroll_net_salary',
+        'line_ids.payroll_net_salary_base',
         'line_ids.payroll_internal_salary',
-        'line_ids.dl_tax_base_salary'
+        'line_ids.payroll_kpi_amount',
+        'line_ids.payroll_cash_amount',
+        'line_ids.x_is_anomaly_resolved',
+        'line_ids.x_has_anomaly'
     )
     def _compute_anomaly_line_ids(self):
         """
-        Lọc danh sách nhân viên có dữ liệu bất thường:
-        - Lương trong (Ln) >= (Lương cơ bản + Lương cơ bản * 0.4).
-        - Thực lĩnh ngoài bị âm (TLN < 0).
-        - Thực lĩnh ngoài(TLN) > Lương trong (Ln).
+        Lọc danh sách nhân viên có dữ liệu bất thường dựa trên Flag "Neo" (x_has_anomaly).
+        Dữ liệu sẽ chỉ biến mất khi người dùng bấm Xác nhận (x_is_anomaly_resolved).
         """
         for rec in self:
             anomalies = self.env['dl.salary.kpi.line']
             if rec.line_ids:
                 anomalies = rec.line_ids.filtered(
-                    lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
-                    or l.payroll_kpi_amount < -1
-                    or (0 < l.payroll_cash_amount < 1000000)
+                    lambda l: l.x_has_anomaly and not l.x_is_anomaly_resolved
                 )
+                # Đánh số thứ tự 1, 2, 3... cho danh sách hiển thị trong tab
+                for i, line in enumerate(anomalies, 1):
+                    line.x_sequence = i
             rec.anomaly_line_ids = anomalies
 
     def action_clear_payroll_filters(self):

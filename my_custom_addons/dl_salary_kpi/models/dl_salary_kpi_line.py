@@ -518,6 +518,18 @@ class SalaryKpiLine(models.Model):
     )
     payroll_cash_amount_rounded = fields.Monetary(string='Tiền mặt làm tròn', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
     payroll_cash_amount_rounding_error = fields.Monetary(string='Sai số Tiền mặt', compute='_compute_payroll_internal', store=True, currency_field='currency_id', aggregator='sum')
+
+    # --- QUẢN LÝ DỮ LIỆU BẤT THƯỜNG ---
+    x_has_anomaly = fields.Boolean(string='Từng có bất thường', default=False, copy=False, help="Đánh dấu nếu bản ghi này đã từng hoặc đang gặp lỗi dữ liệu (TLN > Ln, KPI âm, Cash lẻ...)")
+    x_is_anomaly_resolved = fields.Boolean(string='Đã cân đối xong', default=False, copy=False)
+    x_sequence = fields.Integer(string='STT')
+
+    def action_toggle_anomaly_resolved(self):
+        for rec in self:
+            rec.x_is_anomaly_resolved = not rec.x_is_anomaly_resolved
+            if rec.x_is_anomaly_resolved:
+                # Khi người dùng chủ động bấm xác nhận, ta xóa Flag "Neo" để ẩn khỏi tab
+                rec.x_has_anomaly = False
     total_normal_weekday_days = fields.Integer(string='Tổng công thường T2-T7', compute='_compute_payroll_internal', store=True)
 
     payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
@@ -1006,6 +1018,40 @@ class SalaryKpiLine(models.Model):
                     # Giá trị Đ gộp = Lương Đ quy đổi (8h) + Ăn ca + Phụ nữ + Lương 0.5Đ đi kèm
                     v_d_full = ((8.0 * 0.3125 * h_rate) + (8.0 * 0.6875 * h_rate * 1.3)) * ins_factor + meal_day + women_day + v_05d
                     
+                    # === XÁC ĐỊNH BIÊN NGÀY CÔNG ===
+                    first_boundary = 0
+                    last_boundary = 0
+                    for d_idx in range(1, 32):
+                        if getattr(rec, f'day_{d_idx:02d}', False):
+                            if first_boundary == 0: first_boundary = d_idx
+                            last_boundary = d_idx
+
+                    # Đếm số lượng thực tế có thể bớt (loại trừ biên và ĐC)
+                    protected_for_red = {first_boundary, last_boundary}
+                    # Bảo vệ ĐC
+                    for d_idx in range(1, 32):
+                        att = getattr(rec, f'day_{d_idx:02d}', False)
+                        if att and att.code == 'ĐC':
+                            protected_for_red.add(d_idx)
+                            if d_idx > 1: protected_for_red.add(d_idx - 1)
+                            if d_idx < 31: protected_for_red.add(d_idx + 1)
+
+                    can_reduce_n = len([d_idx for d_idx in range(1, 32) if d_idx not in protected_for_red and getattr(rec, f'day_{d_idx:02d}', False) and getattr(rec, f'day_{d_idx:02d}').code == 'N'])
+                    can_reduce_ot = len([d_idx for d_idx in range(1, 32) if d_idx not in protected_for_red and getattr(rec, f'ot_day_{d_idx:02d}', False) and getattr(rec, f'ot_day_{d_idx:02d}').code == '0.5N'])
+                    
+                    # Đếm số lượng thực tế có thể thêm (trong biên)
+                    can_add_n = 0
+                    can_add_ot = 0
+                    if first_boundary and last_boundary:
+                        for d_idx in range(first_boundary, last_boundary + 1):
+                            if d_idx in protected_for_red: continue # Vẫn tránh ĐC
+                            if not getattr(rec, f'day_{d_idx:02d}', False):
+                                try:
+                                    if datetime.date(year, month, d_idx).weekday() < 6: can_add_n += 1
+                                except ValueError: pass
+                            elif getattr(rec, f'day_{d_idx:02d}').code == 'N' and not getattr(rec, f'ot_day_{d_idx:02d}', False):
+                                can_add_ot += 1
+
                     mk_gap = (rec.payroll_internal_salary - annual_bonus) - net_salary_base
                     
                     if diff > -buffer or mk_gap < -1:
@@ -1016,42 +1062,50 @@ class SalaryKpiLine(models.Model):
                         c_05n_red = math.ceil(amount_to_reduce / v_05n) if v_05n > 0 else 0
                         c_n_red = math.ceil(amount_to_reduce / v_n_full) if v_n_full > 0 else 0
                         
+                        # Giới hạn gợi ý theo thực tế có thể xóa
+                        c_05n_red = min(c_05n_red, can_reduce_ot)
+                        c_n_red = min(c_n_red, can_reduce_n)
+
                         if diff > 0:
                             header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Thực lĩnh ngoài VƯỢT LNB. Cần GIẢM công:</div>"
                         else:
                             header = f"<div style='color: #d9534f; font-weight: bold;'>🔻 Tiền KPI ĐANG ÂM. Cần GIẢM công</div>"
 
-                        anomaly_suggestion = (
-                            header +
-                            f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                            f"<li>Gợi ý: Giảm <b>{max(1, c_05n_red)}</b> lần <b>0.5N</b></li>"
-                            f"<li>Hoặc: Giảm <b>{max(1, c_n_red)}</b> ngày <b>N</b></li>"
-                            f"</ul>"
-                        )
+                        anomaly_suggestion = header + f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                        if c_05n_red > 0:
+                            anomaly_suggestion += f"<li>Gợi ý: Giảm <b>{c_05n_red}</b> lần <b>0.5N</b></li>"
+                        if c_n_red > 0:
+                            anomaly_suggestion += f"<li>Hoặc: Giảm <b>{c_n_red}</b> ngày <b>N</b></li>"
+                        if c_05n_red <= 0 and c_n_red <= 0:
+                            anomaly_suggestion += f"<li><i>Không còn công để giảm (đã chạm biên {first_boundary}->{last_boundary})</i></li>"
+                        anomaly_suggestion += "</ul>"
+
                     elif 0 < rec.payroll_cash_amount < 1000000:
                         # TRƯỜNG HỢP 2: Tiền mặt lẻ (< 1M) -> Cần TĂNG công để bù Gap bằng KPI
-                        # Xác định mức trần KPI của nhân viên
                         emp_max_kpi = 70.0
                         if rec.dl_tax_base_salary < 4500000: emp_max_kpi = 55.0
                         elif rec.dl_tax_base_salary < 5000000: emp_max_kpi = 60.0
                         
-                        # Số tiền KPI tối đa có thể gánh
                         max_mk = net_salary_base * (emp_max_kpi - 50.0) / 50.0
-                        # Số tiền cần bù vào TLN để Gap (mk_gap) nằm trọn trong KPI
                         amount_to_add = mk_gap - max_mk
                         
                         if amount_to_add > 0:
                             c_05n_add = math.ceil(amount_to_add / v_05n) if v_05n > 0 else 0
                             c_n_add = math.ceil(amount_to_add / v_n_full) if v_n_full > 0 else 0
                             
-                            header = f"<div style='color: #f0ad4e; font-weight: bold;'>🔻 Tiền mặt đang lẻ ({rec.payroll_cash_amount:,.0f} ₫). Cần TĂNG công để xóa tiền mặt:</div>"
-                            anomaly_suggestion = (
-                                header +
-                                f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
-                                f"<li>Gợi ý: Tăng <b>{max(1, c_05n_add)}</b> lần <b>0.5N</b></li>"
-                                f"<li>Hoặc: Tăng <b>{max(1, c_n_add)}</b> ngày <b>N</b></li>"
-                                f"</ul>"
-                            )
+                            # Giới hạn gợi ý theo thực tế có thể thêm
+                            c_05n_add = min(c_05n_add, can_add_ot)
+                            c_n_add = min(c_n_add, can_add_n)
+
+                            header = f"<div style='color: #f0ad4e; font-weight: bold;'>🔻 Tiền mặt đang lẻ ({rec.payroll_cash_amount:,.0f} ₫). Cần TĂNG công:</div>"
+                            anomaly_suggestion = header + f"<ul style='margin-bottom: 0; padding-left: 20px; color: #333;'>"
+                            if c_05n_add > 0:
+                                anomaly_suggestion += f"<li>Gợi ý: Tăng <b>{c_05n_add}</b> lần <b>0.5N</b></li>"
+                            if c_n_add > 0:
+                                anomaly_suggestion += f"<li>Hoặc: Tăng <b>{c_n_add}</b> ngày <b>N</b></li>"
+                            if c_05n_add <= 0 and c_n_add <= 0:
+                                anomaly_suggestion += f"<li><i>Không còn chỗ trống trong biên ({first_boundary}->{last_boundary}) để thêm</i></li>"
+                            anomaly_suggestion += "</ul>"
 
             # Đẩy tất cả dữ liệu vào cache một lần bằng update
             rec.update({
@@ -1126,6 +1180,15 @@ class SalaryKpiLine(models.Model):
 
             # Thực lĩnh cuối cùng = Tổng các khoản thực tế chi trả (Đã làm tròn)
             net_salary_final = rounded_transfer + rounded_cash
+
+            # --- LOGIC NEO DỮ LIỆU BẤT THƯỜNG (STICKY FLAG) ---
+            is_currently_anomaly = (rec.payroll_internal_salary > 0 and net_salary_base > rec.payroll_internal_salary) \
+                                   or kpi_val < -1 \
+                                   or (0 < cash_val < 1000000)
+            
+            if is_currently_anomaly:
+                rec.x_has_anomaly = True
+                rec.x_is_anomaly_resolved = False
 
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,
@@ -1445,6 +1508,7 @@ class SalaryKpiLine(models.Model):
             'res_model': 'dl.salary.kpi.quick.fix.wizard',
             'view_mode': 'form',
             'target': 'new',
+            'size': 'xl',
             'context': {
                 'default_line_id': self.id,
                 'default_employee_name': self.employee_name,
