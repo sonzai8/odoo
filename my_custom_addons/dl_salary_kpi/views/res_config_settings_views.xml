@@ -16,6 +16,15 @@
                             <field name="dl_pit_dependent_deduction"/>
                         </setting>
                     </block>
+                    <block title="Tiện ích hệ thống" name="dl_pit_utils">
+                        <setting string="Chuẩn hóa dữ liệu công ty" help="Tự động kiểm tra và gán lại phòng ban thuế cho nhân viên theo đúng công ty hiện tại (dựa trên tên phòng ban).">
+                            <button name="action_standardize_tax_departments" 
+                                    string="Chuẩn hóa ngay" 
+                                    type="object" 
+                                    class="btn-primary"
+                                    confirm="Hệ thống sẽ rà soát toàn bộ nhân viên công ty hiện tại và gán lại phòng ban thuế đúng công ty. Bạn có chắc chắn muốn thực hiện?"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>
