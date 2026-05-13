@@ -19,10 +19,22 @@
                     <block title="Tiện ích hệ thống" name="dl_pit_utils">
                         <setting string="Chuẩn hóa dữ liệu công ty" help="Tự động kiểm tra và gán lại phòng ban thuế cho nhân viên theo đúng công ty hiện tại (dựa trên tên phòng ban).">
                             <button name="action_standardize_tax_departments" 
-                                    string="Chuẩn hóa ngay" 
+                                    string="Chuẩn hóa phòng ban nhân viên" 
                                     type="object" 
-                                    class="btn-primary"
+                                    class="btn-secondary"
                                     confirm="Hệ thống sẽ rà soát toàn bộ nhân viên công ty hiện tại và gán lại phòng ban thuế đúng công ty. Bạn có chắc chắn muốn thực hiện?"/>
+                        </setting>
+                        <setting string="Khởi tạo dữ liệu gốc" help="Khởi tạo danh mục Mã công và Phòng ban thuế chuẩn cho công ty hiện tại nếu chưa có.">
+                            <div class="mt16">
+                                <button name="action_init_attendance_types" 
+                                        string="Khởi tạo Mã Công" 
+                                        type="object" 
+                                        class="btn-primary mr-2"/>
+                                <button name="action_init_tax_departments" 
+                                        string="Khởi tạo Phòng Ban" 
+                                        type="object" 
+                                        class="btn-primary"/>
+                            </div>
                         </setting>
                     </block>
                 </app>

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-        <!-- Khai báo cứng dữ liệu thông qua hàm kiểm tra an toàn -->
-        <function model="dl.tax.department" name="_seed_default_data"/>
+        <!-- Khởi tạo dữ liệu đã được chuyển sang nút bấm thủ công trong Cấu hình để đảm bảo an toàn cho Production. -->
     </data>
 </odoo>
