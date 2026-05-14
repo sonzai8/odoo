@@ -70,5 +70,29 @@
             <field name="global" eval="True"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
+
+        <!-- Record Rule for dl.dependent -->
+        <record id="dl_dependent_multi_company_rule" model="ir.rule">
+            <field name="name">Người phụ thuộc: đa công ty</field>
+            <field name="model_id" ref="model_dl_dependent"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.insurance.stop -->
+        <record id="dl_salary_kpi_insurance_stop_multi_company_rule" model="ir.rule">
+            <field name="name">Danh sách cắt bảo hiểm: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_insurance_stop"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('month_id.company_id', '=', False), ('month_id.company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.bonus.line -->
+        <record id="dl_salary_kpi_bonus_line_multi_company_rule" model="ir.rule">
+            <field name="name">Chi tiết thưởng năm: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_bonus_line"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('year_id.company_id', '=', False), ('year_id.company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>
