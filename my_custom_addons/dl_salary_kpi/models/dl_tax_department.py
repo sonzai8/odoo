@@ -14,9 +14,8 @@ class DlTaxDepartment(models.Model):
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
 
     @api.model
-    def _seed_default_data(self):
-        """Hàm hỗ trợ khởi tạo dữ liệu an toàn, gọi từ XML function."""
-        # Danh sách phòng ban chuẩn
+    def _seed_default_data(self, company_id=None):
+        """Hàm hỗ trợ khởi tạo dữ liệu an toàn cho một hoặc tất cả công ty."""
         tax_depts = [
             {'name': 'Quản Lý', 'sequence': 10},
             {'name': 'Kinh Doanh', 'sequence': 20},
@@ -26,21 +25,27 @@ class DlTaxDepartment(models.Model):
             {'name': 'Sản Xuất', 'sequence': 60},
         ]
         
-        companies = self.env['res.company'].sudo().search([])
-        for company in companies:
+        # Nếu không truyền company_id, lấy công ty hiện tại
+        target_company_ids = [company_id] if company_id else [self.env.company.id]
+        
+        for comp_id in target_company_ids:
             for dept in tax_depts:
-                # Kiểm tra xem phòng ban này đã tồn tại trong công ty chưa
-                existing = self.sudo().search([
+                # QUAN TRỌNG: Dùng active_test=False để tìm cả bản ghi đã bị ẩn (Archived)
+                # Tránh lỗi Unique Constraint khi tạo mới trùng tên với bản ghi cũ
+                existing = self.sudo().with_context(active_test=False).search([
                     ('name', '=', dept['name']),
-                    ('company_id', '=', company.id)
+                    ('company_id', '=', comp_id)
                 ], limit=1)
                 
                 if not existing:
                     self.sudo().create({
                         'name': dept['name'],
                         'sequence': dept['sequence'],
-                        'company_id': company.id
+                        'company_id': comp_id
                     })
+                elif not existing.active:
+                    # Nếu tồn tại nhưng đang bị ẩn, kích hoạt lại thay vì tạo mới
+                    existing.sudo().write({'active': True})
         return True
 
     @api.model

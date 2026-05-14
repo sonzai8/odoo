@@ -26,49 +26,37 @@
                 </table>
                 <field name="line_id" invisible="1"/>
                 <field name="currency_id" invisible="1"/>
+                
+                <!-- Các trường tiêu đề ẩn -->
+                <field name="h_01" invisible="1"/><field name="h_02" invisible="1"/><field name="h_03" invisible="1"/><field name="h_04" invisible="1"/><field name="h_05" invisible="1"/>
+                <field name="h_06" invisible="1"/><field name="h_07" invisible="1"/><field name="h_08" invisible="1"/><field name="h_09" invisible="1"/><field name="h_10" invisible="1"/>
+                <field name="h_11" invisible="1"/><field name="h_12" invisible="1"/><field name="h_13" invisible="1"/><field name="h_14" invisible="1"/><field name="h_15" invisible="1"/>
+                <field name="h_16" invisible="1"/><field name="h_17" invisible="1"/><field name="h_18" invisible="1"/><field name="h_19" invisible="1"/><field name="h_20" invisible="1"/>
+                <field name="h_21" invisible="1"/><field name="h_22" invisible="1"/><field name="h_23" invisible="1"/><field name="h_24" invisible="1"/><field name="h_25" invisible="1"/>
+                <field name="h_26" invisible="1"/><field name="h_27" invisible="1"/><field name="h_28" invisible="1"/><field name="h_29" invisible="1"/><field name="h_30" invisible="1"/>
+                <field name="h_31" invisible="1"/>
 
                 <group string="📊 GỢI Ý XỬ LÝ" class="mb-2">
                     <field name="suggestion_html" nolabel="1" colspan="2"/>
                 </group>
 
                 <div class="alert alert-info py-1 mb-2 small" role="alert">
-                    <i class="fa fa-info-circle" title="Hướng dẫn"/> <b>HD:</b> Nhập số <b>DƯƠNG</b> để THÊM, <b>ÂM</b> để GIẢM công. Hệ thống tự tìm ngày phù hợp.
+                    <i class="fa fa-info-circle" title="Hướng dẫn"/> <b>HD:</b> Nhập số <b>DƯƠNG</b> để THÊM, <b>ÂM</b> để GIẢM công.
                 </div>
 
                 <div class="row mb-2">
-                    <div class="col-6">
+                    <!-- Ẩn phần ĐIỀU CHỈNH NHANH theo yêu cầu -->
+                    <div class="col-6" invisible="1">
                         <group string="🔧 ĐIỀU CHỈNH NHANH (SỐ LƯỢNG)" class="mt-0">
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="change_n" string="N (+/-)" style="width: 50px;"/>
-                                <field name="change_n" type="number" nolabel="1" class="oe_inline" style="width: 40px;"/>
-                                <span class="text-muted small">/ Có: </span>
-                                <field name="current_n" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <label for="change_d" string="Đ (+/-)" style="width: 50px;"/>
-                                <field name="change_d" type="number" nolabel="1" class="oe_inline" style="width: 40px;"/>
-                                <span class="text-muted small">/ Có: </span>
-                                <field name="current_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <label for="change_ot_n" string="0.5N (+/-)" style="width: 55px;"/>
-                                <field name="change_ot_n" type="number" nolabel="1" class="oe_inline" style="width: 40px;"/>
-                                <span class="text-muted small">/ Có: </span>
-                                <field name="current_ot_n" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <label for="change_ot_d" string="0.5Đ (+/-)" style="width: 55px;"/>
-                                <field name="change_ot_d" type="number" nolabel="1" class="oe_inline" style="width: 40px;"/>
-                                <span class="text-muted small">/ Có: </span>
-                                <field name="current_ot_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
-                            </div>
+                            <field name="change_n"/><field name="change_d"/><field name="change_ot_n"/><field name="change_ot_d"/>
                         </group>
                     </div>
-                    <div class="col-6 border-start d-flex flex-column justify-content-center align-items-center bg-light">
-                        <div class="text-center p-3">
-                            <h5 class="text-uppercase fw-bold text-primary mb-3">✨ Phép Thuật Wing</h5>
-                            <p class="text-muted small mb-4">Tự động cân đối để KPI hết âm và ưu tiên trả lương chuyển khoản (Tiền mặt về 0).</p>
-                            <button name="action_wing_magic" string="Kích hoạt Phép Thuật" type="object" class="btn-info btn-lg shadow-sm" icon="fa-magic" confirm="Hệ thống sẽ tự động thêm/giảm công để cân đối. Bạn có chắc chắn muốn thực hiện?"/>
+                    <!-- Cho phần Wing Magic rộng ra và căn giữa -->
+                    <div class="col-12 d-flex flex-column justify-content-center align-items-center bg-light border rounded py-3">
+                        <div class="text-center p-2">
+                            <h5 class="text-uppercase fw-bold text-primary mb-2">✨ Phép Thuật Wing</h5>
+                            <p class="text-muted small mb-3">Tự động cân đối để KPI hết âm và ưu tiên trả lương chuyển khoản (Tiền mặt về 0).</p>
+                            <button name="action_wing_magic" string="Kích hoạt Phép Thuật" type="object" class="btn-info btn-lg shadow-sm px-5" icon="fa-magic" confirm="Hệ thống sẽ tự động thêm/giảm công để cân đối. Bạn có chắc chắn muốn thực hiện?"/>
                         </div>
                     </div>
                 </div>
@@ -76,7 +64,7 @@
                 <notebook>
                     <page string="📅 MA TRẬN CHẤM CÔNG CHI TIẾT (SỬA TAY)" name="matrix_adjust">
                         <div class="alert alert-warning py-1 mb-2 small text-center">
-                            <i class="fa fa-info-circle"/> <b>CHẾ ĐỘ LƯU TỨC THÌ:</b> Bạn sửa đến đâu, hệ thống lưu ngay đến đó. Xong chỉ việc tắt popup!
+                            <i class="fa fa-info-circle"/> <b>CHẾ ĐỘ LƯU TỨC THÌ:</b> Bạn sửa đến đâu, hệ thống lưu ngay đến đó. Nhấn <b>LƯU</b> để cập nhật kết quả bên dưới!
                         </div>
                         
                         <!-- BLOCK 1: 01-08 -->
@@ -84,7 +72,7 @@
                         <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
                             <tr class="bg-light text-center fw-bold">
                                 <td style="width: 80px;">LOẠI</td>
-                                <td>01</td><td>02</td><td>03</td><td>04</td><td>05</td><td>06</td><td>07</td><td>08</td>
+                                <td><field name="h_01" readonly="1"/></td><td><field name="h_02" readonly="1"/></td><td><field name="h_03" readonly="1"/></td><td><field name="h_04" readonly="1"/></td><td><field name="h_05" readonly="1"/></td><td><field name="h_06" readonly="1"/></td><td><field name="h_07" readonly="1"/></td><td><field name="h_08" readonly="1"/></td>
                             </tr>
                             <tr class="text-center">
                                 <td class="bg-light fw-bold">CHÍNH</td>
@@ -101,7 +89,7 @@
                         <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
                             <tr class="bg-light text-center fw-bold">
                                 <td style="width: 80px;">LOẠI</td>
-                                <td>09</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td>16</td>
+                                <td><field name="h_09" readonly="1"/></td><td><field name="h_10" readonly="1"/></td><td><field name="h_11" readonly="1"/></td><td><field name="h_12" readonly="1"/></td><td><field name="h_13" readonly="1"/></td><td><field name="h_14" readonly="1"/></td><td><field name="h_15" readonly="1"/></td><td><field name="h_16" readonly="1"/></td>
                             </tr>
                             <tr class="text-center">
                                 <td class="bg-light fw-bold">CHÍNH</td>
@@ -118,7 +106,7 @@
                         <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
                             <tr class="bg-light text-center fw-bold">
                                 <td style="width: 80px;">LOẠI</td>
-                                <td>17</td><td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td>
+                                <td><field name="h_17" readonly="1"/></td><td><field name="h_18" readonly="1"/></td><td><field name="h_19" readonly="1"/></td><td><field name="h_20" readonly="1"/></td><td><field name="h_21" readonly="1"/></td><td><field name="h_22" readonly="1"/></td><td><field name="h_23" readonly="1"/></td><td><field name="h_24" readonly="1"/></td>
                             </tr>
                             <tr class="text-center">
                                 <td class="bg-light fw-bold">CHÍNH</td>
@@ -135,7 +123,7 @@
                         <table class="table table-sm table-bordered matrix-table mb-0" style="font-size: 11px; table-layout: fixed;">
                             <tr class="bg-light text-center fw-bold">
                                 <td style="width: 80px;">LOẠI</td>
-                                <td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td>
+                                <td><field name="h_25" readonly="1"/></td><td><field name="h_26" readonly="1"/></td><td><field name="h_27" readonly="1"/></td><td><field name="h_28" readonly="1"/></td><td><field name="h_29" readonly="1"/></td><td><field name="h_30" readonly="1"/></td><td><field name="h_31" readonly="1"/></td>
                                 <td class="bg-white border-0"></td> <!-- Filler -->
                             </tr>
                             <tr class="text-center">
@@ -178,6 +166,11 @@
                         </tbody>
                     </table>
                 </div>
+
+                <footer>
+                    <button name="action_apply_quick_fix" string="LƯU DỮ LIỆU &amp; CẬP NHẬT KẾT QUẢ" type="object" class="btn-primary w-100 py-3 fw-bold shadow-sm" icon="fa-save" style="font-size: 18px;"/>
+                    <button string="ĐÓNG" class="btn-secondary" special="cancel"/>
+                </footer>
             </form>
         </field>
     </record>

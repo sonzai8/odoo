@@ -48,5 +48,27 @@
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
         </record>
+
+        <!-- Record Rule cho Quy chế thưởng -->
+        <record id="dl_salary_kpi_bonus_policy_multi_company_rule" model="ir.rule">
+            <field name="name">Quy chế thưởng: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_bonus_policy"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_salary_kpi_revenue_bonus_multi_company_rule" model="ir.rule">
+            <field name="name">Mốc thưởng doanh thu: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_revenue_bonus"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_salary_kpi_productivity_bonus_multi_company_rule" model="ir.rule">
+            <field name="name">Mốc thưởng năng suất: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_productivity_bonus"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

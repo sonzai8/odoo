@@ -48,7 +48,7 @@ class ResConfigSettings(models.TransientModel):
 
     def action_init_tax_departments(self):
         """Khởi tạo thủ công danh sách phòng ban thuế chuẩn cho công ty hiện tại."""
-        self.env['dl.tax.department'].sudo()._seed_default_data()
+        self.env['dl.tax.department'].sudo()._seed_default_data(company_id=self.env.company.id)
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',

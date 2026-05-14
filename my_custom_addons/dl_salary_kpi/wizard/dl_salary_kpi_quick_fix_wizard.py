@@ -50,6 +50,57 @@ class SalaryKpiQuickFixWizard(models.TransientModel):
 
     suggestion_html = fields.Html(related='line_id.payroll_anomaly_suggestion', string='Gợi ý xử lý', readonly=True)
 
+    # Các trường tiêu đề ngày (để hiển thị CN nếu là Chủ Nhật)
+    h_01 = fields.Char(compute='_compute_day_headers')
+    h_02 = fields.Char(compute='_compute_day_headers')
+    h_03 = fields.Char(compute='_compute_day_headers')
+    h_04 = fields.Char(compute='_compute_day_headers')
+    h_05 = fields.Char(compute='_compute_day_headers')
+    h_06 = fields.Char(compute='_compute_day_headers')
+    h_07 = fields.Char(compute='_compute_day_headers')
+    h_08 = fields.Char(compute='_compute_day_headers')
+    h_09 = fields.Char(compute='_compute_day_headers')
+    h_10 = fields.Char(compute='_compute_day_headers')
+    h_11 = fields.Char(compute='_compute_day_headers')
+    h_12 = fields.Char(compute='_compute_day_headers')
+    h_13 = fields.Char(compute='_compute_day_headers')
+    h_14 = fields.Char(compute='_compute_day_headers')
+    h_15 = fields.Char(compute='_compute_day_headers')
+    h_16 = fields.Char(compute='_compute_day_headers')
+    h_17 = fields.Char(compute='_compute_day_headers')
+    h_18 = fields.Char(compute='_compute_day_headers')
+    h_19 = fields.Char(compute='_compute_day_headers')
+    h_20 = fields.Char(compute='_compute_day_headers')
+    h_21 = fields.Char(compute='_compute_day_headers')
+    h_22 = fields.Char(compute='_compute_day_headers')
+    h_23 = fields.Char(compute='_compute_day_headers')
+    h_24 = fields.Char(compute='_compute_day_headers')
+    h_25 = fields.Char(compute='_compute_day_headers')
+    h_26 = fields.Char(compute='_compute_day_headers')
+    h_27 = fields.Char(compute='_compute_day_headers')
+    h_28 = fields.Char(compute='_compute_day_headers')
+    h_29 = fields.Char(compute='_compute_day_headers')
+    h_30 = fields.Char(compute='_compute_day_headers')
+    h_31 = fields.Char(compute='_compute_day_headers')
+
+    def _compute_day_headers(self):
+        for wiz in self:
+            line = wiz.line_id
+            month_date = line.month_id.date_month
+            year = month_date.year
+            month = month_date.month
+            
+            for i in range(1, 32):
+                field_name = f'h_{i:02d}'
+                try:
+                    d = datetime.date(year, month, i)
+                    if d.weekday() == 6: # Sunday
+                        wiz[field_name] = "CN"
+                    else:
+                        wiz[field_name] = f"{i:02d}"
+                except ValueError:
+                    wiz[field_name] = ""
+
     # --- MA TRẬN CHẤM CÔNG TRONG POPUP ---
     # Công thường
     day_01 = fields.Many2one('dl.salary.kpi.attendance.type', string='01', domain="[('company_id', '=', company_id)]")

@@ -7,6 +7,7 @@ class DLDependent(models.Model):
     _order = 'employee_id, name'
 
     employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True, ondelete='cascade')
+    company_id = fields.Many2one('res.company', related='employee_id.company_id', string='Công ty', store=True)
     employee_tax_id = fields.Char(related='employee_id.dl_tax_id', string='MST Nhân viên', store=True)
     employee_tax_department_id = fields.Many2one('dl.tax.department', related='employee_id.dl_tax_department_id', string='Phòng ban thuế', store=True)
     employee_tax_position = fields.Char(related='employee_id.dl_tax_position', string='Chức vụ thuế', store=True)
