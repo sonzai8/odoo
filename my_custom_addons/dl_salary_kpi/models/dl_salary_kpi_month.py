@@ -643,6 +643,8 @@ class SalaryKpiMonth(models.Model):
 
     def action_export_excel(self):
         self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_("Bảng cân đối này chưa có dữ liệu nhân viên. Vui lòng kiểm tra lại!"))
         return {
             'type': 'ir.actions.act_url',
             'url': f'/dl_salary_kpi/export_attendance/{self.id}',
@@ -684,6 +686,8 @@ class SalaryKpiMonth(models.Model):
 
     def action_export_ot_excel(self):
         self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_("Bảng cân đối này chưa có dữ liệu nhân viên. Vui lòng kiểm tra lại!"))
         return {
             'type': 'ir.actions.act_url',
             'url': f'/dl_salary_kpi/export_ot_attendance/{self.id}',
