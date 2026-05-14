@@ -25,6 +25,7 @@
         'views/dl_salary_kpi_bonus_views.xml',
         'views/dl_dependent_views.xml',
         'views/res_config_settings_views.xml',
+        'views/dl_bonus_config_views.xml',
         'views/menus.xml',
     ],
     'assets': {

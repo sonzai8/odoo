@@ -70,6 +70,30 @@
                                     <field name="dl_women_allowance" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state == 'confirmed'"/>
                                 </group>
                             </group>
+                            
+                            <separator string="Quy chế Thưởng đang áp dụng" invisible="not active_policy_id"/>
+                            <group invisible="not active_policy_id">
+                                <field name="active_policy_id" readonly="1" options="{'no_open': True}"/>
+                            </group>
+                            <div invisible="not active_policy_id">
+                                <h4 class="mt-3">Thưởng Doanh Thu</h4>
+                                <field name="revenue_line_ids" readonly="1" nolabel="1" class="w-100">
+                                    <list>
+                                        <field name="min_revenue" string="Từ doanh thu"/>
+                                        <field name="max_revenue" string="Dưới mức"/>
+                                        <field name="bonus_amount" string="Mức thưởng"/>
+                                    </list>
+                                </field>
+                                
+                                <h4 class="mt-4">Thưởng Năng Suất</h4>
+                                <field name="productivity_line_ids" readonly="1" nolabel="1" class="w-100">
+                                    <list>
+                                        <field name="job_titles" string="Đối tượng (Mã CV)"/>
+                                        <field name="bonus_amount" string="Mức thưởng"/>
+                                    </list>
+                                </field>
+                            </div>
+                            
                             <separator string="Thưởng lễ trong tháng"/>
                             <field name="bonus_line_ids" nolabel="1" readonly="1" options="{'no_open': True}">
                                 <list create="0" edit="0" delete="0" export_xml="0"  class="w-100 text-center" limit="20">

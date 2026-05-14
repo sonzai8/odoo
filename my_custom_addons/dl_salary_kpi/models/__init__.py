@@ -10,5 +10,4 @@ from . import payroll_logic
 from . import attendance_logic
 from . import res_company
 from . import res_config_settings
-
-
+from . import dl_bonus_config

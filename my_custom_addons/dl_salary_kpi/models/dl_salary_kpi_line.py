@@ -769,8 +769,8 @@ class SalaryKpiLine(models.Model):
                     
                     mk_temp = lk * (p_temp - 50.0) / 50.0
                     cash_raw = gap - mk_temp
-                    # Làm tròn Tiền mặt đến hàng nghìn (1.000 VNĐ)
-                    cash = round(cash_raw / 1000.0) * 1000
+                    # Làm tròn Tiền mặt đến hàng chục nghìn (10.000 VNĐ)
+                    cash = round(cash_raw / 10000.0) * 10000
                     # Tính ngược lại Điểm KPI lẻ để khớp hoàn toàn
                     mk = gap - cash
                     p_final = 50.0 + 50.0 * mk / lk
@@ -792,8 +792,8 @@ class SalaryKpiLine(models.Model):
                         
                         mk_temp = lk * (p_temp - 50.0) / 50.0
                         cash_raw = gap - mk_temp
-                        # Làm tròn Tiền mặt đến hàng nghìn
-                        cash = round(cash_raw / 1000.0) * 1000
+                        # Làm tròn Tiền mặt đến hàng chục nghìn (10.000 VNĐ)
+                        cash = round(cash_raw / 10000.0) * 10000
                         mk = gap - cash
                         p_final = 50.0 + 50.0 * mk / lk
                 
@@ -844,7 +844,7 @@ class SalaryKpiLine(models.Model):
                 if excess > 0:
                     kpi_vals[0] = round(kpi_vals[0] + excess, 2)
             
-            rec.write({
+            write_vals = {
                 'payroll_kpi_score': p_final,
                 'payroll_kpi_amount': mk,
                 'payroll_cash_amount': cash,
@@ -853,8 +853,20 @@ class SalaryKpiLine(models.Model):
                 'kpi_c3_teamwork': kpi_vals[2],
                 'kpi_c4_5s': kpi_vals[3],
                 'kpi_c5_saving': kpi_vals[4],
-            })
-
+            }
+            
+            # --- LOGIC NEO DỮ LIỆU BẤT THƯỜNG (STICKY FLAG) ---
+            # Chỉ gán cờ bất thường khi Tạo KPI (đủ dữ liệu)
+            is_currently_anomaly = (rec.payroll_internal_salary > 0 and lk > rec.payroll_internal_salary) \
+                                   or (rec.month_id.x_has_imported_internal_salary and rec.month_id.x_is_recalculated and rec.payroll_internal_salary == 0 and lk > 0) \
+                                   or mk < -1 \
+                                   or (0 < cash < 1000000)
+            
+            if is_currently_anomaly:
+                write_vals['x_has_anomaly'] = True
+                write_vals['x_is_anomaly_resolved'] = False
+                
+            rec.write(write_vals)
     @api.depends('day_01', 'day_02', 'day_03', 'day_04', 'day_05', 'day_06', 'day_07', 'day_08', 'day_09', 'day_10',
                  'day_11', 'day_12', 'day_13', 'day_14', 'day_15', 'day_16', 'day_17', 'day_18', 'day_19', 'day_20',
                  'day_21', 'day_22', 'day_23', 'day_24', 'day_25', 'day_26', 'day_27', 'day_28', 'day_29', 'day_30', 'day_31',
@@ -1218,29 +1230,28 @@ class SalaryKpiLine(models.Model):
                 
             # Cập nhật các trường Tiền chuyển khoản: TLN + KPI + Thưởng năm (Theo yêu cầu mới)
             # Đảm bảo transfer_val là số nguyên trước khi tính toán làm tròn
-            transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
-            rounded_transfer = int(transfer_val // 1000) * 1000
-            
-            # Tiền mặt = Lương Nội Bộ - Tiền chuyển khoản đã làm tròn (Để khớp tuyệt đối LNB)
-            cash_val = max(0, int(rec.payroll_internal_salary - rounded_transfer))
-            rounded_cash = int(cash_val // 1000) * 1000
-
-            # Làm tròn Tiền KPI
-            kpi_val = int(round(rec.payroll_kpi_amount or 0, 0))
-            rounded_kpi = int(kpi_val // 1000) * 1000
-
-            # Thực lĩnh cuối cùng = Tổng các khoản thực tế chi trả (Đã làm tròn)
-            net_salary_final = rounded_transfer + rounded_cash
-
-            # --- LOGIC NEO DỮ LIỆU BẤT THƯỜNG (STICKY FLAG) ---
-            is_currently_anomaly = (rec.payroll_internal_salary > 0 and net_salary_base > rec.payroll_internal_salary) \
-                                   or (rec.month_id.x_has_imported_internal_salary and rec.month_id.x_is_recalculated and rec.payroll_internal_salary == 0 and net_salary_base > 0) \
-                                   or kpi_val < -1 \
-                                   or (0 < cash_val < 1000000)
-            
-            if is_currently_anomaly:
-                rec.x_has_anomaly = True
-                rec.x_is_anomaly_resolved = False
+            if rec.payroll_internal_salary == 0 or (rec.month_id.x_has_imported_internal_salary and not rec.month_id.x_is_recalculated):
+                transfer_val = 0
+                rounded_transfer = 0
+                cash_val = 0
+                rounded_cash = 0
+                kpi_val = 0
+                rounded_kpi = 0
+                net_salary_final = 0
+            else:
+                transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
+                rounded_transfer = int(transfer_val // 1000) * 1000
+                
+                # Tiền mặt = Lương Nội Bộ - Tiền chuyển khoản đã làm tròn (Để khớp tuyệt đối LNB)
+                cash_val = max(0, int(rec.payroll_internal_salary - rounded_transfer))
+                rounded_cash = int(cash_val // 1000) * 1000
+    
+                # Làm tròn Tiền KPI
+                kpi_val = int(round(rec.payroll_kpi_amount or 0, 0))
+                rounded_kpi = int(kpi_val // 1000) * 1000
+    
+                # Thực lĩnh cuối cùng = Tổng các khoản thực tế chi trả (Đã làm tròn)
+                net_salary_final = rounded_transfer + rounded_cash
 
             rec.update({
                 'payroll_bank_transfer_amount': transfer_val,

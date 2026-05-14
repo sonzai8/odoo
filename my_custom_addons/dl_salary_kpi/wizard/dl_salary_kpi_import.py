@@ -253,6 +253,20 @@ class SalaryKpiImportWizard(models.TransientModel):
         for line, vals in import_data:
             line.write(vals)
 
+        # Clear all anomaly flags and KPI data for the entire month
+        self.month_id.line_ids.write({
+            'x_has_anomaly': False,
+            'x_is_anomaly_resolved': False,
+            'payroll_kpi_score': 0.0,
+            'payroll_kpi_amount': 0.0,
+            'payroll_cash_amount': 0.0,
+            'kpi_c1_productivity': 0.0,
+            'kpi_c2_discipline': 0.0,
+            'kpi_c3_teamwork': 0.0,
+            'kpi_c4_5s': 0.0,
+            'kpi_c5_saving': 0.0,
+        })
+
         # Reset trạng thái tính toán lại để không báo lỗi Ln=0 ngay lập tức
         self.month_id.write({'x_is_recalculated': False})
 
