@@ -495,7 +495,9 @@ class SalaryKpiLine(models.Model):
     
     payroll_total_wage = fields.Monetary(string='Tổng lương', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng lương = Tổng các khoản lương chi tiết (ngày, đêm, tăng ca...) + Thưởng doanh thu thực tế")
     payroll_total_actual_income = fields.Monetary(string='Tổng TN T.tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Tổng thu nhập thực tế = Tổng lương + Các khoản trợ cấp thực tế (đã tỷ lệ theo công) + Tiền KPI")
+    payroll_total_actual_income_dk = fields.Monetary(string='Tổng TN Thực Tế DK', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help='Tổng thu nhập thực tế dự kiến = Thực lĩnh ngoài (Lk) + Hỗ trợ ăn ca + Phụ cấp phụ nữ (Chưa bao gồm KPI)')
     payroll_real_net_income = fields.Monetary(string='Thực lĩnh thực tế', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help="Thực lĩnh thực tế = Tổng thu nhập thực tế - Tổng các khoản khấu trừ")
+    payroll_real_net_income_ds = fields.Monetary(string='Thực Lĩnh DS', compute='_compute_payroll_internal', store=True, currency_field='currency_id', help='Thực lĩnh dự soát = Tổng thu nhập thực tế DK - Tổng các khoản khấu trừ (Chưa bao gồm KPI)')
 
     # --- CÁC KHOẢN KHẤU TRỪ ---
     payroll_deduction_bhxh = fields.Monetary(string='BHXH (8%)', compute='_compute_payroll_internal', store=True, currency_field='currency_id')
@@ -727,7 +729,7 @@ class SalaryKpiLine(models.Model):
             lk = rec.payroll_net_salary_base
             # Gap là phần còn thiếu để đạt được (LNB - Thưởng năm TIỀM NĂNG)
             # Theo yêu cầu: LNB đã bao gồm Thưởng năm. Ta dùng LNB trừ thưởng tiềm năng để giữ Gap ổn định.
-            gap = rec.payroll_internal_salary_minus_bonus - lk
+            gap = rec.payroll_internal_salary_minus_bonus - rec.payroll_real_net_income_ds
             
             if rec.payroll_internal_salary_minus_bonus <= 0 or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
@@ -989,7 +991,7 @@ class SalaryKpiLine(models.Model):
             wages = payroll_logic.calculate_detailed_wages(rec)
             
             # Tổng lương chi tiết (Chỉ bao gồm lương công, không bao gồm thưởng)
-            total_detailed_wage = sum(wages.values())
+            total_detailed_wage = sum(v for k, v in wages.items() if k.startswith('wage_'))
             
             # Tính toán số tiền được miễn thuế (Miễn 100% cho OT, Lương phép và Chuyên cần)
             exempt_ot_amount = (
@@ -1012,7 +1014,8 @@ class SalaryKpiLine(models.Model):
             net_salary_base = gross_lk
             
             # 3. Tổng thu nhập thực tế = TLN + Ăn ca + Phụ cấp phụ nữ + Tiền KPI (Nếu có)
-            total_actual_income = net_salary_base + meal_allowance + women_allowance + max(0, rec.payroll_kpi_amount or 0)
+            total_actual_income_dk = net_salary_base + meal_allowance + women_allowance
+            total_actual_income = total_actual_income_dk + max(0, rec.payroll_kpi_amount or 0)
 
             # --- PHẦN TÍNH TOÁN THUẾ VÀ KHẤU TRỪ (Mới: Dựa trên Tổng TN thực tế + Thưởng năm) ---
             # Thu nhập chịu thuế cơ sở = Tổng TN Thực tế + Thưởng Năm
@@ -1023,6 +1026,7 @@ class SalaryKpiLine(models.Model):
             taxable_income = deductions['taxable_income'] - exempt_ot_amount
             # Tính lại thuế TNCN dựa trên TNCT đã trừ các khoản miễn thuế
             deductions = payroll_logic.calculate_deductions(rec, base_income_for_tax - exempt_ot_amount, meal_allowance)
+            real_net_income_ds = max(0, total_actual_income_dk - deductions['total_deduction'])
             
             # 5. Lương trong mục tiêu trừ đi các khoản thưởng thực tế
             internal_salary_minus_bonus = max(0, rec.payroll_internal_salary - annual_bonus)
@@ -1202,6 +1206,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_women_allowance_exp': f"{rec.month_id.dl_women_allowance or 0:,.0f} x {rec.total_n + rec.total_d:g}/26 công" if rec.employee_id.sex == 'female' else "",
                 
                 'payroll_total_wage': total_detailed_wage + revenue_bonus + productivity_bonus,
+                'payroll_total_actual_income_dk': total_actual_income_dk,
                 'payroll_total_actual_income': total_actual_income,
                 'payroll_income_explanation': self._get_income_explanation(
                     gross_lk, deductions['total_deduction'], net_salary_base,
@@ -1223,6 +1228,7 @@ class SalaryKpiLine(models.Model):
                 'payroll_pit_total_deductions': int(round(deductions['total_pit_deductions'], 0)),
                 'payroll_pit_assessable_income': int(round(deductions['assessable_income'], 0)),
                 'payroll_total_deduction': int(round(deductions['total_deduction'], 0)),
+                'payroll_real_net_income_ds': int(real_net_income_ds // 1000) * 1000,
                 'payroll_real_net_income': int((total_actual_income - deductions['total_deduction']) // 1000) * 1000,
                 'payroll_net_salary_base': int(round(net_salary_base, 0)),
                 'payroll_internal_salary_minus_bonus': int(round(internal_salary_minus_bonus, 0)),
@@ -1239,7 +1245,7 @@ class SalaryKpiLine(models.Model):
                 rounded_kpi = 0
                 net_salary_final = 0
             else:
-                transfer_val = int(round(net_salary_base + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
+                transfer_val = int(round(real_net_income_ds + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
                 rounded_transfer = int(transfer_val // 1000) * 1000
                 
                 # Tiền mặt = Lương Nội Bộ - Tiền chuyển khoản đã làm tròn (Để khớp tuyệt đối LNB)

@@ -63,8 +63,8 @@
 
                 <notebook>
                     <page string="📅 MA TRẬN CHẤM CÔNG CHI TIẾT (SỬA TAY)" name="matrix_adjust">
-                        <div class="alert alert-warning py-1 mb-2 small text-center">
-                            <i class="fa fa-info-circle"/> <b>CHẾ ĐỘ LƯU TỨC THÌ:</b> Bạn sửa đến đâu, hệ thống lưu ngay đến đó. Nhấn <b>LƯU</b> để cập nhật kết quả bên dưới!
+                        <div class="alert alert-warning py-1 mb-2 small text-center" role="alert">
+                            <i class="fa fa-info-circle" title="Thông báo"/> <b>CHẾ ĐỘ LƯU TỨC THÌ:</b> Bạn sửa đến đâu, hệ thống lưu ngay đến đó. Nhấn <b>LƯU</b> để cập nhật kết quả bên dưới!
                         </div>
                         
                         <!-- BLOCK 1: 01-08 -->
@@ -142,7 +142,7 @@
 
                 <!-- Bảng Kết quả thực tế -->
                 <div class="mt-3 border-top pt-2">
-                    <h6 class="text-uppercase fw-bold text-dark mb-2 small"><i class="fa fa-calculator me-1"/>Kết quả thực tế sau điều chỉnh</h6>
+                    <h6 class="text-uppercase fw-bold text-dark mb-2 small"><i class="fa fa-calculator me-1" title="Kết quả"/>Kết quả thực tế sau điều chỉnh</h6>
                     <table class="table table-bordered table-sm m-0 shadow-sm" style="table-layout: fixed;">
                         <thead class="bg-light text-center small">
                             <tr>

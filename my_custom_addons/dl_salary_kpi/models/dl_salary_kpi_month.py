@@ -75,12 +75,12 @@ class SalaryKpiMonth(models.Model):
     dl_production_volume = fields.Float(string="Sản lượng tháng (m³)")
     dl_meal_allowance = fields.Monetary(string="Tiền ăn ca", currency_field='currency_id', default=650000)
     dl_women_allowance = fields.Monetary(string="Phụ cấp phụ nữ", currency_field='currency_id', default=500000)
-    
     # Các khoản thưởng áp dụng trong tháng
     active_policy_id = fields.Many2one(
         'dl.salary.kpi.bonus.policy', 
         string='Quy chế Thưởng áp dụng', 
-        compute='_compute_active_policy'
+        compute='_compute_active_policy',
+        store=True
     )
     revenue_line_ids = fields.One2many(
         related='active_policy_id.revenue_line_ids', 

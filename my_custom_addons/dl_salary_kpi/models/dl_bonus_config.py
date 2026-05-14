@@ -31,6 +31,11 @@ class DlBonusPolicy(models.Model):
                 ])
                 if other_applied:
                     other_applied.write({'is_applied': False})
+                
+                # Sau khi thay đổi policy active, cần báo cho Odoo biết các bản ghi Month liên quan cần tính toán lại
+                months = self.env['dl.salary.kpi.month'].search([('company_id', '=', rec.company_id.id)])
+                if months:
+                    months.modified(['active_policy_id'])
 
     def action_init_defaults(self):
         """Khởi tạo dữ liệu mẫu cho Quy chế (theo chuẩn Đức Lâm)"""
