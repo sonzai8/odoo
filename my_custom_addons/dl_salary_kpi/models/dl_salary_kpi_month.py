@@ -91,6 +91,17 @@ class SalaryKpiMonth(models.Model):
         string='Mốc Thưởng Năng Suất'
     )
     
+    active_limit_config_id = fields.Many2one(
+        'dl.salary.kpi.limit.config', 
+        string='Cấu hình Giới hạn KPI áp dụng', 
+        compute='_compute_active_policy',
+        store=True
+    )
+    limit_line_ids = fields.One2many(
+        related='active_limit_config_id.line_ids', 
+        string='Mốc Giới Hạn KPI'
+    )
+    
     @api.depends('company_id')
     def _compute_active_policy(self):
         for rec in self:
@@ -99,6 +110,12 @@ class SalaryKpiMonth(models.Model):
                 ('is_applied', '=', True)
             ], limit=1)
             rec.active_policy_id = policy
+            
+            limit_config = self.env['dl.salary.kpi.limit.config'].search([
+                ('company_id', '=', rec.company_id.id),
+                ('is_applied', '=', True)
+            ], limit=1)
+            rec.active_limit_config_id = limit_config
 
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
 

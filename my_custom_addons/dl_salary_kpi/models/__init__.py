@@ -11,3 +11,4 @@ from . import attendance_logic
 from . import res_company
 from . import res_config_settings
 from . import dl_bonus_config
+from . import dl_kpi_limit_config

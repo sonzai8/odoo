@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_limit_config_tree" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.limit.config.list</field>
+        <field name="model">dl.salary.kpi.limit.config</field>
+        <field name="arch" type="xml">
+            <list string="Cấu hình Giới hạn KPI" decoration-success="is_applied" delete="0">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="date_start"/>
+                <field name="is_applied"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_kpi_limit_config_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.limit.config.form</field>
+        <field name="model">dl.salary.kpi.limit.config</field>
+        <field name="arch" type="xml">
+            <form string="Cấu hình Giới hạn KPI" delete="0">
+                <header>
+                    <button name="action_init_defaults" string="Khởi tạo mẫu" type="object" class="btn-secondary" invisible="line_ids"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Tên cấu hình (VD: Áp dụng từ 2026)"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date_start"/>
+                        </group>
+                        <group>
+                            <field name="is_applied" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Ngưỡng giới hạn KPI theo lương cơ bản" name="lines">
+                            <field name="line_ids">
+                                <list editable="bottom" delete="0">
+                                    <field name="name" placeholder="Mô tả" width="150px"/>
+                                    <field name="min_base_salary" string="Lương cơ bản từ"/>
+                                    <field name="max_base_salary" string="Lương cơ bản đến"/>
+                                    <field name="min_kpi" string="KPI Tối thiểu"/>
+                                    <field name="max_kpi" string="KPI Tối đa"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_limit_config" model="ir.actions.act_window">
+        <field name="name">Cấu hình Giới hạn KPI</field>
+        <field name="res_model">dl.salary.kpi.limit.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thiết lập các ngưỡng giới hạn điểm KPI dựa trên mức lương cơ bản của nhân viên.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_dl_salary_kpi_limit_config"
+              name="Cấu hình Giới hạn KPI"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_salary_kpi_limit_config"
+              sequence="30"/>
+</odoo>

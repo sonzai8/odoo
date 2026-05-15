@@ -734,17 +734,29 @@ class SalaryKpiLine(models.Model):
             if rec.payroll_internal_salary_minus_bonus <= 0 or lk <= 0:
                 rec.write({'payroll_kpi_score': 0, 'payroll_kpi_amount': 0, 'payroll_cash_amount': 0})
                 continue
-            # --- KIỂM SOÁT ĐIỂM TỐI THIỂU & TỐI ĐA THEO LƯƠNG CƠ BẢN ---
+            # --- KIỂM SOÁT ĐIỂM TỐI THIỂU & TỐI ĐA THEO CẤU HÌNH ĐỘNG (HOẶC MẶC ĐỊNH) ---
             base_salary = rec.dl_tax_base_salary
-            if base_salary < 4500000:
-                emp_max_kpi = min(55.0, float(max_allowed))
-                emp_min_kpi = 50.0
-            elif base_salary < 5000000:
-                emp_max_kpi = min(60.0, float(max_allowed))
-                emp_min_kpi = 55.0
-            else:
-                emp_max_kpi = min(70.0, float(max_allowed))
-                emp_min_kpi = 60.0
+            emp_min_kpi = 50.0
+            emp_max_kpi = float(max_allowed)
+            
+            # 1. Ưu tiên lấy từ cấu hình động của tháng/công ty
+            limit_config = rec.month_id.active_limit_config_id
+            found_limit = False
+            if limit_config:
+                # Tìm line phù hợp với mức lương cơ bản của nhân viên
+                matching_line = limit_config.line_ids.filtered(
+                    lambda l: l.min_base_salary <= base_salary and (not l.max_base_salary or base_salary < l.max_base_salary)
+                )
+                if matching_line:
+                    emp_min_kpi = matching_line[0].min_kpi
+                    emp_max_kpi = min(matching_line[0].max_kpi, float(max_allowed))
+                    found_limit = True
+            
+            # 2. Nếu không có cấu hình động (bảng lương cũ), dùng logic dự phòng (Legacy)
+            if not found_limit:
+                leg_min, leg_max = self._get_legacy_kpi_limits(base_salary)
+                emp_min_kpi = leg_min
+                emp_max_kpi = min(leg_max, float(max_allowed))
                 
             # Đảm bảo max_allowed không nhỏ hơn 50
             emp_max_kpi = max(50.0, emp_max_kpi)
@@ -1228,8 +1240,8 @@ class SalaryKpiLine(models.Model):
                 'payroll_pit_total_deductions': int(round(deductions['total_pit_deductions'], 0)),
                 'payroll_pit_assessable_income': int(round(deductions['assessable_income'], 0)),
                 'payroll_total_deduction': int(round(deductions['total_deduction'], 0)),
-                'payroll_real_net_income_ds': int(real_net_income_ds // 1000) * 1000,
-                'payroll_real_net_income': int((total_actual_income - deductions['total_deduction']) // 1000) * 1000,
+                'payroll_real_net_income_ds': int(round(real_net_income_ds, 0) // 1000) * 1000,
+                'payroll_real_net_income': int(round(total_actual_income - deductions['total_deduction'], 0) // 1000) * 1000,
                 'payroll_net_salary_base': int(round(net_salary_base, 0)),
                 'payroll_internal_salary_minus_bonus': int(round(internal_salary_minus_bonus, 0)),
             })
@@ -1246,15 +1258,15 @@ class SalaryKpiLine(models.Model):
                 net_salary_final = 0
             else:
                 transfer_val = int(round(real_net_income_ds + (rec.payroll_kpi_amount or 0) + annual_bonus, 0))
-                rounded_transfer = int(transfer_val // 1000) * 1000
+                rounded_transfer = int(round(transfer_val, 0) // 1000) * 1000
                 
                 # Tiền mặt = Lương Nội Bộ - Tiền chuyển khoản đã làm tròn (Để khớp tuyệt đối LNB)
-                cash_val = max(0, int(rec.payroll_internal_salary - rounded_transfer))
-                rounded_cash = int(cash_val // 1000) * 1000
+                cash_val = max(0, int(round(rec.payroll_internal_salary - rounded_transfer, 0)))
+                rounded_cash = int(round(cash_val, 0) // 1000) * 1000
     
                 # Làm tròn Tiền KPI
                 kpi_val = int(round(rec.payroll_kpi_amount or 0, 0))
-                rounded_kpi = int(kpi_val // 1000) * 1000
+                rounded_kpi = int(round(kpi_val, 0) // 1000) * 1000
     
                 # Thực lĩnh cuối cùng = Tổng các khoản thực tế chi trả (Đã làm tròn)
                 net_salary_final = rounded_transfer + rounded_cash
@@ -1292,7 +1304,7 @@ class SalaryKpiLine(models.Model):
                 <b>3. Thực lĩnh thực tế (Sau khấu trừ):</b><br/>
                 &nbsp;&nbsp;&nbsp;&nbsp;{fmt(total)} (Tổng TN Thực tế)<br/>
                 &nbsp;&nbsp;- {fmt(deduction)} (Tổng các khoản trừ: BH + Thuế)<br/>
-                &nbsp;&nbsp;= <span style='color: #d32f2f; font-weight: bold; font-size: 1.1em;'>{fmt(int((total - deduction) // 1000) * 1000)}</span> (Thực lĩnh thực tế - Đã làm tròn xuống hàng nghìn)
+                &nbsp;&nbsp;= <span style='color: #d32f2f; font-weight: bold; font-size: 1.1em;'>{fmt(int(round(total - deduction, 0) // 1000) * 1000)}</span> (Thực lĩnh thực tế - Đã làm tròn xuống hàng nghìn)
             </div>
         </div>
         """
@@ -1774,3 +1786,11 @@ class SalaryKpiLine(models.Model):
                 rec.action_run_wing_magic_logic()
         
         return True
+    def _get_legacy_kpi_limits(self, base_salary):
+        """Hàm dự phòng (Legacy) chứa các ngưỡng KPI fix cứng cho các bảng lương cũ."""
+        if base_salary < 4500000:
+            return 50.0, 55.0
+        elif base_salary < 5000000:
+            return 55.0, 60.0
+        else:
+            return 60.0, 70.0

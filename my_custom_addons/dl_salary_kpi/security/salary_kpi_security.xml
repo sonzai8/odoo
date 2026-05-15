@@ -94,5 +94,20 @@
             <field name="global" eval="True"/>
             <field name="domain_force">['|', ('year_id.company_id', '=', False), ('year_id.company_id', 'in', company_ids)]</field>
         </record>
+        <!-- Record Rule for dl.salary.kpi.limit.config -->
+        <record id="dl_salary_kpi_limit_config_multi_company_rule" model="ir.rule">
+            <field name="name">Cấu hình giới hạn KPI: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_limit_config"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.limit.line -->
+        <record id="dl_salary_kpi_limit_line_multi_company_rule" model="ir.rule">
+            <field name="name">Mốc giới hạn KPI: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_limit_line"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

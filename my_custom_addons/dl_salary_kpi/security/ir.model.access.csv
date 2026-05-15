@@ -37,3 +37,7 @@ access_dl_productivity_bonus_manager,dl.salary.kpi.productivity.bonus.manager,mo
 access_dl_productivity_bonus_user,dl.salary.kpi.productivity.bonus.user,model_dl_salary_kpi_productivity_bonus,base.group_user,1,0,0,0
 access_dl_bonus_policy_manager,dl.salary.kpi.bonus.policy.manager,model_dl_salary_kpi_bonus_policy,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
 access_dl_bonus_policy_user,dl.salary.kpi.bonus.policy.user,model_dl_salary_kpi_bonus_policy,base.group_user,1,0,0,0
+access_dl_kpi_limit_config_manager,dl.salary.kpi.limit.config.manager,model_dl_salary_kpi_limit_config,dl_wood_payroll.group_dl_wood_manager,1,1,1,0
+access_dl_kpi_limit_config_user,dl.salary.kpi.limit.config.user,model_dl_salary_kpi_limit_config,base.group_user,1,0,0,0
+access_dl_kpi_limit_line_manager,dl.salary.kpi.limit.line.manager,model_dl_salary_kpi_limit_line,dl_wood_payroll.group_dl_wood_manager,1,1,1,0
+access_dl_kpi_limit_line_user,dl.salary.kpi.limit.line.user,model_dl_salary_kpi_limit_line,base.group_user,1,0,0,0

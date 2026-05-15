@@ -92,6 +92,16 @@
                                         <field name="bonus_amount" string="Mức thưởng"/>
                                     </list>
                                 </field>
+                                
+                                <h4 class="mt-4">Giới hạn điểm KPI (Theo Lương cơ bản)</h4>
+                                <field name="limit_line_ids" readonly="1" nolabel="1" class="w-100">
+                                    <list>
+                                        <field name="min_base_salary" string="Lương từ"/>
+                                        <field name="max_base_salary" string="Lương đến"/>
+                                        <field name="min_kpi" string="KPI Min"/>
+                                        <field name="max_kpi" string="KPI Max"/>
+                                    </list>
+                                </field>
                             </div>
                             
                             <separator string="Thưởng lễ trong tháng"/>
