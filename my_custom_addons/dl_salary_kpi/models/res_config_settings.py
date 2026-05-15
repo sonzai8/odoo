@@ -79,6 +79,7 @@ class ResConfigSettings(models.TransientModel):
             {'code': 'CN', 'name': 'Cho nghỉ (Không lương)', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 120},
             {'code': 'DL', 'name': 'Nghỉ du lịch', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 130},
             {'code': 'NV', 'name': 'Ngày nghỉ việc', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 140},
+            {'code': 'KL', 'name': 'Nghỉ không lương', 'weight': 0.0, 'apply_to': 'normal', 'sequence': 150},
             {'code': '0.5N', 'name': 'Tăng ca ngày (0.5h)', 'weight': 0.0625, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 200},
             {'code': '0.5Đ', 'name': 'Tăng ca đêm (0.5h)', 'weight': 0.0625, 'apply_to': 'overtime', 'ot_type': 'night', 'sequence': 201},
             {'code': 'CNN', 'name': 'Tăng ca Chủ Nhật ngày (8h)', 'weight': 1.0, 'apply_to': 'overtime', 'ot_type': 'day', 'sequence': 210},

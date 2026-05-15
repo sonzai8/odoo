@@ -57,7 +57,8 @@ def calculate_attendance_totals(rec, att_map=None):
                 elif code == 'LĐ': ot_d_holiday += hours
 
     # Logic Thưởng Chuyên Cần (Bonus Paid Leave)
-    bonus_p_day = 1.0 if (n + d >= 20) else 0.0
+    # Cấu hình tạm thời: (N + Đ + PL) >= 13 thì được thưởng 1 ngày
+    bonus_p_day = 1.0 if (n + d + pl >= 13) else 0.0
 
     return {
         'total_n': n, 'total_d': d, 'total_p': p, 'total_pl': pl,
