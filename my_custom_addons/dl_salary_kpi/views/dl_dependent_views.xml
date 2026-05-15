@@ -14,6 +14,7 @@
                 <field name="employee_tax_id"/>
                 <field name="employee_tax_department_id"/>
                 <field name="employee_tax_position"/>
+                <field name="company_id" groups="base.group_multi_company"/>
                 <field name="name"/>
                 <field name="relationship"/>
                 <field name="dependent_number"/>
@@ -44,6 +45,7 @@
                             <field name="employee_tax_id"/>
                             <field name="employee_tax_department_id"/>
                             <field name="employee_tax_position"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group string="Người phụ thuộc">
                             <field name="relationship"/>
@@ -80,6 +82,7 @@
                 <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
                 <searchpanel>
                     <field name="employee_tax_department_id" icon="fa-building" enable_counters="1"/>
+                    <field name="company_id" groups="base.group_multi_company" icon="fa-university" enable_counters="1"/>
                     <field name="relationship" icon="fa-users" enable_counters="1"/>
                 </searchpanel>
             </search>

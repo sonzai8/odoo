@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- VIEWS FOR BONUS POLICY -->
+    <record id="view_dl_bonus_policy_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.bonus.policy.form</field>
+        <field name="model">dl.salary.kpi.bonus.policy</field>
+        <field name="arch" type="xml">
+            <form string="Phiên bản Quy chế Thưởng">
+                <header>
+                    <button name="action_init_defaults" string="Khởi Tạo Mẫu" type="object" class="oe_highlight"
+                            invisible="revenue_line_ids or productivity_line_ids"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Đang áp dụng" bg_color="bg-success" invisible="not is_applied"/>
+                    <widget name="web_ribbon" title="Bản nháp" bg_color="bg-secondary" invisible="is_applied"/>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="VD: Quy chế thưởng Q3/2026"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                            <field name="date_start"/>
+                            <field name="is_applied" widget="boolean_toggle"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="document" filename="document_name" widget="binary"/>
+                            <field name="document_name" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Thưởng Doanh Thu" name="revenue_bonus">
+                            <field name="revenue_line_ids">
+                                <list editable="bottom">
+                                    <field name="min_revenue" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="max_revenue" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="bonus_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Thưởng Năng Suất" name="productivity_bonus">
+                            <field name="productivity_line_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="job_titles"/>
+                                    <field name="bonus_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dl_bonus_policy_tree" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.bonus.policy.tree</field>
+        <field name="model">dl.salary.kpi.bonus.policy</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách Quy chế">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="date_start"/>
+                <field name="is_applied" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ACTIONS -->
+    <record id="action_dl_bonus_policy" model="ir.actions.act_window">
+        <field name="name">Quy chế Thưởng Công ty</field>
+        <field name="res_model">dl.salary.kpi.bonus.policy</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- MENU ITEMS -->
+    <menuitem id="menu_dl_bonus_config" 
+              name="Quy chế Thưởng Cty" 
+              parent="dl_salary_kpi.menu_dl_salary_kpi_config" 
+              action="action_dl_bonus_policy"
+              sequence="20"/>
+
+</odoo>

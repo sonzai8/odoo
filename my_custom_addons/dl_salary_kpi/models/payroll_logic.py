@@ -20,6 +20,14 @@ def calculate_annual_bonuses(rec):
     
     is_female = rec.employee_id.sex == 'female'
     
+    # Tìm ngày nghỉ việc (NV) hoặc Thai sản (TS) đầu tiên trong tháng (nếu có)
+    first_leave_day = 0
+    for i in range(1, 32):
+        att = getattr(rec, f'day_{i:02d}')
+        if att and att.code in ['NV', 'TS']:
+            first_leave_day = i
+            break
+
     for bl in rec.month_id.bonus_line_ids:
         # 1. Kiểm tra giới tính
         if bl.gender == 'male' and not rec.employee_id.sex == 'male': continue
@@ -34,11 +42,18 @@ def calculate_annual_bonuses(rec):
         else: pot['bother'] += bl.amount
 
         # 2. KIỂM TRA ĐIỀU KIỆN NGHỈ VIỆC
-        # Chỉ cần nhân viên không nghỉ việc trước hoặc đúng ngày thưởng là được nhận
+        # Điều kiện 1: Check theo departure_date trên hồ sơ nhân viên
         is_eligible = True
         if bl.date and rec.employee_id.departure_date:
             if rec.employee_id.departure_date <= bl.date:
                 is_eligible = False
+        
+        # Điều kiện 2: Check theo mã chấm công 'NV' hoặc 'TS' trong tháng
+        if is_eligible and first_leave_day > 0 and bl.date:
+            # Nếu ngày thưởng nằm trong tháng này và sau/đúng ngày bắt đầu nghỉ (NV/TS)
+            if bl.date.year == rec.month_id.date_month.year and bl.date.month == rec.month_id.date_month.month:
+                if bl.date.day >= first_leave_day:
+                    is_eligible = False
         
         if is_eligible:
             if '08/03' in name: act['b0803'] += bl.amount
@@ -49,46 +64,43 @@ def calculate_annual_bonuses(rec):
         
     return act, pot
 
-POSITION_GROUP_MAP = {
-    # QLCC
-    'CV': 'QLCC', 'KTT': 'QLCC', 'QL': 'QLCC', 'QĐ': 'QLCC',
-    'TL': 'QLCC', 'PGĐ': 'QLCC', 'GĐ': 'QLCC',
-    # NVGT
-    'NV': 'NVGT', 'KT': 'NVGT', 'TK': 'NVGT',
-    # NVSX
-    'CN': 'NVSX', 'LX': 'NVSX',
-}
-
 def calculate_revenue_productivity_bonuses(rec):
-    """Tính toán thưởng doanh thu & năng suất theo QĐ mới nhất"""
+    """Tính toán thưởng doanh thu & năng suất theo cấu hình động"""
     total_work_days = rec.total_n + rec.total_d
     revenue = rec.month_id.dl_revenue or 0
     
     position = rec.employee_id.dl_tax_position or ''
-    group = POSITION_GROUP_MAP.get(position, '')
+    company_id = rec.month_id.company_id.id
 
     rev_bonus_base = 0
     prod_bonus_base = 0
     
-    # 1. Tính mức Thưởng Doanh Thu (Áp dụng chung cho TẤT CẢ)
-    if revenue > 70_000_000_000:
-        rev_bonus_base = 3_500_000
-    elif revenue > 50_000_000_000:
-        rev_bonus_base = 3_000_000
-    elif revenue > 30_000_000_000:
-        rev_bonus_base = 2_300_000
-    elif revenue > 20_000_000_000:
-        rev_bonus_base = 2_000_000
-        
+    # Tìm phiên bản quy chế đang active
+    active_policy = rec.env['dl.salary.kpi.bonus.policy'].search([
+        ('company_id', '=', company_id),
+        ('is_applied', '=', True)
+    ], limit=1)
+
+    # 1. Tính mức Thưởng Doanh Thu từ cấu hình
+    if active_policy:
+        revenue_tiers = active_policy.revenue_line_ids.sorted(key=lambda t: t.min_revenue, reverse=True)
+        for tier in revenue_tiers:
+            if revenue >= tier.min_revenue and (not tier.max_revenue or revenue < tier.max_revenue):
+                rev_bonus_base = tier.bonus_amount
+                break
+
     revenue_bonus = (rev_bonus_base * total_work_days) / 26.0
 
-    # 2. Tính mức Thưởng Năng Suất (Theo Nhóm chức vụ, áp dụng cho TẤT CẢ)
-    if group == 'QLCC':
-        prod_bonus_base = 2_000_000
-    elif group == 'NVGT':
-        prod_bonus_base = 1_500_000
-    elif group == 'NVSX':
-        prod_bonus_base = 1_000_000
+    # 2. Tính mức Thưởng Năng Suất từ cấu hình
+    if active_policy:
+        productivity_tiers = active_policy.productivity_line_ids
+        for tier in productivity_tiers:
+            # job_titles chứa các mã chức vụ cách nhau bằng dấu phẩy
+            if tier.job_titles:
+                valid_positions = [p.strip().upper() for p in tier.job_titles.split(',')]
+                if position.upper() in valid_positions:
+                    prod_bonus_base = tier.bonus_amount
+                    break
         
     productivity_bonus = (prod_bonus_base * total_work_days) / 26.0
 
@@ -99,17 +111,17 @@ def calculate_detailed_wages(rec):
     hourly_rate = rec.dl_tax_base_salary / 208.0 if rec.dl_tax_base_salary else 0
     
     wages = {
-        'wage_day': 0.0,
-        'wage_leave': 0.0,
-        'wage_bonus_p': 0.0,
-        'wage_day_150': 0.0,
-        'wage_night_130': 0.0,
-        'wage_night_200': 0.0,
-        'wage_night_210': 0.0,
-        'wage_night_sun_270': 0.0,
-        'wage_day_sun_200': 0.0,
-        'wage_day_holiday_300': 0.0,
-        'wage_night_holiday_390': 0.0,
+        'wage_day': 0.0, 'count_day': 0.0,
+        'wage_leave': 0.0, 'count_leave': 0.0,
+        'wage_bonus_p': 0.0, 'count_bonus_p': 0.0,
+        'wage_day_150': 0.0, 'count_day_150': 0.0,
+        'wage_night_130': 0.0, 'count_night_130': 0.0,
+        'wage_night_200': 0.0, 'count_night_200': 0.0,
+        'wage_night_210': 0.0, 'count_night_210': 0.0,
+        'wage_night_sun_270': 0.0, 'count_night_sun_270': 0.0,
+        'wage_day_sun_200': 0.0, 'count_day_sun_200': 0.0,
+        'wage_day_holiday_300': 0.0, 'count_day_holiday_300': 0.0,
+        'wage_night_holiday_390': 0.0, 'count_night_holiday_390': 0.0,
     }
     
     for i in range(1, 32):
@@ -120,16 +132,21 @@ def calculate_detailed_wages(rec):
         if att and att.code in ['N', 'N/2']:
             hours = 8.0 if att.code == 'N' else 4.0
             wages['wage_day'] += hours * hourly_rate
+            wages['count_day'] += hours
             
         # Nghỉ hưởng lương (P, PL) - Được miễn thuế 100%
         elif att and att.code in ['P', 'PL']:
             wages['wage_leave'] += 8.0 * hourly_rate
+            wages['count_leave'] += 8.0
         
         # Ca đêm thường (Tách 31.25% vào lương ngày, 68.75% vào lương đêm 130%)
         if att and att.code in ['Đ', 'Đ/2']:
             hours = 8.0 if att.code == 'Đ' else 4.0
             wages['wage_day'] += hours * 0.3125 * hourly_rate
+            wages['count_day'] += hours * 0.3125
+            
             wages['wage_night_130'] += hours * 0.6875 * hourly_rate * 1.3
+            wages['count_night_130'] += hours * 0.6875
         
         # Làm thêm giờ
         if ot_att:
@@ -137,21 +154,33 @@ def calculate_detailed_wages(rec):
             code = ot_att.code or ""
             
             if ot_att.ot_type == 'day':
-                if code == '0.5N': wages['wage_day_150'] += hours * hourly_rate * 1.5
-                elif code in ['CNN', 'CNN/2']: wages['wage_day_sun_200'] += hours * hourly_rate * 2.0
-                elif code == 'LN': wages['wage_day_holiday_300'] += hours * hourly_rate * 3.0
+                if code == '0.5N': 
+                    wages['wage_day_150'] += hours * hourly_rate * 1.5
+                    wages['count_day_150'] += hours
+                elif code in ['CNN', 'CNN/2']: 
+                    wages['wage_day_sun_200'] += hours * hourly_rate * 2.0
+                    wages['count_day_sun_200'] += hours
+                elif code in ['LN', '1LN', '0.5LN']: 
+                    wages['wage_day_holiday_300'] += hours * hourly_rate * 3.0
+                    wages['count_day_holiday_300'] += hours
             
             elif ot_att.ot_type == 'night':
                 if code == '0.5Đ':
-                    # Tất cả làm thêm đêm 0.5Đ hiện tại thống nhất tính 200%
                     wages['wage_night_200'] += hours * hourly_rate * 2.0
+                    wages['count_night_200'] += hours
                     wages['wage_night_210'] = 0.0
-                elif code in ['CNĐ', 'CNĐ/2']: wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
-                elif code == 'LĐ': wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
+                elif code in ['CNĐ', 'CNĐ/2']: 
+                    wages['wage_night_sun_270'] += hours * hourly_rate * 2.7
+                    wages['count_night_sun_270'] += hours
+                elif code == 'LĐ': 
+                    wages['wage_night_holiday_390'] += hours * hourly_rate * 3.9
+                    wages['count_night_holiday_390'] += hours
                 
     # Thưởng chuyên cần: Được tính riêng (Cộng vào thực lĩnh nhưng miễn thuế 100%)
     if getattr(rec, 'bonus_p_day', 0.0):
-        wages['wage_bonus_p'] += rec.bonus_p_day * 8.0 * hourly_rate
+        hours = rec.bonus_p_day * 8.0
+        wages['wage_bonus_p'] += hours * hourly_rate
+        wages['count_bonus_p'] += hours
         
     return wages
 

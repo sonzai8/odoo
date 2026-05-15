@@ -55,9 +55,7 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
 
-            # Nhận diện nhân viên qua Tên và Mã số thuế
             tax_id_excel = str(row[1]).strip() if row[1] else ""
-            # Xử lý trường hợp Excel tự động thêm .0 cho số
             if tax_id_excel.endswith('.0'):
                 tax_id_excel = tax_id_excel[:-2]
                 
@@ -65,6 +63,7 @@ class SalaryKpiImportWizard(models.TransientModel):
             
             if not emp_name_excel:
                 continue
+
 
             # Tìm line tương ứng trong tháng dựa trên Tên và MST
             line = self.month_id.line_ids.filtered(
@@ -185,6 +184,9 @@ class SalaryKpiImportWizard(models.TransientModel):
         # Nếu không có lỗi nào thì mới tiến hành lưu
         for line, vals in import_data:
             line.write(vals)
+        
+        # Reset trạng thái tính toán lại
+        self.month_id.write({'x_is_recalculated': False})
 
         msg = _('Đã cập nhật dữ liệu cho %s nhân viên.') % len(import_data)
         if count_skipped_departure > 0:
@@ -215,11 +217,16 @@ class SalaryKpiImportWizard(models.TransientModel):
             # Làm sạch chuỗi CCCD (nếu là số thì bỏ .0)
             if cccd.endswith('.0'):
                 cccd = cccd[:-2]
+
+            # Validate độ dài CCCD chuẩn (9 số CMND cũ hoặc 12 số CCCD mới)
+            if len(cccd) not in [9, 12]:
+                errors.append(f"Dòng {row_idx}: Số CCCD '{cccd}' không đúng định dạng (phải là 9 hoặc 12 số).")
+                continue
                 
             emp_name_excel = str(row[2]).strip() if row[2] else ""
             
-            # Tìm line tương ứng dựa trên identification_id
-            line = self.month_id.line_ids.filtered(lambda l: l.identification_id == cccd)
+            # Tìm line tương ứng dựa trên identification_id (Trim cả hai đầu)
+            line = self.month_id.line_ids.filtered(lambda l: (l.identification_id or '').strip() == cccd)
             if not line:
                 errors.append(f"Dòng {row_idx}: Không tìm thấy nhân viên có CCCD '{cccd}' trong bảng công tháng này.")
                 continue
@@ -245,6 +252,23 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         for line, vals in import_data:
             line.write(vals)
+
+        # Clear all anomaly flags and KPI data for the entire month
+        self.month_id.line_ids.write({
+            'x_has_anomaly': False,
+            'x_is_anomaly_resolved': False,
+            'payroll_kpi_score': 0.0,
+            'payroll_kpi_amount': 0.0,
+            'payroll_cash_amount': 0.0,
+            'kpi_c1_productivity': 0.0,
+            'kpi_c2_discipline': 0.0,
+            'kpi_c3_teamwork': 0.0,
+            'kpi_c4_5s': 0.0,
+            'kpi_c5_saving': 0.0,
+        })
+
+        # Reset trạng thái tính toán lại để không báo lỗi Ln=0 ngay lập tức
+        self.month_id.write({'x_is_recalculated': False})
 
         return {
             'type': 'ir.actions.client',

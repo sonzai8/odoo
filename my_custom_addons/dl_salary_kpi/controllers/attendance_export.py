@@ -100,7 +100,7 @@ class AttendanceExportController(http.Controller):
                 cell_wd.fill = sunday_fill
 
         row_num = 4
-        for i, line in enumerate(month.line_ids, 1):
+        for i, line in enumerate(month.line_ids.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or '')), 1):
             ws.row_dimensions[row_num].height = 30
             ws.cell(row=row_num, column=1, value=i).border = border
             ws.cell(row=row_num, column=2, value=line.dl_tax_id).border = border
@@ -178,10 +178,11 @@ class AttendanceExportController(http.Controller):
             ws_codes.cell(row=idx, column=3, value=att.weight)
         
         from openpyxl.worksheet.datavalidation import DataValidation
-        last_data_row = row_num - 1
-        dv = DataValidation(type="list", formula1=f"'Ma cham cong'!$A$2:$A${len(att_types) + 1}", allow_blank=True)
-        ws.add_data_validation(dv)
-        dv.add(f"H4:AL{last_data_row}")
+        last_data_row = max(row_num - 1, 4)
+        if att_types:
+            dv = DataValidation(type="list", formula1=f"'Ma cham cong'!$A$2:$A${len(att_types) + 1}", allow_blank=True)
+            ws.add_data_validation(dv)
+            dv.add(f"H4:AL{last_data_row}")
 
         ws.auto_filter.ref = f"A3:AQ{last_data_row}"
         wb.save(output)
@@ -331,7 +332,7 @@ class AttendanceExportController(http.Controller):
             ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 15
 
         row_num = 4
-        for i, line in enumerate(month.line_ids, 1):
+        for i, line in enumerate(month.line_ids.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or '')), 1):
             ws.row_dimensions[row_num].height = 30
             ws.cell(row=row_num, column=1, value=i).border = border
             ws.cell(row=row_num, column=2, value=line.dl_tax_id).border = border
@@ -419,10 +420,12 @@ class AttendanceExportController(http.Controller):
             ws_codes_ot.cell(row=idx, column=2, value=att.name)
 
         from openpyxl.worksheet.datavalidation import DataValidation
-        dv_ot = DataValidation(type="list", formula1=f"'Ma tang ca'!$A$2:$A${len(att_types_ot) + 1}", allow_blank=True)
-        ws.add_data_validation(dv_ot)
-        dv_ot.add(f"H4:AL{last_data_row}")
-        dv_ot.add(f"AR4:BV{last_data_row}")
+        last_data_row = max(row_num - 1, 4)
+        if att_types_ot:
+            dv_ot = DataValidation(type="list", formula1=f"'Ma tang ca'!$A$2:$A${len(att_types_ot) + 1}", allow_blank=True)
+            ws.add_data_validation(dv_ot)
+            dv_ot.add(f"H4:AL{last_data_row}")
+            dv_ot.add(f"AR4:BV{last_data_row}")
 
         wb.save(output)
         output.seek(0)

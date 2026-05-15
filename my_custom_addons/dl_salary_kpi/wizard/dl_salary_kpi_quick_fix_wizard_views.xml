@@ -5,55 +5,171 @@
         <field name="model">dl.salary.kpi.quick.fix.wizard</field>
         <field name="arch" type="xml">
             <form string="Điều chỉnh công">
-                <group>
-                    <group string="📋 Thông tin nhân viên">
-                        <field name="line_id" invisible="1"/>
-                        <field name="employee_name" string="Nhân viên"/>
-                        <field name="identification_id" string="Số CCCD"/>
-                        <field name="current_lk" widget="monetary" options="{'currency_field': 'currency_id'}" string="Thực lĩnh ngoài(TLN)"/>
-                        <field name="target_salary" widget="monetary" options="{'currency_field': 'currency_id'}" string="Lương Nội Bộ (LNB)"/>
-                        <field name="currency_id" invisible="1"/>
-                    </group>
-                    <group string="📊 Gợi ý xử lý">
-                        <field name="suggestion_html" nolabel="1" colspan="2"/>
-                    </group>
+                <!-- Bảng Thông tin nhân viên -->
+                <table class="table table-bordered table-sm mb-3 shadow-sm" style="table-layout: fixed;">
+                    <thead class="bg-light text-center small">
+                        <tr>
+                            <th style="width: 25%;">NHÂN VIÊN</th>
+                            <th style="width: 25%;">SỐ CCCD</th>
+                            <th style="width: 25%;">THỰC LĨNH NGOÀI(TLN)</th>
+                            <th style="width: 25%;">LƯƠNG NỘI BỘ (LNB)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-center">
+                        <tr>
+                            <td class="fw-bold text-primary"><field name="employee_name" nolabel="1"/></td>
+                            <td class="fw-bold"><field name="identification_id" nolabel="1"/></td>
+                            <td class="fw-bold text-danger"><field name="current_lk" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                            <td class="fw-bold text-success"><field name="target_salary" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <field name="line_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                
+                <!-- Các trường tiêu đề ẩn -->
+                <field name="h_01" invisible="1"/><field name="h_02" invisible="1"/><field name="h_03" invisible="1"/><field name="h_04" invisible="1"/><field name="h_05" invisible="1"/>
+                <field name="h_06" invisible="1"/><field name="h_07" invisible="1"/><field name="h_08" invisible="1"/><field name="h_09" invisible="1"/><field name="h_10" invisible="1"/>
+                <field name="h_11" invisible="1"/><field name="h_12" invisible="1"/><field name="h_13" invisible="1"/><field name="h_14" invisible="1"/><field name="h_15" invisible="1"/>
+                <field name="h_16" invisible="1"/><field name="h_17" invisible="1"/><field name="h_18" invisible="1"/><field name="h_19" invisible="1"/><field name="h_20" invisible="1"/>
+                <field name="h_21" invisible="1"/><field name="h_22" invisible="1"/><field name="h_23" invisible="1"/><field name="h_24" invisible="1"/><field name="h_25" invisible="1"/>
+                <field name="h_26" invisible="1"/><field name="h_27" invisible="1"/><field name="h_28" invisible="1"/><field name="h_29" invisible="1"/><field name="h_30" invisible="1"/>
+                <field name="h_31" invisible="1"/>
+
+                <group string="📊 GỢI Ý XỬ LÝ" class="mb-2">
+                    <field name="suggestion_html" nolabel="1" colspan="2"/>
                 </group>
-                <div class="alert alert-info" role="alert" style="margin-bottom: 10px;">
-                    <i class="fa fa-info-circle" title="Thông tin"/> <b>Hướng dẫn nhập:</b> Nhập số <b>DƯƠNG</b> (VD: 2) để <b>THÊM</b> công, nhập số <b>ÂM</b> (VD: -2) để <b>GIẢM</b> công. Hệ thống sẽ tự động tìm ngày phù hợp để điều chỉnh.
+
+                <div class="alert alert-info py-1 mb-2 small" role="alert">
+                    <i class="fa fa-info-circle" title="Hướng dẫn"/> <b>HD:</b> Nhập số <b>DƯƠNG</b> để THÊM, <b>ÂM</b> để GIẢM công.
                 </div>
-                <group>
-                    <group string="🔧 Điều chỉnh công chính (N, Đ)">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="change_n" string="Công N (+/-)" class="fw-bold"/>
-                            <field name="change_n" type="number" nolabel="1" class="oe_inline" style="width: 60px;"/>
-                            <span class="text-muted">/ Tồn tại: </span>
-                            <field name="current_n" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
+
+                <div class="row mb-2">
+                    <!-- Ẩn phần ĐIỀU CHỈNH NHANH theo yêu cầu -->
+                    <div class="col-6" invisible="1">
+                        <group string="🔧 ĐIỀU CHỈNH NHANH (SỐ LƯỢNG)" class="mt-0">
+                            <field name="change_n"/><field name="change_d"/><field name="change_ot_n"/><field name="change_ot_d"/>
+                        </group>
+                    </div>
+                    <!-- Cho phần Wing Magic rộng ra và căn giữa -->
+                    <div class="col-12 d-flex flex-column justify-content-center align-items-center bg-light border rounded py-3">
+                        <div class="text-center p-2">
+                            <h5 class="text-uppercase fw-bold text-primary mb-2">✨ Phép Thuật Wing</h5>
+                            <p class="text-muted small mb-3">Tự động cân đối để KPI hết âm và ưu tiên trả lương chuyển khoản (Tiền mặt về 0).</p>
+                            <button name="action_wing_magic" string="Kích hoạt Phép Thuật" type="object" class="btn-info btn-lg shadow-sm px-5" icon="fa-magic" confirm="Hệ thống sẽ tự động thêm/giảm công để cân đối. Bạn có chắc chắn muốn thực hiện?"/>
                         </div>
-                        <div class="d-flex align-items-center gap-2 mt-2">
-                            <label for="change_d" string="Công Đ (+/-)" class="fw-bold"/>
-                            <field name="change_d" type="number" nolabel="1" class="oe_inline" style="width: 60px;"/>
-                            <span class="text-muted">/ Tồn tại: </span>
-                            <field name="current_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
+                    </div>
+                </div>
+
+                <notebook>
+                    <page string="📅 MA TRẬN CHẤM CÔNG CHI TIẾT (SỬA TAY)" name="matrix_adjust">
+                        <div class="alert alert-warning py-1 mb-2 small text-center" role="alert">
+                            <i class="fa fa-info-circle" title="Thông báo"/> <b>CHẾ ĐỘ LƯU TỨC THÌ:</b> Bạn sửa đến đâu, hệ thống lưu ngay đến đó. Nhấn <b>LƯU</b> để cập nhật kết quả bên dưới!
                         </div>
-                    </group>
-                    <group string="🔧 Điều chỉnh OT (0.5N, 0.5Đ)">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="change_ot_n" string="Công 0.5N (+/-)" class="fw-bold"/>
-                            <field name="change_ot_n" type="number" nolabel="1" class="oe_inline" style="width: 60px;"/>
-                            <span class="text-muted">/ Tồn tại: </span>
-                            <field name="current_ot_n" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
-                        </div>
-                        <div class="d-flex align-items-center gap-2 mt-2">
-                            <label for="change_ot_d" string="Công 0.5Đ (+/-)" class="fw-bold"/>
-                            <field name="change_ot_d" type="number" nolabel="1" class="oe_inline" style="width: 60px;"/>
-                            <span class="text-muted">/ Tồn tại: </span>
-                            <field name="current_ot_d" nolabel="1" class="oe_inline text-primary fw-bold" readonly="1"/>
-                        </div>
-                    </group>
-                </group>
+                        
+                        <!-- BLOCK 1: 01-08 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 01 đến ngày 08</div>
+                        <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td><field name="h_01" readonly="1"/></td><td><field name="h_02" readonly="1"/></td><td><field name="h_03" readonly="1"/></td><td><field name="h_04" readonly="1"/></td><td><field name="h_05" readonly="1"/></td><td><field name="h_06" readonly="1"/></td><td><field name="h_07" readonly="1"/></td><td><field name="h_08" readonly="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_01" nolabel="1"/></td><td><field name="day_02" nolabel="1"/></td><td><field name="day_03" nolabel="1"/></td><td><field name="day_04" nolabel="1"/></td><td><field name="day_05" nolabel="1"/></td><td><field name="day_06" nolabel="1"/></td><td><field name="day_07" nolabel="1"/></td><td><field name="day_08" nolabel="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_01" nolabel="1"/></td><td><field name="ot_day_02" nolabel="1"/></td><td><field name="ot_day_03" nolabel="1"/></td><td><field name="ot_day_04" nolabel="1"/></td><td><field name="ot_day_05" nolabel="1"/></td><td><field name="ot_day_06" nolabel="1"/></td><td><field name="ot_day_07" nolabel="1"/></td><td><field name="ot_day_08" nolabel="1"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- BLOCK 2: 09-16 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 09 đến ngày 16</div>
+                        <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td><field name="h_09" readonly="1"/></td><td><field name="h_10" readonly="1"/></td><td><field name="h_11" readonly="1"/></td><td><field name="h_12" readonly="1"/></td><td><field name="h_13" readonly="1"/></td><td><field name="h_14" readonly="1"/></td><td><field name="h_15" readonly="1"/></td><td><field name="h_16" readonly="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_09" nolabel="1"/></td><td><field name="day_10" nolabel="1"/></td><td><field name="day_11" nolabel="1"/></td><td><field name="day_12" nolabel="1"/></td><td><field name="day_13" nolabel="1"/></td><td><field name="day_14" nolabel="1"/></td><td><field name="day_15" nolabel="1"/></td><td><field name="day_16" nolabel="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_09" nolabel="1"/></td><td><field name="ot_day_10" nolabel="1"/></td><td><field name="ot_day_11" nolabel="1"/></td><td><field name="ot_day_12" nolabel="1"/></td><td><field name="ot_day_13" nolabel="1"/></td><td><field name="ot_day_14" nolabel="1"/></td><td><field name="ot_day_15" nolabel="1"/></td><td><field name="ot_day_16" nolabel="1"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- BLOCK 3: 17-24 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 17 đến ngày 24</div>
+                        <table class="table table-sm table-bordered matrix-table mb-3" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td><field name="h_17" readonly="1"/></td><td><field name="h_18" readonly="1"/></td><td><field name="h_19" readonly="1"/></td><td><field name="h_20" readonly="1"/></td><td><field name="h_21" readonly="1"/></td><td><field name="h_22" readonly="1"/></td><td><field name="h_23" readonly="1"/></td><td><field name="h_24" readonly="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_17" nolabel="1"/></td><td><field name="day_18" nolabel="1"/></td><td><field name="day_19" nolabel="1"/></td><td><field name="day_20" nolabel="1"/></td><td><field name="day_21" nolabel="1"/></td><td><field name="day_22" nolabel="1"/></td><td><field name="day_23" nolabel="1"/></td><td><field name="day_24" nolabel="1"/></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_17" nolabel="1"/></td><td><field name="ot_day_18" nolabel="1"/></td><td><field name="ot_day_19" nolabel="1"/></td><td><field name="ot_day_20" nolabel="1"/></td><td><field name="ot_day_21" nolabel="1"/></td><td><field name="ot_day_22" nolabel="1"/></td><td><field name="ot_day_23" nolabel="1"/></td><td><field name="ot_day_24" nolabel="1"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- BLOCK 4: 25-31 -->
+                        <div class="o_horizontal_separator text-primary fw-bold mb-1 small">Từ ngày 25 đến cuối tháng</div>
+                        <table class="table table-sm table-bordered matrix-table mb-0" style="font-size: 11px; table-layout: fixed;">
+                            <tr class="bg-light text-center fw-bold">
+                                <td style="width: 80px;">LOẠI</td>
+                                <td><field name="h_25" readonly="1"/></td><td><field name="h_26" readonly="1"/></td><td><field name="h_27" readonly="1"/></td><td><field name="h_28" readonly="1"/></td><td><field name="h_29" readonly="1"/></td><td><field name="h_30" readonly="1"/></td><td><field name="h_31" readonly="1"/></td>
+                                <td class="bg-white border-0"></td> <!-- Filler -->
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">CHÍNH</td>
+                                <td><field name="day_25" nolabel="1"/></td><td><field name="day_26" nolabel="1"/></td><td><field name="day_27" nolabel="1"/></td><td><field name="day_28" nolabel="1"/></td><td><field name="day_29" nolabel="1"/></td><td><field name="day_30" nolabel="1"/></td><td><field name="day_31" nolabel="1"/></td>
+                                <td class="bg-white border-0"></td>
+                            </tr>
+                            <tr class="text-center">
+                                <td class="bg-light fw-bold">L.THÊM</td>
+                                <td><field name="ot_day_25" nolabel="1"/></td><td><field name="ot_day_26" nolabel="1"/></td><td><field name="ot_day_27" nolabel="1"/></td><td><field name="ot_day_28" nolabel="1"/></td><td><field name="ot_day_29" nolabel="1"/></td><td><field name="ot_day_30" nolabel="1"/></td><td><field name="ot_day_31" nolabel="1"/></td>
+                                <td class="bg-white border-0"></td>
+                            </tr>
+                        </table>
+                    </page>
+                </notebook>
+
+                <!-- Bảng Kết quả thực tế -->
+                <div class="mt-3 border-top pt-2">
+                    <h6 class="text-uppercase fw-bold text-dark mb-2 small"><i class="fa fa-calculator me-1" title="Kết quả"/>Kết quả thực tế sau điều chỉnh</h6>
+                    <table class="table table-bordered table-sm m-0 shadow-sm" style="table-layout: fixed;">
+                        <thead class="bg-light text-center small">
+                            <tr>
+                                <th>THỰC LĨNH(TLN)</th>
+                                <th>LƯƠNG NỘI BỘ</th>
+                                <th>ĐIỂM KPI</th>
+                                <th>TIỀN KPI</th>
+                                <th>TIỀN CK</th>
+                                <th>TIỀN MẶT</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            <tr>
+                                <td class="fw-bold text-primary"><field name="current_lk" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                                <td class="fw-bold text-success"><field name="target_salary" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                                <td class="fw-bold text-info"><field name="payroll_kpi_score" nolabel="1"/></td>
+                                <td class="fw-bold text-info"><field name="payroll_kpi_amount_rounded" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                                <td class="fw-bold text-warning"><field name="payroll_bank_transfer_amount_rounded" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                                <td class="fw-bold text-warning"><field name="payroll_cash_amount_rounded" widget="monetary" options="{'currency_field': 'currency_id'}" nolabel="1"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <footer>
-                    <button name="action_apply_quick_fix" string="Xác nhận điều chỉnh" type="object" class="btn-primary" icon="fa-check"/>
-                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    <button name="action_apply_quick_fix" string="LƯU DỮ LIỆU &amp; CẬP NHẬT KẾT QUẢ" type="object" class="btn-primary w-100 py-3 fw-bold shadow-sm" icon="fa-save" style="font-size: 18px;"/>
+                    <button string="ĐÓNG" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>

@@ -17,6 +17,7 @@ class SalaryKpiAttendanceType(models.Model):
     weight = fields.Float(string='Trọng số công', default=1.0, help="Giá trị quy đổi công (1.0, 0.5, 0.0...)", digits=(6,4))
     sequence = fields.Integer(string='Thứ tự', default=10)
     active = fields.Boolean(default=True)
+    company_id = fields.Many2one('res.company', string='Công ty', default=lambda self: self.env.company)
     apply_to = fields.Selection([
         ('normal', 'Chỉ Công Thường'),
         ('overtime', 'Chỉ Làm Thêm'),
@@ -28,7 +29,10 @@ class SalaryKpiAttendanceType(models.Model):
         ('none', 'Không phải tăng ca')
     ], string='Loại tăng ca', default='none')
 
-    _code_unique = Constraint('unique(code)', 'Mã loại công này đã tồn tại!')
+    _code_company_unique = models.Constraint(
+        'unique(code, company_id)',
+        'Mã loại công này đã tồn tại trong công ty này!'
+    )
 
     @api.onchange('code')
     def _onchange_code(self):

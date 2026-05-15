@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from ..tools import no_accent_vietnamese
 from datetime import date
+from dateutil.relativedelta import relativedelta
 from calendar import monthrange
 import base64
 import io
@@ -40,8 +41,21 @@ class SalaryKpiMonth(models.Model):
     _description = 'Cân đối bảng công tháng'
     _order = 'date_month desc'
 
-    name = fields.Char(string='Tên bản ghi', store=True)
-    date_month = fields.Date(string='Tháng/Năm', required=True, default=fields.Date.today)
+    name = fields.Char(string='Tên bản ghi', compute='_compute_name', store=True, readonly=False)
+
+    @api.depends('date_month', 'company_id')
+    def _compute_name(self):
+        for rec in self:
+            if rec.date_month:
+                company_name = rec.company_id.name if rec.company_id else ''
+                rec.name = f"Bảng công tháng {rec.date_month.strftime('%m/%Y')} - {company_name}"
+            else:
+                rec.name = "Bản ghi mới"
+    def _default_date_month(self):
+        today = fields.Date.context_today(self)
+        return today.replace(day=1) - relativedelta(days=1)
+
+    date_month = fields.Date(string='Tháng/Năm', required=True, default=_default_date_month)
     
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
     currency_id = fields.Many2one('res.currency', string='Tiền tệ', related='company_id.currency_id')
@@ -61,17 +75,64 @@ class SalaryKpiMonth(models.Model):
     dl_production_volume = fields.Float(string="Sản lượng tháng (m³)")
     dl_meal_allowance = fields.Monetary(string="Tiền ăn ca", currency_field='currency_id', default=650000)
     dl_women_allowance = fields.Monetary(string="Phụ cấp phụ nữ", currency_field='currency_id', default=500000)
-    
     # Các khoản thưởng áp dụng trong tháng
+    active_policy_id = fields.Many2one(
+        'dl.salary.kpi.bonus.policy', 
+        string='Quy chế Thưởng áp dụng', 
+        compute='_compute_active_policy',
+        store=True
+    )
+    revenue_line_ids = fields.One2many(
+        related='active_policy_id.revenue_line_ids', 
+        string='Mốc Thưởng Doanh Thu'
+    )
+    productivity_line_ids = fields.One2many(
+        related='active_policy_id.productivity_line_ids', 
+        string='Mốc Thưởng Năng Suất'
+    )
+    
+    @api.depends('company_id')
+    def _compute_active_policy(self):
+        for rec in self:
+            policy = self.env['dl.salary.kpi.bonus.policy'].search([
+                ('company_id', '=', rec.company_id.id),
+                ('is_applied', '=', True)
+            ], limit=1)
+            rec.active_policy_id = policy
+
     bonus_line_ids = fields.Many2many('dl.salary.kpi.bonus.line', string='Các khoản thưởng trong tháng', compute='_compute_bonus_lines')
 
     insurance_stop_ids = fields.One2many('dl.salary.kpi.insurance.stop', 'month_id', string='Danh sách cắt bảo hiểm')
+    x_copy_insurance_month_id = fields.Many2one('dl.salary.kpi.month', string='Copy từ bảng lương')
+    x_insurance_stop_count = fields.Integer(string='Số lượng cắt bảo hiểm', compute='_compute_insurance_stop_count')
+
+    # Logic khởi tạo tự động đã được chuyển sang nút bấm thủ công trong Cấu hình để đảm bảo an toàn.
+    x_is_recalculated = fields.Boolean(string='Đã tính toán lại toàn bộ', default=False)
+    x_has_imported_internal_salary = fields.Boolean(string='Đã nhập lương nội bộ', compute='_compute_has_imported_internal_salary', store=True)
+
+    @api.depends('line_ids.payroll_internal_salary')
+    def _compute_has_imported_internal_salary(self):
+        for rec in self:
+            # Nếu có ít nhất 1 dòng có lương nội bộ > 0 thì coi như đã nhập
+            rec.x_has_imported_internal_salary = any(line.payroll_internal_salary > 0 for line in rec.line_ids)
+
+    @api.depends('insurance_stop_ids')
+    def _compute_insurance_stop_count(self):
+        for rec in self:
+            rec.x_insurance_stop_count = len(rec.insurance_stop_ids)
+
+    @api.depends('name', 'insurance_stop_ids')
+    def _compute_display_name(self):
+        for rec in self:
+            count = len(rec.insurance_stop_ids)
+            count_str = f"({count} nhân viên)" if count > 0 else "(Trống)"
+            rec.display_name = f"{rec.name or ''} - {count_str}"
 
     line_domain = fields.Char(compute='_compute_line_domain', readonly=True)
 
     # === Trường lọc tạm thời ===
     filter_employee_name = fields.Char(string='Tìm theo tên', store=False)
-    filter_department_id = fields.Many2one('dl.tax.department', string='Lọc phòng ban', store=False)
+    filter_department_id = fields.Many2one('dl.tax.department', string='Lọc phòng ban', store=False, domain="[('company_id', '=', company_id)]")
     filter_position = fields.Char(string='Lọc chức vụ', store=False)
     filtered_line_ids = fields.One2many(
         'dl.salary.kpi.line',
@@ -85,6 +146,15 @@ class SalaryKpiMonth(models.Model):
         compute='_compute_anomaly_line_ids',
         string='Dữ liệu bất thường'
     )
+
+    x_line_count = fields.Integer(string='Tổng NV', compute='_compute_counts', store=True)
+    x_anomaly_count = fields.Integer(string='Số lượng bất thường', compute='_compute_counts', store=True)
+
+    @api.depends('line_ids', 'line_ids.x_has_anomaly', 'line_ids.x_is_anomaly_resolved')
+    def _compute_counts(self):
+        for rec in self:
+            rec.x_line_count = len(rec.line_ids)
+            rec.x_anomaly_count = len(rec.line_ids.filtered(lambda l: l.x_has_anomaly and not l.x_is_anomaly_resolved))
 
     @api.depends('filter_employee_name', 'filter_department_id', 'filter_position')
     def _compute_line_domain(self):
@@ -114,7 +184,7 @@ class SalaryKpiMonth(models.Model):
             if record.filter_position:
                 keyword = record.filter_position.lower()
                 lines = lines.filtered(lambda l: keyword in (l.dl_tax_position or '').lower())
-            record.filtered_line_ids = lines
+            record.filtered_line_ids = lines.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or ''))
 
     def _inverse_filtered_line_ids(self):
         """Đồng bộ thay đổi từ danh sách đã lọc ngược lại line_ids gốc."""
@@ -129,25 +199,27 @@ class SalaryKpiMonth(models.Model):
 
     @api.depends(
         'line_ids',
-        'line_ids.payroll_net_salary',
+        'line_ids.payroll_net_salary_base',
         'line_ids.payroll_internal_salary',
-        'line_ids.dl_tax_base_salary'
+        'line_ids.payroll_kpi_amount',
+        'line_ids.payroll_cash_amount',
+        'line_ids.x_is_anomaly_resolved',
+        'line_ids.x_has_anomaly'
     )
     def _compute_anomaly_line_ids(self):
         """
-        Lọc danh sách nhân viên có dữ liệu bất thường:
-        - Lương trong (Ln) >= (Lương cơ bản + Lương cơ bản * 0.4).
-        - Thực lĩnh ngoài bị âm (TLN < 0).
-        - Thực lĩnh ngoài(TLN) > Lương trong (Ln).
+        Lọc danh sách nhân viên có dữ liệu bất thường dựa trên Flag "Neo" (x_has_anomaly).
+        Dữ liệu sẽ chỉ biến mất khi người dùng bấm Xác nhận (x_is_anomaly_resolved).
         """
         for rec in self:
             anomalies = self.env['dl.salary.kpi.line']
             if rec.line_ids:
                 anomalies = rec.line_ids.filtered(
-                    lambda l: (l.payroll_internal_salary > 0 and l.payroll_net_salary_base > l.payroll_internal_salary)
-                    or l.payroll_kpi_amount < -1
-                    or (0 < l.payroll_cash_amount < 1000000)
-                )
+                    lambda l: l.x_has_anomaly and not l.x_is_anomaly_resolved
+                ).sorted(key=lambda l: (l.dl_tax_department_id.name or '', l.employee_name or ''))
+                # Đánh số thứ tự 1, 2, 3... cho danh sách hiển thị trong tab
+                for i, line in enumerate(anomalies, 1):
+                    line.x_sequence = i
             rec.anomaly_line_ids = anomalies
 
     def action_clear_payroll_filters(self):
@@ -170,7 +242,11 @@ class SalaryKpiMonth(models.Model):
             month = rec.date_month.month
             
             # Tìm cấu hình thưởng của năm
-            bonus_year = self.env['dl.salary.kpi.bonus.year'].search([('year', '=', year), ('active', '=', True)], limit=1)
+            bonus_year = self.env['dl.salary.kpi.bonus.year'].search([
+                ('year', '=', year), 
+                ('active', '=', True),
+                ('company_id', '=', rec.company_id.id)
+            ], limit=1)
             if bonus_year:
                 # Lọc các dòng thưởng có tháng trùng với tháng đang cân đối
                 lines = bonus_year.line_ids.filtered(lambda l: l.date.month == month and l.active)
@@ -178,10 +254,11 @@ class SalaryKpiMonth(models.Model):
             else:
                 rec.bonus_line_ids = False
 
-    @api.onchange('date_month')
+    @api.onchange('date_month', 'company_id')
     def _onchange_date_month(self):
         if self.date_month and self.state == 'draft':
-            self.name = f"Bảng công tháng {self.date_month.strftime('%m/%Y')}"
+            company_name = self.company_id.name if self.company_id else ''
+            self.name = f"Bảng công tháng {self.date_month.strftime('%m/%Y')} - {company_name}"
 
     # Các trường báo cáo nhanh
     total_employees = fields.Integer(string="Tổng nhân viên", compute="_compute_quick_stats")
@@ -325,8 +402,13 @@ class SalaryKpiMonth(models.Model):
             ('dl_departure_date', '>=', first_day)
         ]
         hr_employees = self.env['hr.employee'].search(domain)
-        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'N')], limit=1)
-        att_type_nv = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', 'NV')], limit=1)
+        # Tìm mã chấm công theo đúng công ty của bảng lương
+        att_type_n = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', 'N'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
+        att_type_nv = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', 'NV'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
         
         last_day = monthrange(self.date_month.year, self.date_month.month)[1]
         
@@ -390,6 +472,7 @@ class SalaryKpiMonth(models.Model):
                 
                 # Tính toán lại tổng công
                 rec.line_ids._compute_totals()
+                rec.write({'x_is_recalculated': True})
                 t4 = time.time()
                 _logger.info("=== BENCHMARK CHỐT CÔNG [%s]: _compute_totals mất %.2fs ===", rec.name, t4 - t3)
                 
@@ -447,6 +530,44 @@ class SalaryKpiMonth(models.Model):
         self._compute_quick_stats()
         return True
 
+    def action_copy_insurance_list(self):
+        """Copy danh sách cắt bảo hiểm từ bảng lương khác"""
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_("Bạn chỉ có thể copy danh sách ở trạng thái Dự thảo!"))
+        
+        if not self.x_copy_insurance_month_id:
+            raise UserError(_("Vui lòng chọn bảng lương nguồn để copy!"))
+            
+        source_month = self.x_copy_insurance_month_id
+        if not source_month.insurance_stop_ids:
+            raise UserError(_("Bảng lương nguồn không có danh sách cắt bảo hiểm!"))
+
+        # Xóa danh sách cũ
+        self.insurance_stop_ids.unlink()
+        
+        # Copy danh sách mới
+        new_lines = []
+        for line in source_month.insurance_stop_ids:
+            new_lines.append((0, 0, {
+                'employee_id': line.employee_id.id,
+                'note': line.note,
+            }))
+            
+        if new_lines:
+            self.write({'insurance_stop_ids': new_lines})
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã copy %s nhân viên từ %s') % (len(new_lines), source_month.name),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
     def action_back_to_lock_normal(self):
         self.action_recompute_all_data()
         self.write({'state': 'lock_normal'})
@@ -485,8 +606,13 @@ class SalaryKpiMonth(models.Model):
     def _action_init_overtime_suggestions(self):
         """Khởi tạo dữ liệu gợi ý công làm thêm dựa trên công thường (N -> 0.5N, Đ -> 0.5Đ)"""
         from datetime import date
-        n_ot = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5N')], limit=1)
-        d_ot = self.env['dl.salary.kpi.attendance.type'].search([('code', '=', '0.5Đ')], limit=1)
+        # Tìm mã chấm công làm thêm theo đúng công ty
+        n_ot = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', '0.5N'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
+        d_ot = self.env['dl.salary.kpi.attendance.type'].search([
+            ('code', '=', '0.5Đ'), ('company_id', '=', self.company_id.id)
+        ], limit=1)
         month_date = self.date_month
         year, month = month_date.year, month_date.month
         
@@ -517,6 +643,8 @@ class SalaryKpiMonth(models.Model):
 
     def action_export_excel(self):
         self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_("Bảng cân đối này chưa có dữ liệu nhân viên. Vui lòng kiểm tra lại!"))
         return {
             'type': 'ir.actions.act_url',
             'url': f'/dl_salary_kpi/export_attendance/{self.id}',
@@ -558,6 +686,8 @@ class SalaryKpiMonth(models.Model):
 
     def action_export_ot_excel(self):
         self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_("Bảng cân đối này chưa có dữ liệu nhân viên. Vui lòng kiểm tra lại!"))
         return {
             'type': 'ir.actions.act_url',
             'url': f'/dl_salary_kpi/export_ot_attendance/{self.id}',
@@ -597,7 +727,7 @@ class SalaryKpiMonth(models.Model):
         # Dữ liệu từ dòng 4
         row_idx = 4
         stt = 1
-        for line in self.line_ids:
+        for line in self.line_ids.sorted(key=lambda l: (l.dl_tax_department_id.sequence or 999, l.employee_name or '')):
             # A: STT
             ws.cell(row=row_idx, column=1, value=stt).border = thin_border
             # B: CCCD
@@ -768,6 +898,43 @@ class SalaryKpiMonth(models.Model):
         # Định nghĩa style đỏ đậm với font Times New Roman, cỡ 16
         red_bold_font = Font(name='Times New Roman', size=16, color='FF0000', bold=True)
         
+        # --- Chuẩn bị chuỗi công thức động cho Thưởng Doanh thu và Năng suất ---
+        active_policy = self.env['dl.salary.kpi.bonus.policy'].search([
+            ('company_id', '=', self.company_id.id),
+            ('is_applied', '=', True)
+        ], limit=1)
+
+        if active_policy:
+            rev_tiers = active_policy.revenue_line_ids.sorted(key=lambda t: t.min_revenue)
+            prod_tiers = active_policy.productivity_line_ids
+        else:
+            rev_tiers = []
+            prod_tiers = []
+
+        if not rev_tiers:
+            base_rev_formula = "0"
+        else:
+            lowest_min = rev_tiers[0].min_revenue
+            base_rev_formula = f"IF($G$4<{lowest_min},0,"
+            close_parens = 1
+            for tier in rev_tiers:
+                if tier.max_revenue:
+                    base_rev_formula += f"IF($G$4<{tier.max_revenue},{tier.bonus_amount},"
+                    close_parens += 1
+                else:
+                    base_rev_formula += f"IF($G$4>={tier.min_revenue},{tier.bonus_amount},0"
+                    close_parens += 1
+                    break
+            if rev_tiers[-1].max_revenue:
+                base_rev_formula += "0"
+            base_rev_formula += ")" * close_parens
+
+        prod_tier_data = []
+        for tier in prod_tiers:
+            if tier.job_titles:
+                titles = [t.strip() for t in tier.job_titles.split(',') if t.strip()]
+                prod_tier_data.append((titles, tier.bonus_amount))
+
         # Sắp xếp lines theo thứ tự phòng ban (sequence) trước khi nhóm
         sorted_lines = self.line_ids.sorted(key=lambda l: (l.employee_id.dl_tax_department_id.sequence or 10, l.employee_id.dl_tax_department_id.name or '', l.employee_id.name or ''))
         
@@ -859,6 +1026,37 @@ class SalaryKpiMonth(models.Model):
 
                 self._safe_write(ws, current_row, 95, self.dl_women_allowance if line.employee_id.sex == 'female' else 0)
                 self._safe_write(ws, current_row, 96, self.dl_meal_allowance)
+                
+                # Xây dựng công thức động cho dòng hiện tại
+                if base_rev_formula == "0":
+                    rev_formula = "=0"
+                else:
+                    rev_formula = "=" + base_rev_formula
+
+                if not prod_tier_data:
+                    prod_formula = "=0"
+                else:
+                    prod_formula = "="
+                    close_parens = 0
+                    for titles, amount in prod_tier_data:
+                        or_conditions = ",".join([f'H{current_row}="{t}"' for t in titles])
+                        if len(titles) > 1:
+                            condition = f"OR({or_conditions})"
+                        elif len(titles) == 1:
+                            condition = f'H{current_row}="{titles[0]}"'
+                        else:
+                            condition = "FALSE"
+                        prod_formula += f"IF({condition},{amount},"
+                        close_parens += 1
+                    prod_formula += "0" + ")" * close_parens
+                    # Theo yêu cầu của user: CF, CG, CJ là các cột chứa số ngày công
+                    prod_formula += f"/26*(CF{current_row}+(CG{current_row}+CJ{current_row})/8)"
+                
+                # Cột CS (97): Thưởng doanh thu, Cột DE (109): Thưởng năng suất
+                # Ghi đè bằng công thức động được build theo cấu hình công ty
+                self._safe_write(ws, current_row, 97, rev_formula)
+                self._safe_write(ws, current_row, 109, prod_formula)
+                
                 self._safe_write(ws, current_row, 111, line.payroll_kpi_amount or 0)
                 self._safe_write(ws, current_row, 136, line.payroll_pit_number_of_dependents or 0)
                 self._safe_write(ws, current_row, 120, line.payroll_deduction_tncn or 0)
@@ -873,17 +1071,8 @@ class SalaryKpiMonth(models.Model):
                 self._safe_write(ws, current_row, 146, line.employee_id.x_bank_account or '')
                 self._safe_write(ws, current_row, 147, line.employee_id.x_bank_name or '')
                 
-                total_bonus = 0
-                for bonus in self.bonus_line_ids:
-                    emp_sex = line.employee_id.sex
-                    if bonus.gender == 'all' or (bonus.gender == 'female' and emp_sex == 'female') or (bonus.gender == 'male' and emp_sex == 'male'):
-                        is_eligible = True
-                        if bonus.date and line.employee_id.departure_date:
-                            if line.employee_id.departure_date <= bonus.date:
-                                is_eligible = False
-                        if is_eligible:
-                            total_bonus += bonus.amount
-                self._safe_write(ws, current_row, 133, total_bonus)
+                # Sử dụng giá trị thưởng năm đã được tính toán chuẩn (đã bao gồm check NV/TS)
+                self._safe_write(ws, current_row, 133, line.payroll_annual_bonus or 0)
                 
                 # Cập nhật tiến trình sau mỗi 50 nhân viên
                 if attachment and global_stt % 50 == 0:
@@ -1067,6 +1256,9 @@ class SalaryKpiMonth(models.Model):
                 # Nếu đã hết quota, chỉ cho phép random tới tối đa 69
                 line.action_generate_kpi_scores(max_allowed=69)
                 
+        # 3. Kích hoạt tính toán lại toàn bộ để cập nhật bảng cân đối
+        self.action_recompute_all_data()
+        self.write({'x_is_recalculated': True})
         return True
 
 class InsuranceStop(models.Model):

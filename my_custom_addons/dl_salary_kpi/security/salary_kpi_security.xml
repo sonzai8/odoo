@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Record Rule for dl.salary.kpi.month -->
+        <record id="dl_salary_kpi_month_multi_company_rule" model="ir.rule">
+            <field name="name">Bảng cân đối lương: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_month"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.line -->
+        <record id="dl_salary_kpi_line_multi_company_rule" model="ir.rule">
+            <field name="name">Chi tiết bảng lương: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_line"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.bonus.year -->
+        <record id="dl_salary_kpi_bonus_year_multi_company_rule" model="ir.rule">
+            <field name="name">Cấu hình thưởng năm: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_bonus_year"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.tax.department: Đọc toàn cục (perm_read=False), Ghi giới hạn theo công ty -->
+        <record id="dl_tax_department_multi_company_rule" model="ir.rule">
+            <field name="name">Phòng ban thuế: đa công ty</field>
+            <field name="model_id" ref="model_dl_tax_department"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.attendance.type: Đọc toàn cục (perm_read=False), Ghi giới hạn theo công ty -->
+        <record id="dl_salary_kpi_attendance_type_multi_company_rule" model="ir.rule">
+            <field name="name">Mã chấm công: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_attendance_type"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Record Rule cho Quy chế thưởng -->
+        <record id="dl_salary_kpi_bonus_policy_multi_company_rule" model="ir.rule">
+            <field name="name">Quy chế thưởng: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_bonus_policy"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_salary_kpi_revenue_bonus_multi_company_rule" model="ir.rule">
+            <field name="name">Mốc thưởng doanh thu: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_revenue_bonus"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_salary_kpi_productivity_bonus_multi_company_rule" model="ir.rule">
+            <field name="name">Mốc thưởng năng suất: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_productivity_bonus"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.dependent -->
+        <record id="dl_dependent_multi_company_rule" model="ir.rule">
+            <field name="name">Người phụ thuộc: đa công ty</field>
+            <field name="model_id" ref="model_dl_dependent"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.insurance.stop -->
+        <record id="dl_salary_kpi_insurance_stop_multi_company_rule" model="ir.rule">
+            <field name="name">Danh sách cắt bảo hiểm: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_insurance_stop"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('month_id.company_id', '=', False), ('month_id.company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Record Rule for dl.salary.kpi.bonus.line -->
+        <record id="dl_salary_kpi_bonus_line_multi_company_rule" model="ir.rule">
+            <field name="name">Chi tiết thưởng năm: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_bonus_line"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('year_id.company_id', '=', False), ('year_id.company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>
