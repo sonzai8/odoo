@@ -79,23 +79,28 @@
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
 
-        <!-- Phân tách Đối tác và Sản phẩm theo công ty (Chỉ siết chặt với các dữ liệu gỗ) -->
-        <record id="dl_wood_partner_strict_comp_rule" model="ir.rule">
-            <field name="name">Đối tác gỗ đa công ty (Strict)</field>
-            <field name="model_id" ref="base.model_res_partner"/>
-            <field name="domain_force">['|', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '&amp;', ('x_is_wood_customer', '=', False), ('x_is_wood_supplier', '=', False)]</field>
-        </record>
-
-        <record id="dl_wood_product_strict_comp_rule" model="ir.rule">
-            <field name="name">Sản phẩm gỗ đa công ty (Strict)</field>
-            <field name="model_id" ref="product.model_product_template"/>
-            <field name="domain_force">['|', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), ('is_wood_product', '=', False)]</field>
-        </record>
-
         <record id="dl_woodpro_external_company_comp_rule" model="ir.rule">
             <field name="name">Danh sách công ty WoodPro đa công ty (Strict)</field>
             <field name="model_id" ref="model_dl_woodpro_external_company"/>
             <field name="domain_force">[('config_id.company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_line_comp_rule" model="ir.rule">
+            <field name="name">Chi tiết hồ sơ gỗ đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_dossier_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_document_comp_rule" model="ir.rule">
+            <field name="name">Tài liệu hồ sơ gỗ đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_dossier_document"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_attachment_comp_rule" model="ir.rule">
+            <field name="name">Đính kèm hồ sơ gỗ đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_dossier_attachment"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
 
     </data>

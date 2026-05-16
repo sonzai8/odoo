@@ -413,8 +413,7 @@ class DlWoodproConfig(models.Model):
                                 ('species_id', '=', species.id),
                                 ('diameter_min', '<=', d_min),
                                 ('diameter_max', '>=', d_max),
-                                ('height_min', '<=', avg_height),
-                                ('height_max', '>=', avg_height)
+                                ('height', '=', avg_height)
                             ], limit=1)
                             if grade:
                                 price_unit = grade.default_price
@@ -428,8 +427,7 @@ class DlWoodproConfig(models.Model):
                             'price_unit': price_unit,
                             'diameter_min': d_min,
                             'diameter_max': d_max,
-                            'height_min': avg_height, # Tạm thời gán vào min nếu API chỉ trả 1 số
-                            'height_max': avg_height,
+                            'height': avg_height,
                             'avg_diameter': (d_min + d_max) / 2 if d_max > 0 else d_min,
                             'avg_height': avg_height,
                             'note': w.get('note'),

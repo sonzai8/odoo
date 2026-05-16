@@ -17,3 +17,7 @@ access_dl_wood_sale_order_user,dl.wood.sale.order.user,model_dl_wood_sale_order,
 access_dl_wood_production_order_user,dl.wood.production.order.user,model_dl_wood_production_order,base.group_user,1,1,1,1
 access_dl_wood_production_line_user,dl.wood.production.line.user,model_dl_wood_production_line,base.group_user,1,1,1,1
 access_dl_woodpro_external_company_user,dl.woodpro.external.company.user,model_dl_woodpro_external_company,base.group_user,1,1,1,1
+access_dl_wood_dossier_document_user,dl.wood.dossier.document.user,model_dl_wood_dossier_document,base.group_user,1,1,1,1
+access_dl_wood_init_data_wizard_user,dl.wood.init.data.wizard.user,model_dl_wood_init_data_wizard,base.group_user,1,1,1,1
+access_dl_wood_report_version_user,dl.wood.report.version.user,model_dl_wood_report_version,base.group_user,1,1,1,1
+access_dl_wood_report_template_config_user,dl.wood.report.template.config.user,model_dl_wood_report_template_config,base.group_user,1,1,1,1

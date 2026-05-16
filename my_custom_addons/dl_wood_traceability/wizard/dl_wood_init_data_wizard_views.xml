@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_wood_init_data_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.init.data.wizard.form</field>
+        <field name="model">dl.wood.init.data.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Khởi Tạo Dữ Liệu">
+                <p class="oe_grey">
+                    Nhấn vào nút bên dưới để khởi tạo danh sách các loài gỗ mặc định (Keo, Thông, Bạch đàn...) cho công ty hiện tại. 
+                    Hệ thống sẽ chỉ tạo mới những loài chưa tồn tại.
+                </p>
+                <footer>
+                    <button name="action_init_wood_species" string="Khởi Tạo Danh Mục Gỗ" type="object" class="btn-primary" icon="fa-database"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_init_data_wizard" model="ir.actions.act_window">
+        <field name="name">Khởi Tạo Dữ Liệu</field>
+        <field name="res_model">dl.wood.init.data.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menu Khởi Tạo Dữ Liệu -->
+    <menuitem id="menu_dl_wood_init_data"
+              name="Khởi Tạo Dữ Liệu"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_wood_init_data_wizard"
+              sequence="100"/>
+</odoo>

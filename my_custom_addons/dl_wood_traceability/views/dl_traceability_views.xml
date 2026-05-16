@@ -30,8 +30,22 @@
         <field name="arch" type="xml">
             <form string="Hồ Sơ Gỗ">
                 <header>
-                    <button name="action_confirm" string="Xác Nhận" type="object" class="oe_highlight" 
-                            invisible="state == 'confirmed'"/>
+                    <!-- Chuyển tiếp -->
+                    <button name="action_exploiting" string="Bắt đầu khai thác" type="object" class="oe_highlight" 
+                            invisible="state != 'draft'"/>
+                    <button name="action_summary" string="Tổng kết hồ sơ" type="object" class="oe_highlight" 
+                            invisible="state != 'exploiting'"/>
+                    <button name="action_confirm" string="Xác nhận hoàn tất" type="object" class="oe_highlight" 
+                            invisible="state != 'summary'"/>
+                    
+                    <!-- Quay lại -->
+                    <button name="action_draft" string="Quay lại dự thảo" type="object" 
+                            invisible="state != 'exploiting'"/>
+                    <button name="action_exploiting" string="Quay lại khai thác" type="object" 
+                            invisible="state != 'summary'"/>
+                    <button name="action_summary" string="Hủy xác nhận" type="object" 
+                            invisible="state != 'confirmed'"/>
+
                     <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,summary,confirmed"/>
                 </header>
                 <sheet>
@@ -44,37 +58,62 @@
                             <field name="name" readonly="1" decoration-bf="1"/>
                             <field name="partner_id"/>
                             <field name="date_received"/>
+                            <label for="x_report_version_id"/>
+                            <div class="o_row">
+                                <field name="x_report_version_id" options="{'no_create': True}"/>
+                                <button name="action_refresh_documents" type="object" string="Làm mới danh sách tệp" icon="fa-refresh" class="btn btn-link py-0"/>
+                            </div>
                             <field name="x_start_date"/>
                             <field name="x_end_date"/>
-                            <field name="x_addendum_num"/>
-                            <field name="initial_qty"/>
                             <field name="company_id" readonly="1"/>
-                            <field name="x_woodpro_id" readonly="1"/>
                         </group>
                         <group string="Thông tin khai thác">
                             <field name="partner_address" readonly="1"/>
                             <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
                             <field name="x_mining_method"/>
                             <field name="x_area"/>
+                            <field name="x_addendum_num"/>
+                            <field name="x_woodpro_id" readonly="1"/>
                         </group>
                     </group>
+
+                    <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-3 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                        Tổng hợp khối lượng (m³)
+                    </div>
+                    <div class="d-flex justify-content-around text-center py-2 border rounded bg-light shadow-sm mb-3 w-100">
+                        <div class="flex-fill border-end border-2">
+                            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Gỗ</div>
+                            <field name="initial_wood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-primary mb-0"/>
+                        </div>
+                        <div class="flex-fill border-end border-2">
+                            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Củi</div>
+                            <field name="initial_firewood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-warning mb-0"/>
+                        </div>
+                        <div class="flex-fill">
+                            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Cộng</div>
+                            <field name="initial_qty" readonly="1" nolabel="1" class="h4 fw-bold text-success mb-0"/>
+                        </div>
+                    </div>
+
                     <notebook>
                         <page string="Chi tiết gỗ khai thác">
-                            <field name="line_ids">
+                            <field name="line_ids" class="o_wood_dossier_line_list">
                                 <list editable="bottom">
                                     <field name="species_id"/>
-                                    <field name="name"/>
                                     <field name="name_en"/>
-                                    <field name="name_sci"/>
-                                    <field name="quantity"/>
-                                    <field name="diameter_min" optional="show"/>
-                                    <field name="diameter_max" optional="show"/>
-                                    <field name="height_min" optional="show"/>
-                                    <field name="height_max" optional="show"/>
+                                    <field name="grade_id" string="Phân Loại" options="{'no_create': True, 'no_open': True}" class="o_column_fixed_140"/>
+                                    <field name="name_sci" optional="hide"/>
+                                    <field name="volume" sum="Tổng khối lượng" class="o_column_fixed_70"/>
+                                    <field name="quantity" class="o_column_fixed_70"/>
+                                    <field name="diameter_display" class="o_column_fixed_70"/>
+                                    <field name="diameter_min" optional="hide"/>
+                                    <field name="diameter_max" optional="hide"/>
+                                    <field name="height_display" string="Cao (m)" class="o_column_fixed_70"/>
+                                    <field name="height" optional="hide"/>
                                     <field name="avg_diameter" optional="hide"/>
                                     <field name="avg_height" optional="hide"/>
-                                    <field name="volume" sum="Tổng khối lượng"/>
-                                    <field name="price_unit"/>
+                                    <field name="price_unit" class="o_column_fixed_120" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="price_subtotal" sum="Tổng cộng" class="o_column_money" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="note"/>
                                 </list>
                             </field>
@@ -97,6 +136,71 @@
                                 <field name="qty_available" readonly="1"/>
                             </group>
                         </page>
+                        <page string="Thông tin PAKT">
+                            <group>
+                                <group>
+                                    <field name="x_pakt_date"/>
+                                    <field name="x_pakt_representative"/>
+                                    <field name="x_pakt_position"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Tải Tài Liệu (Thông minh)">
+                            <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                                <i class="fa fa-info-circle me-3 fa-2x" title="Thông tin"/>
+                                <div>
+                                    Danh sách tài liệu dưới đây được tự động tạo dựa trên <b>Phiên bản biểu mẫu</b> bạn đã chọn. 
+                                    Bạn có thể tích chọn các tệp cần thiết và nhấn nút <b>Tải ZIP</b> để tải về bộ hồ sơ hoàn chỉnh.
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-files-o me-2" title="Tài liệu"/>
+                                    Danh sách hồ sơ: <field name="x_report_version_id" readonly="1" options="{'no_open': True}"/>
+                                </h4>
+                                <button name="action_download_zip" type="object" string="TẢI XUỐNG TỆP NÉN (ZIP)" class="btn btn-success shadow-sm" icon="fa-file-archive-o"/>
+                            </div>
+
+                            <field name="document_ids" mode="kanban" nolabel="1">
+                                <kanban create="0" delete="0" records_draggable="0" class="dl_wood_kanban_compact">
+                                    <field name="id"/>
+                                    <field name="name"/>
+                                    <field name="x_is_selected"/>
+                                    <field name="x_category"/>
+                                    <field name="config_id"/>
+                                    <field name="is_enabled"/>
+                                    <templates>
+                                        <t t-name="card">
+                                            <div t-attf-class="oe_kanban_global_click dl_wood_card_compact d-flex align-items-center #{record.x_is_selected.raw_value ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-light'} #{!record.is_enabled.raw_value ? 'opacity-50' : ''}">
+                                                <div class="me-2">
+                                                    <field name="x_is_selected" widget="boolean_toggle" invisible="not is_enabled"/>
+                                                    <i t-if="!record.is_enabled.raw_value" class="fa fa-ban text-danger" title="Không sử dụng"/>
+                                                </div>
+                                                <div class="flex-grow-1 overflow-hidden">
+                                                    <div t-attf-class="h6_name text-truncate mb-0 #{!record.is_enabled.raw_value ? 'text-decoration-line-through text-muted' : ''}"><t t-esc="record.name.value"/></div>
+                                                    <div class="d-flex gap-1 align-items-center">
+                                                        <span t-attf-class="badge rounded-pill badge_compact #{record.x_category.raw_value == 'exploitation' ? 'text-bg-info' : 'text-bg-secondary'}">
+                                                            <t t-esc="record.x_category.value"/>
+                                                        </span>
+                                                        <t t-if="record.is_enabled.raw_value">
+                                                            <span t-if="record.config_id.raw_value" class="text-success text_small_info">
+                                                                <i class="fa fa-check-circle"/> Mẫu riêng
+                                                            </span>
+                                                            <span t-else="" class="text-muted text_small_info">
+                                                                <i class="fa fa-hdd-o"/> Mẫu mặc định
+                                                            </span>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                                <button t-if="record.is_enabled.raw_value" name="action_preview_pdf" type="object" class="btn btn-outline-info btn-sm-circle ms-1" icon="fa-eye" title="Xem trước bản PDF"/>
+                                                <button t-if="record.is_enabled.raw_value" name="action_download" type="object" class="btn btn-outline-primary btn-sm-circle ms-1" icon="fa-download" title="Tải lẻ file này"/>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </page>
                         <page string="Tệp Đính Kèm (WoodPro)">
                             <field name="attachment_ids" readonly="1">
                                 <list>
@@ -113,175 +217,6 @@
         </field>
     </record>
 
-    <record id="view_sale_order_wood_traceability" model="ir.ui.view">
-        <field name="name">sale.order.wood.traceability</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_order_form"/>
-        <field name="arch" type="xml">
-            <notebook position="inside">
-                <page string="Kê Khai CO và Truy Xuất Gỗ" name="wood_traceability">
-                    <div class="mb-2">
-                        <button name="action_suggest_dossiers" string="Gợi ý hồ sơ gỗ (FIFO)" type="object" class="btn-primary" icon="fa-magic" invisible="state in ['sale', 'done', 'cancel']"/>
-                    </div>
-                    <field name="co_declaration_ids" readonly="state in ['sale', 'done']">
-                        <list editable="bottom">
-                            <field name="finished_product_id"/>
-                            <field name="finished_qty"/>
-                            <field name="dossier_id" domain="[('qty_available', '>', 0)]"/>
-                            <field name="standard_ratio" readonly="1"/>
-                            <field name="actual_deduct_qty" readonly="1"/>
-                            <field name="co_index"/>
-                            <field name="co_declare_qty" readonly="1"/>
-                        </list>
-                    </field>
-                </page>
-            </notebook>
-        </field>
-    </record>
-
-    <record id="view_dl_woodpro_config_form" model="ir.ui.view">
-        <field name="name">dl.woodpro.config.form</field>
-        <field name="model">dl.woodpro.config</field>
-        <field name="arch" type="xml">
-            <form string="Cấu hình WoodPro">
-                <header>
-                    <button name="action_login" string="Login" type="object" class="btn-primary"/>
-                    <button name="action_fetch_companies" string="Lấy DS Công ty" type="object" class="btn-info" icon="fa-refresh"/>
-                    <button name="action_sync_forest_owners" string="Đồng bộ Chủ rừng &amp; NCC" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
-                    <button name="action_sync_products" string="Đồng bộ Sản phẩm" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
-                    <button name="action_sync_minings" string="Đồng bộ Hồ sơ gỗ" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
-                    <button name="action_sync_customers" string="Đồng bộ Đơn hàng &amp; Sản xuất" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
-                </header>
-                <sheet>
-                    <group>
-                        <group string="Thông tin kết nối">
-                            <field name="name"/>
-                            <field name="base_url"/>
-                            <field name="username"/>
-                            <field name="password" password="1"/>
-                        </group>
-                        <group string="Trạng thái">
-                            <field name="token" readonly="1"/>
-                            <field name="x_woodpro_company_id" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                            <field name="last_sync_date" readonly="1"/>
-                        </group>
-                    </group>
-                    <notebook>
-                        <page string="Nhật ký Debug">
-                            <field name="x_debug_log" widget="html"/>
-                        </page>
-                    </notebook>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="view_dl_woodpro_config_list" model="ir.ui.view">
-        <field name="name">dl.woodpro.config.list</field>
-        <field name="model">dl.woodpro.config</field>
-        <field name="arch" type="xml">
-            <list string="Cấu hình WoodPro">
-                <field name="name"/>
-                <field name="base_url"/>
-                <field name="username"/>
-                <field name="last_sync_date"/>
-                <field name="company_id" groups="base.group_multi_company" optional="show"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="view_dl_wood_species_list" model="ir.ui.view">
-        <field name="name">dl.wood.species.list</field>
-        <field name="model">dl.wood.species</field>
-        <field name="arch" type="xml">
-            <list string="Loại Gỗ Thu Mua">
-                <field name="name"/>
-                <field name="name_en"/>
-                <field name="name_sci"/>
-                <field name="material_name"/>
-                <field name="code"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="view_dl_wood_species_form" model="ir.ui.view">
-        <field name="name">dl.wood.species.form</field>
-        <field name="model">dl.wood.species</field>
-        <field name="arch" type="xml">
-            <form string="Loại Gỗ Thu Mua">
-                <sheet>
-                    <group>
-                        <group>
-                            <field name="name"/>
-                            <field name="code"/>
-                            <field name="material_name"/>
-                        </group>
-                        <group>
-                            <field name="name_en"/>
-                             <field name="name_sci"/>
-                             <field name="company_id" groups="base.group_multi_company"/>
-                         </group>
-                    </group>
-                    <notebook>
-                        <page string="Phân loại chất lượng">
-                            <field name="grade_ids">
-                                <list editable="bottom">
-                                    <field name="name" string="Tên Phân Loại"/>
-                                    <field name="diameter_min" string="ĐK Min (cm)"/>
-                                    <field name="diameter_max" string="ĐK Max (cm)"/>
-                                    <field name="height_min" string="Cao Min (m)"/>
-                                    <field name="height_max" string="Cao Max (m)"/>
-                                    <field name="default_price" string="Giá Mặc Định"/>
-                                    <field name="note" string="Ghi chú"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page string="Ghi chú">
-                            <field name="note" nolabel="1" placeholder="Ghi chú thêm..."/>
-                        </page>
-                    </notebook>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="action_dl_wood_species" model="ir.actions.act_window">
-        <field name="name">Loại Gỗ Thu Mua</field>
-        <field name="res_model">dl.wood.species</field>
-        <field name="view_mode">list,form</field>
-    </record>
-
-    <record id="action_dl_wood_dossier" model="ir.actions.act_window">
-        <field name="name">Hồ Sơ Gỗ</field>
-        <field name="res_model">dl.wood.dossier</field>
-        <field name="view_mode">list,form</field>
-    </record>
-
-    <record id="action_dl_woodpro_config" model="ir.actions.act_window">
-        <field name="name">Cấu hình WoodPro</field>
-        <field name="res_model">dl.woodpro.config</field>
-        <field name="view_mode">list,form</field>
-    </record>
-
-    <menuitem id="menu_dl_wood_traceability_root" 
-              name="Trừ Lùi Nguyên Liệu" 
-              groups="dl_wood_traceability.group_dl_wood_dossier_manager"
-              sequence="80"/>
-    <menuitem id="menu_dl_wood_input_materials"
-              name="Nguyên Liệu Đầu Vào"
-              parent="menu_dl_wood_traceability_root"
-              sequence="10"/>
-    <menuitem id="menu_dl_wood_dossier" name="Hồ Sơ Gỗ" parent="menu_dl_wood_input_materials" action="action_dl_wood_dossier" sequence="10"/>
-    <menuitem id="menu_dl_wood_species" name="Loại Gỗ Thu Mua" parent="menu_dl_wood_input_materials" action="action_dl_wood_species" sequence="20"/>
-    <menuitem id="menu_dl_wood_product" 
-              name="Sản phẩm Gỗ" 
-              parent="menu_dl_wood_traceability_root" 
-              action="action_dl_wood_product_template" 
-              sequence="16"/>
-    <menuitem id="menu_dl_woodpro_config" name="Cấu hình WoodPro" parent="menu_dl_wood_traceability_root" action="action_dl_woodpro_config" sequence="100"/>
-    <!-- Báo cáo Tồn kho Gỗ -->
     <record id="view_dl_wood_dossier_line_pivot" model="ir.ui.view">
         <field name="name">dl.wood.dossier.line.pivot</field>
         <field name="model">dl.wood.dossier.line</field>
@@ -319,25 +254,152 @@
         <field name="search_view_id" ref="view_dl_wood_dossier_line_search"/>
     </record>
 
-    <menuitem id="menu_dl_wood_report"
-              name="Báo cáo"
-              parent="menu_dl_wood_traceability_root"
-              sequence="50"/>
+    <menuitem id="menu_dl_wood_traceability_root" 
+              name="Trừ Lùi Nguyên Liệu" 
+              groups="dl_wood_traceability.group_dl_wood_dossier_manager"
+              sequence="80"/>
 
-    <menuitem id="menu_dl_wood_inventory_report"
-              name="Tồn kho Gỗ thu mua"
-              parent="menu_dl_wood_report"
-              action="action_dl_wood_inventory_report"
+    <menuitem id="menu_dl_wood_input_materials"
+              name="Nguyên Liệu Đầu Vào"
+              parent="menu_dl_wood_traceability_root"
               sequence="10"/>
 
-    <menuitem id="menu_dl_wood_config_root"
-              name="Cấu hình"
-              parent="menu_dl_wood_traceability_root"
-              sequence="100"/>
+    <menuitem id="menu_dl_wood_dossier" name="Hồ Sơ Gỗ" parent="menu_dl_wood_input_materials" action="action_dl_wood_dossier" sequence="10"/>
+    <menuitem id="menu_dl_wood_species" name="Loại Gỗ Thu Mua" parent="menu_dl_wood_input_materials" action="action_dl_wood_species" sequence="20"/>
 
-    <menuitem id="menu_dl_woodpro_config"
-              name="Kết nối WoodPro"
-              parent="menu_dl_wood_config_root"
-              action="action_dl_woodpro_config"
-              sequence="10"/>
+    <record id="action_dl_wood_dossier" model="ir.actions.act_window">
+        <field name="name">Hồ Sơ Gỗ</field>
+        <field name="res_model">dl.wood.dossier</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_dl_wood_species_list" model="ir.ui.view">
+        <field name="name">dl.wood.species.list</field>
+        <field name="model">dl.wood.species</field>
+        <field name="arch" type="xml">
+            <list string="Loài gỗ">
+                <field name="name"/>
+                <field name="name_en"/>
+                <field name="code"/>
+                <field name="wood_type" widget="badge" decoration-info="wood_type == 'wood'" decoration-warning="wood_type == 'firewood'"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_species_form" model="ir.ui.view">
+        <field name="name">dl.wood.species.form</field>
+        <field name="model">dl.wood.species</field>
+        <field name="arch" type="xml">
+            <form string="Loài gỗ">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Ví dụ: Gỗ Keo..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="wood_type"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="name_en"/>
+                            <field name="name_sci"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Phân loại chất lượng" name="grades">
+                            <field name="grade_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="diameter_min"/>
+                                    <field name="diameter_max"/>
+                                    <field name="height"/>
+                                    <field name="default_price"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_species" model="ir.actions.act_window">
+        <field name="name">Loại Gỗ Thu Mua</field>
+        <field name="res_model">dl.wood.species</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- REPORT VERSION VIEWS -->
+    <record id="view_dl_wood_report_version_list" model="ir.ui.view">
+        <field name="name">dl.wood.report.version.list</field>
+        <field name="model">dl.wood.report.version</field>
+        <field name="arch" type="xml">
+            <list string="Phiên bản biểu mẫu">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_wood_report_version_form" model="ir.ui.view">
+        <field name="name">dl.wood.report.version.form</field>
+        <field name="model">dl.wood.report.version</field>
+        <field name="arch" type="xml">
+            <form string="Phiên bản biểu mẫu">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Ví dụ: Thông tư 26/2025..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh sách tệp mẫu (.docx)">
+                            <field name="template_config_ids" context="{'active_test': False}">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="template_key" readonly="1" force_save="1"/>
+                                    <field name="is_enabled" widget="boolean_toggle"/>
+                                    <field name="category"/>
+                                    <field name="template_file" filename="template_filename"/>
+                                    <field name="template_filename" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_report_version" model="ir.actions.act_window">
+        <field name="name">Cấu hình biểu mẫu</field>
+        <field name="res_model">dl.wood.report.version</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dl_woodpro_config" model="ir.actions.act_window">
+        <field name="name">Cấu hình WoodPro</field>
+        <field name="res_model">dl.woodpro.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_dl_wood_config_root" name="Cấu hình" parent="menu_dl_wood_traceability_root" sequence="100"/>
+    <menuitem id="menu_dl_wood_report_version" name="Phiên bản biểu mẫu" parent="menu_dl_wood_config_root" action="action_dl_wood_report_version" sequence="10"/>
+    <menuitem id="menu_dl_woodpro_config" name="Kết nối WoodPro" parent="menu_dl_wood_config_root" action="action_dl_woodpro_config" sequence="20"/>
+
 </odoo>

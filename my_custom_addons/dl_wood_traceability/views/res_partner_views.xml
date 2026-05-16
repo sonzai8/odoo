@@ -4,7 +4,7 @@
         <field name="name">res.partner.forest.owner.list</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
-            <list string="Chủ rừng" create="0" delete="1">
+            <list string="Chủ rừng" create="1" delete="1">
                 <field name="name"/>
                 <field name="phone"/>
                 <field name="street" string="Địa chỉ"/>
@@ -22,6 +22,11 @@
             <xpath expr="//field[@name='company_id']" position="attributes">
                 <attribute name="readonly">1</attribute>
                 <attribute name="invisible">0</attribute>
+            </xpath>
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="x_cccd"/>
+                <field name="x_cccd_date"/>
+                <field name="x_cccd_place"/>
             </xpath>
             <xpath expr="//page[@name='internal_notes']" position="after">
                 <page string="Địa Điểm Khai Thác">

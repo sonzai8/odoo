@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Phiên bản mặc định v2025 -->
+        <record id="report_version_v2025" model="dl.wood.report.version">
+            <field name="name">Thông tư 26/2025 (Mặc định)</field>
+            <field name="code">v2025</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cấu hình mẫu cho v2025 -->
+        <record id="template_v2025_ptkt" model="dl.wood.report.template.config">
+            <field name="version_id" ref="report_version_v2025"/>
+            <field name="sequence">10</field>
+            <field name="name">1. Phiếu thông tin khai thác</field>
+            <field name="template_key">ptkt</field>
+            <field name="category">exploitation</field>
+        </record>
+
+        <record id="template_v2025_hdsg" model="dl.wood.report.template.config">
+            <field name="version_id" ref="report_version_v2025"/>
+            <field name="sequence">20</field>
+            <field name="name">2. Hợp đồng hồ sơ nguồn gốc</field>
+            <field name="template_key">hdsg</field>
+            <field name="category">exploitation</field>
+        </record>
+
+        <record id="template_v2025_bkls" model="dl.wood.report.template.config">
+            <field name="version_id" ref="report_version_v2025"/>
+            <field name="sequence">30</field>
+            <field name="name">3. Bảng kê lâm sản</field>
+            <field name="template_key">bkls</field>
+            <field name="category">exploitation</field>
+        </record>
+
+        <record id="template_v2025_ddnx" model="dl.wood.report.template.config">
+            <field name="version_id" ref="report_version_v2025"/>
+            <field name="sequence">40</field>
+            <field name="name">4. Đơn đề nghị xác nhận</field>
+            <field name="template_key">ddnx</field>
+            <field name="category">exploitation</field>
+        </record>
+
+        <record id="template_v2025_bbxm" model="dl.wood.report.template.config">
+            <field name="version_id" ref="report_version_v2025"/>
+            <field name="sequence">50</field>
+            <field name="name">5. Biên bản xác minh</field>
+            <field name="template_key">bbxm</field>
+            <field name="category">exploitation</field>
+        </record>
+    </data>
+</odoo>

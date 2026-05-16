@@ -24,11 +24,33 @@ class ResPartner(models.Model):
     x_is_wood_customer = fields.Boolean(string='Khách hàng mua gỗ', default=False,
                                          help='Đánh dấu đây là khách hàng mua gỗ thành phẩm từ công ty.')
 
+    # CCCD Info
+    x_cccd = fields.Char(string='Số CCCD')
+    x_cccd_date = fields.Date(string='Ngày cấp CCCD')
+    x_cccd_place = fields.Char(string='Nơi cấp CCCD')
+
     exploitation_location_ids = fields.One2many(
         'dl.wood.exploitation.location', 
         'partner_id', 
         string='Địa điểm khai thác'
     )
+
+    @api.depends('name', 'x_cccd', 'state_id', 'x_is_wood_supplier')
+    def _compute_display_name(self):
+        super()._compute_display_name()
+        for partner in self:
+            if partner.x_is_wood_supplier:
+                name = partner.name
+                cccd = partner.x_cccd or ""
+                state = partner.state_id.name or ""
+                
+                parts = [name]
+                if cccd:
+                    parts.append(cccd)
+                if state:
+                    parts.append(state)
+                
+                partner.display_name = " - ".join(parts)
 
     @api.model_create_multi
     def create(self, vals_list):

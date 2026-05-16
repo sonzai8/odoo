@@ -11,6 +11,7 @@
         'security/dl_wood_multi_company.xml',
         'security/ir.model.access.csv',
         'data/dl_wood_species_data.xml',
+        'data/dl_report_version_data.xml',
         'data/ir_sequence_data.xml',
         'views/res_partner_views.xml',
         'views/product_template_views.xml',
@@ -22,7 +23,13 @@
         'views/stock_picking_views.xml',
         'views/res_config_settings_views.xml',
         'wizard/dl_customer_import_wizard_views.xml',
+        'wizard/dl_wood_init_data_wizard_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'dl_wood_traceability/static/src/css/wood_traceability.css',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

@@ -1,0 +1,196 @@
+.o_wood_dossier_line_list .o_list_table {
+    table-layout: fixed !important;
+}
+
+/* Căn giữa cho các cột thông số kỹ thuật */
+.o_wood_dossier_line_list .o_column_fixed_70,
+.o_wood_dossier_line_list th[data-name="quantity"],
+.o_wood_dossier_line_list th[data-name="volume"],
+.o_wood_dossier_line_list th[data-name="diameter_display"],
+.o_wood_dossier_line_list th[data-name="height_display"],
+.o_wood_dossier_line_list td[name="quantity"],
+.o_wood_dossier_line_list td[name="volume"],
+.o_wood_dossier_line_list td[name="diameter_display"],
+.o_wood_dossier_line_list td[name="height_display"] {
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
+    text-align: center !important;
+    justify-content: center !important;
+}
+
+/* Căn lề tiêu đề cột tiền và phân loại cũng vào giữa cho đồng bộ */
+.o_wood_dossier_line_list th[data-name="price_unit"],
+.o_wood_dossier_line_list th[data-name="price_subtotal"],
+.o_wood_dossier_line_list th[data-name="grade_id"] {
+    text-align: center !important;
+}
+
+.o_wood_dossier_line_list .o_column_fixed_140 {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+}
+
+.o_wood_dossier_line_list .o_column_fixed_100 {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+}
+
+.o_wood_dossier_line_list .o_column_fixed_120 {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+}
+
+.o_wood_dossier_line_list .o_column_fixed_150 {
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
+}
+
+.o_wood_dossier_line_list .o_column_money {
+    width: 250px !important;
+    min-width: 250px !important;
+}
+
+/* Nút tải tài liệu đồng bộ */
+.o_wood_dossier_btn_box .btn {
+    width: 100% !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding-left: 15px !important;
+    font-weight: 500 !important;
+    margin-bottom: 8px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.o_wood_dossier_btn_box .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.o_wood_dossier_btn_box .btn i {
+    font-size: 1.2rem;
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Kanban Hồ sơ gỗ hiện đại - Tối ưu 3 cột */
+.dl_wood_kanban_compact {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 5px !important;
+}
+
+.dl_wood_kanban_compact .o_kanban_record {
+    flex: 0 0 calc(33.333% - 12px) !important;
+    width: calc(33.333% - 12px) !important;
+    min-width: 280px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Card thiết kế dạng Premium */
+.dl_wood_card_compact {
+    min-height: 56px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 0 !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 1px solid #e9ecef !important;
+    border-radius: 12px !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.dl_wood_card_compact:hover {
+    border-color: #0d6efd !important;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(13, 110, 253, 0.08) !important;
+    background-color: #ffffff !important;
+}
+
+/* Trạng thái được chọn (Selected State) */
+.dl_wood_card_compact.bg-primary-subtle {
+    background: linear-gradient(135deg, #e7f1ff 0%, #f8faff 100%) !important;
+    border-color: #0d6efd !important;
+    border-width: 1.5px !important;
+}
+
+.dl_wood_card_compact.bg-primary-subtle .h6_name {
+    color: #084298 !important;
+}
+
+/* Kiểu chữ và Thông tin */
+.dl_wood_card_compact .h6_name {
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    color: #344767;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+.dl_wood_card_compact .badge_compact {
+    font-size: 0.68rem !important;
+    padding: 3px 8px !important;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border-radius: 6px !important;
+}
+
+.dl_wood_card_compact .text_small_info {
+    font-size: 0.75rem !important;
+    color: #67748e;
+    font-weight: 400;
+}
+
+/* Nút bấm tròn hiện đại */
+.dl_wood_card_compact .btn-sm-circle {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.85rem !important;
+    border: 1px solid transparent !important;
+    background-color: rgba(0,0,0,0.03) !important;
+    color: #67748e !important;
+    transition: all 0.2s ease;
+}
+
+.dl_wood_card_compact .btn-sm-circle:hover {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+}
+
+.dl_wood_card_compact .btn-outline-info:hover {
+    background-color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
+}
+
+/* Toggle Switch tinh tế hơn */
+.dl_wood_card_compact .form-check-input {
+    cursor: pointer;
+    width: 1.4em !important;
+    height: 1.4em !important;
+    margin-top: 0 !important;
+    border-color: #d2d6da !important;
+}
+
+.dl_wood_card_compact .form-check-input:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
