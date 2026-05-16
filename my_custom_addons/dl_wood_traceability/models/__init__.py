@@ -13,3 +13,5 @@ from . import product_template
 from . import stock_move_line
 from . import dl_wood_exploitation_location
 from . import dl_wood_production
+from . import res_company
+from . import res_config_settings

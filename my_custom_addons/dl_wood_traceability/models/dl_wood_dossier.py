@@ -21,6 +21,12 @@ class DlWoodSpecies(models.Model):
     name_sci = fields.Char(string='Tên Khoa Học')
     material_name = fields.Char(string='Tên Nguyên Liệu')
     code = fields.Char(string='Mã Loại Gỗ')
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
+    )
     note = fields.Text(string='Ghi chú')
 
     grade_ids = fields.One2many(
@@ -29,9 +35,10 @@ class DlWoodSpecies(models.Model):
         string='Phân loại chất lượng'
     )
 
-    _sql_constraints = [
-        ('unique_name', 'unique(name)', 'Tên loại gỗ đã tồn tại!')
-    ]
+    _name_company_unique = models.Constraint(
+        'unique(name, company_id)',
+        'Tên loại gỗ đã tồn tại trong công ty này!'
+    )
 
 class DlWoodSpeciesGrade(models.Model):
     _name = 'dl.wood.species.grade'
@@ -39,6 +46,13 @@ class DlWoodSpeciesGrade(models.Model):
 
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', ondelete='cascade', required=True)
     name = fields.Char(string='Tên phân loại', required=True, help='Ví dụ: Loại 1, Loại 2...')
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='species_id.company_id',
+        store=True,
+        index=True
+    )
     
     # Quy cách đường kính
     diameter_min = fields.Float(string='Đường kính từ (cm)', digits=(16, 2))
@@ -56,16 +70,52 @@ class DlWoodDossier(models.Model):
     _inherit = ['dl.wood.log.mixin']
     _description = 'Hồ Sơ Gỗ (Kiểm Lâm / Chủ Rừng)'
     _rec_name = 'name'
+    
+    _name_company_unique = models.Constraint(
+        'unique(name, company_id)',
+        'Mã hồ sơ đã tồn tại trong công ty này!'
+    )
 
     # -------------------------------------------------------------------------
     # Master Data Fields
     # -------------------------------------------------------------------------
+    def _get_default_name(self):
+        # Hàm sinh mã ngay khi bấm nút Tạo mới
+        company = self.env.company
+        prefix = company.x_wood_prefix or 'QTP'
+        seq = self.env['ir.sequence'].with_company(company).next_by_code('dl.wood.dossier') or 'Mới'
+        return f"{prefix}{seq}"
+
     name = fields.Char(
         string='Mã Hồ Sơ',
         required=True,
         copy=False,
-        help='Mã số hồ sơ kiểm lâm. Có thể nhập tay hoặc sinh tự động.',
+        default=_get_default_name,
+        help='Mã số hồ sơ kiểm lâm. Được sinh tự động từ cấu hình.',
     )
+    x_dossier_name = fields.Char(
+        string='Tên Bộ Hồ Sơ Gỗ',
+        required=True,
+        help='Tên gợi nhớ hoặc tên bộ hồ sơ gỗ (VD: Lô gỗ rừng trồng hộ gia đình ...)'
+    )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            # Nếu vì lý do gì đó mã chưa có hoặc là 'Mới', ta sẽ sinh lại (thường default đã lo việc này)
+            if not vals.get('name') or vals.get('name') == self.env._('Mới'):
+                company_id = vals.get('company_id') or self.env.company.id
+                company = self.env['res.company'].browse(company_id)
+                prefix = company.x_wood_prefix or 'QTP'
+                seq = self.env['ir.sequence'].with_company(company).next_by_code('dl.wood.dossier') or ''
+                vals['name'] = f"{prefix}{seq}"
+        return super().create(vals_list)
     product_id = fields.Many2one(
         'product.product',
         string='Sản phẩm đại diện',
@@ -76,6 +126,7 @@ class DlWoodDossier(models.Model):
         'res.partner',
         string='Chủ Rừng / Nhà Cung Cấp',
         help='Cá nhân hoặc tổ chức cung cấp gỗ cho hồ sơ này.',
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('x_is_wood_supplier', '!=', False)]"
     )
     
     partner_address = fields.Char(
@@ -99,7 +150,8 @@ class DlWoodDossier(models.Model):
     exploitation_location_id = fields.Many2one(
         'dl.wood.exploitation.location',
         string='Địa điểm khai thác',
-        help='Chọn địa điểm khai thác cụ thể của chủ rừng này.'
+        help='Chọn địa điểm khai thác cụ thể của chủ rừng này.',
+        domain="[('partner_id', '=', partner_id), ('company_id', '=', company_id)]"
     )
     
     @api.onchange('partner_id')
@@ -249,8 +301,15 @@ class DlWoodDossierLine(models.Model):
     _description = 'Chi tiết gỗ trong hồ sơ'
 
     dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ sơ gỗ', ondelete='cascade', required=True)
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='dossier_id.company_id',
+        store=True,
+        index=True
+    )
     partner_id = fields.Many2one('res.partner', related='dossier_id.partner_id', string='Chủ rừng', store=True, index=True)
-    species_id = fields.Many2one('dl.wood.species', string='Loại gỗ thu mua')
+    species_id = fields.Many2one('dl.wood.species', string='Loại gỗ thu mua', domain="[('company_id', '=', company_id)]")
     
     name = fields.Char(string='Tên loại gỗ')
     name_en = fields.Char(string='Tên tiếng Anh')
@@ -282,6 +341,13 @@ class DlWoodDossierAttachment(models.Model):
     _description = 'Tệp đính kèm hồ sơ gỗ từ WoodPro'
 
     dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ sơ gỗ', ondelete='cascade')
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='dossier_id.company_id',
+        store=True,
+        index=True
+    )
     name = fields.Char(string='Tên tệp', required=True)
     url = fields.Char(string='URL tải tệp')
     x_woodpro_id = fields.Char(string='ID WoodPro File')

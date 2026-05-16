@@ -6,22 +6,38 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+ 
+class DlWoodproExternalCompany(models.Model):
+    _name = 'dl.woodpro.external.company'
+    _description = 'Công ty trên hệ thống WoodPro'
+ 
+    name = fields.Char(string='Tên công ty', required=True)
+    wp_id = fields.Char(string='WoodPro ID', required=True)
+    config_id = fields.Many2one('dl.woodpro.config', string='Cấu hình gốc', ondelete='cascade')
 
 class DlWoodproConfig(models.Model):
     _name = 'dl.woodpro.config'
     _description = 'Cấu hình đồng bộ WoodPro'
 
     name = fields.Char(string='Tên cấu hình', required=True, default='Cấu hình WoodPro API')
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
+    )
     base_url = fields.Char(string='Base URL API', required=True, default='https://api.woodpro.duclam.com/api/v1')
     username = fields.Char(string='Tài khoản', required=True)
     password = fields.Char(string='Mật khẩu', required=True)
     token = fields.Char(string='JWT Token')
+    x_woodpro_company_id = fields.Many2one('dl.woodpro.external.company', string='Công ty WoodPro', domain="[('config_id', '=', id)]")
     last_sync_date = fields.Datetime(string='Lần đồng bộ cuối')
     x_debug_log = fields.Html(string='Nhật ký Debug', readonly=True)
 
-    _sql_constraints = [
-        ('unique_name', 'unique(name)', 'Tên cấu hình phải là duy nhất!')
-    ]
+    _name_company_unique = models.Constraint(
+        'unique(name, company_id)',
+        'Tên cấu hình phải là duy nhất trong công ty!'
+    )
 
     def _add_debug_log(self, title, content):
         """Hàm phụ để ghi log vào trường x_debug_log"""
@@ -55,14 +71,42 @@ class DlWoodproConfig(models.Model):
         except Exception as e:
             self._add_debug_log("Login Error", str(e))
             raise UserError(_("Lỗi kết nối API: %s") % str(e))
+ 
+    def action_fetch_companies(self):
+        """Lấy danh sách công ty từ WoodPro"""
+        self.ensure_one()
+        url = f"{self.base_url}/companies"
+        headers = self._get_headers()
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+            data = response.json()
+            if data.get('success'):
+                items = data.get('result', {}).get('items', [])
+                
+                # Xóa danh sách cũ của cấu hình này
+                self.env['dl.woodpro.external.company'].sudo().search([('config_id', '=', self.id)]).unlink()
+                
+                for item in items:
+                    self.env['dl.woodpro.external.company'].sudo().create({
+                        'name': item.get('name'),
+                        'wp_id': item.get('id'),
+                        'config_id': self.id
+                    })
+                return self._show_notification(_('Thành công'), _('Đã cập nhật danh sách công ty WoodPro.'))
+            else:
+                raise UserError(_("Không thể lấy danh sách công ty: %s") % data.get('message'))
+        except Exception as e:
+            raise UserError(_("Lỗi khi gọi API danh sách công ty: %s") % str(e))
 
     def _get_headers(self):
         if not self.token:
             self.action_login()
-        # Thử nghiệm: Bỏ tiền tố 'Bearer ' vì một số API NestJS/Custom không yêu cầu
+        # Quay lại cơ chế cũ dùng Cookie theo yêu cầu
         headers = {
-            'Authorization': f'{self.token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cookie': f'id={self.token}',
+            'User-Agent': 'Odoo/19.0'
         }
         return headers
 
@@ -75,11 +119,8 @@ class DlWoodproConfig(models.Model):
             if not self.token:
                 self.action_login()
                 
-            headers = {
-                'Content-Type': 'application/json',
-                'Cookie': f'id={self.token}',
-                'User-Agent': 'Odoo/19.0'
-            }
+            headers = self._get_headers()
+
             
             partner_obj = self.env['res.partner']
             page = 1
@@ -88,6 +129,9 @@ class DlWoodproConfig(models.Model):
             
             while True:
                 params = {'page': page, 'limit': limit, 'keyword': ''}
+                if self.x_woodpro_company_id:
+                    params['companyId'] = self.x_woodpro_company_id.wp_id
+                
                 response = requests.get(url, headers=headers, params=params, timeout=20)
                 
                 if response.status_code != 200:
@@ -101,7 +145,7 @@ class DlWoodproConfig(models.Model):
                     break
                 
                 # Lấy ID Việt Nam
-                country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
+                country_vn = self.env['res.country'].sudo().search([('code', '=', 'VN')], limit=1)
                 
                 for item in items:
                     wp_id = item.get('id')
@@ -135,7 +179,10 @@ class DlWoodproConfig(models.Model):
                         else:
                             street = format_address
 
-                    partner = partner_obj.search([('x_woodpro_id', '=', wp_id)], limit=1)
+                    partner = partner_obj.search([
+                        ('x_woodpro_id', '=', wp_id),
+                        ('company_id', '=', self.company_id.id)
+                    ], limit=1)
                     vals = {
                         'name': name,
                         'phone': item.get('phone'),
@@ -149,6 +196,7 @@ class DlWoodproConfig(models.Model):
                         'is_company': is_company,
                         'x_is_wood_supplier': 'supplier' if is_company else 'owner',
                         'customer_rank': 1,
+                        'company_id': self.company_id.id,
                     }
                     if partner:
                         partner.write(vals)
@@ -177,19 +225,18 @@ class DlWoodproConfig(models.Model):
             if not self.token:
                 self.action_login()
                 
-            headers = {
-                'Content-Type': 'application/json',
-                'Cookie': f'id={self.token}',
-                'User-Agent': 'Odoo/19.0'
-            }
+            headers = self._get_headers()
             
-            product_tmpl_obj = self.env['product.template']
+            product_tmpl_obj = self.env['product.template'].sudo()
             page = 1
             limit = 50
             total_synced = 0
             
             while True:
                 params = {'page': page, 'limit': limit, 'keyword': ''}
+                if self.x_woodpro_company_id:
+                    params['companyId'] = self.x_woodpro_company_id.wp_id
+                
                 response = requests.get(url, headers=headers, params=params, timeout=20)
                 
                 if response.status_code != 200:
@@ -213,9 +260,15 @@ class DlWoodproConfig(models.Model):
                     code = item.get('code')
                     if not wp_id or not name: continue
                     
-                    product = product_tmpl_obj.search([('x_woodpro_id', '=', wp_id)], limit=1)
+                    product = product_tmpl_obj.sudo().search([
+                        ('x_woodpro_id', '=', wp_id),
+                        ('company_id', '=', self.company_id.id)
+                    ], limit=1)
                     if not product and code:
-                        product = product_tmpl_obj.search([('default_code', '=', code)], limit=1)
+                        product = product_tmpl_obj.sudo().search([
+                            ('default_code', '=', code),
+                            ('company_id', '=', self.company_id.id)
+                        ], limit=1)
                         
                     vals = {
                         'name': name,
@@ -223,14 +276,15 @@ class DlWoodproConfig(models.Model):
                         'x_woodpro_id': wp_id,
                         'is_wood_product': True,
                         'tracking': 'lot',
-                        'type': 'consu',
+                        'type': 'consu', 
                         'is_storable': True,
+                        'company_id': self.company_id.id,
                     }
                     
                     if product:
-                        product.write(vals)
+                        product.sudo().write(vals)
                     else:
-                        product_tmpl_obj.create(vals)
+                        product_tmpl_obj.sudo().create(vals)
                     total_synced += 1
                 
                 # Phân trang
@@ -256,16 +310,13 @@ class DlWoodproConfig(models.Model):
             if not self.token:
                 self.action_login()
                 
-            headers = {
-                'Content-Type': 'application/json',
-                'Cookie': f'id={self.token}',
-                'User-Agent': 'Odoo/19.0'
-            }
+            headers = self._get_headers()
+
             
-            dossier_obj = self.env['dl.wood.dossier']
-            partner_obj = self.env['res.partner']
-            product_obj = self.env['product.product']
-            species_obj = self.env['dl.wood.species']
+            dossier_obj = self.env['dl.wood.dossier'].sudo()
+            partner_obj = self.env['res.partner'].sudo()
+            product_obj = self.env['product.product'].sudo()
+            species_obj = self.env['dl.wood.species'].sudo()
             
             page = 1
             limit = 50
@@ -273,6 +324,9 @@ class DlWoodproConfig(models.Model):
             
             while True:
                 params = {'page': page, 'limit': limit}
+                if self.x_woodpro_company_id:
+                    params['companyId'] = self.x_woodpro_company_id.wp_id
+                
                 response = requests.get(url, headers=headers, params=params, timeout=20)
                 
                 if response.status_code != 200:
@@ -295,7 +349,10 @@ class DlWoodproConfig(models.Model):
                     code = item.get('miningCode') or item.get('index')
                     if not wp_id: continue
                     
-                    partner = partner_obj.search([('x_woodpro_id', '=', (item.get('forestOwner') or {}).get('id'))], limit=1)
+                    partner = partner_obj.sudo().search([
+                        ('x_woodpro_id', '=', (item.get('forestOwner') or {}).get('id')),
+                        ('company_id', '=', self.company_id.id)
+                    ], limit=1)
                     
                     # Woods - Một hồ sơ có nhiều loại gỗ
                     woods = item.get('woods', [])
@@ -308,16 +365,28 @@ class DlWoodproConfig(models.Model):
                         w_name = w.get('name')
                         
                         # Ánh xạ species_id
-                        species = species_obj.search([('name', '=', w_name)], limit=1)
+                        species = species_obj.sudo().search([
+                            ('name', '=', w_name),
+                            ('company_id', '=', self.company_id.id)
+                        ], limit=1)
                         if not species and w_name:
-                            species = species_obj.create({'name': w_name})
+                            species = species_obj.sudo().create({
+                                'name': w_name,
+                                'company_id': self.company_id.id
+                            })
                         
                         # Tìm product tương ứng để làm product_id cho dossier (lấy loại đầu tiên làm đại diện)
                         if not main_product:
                             if w_wp_id:
-                                main_product = product_obj.search([('product_tmpl_id.x_woodpro_id', '=', w_wp_id)], limit=1)
+                                main_product = product_obj.sudo().search([
+                                    ('product_tmpl_id.x_woodpro_id', '=', w_wp_id),
+                                    ('company_id', '=', self.company_id.id)
+                                ], limit=1)
                             if not main_product and w_name:
-                                main_product = product_obj.search([('name', '=', w_name)], limit=1)
+                                main_product = product_obj.sudo().search([
+                                    ('name', '=', w_name),
+                                    ('company_id', '=', self.company_id.id)
+                                ], limit=1)
                         
                         # Xử lý bóc tách đường kính từ API (Ví dụ: "12-30")
                         d_api = str(w.get('avgDiameter', '0'))
@@ -370,18 +439,26 @@ class DlWoodproConfig(models.Model):
                     # Nếu không có product nào, dùng mặc định
                     if not main_product:
                         default_name = "Gỗ Nguyên Liệu (Đồng bộ WoodPro)"
-                        main_product = product_obj.search([('name', '=', default_name)], limit=1)
+                        main_product = product_obj.sudo().search([('name', '=', default_name)], limit=1)
                         if not main_product:
-                            main_product = product_obj.create({
-                                'name': default_name, 'type': 'consu', 'is_storable': True, 'is_wood_product': True, 'tracking': 'lot'
+                            main_product = product_obj.sudo().create({
+                                'name': default_name, 
+                                'type': 'consu', 
+                                'is_storable': True, 
+                                'is_wood_product': True, 
+                                'tracking': 'lot',
+                                'company_id': self.company_id.id
                             })
 
-                    dossier = dossier_obj.search([('x_woodpro_id', '=', wp_id)], limit=1)
+                    dossier = dossier_obj.sudo().search([
+                        ('x_woodpro_id', '=', wp_id),
+                        ('company_id', '=', self.company_id.id)
+                    ], limit=1)
                     mining_address = item.get('formatAddress') or ""
                     
                     # Cập nhật địa điểm khai thác cho chủ rừng
                     if partner and mining_address:
-                        loc_obj = self.env['dl.wood.exploitation.location']
+                        loc_obj = self.env['dl.wood.exploitation.location'].sudo()
                         parts = [p.strip() for p in mining_address.split(',')]
                         
                         # Tên địa điểm = 2 thông tin đầu tiên
@@ -389,11 +466,11 @@ class DlWoodproConfig(models.Model):
                         
                         # Bóc tách địa chỉ chi tiết
                         street, city, state_id = "", "", False
-                        country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
+                        country_vn = self.env['res.country'].sudo().search([('code', '=', 'VN')], limit=1)
                         
                         if len(parts) >= 3:
                             state_name = parts[-1].replace('Tỉnh ', '').replace('Thành phố ', '').strip()
-                            state = self.env['res.country.state'].search([
+                            state = self.env['res.country.state'].sudo().search([
                                 ('name', 'ilike', state_name),
                                 ('country_id', '=', country_vn.id)
                             ], limit=1)
@@ -407,7 +484,8 @@ class DlWoodproConfig(models.Model):
                         existing_loc = loc_obj.search([
                             ('partner_id', '=', partner.id),
                             ('street', '=', street),
-                            ('city', '=', city)
+                            ('city', '=', city),
+                            ('company_id', '=', self.company_id.id)
                         ], limit=1)
                         
                         loc_vals = {
@@ -416,7 +494,8 @@ class DlWoodproConfig(models.Model):
                             'street': street,
                             'city': city,
                             'state_id': state_id,
-                            'is_main': True # Đặt làm mặc định như yêu cầu
+                            'is_main': True,
+                            'company_id': self.company_id.id
                         }
                         
                         exploitation_location = False
@@ -443,6 +522,7 @@ class DlWoodproConfig(models.Model):
                         'x_mining_method': 'group' if item.get('exploitMethod') == 'Khai thác theo đám' else 'white',
                         'x_area': item.get('area', 0),
                         'line_ids': line_vals,
+                        'company_id': self.company_id.id,
                     }
                     if dossier:
                         # Xóa line cũ trước khi cập nhật
@@ -451,8 +531,8 @@ class DlWoodproConfig(models.Model):
                     else:
                         dossier = dossier_obj.create(vals)
                     
-                    # Tạm thời tắt đồng bộ tệp đính kèm theo yêu cầu
-                    # self._sync_dossier_attachments(dossier, headers)
+                    # Đồng bộ tệp đính kèm (URL tải file)
+                    self._sync_dossier_attachments(dossier, headers)
                     
                     total_synced += 1
                 
@@ -485,13 +565,8 @@ class DlWoodproConfig(models.Model):
             if not self.token:
                 self.action_login()
 
-            headers = {
-                'Content-Type': 'application/json',
-                'Cookie': f'id={self.token}',
-                'User-Agent': 'Odoo/19.0'
-            }
-
-            partner_obj = self.env['res.partner']
+            headers = self._get_headers()
+            partner_obj = self.env['res.partner'].sudo()
             page = 1
             limit = 50
             total_synced = 0
@@ -499,11 +574,14 @@ class DlWoodproConfig(models.Model):
             company_keywords = ['công ty', 'company', 'co.', 'corp', 'ltd', 'tnhh', 'cổ phần', 'hợp tác xã', 'htx']
 
             # Lấy thông tin Việt Nam
-            vietnam = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
-            vn_states = self.env['res.country.state'].search([('country_id', '=', vietnam.id)]) if vietnam else []
+            vietnam = self.env['res.country'].sudo().search([('code', '=', 'VN')], limit=1)
+            vn_states = self.env['res.country.state'].sudo().search([('country_id', '=', vietnam.id)]) if vietnam else []
 
             while True:
                 params = {'page': page, 'limit': limit}
+                if self.x_woodpro_company_id:
+                    params['companyId'] = self.x_woodpro_company_id.wp_id
+                
                 _logger.info(f"Đang gọi API trang {page} (limit {limit})...")
                 response = requests.get(url, headers=headers, params=params, timeout=20)
 
@@ -586,16 +664,21 @@ class DlWoodproConfig(models.Model):
                         'lang': 'vi_VN',
                         'country_id': vietnam.id if vietnam else False,
                         'state_id': state_id,
+                        'company_id': self.company_id.id,
                     }
 
                     # Tìm theo mã khách hàng trước, sau đó theo tên
                     existing = False
                     if receiver_code:
-                        existing = partner_obj.search([('x_customer_code', '=', receiver_code)], limit=1)
+                        existing = partner_obj.search([
+                            ('x_customer_code', '=', receiver_code),
+                            ('company_id', '=', self.company_id.id)
+                        ], limit=1)
                     if not existing:
                         existing = partner_obj.search([
                             ('name', '=', receiver_name),
-                            ('x_is_wood_customer', '=', True)
+                            ('x_is_wood_customer', '=', True),
+                            ('company_id', '=', self.company_id.id)
                         ], limit=1)
 
                     if existing:
@@ -618,10 +701,16 @@ class DlWoodproConfig(models.Model):
                         sale_order = False
                         
                         if invoice_code:
-                            sale_order = sale_order_obj.search([('x_invoice_code', '=', invoice_code)], limit=1)
+                            sale_order = sale_order_obj.search([
+                                ('x_invoice_code', '=', invoice_code),
+                                ('company_id', '=', self.company_id.id)
+                            ], limit=1)
                         
                         if not sale_order:
-                            sale_order = sale_order_obj.search([('x_woodpro_id', '=', production_id)], limit=1)
+                            sale_order = sale_order_obj.search([
+                                ('x_woodpro_id', '=', production_id),
+                                ('company_id', '=', self.company_id.id)
+                            ], limit=1)
                         
                         if not sale_order:
                             # Sử dụng Số hóa đơn làm mã đơn hàng, nếu không có mới dùng sequence
@@ -637,6 +726,7 @@ class DlWoodproConfig(models.Model):
                                 'x_woodpro_id': production_id,
                                 'state': 'done', # Tự động hoàn thành đơn hàng
                                 'note': item.get('note'),
+                                'company_id': self.company_id.id,
                             }
                             sale_order = sale_order_obj.create(so_vals)
                             _logger.info(f"Đã tạo và Hoàn thành Đơn hàng: {sale_order.name}")
@@ -675,7 +765,10 @@ class DlWoodproConfig(models.Model):
                                 })
                             
                             # Kiểm tra lệnh SX đã tồn tại chưa
-                            prod_order = prod_order_obj.search([('x_woodpro_id', '=', detail_id)], limit=1)
+                            prod_order = prod_order_obj.search([
+                                ('x_woodpro_id', '=', detail_id),
+                                ('company_id', '=', self.company_id.id)
+                            ], limit=1)
                             
                             if not prod_order:
                                 po_vals = {
@@ -688,6 +781,7 @@ class DlWoodproConfig(models.Model):
                                     'date_done': item.get('createdAt')[:10] if item.get('createdAt') else fields.Date.today(),
                                     'x_woodpro_id': detail_id,
                                     'state': 'done', # Tự động hoàn thành lệnh sản xuất
+                                    'company_id': self.company_id.id,
                                 }
                                 prod_order = prod_order_obj.create(po_vals)
                                 _logger.info(f"Đã tạo và Hoàn thành Lệnh sản xuất: {prod_order.name}")
@@ -697,13 +791,22 @@ class DlWoodproConfig(models.Model):
                                 line_vals = []
                                 for bom in boms:
                                     species_name = bom.get('nameSci') or (bom.get('subWood', {}).get('wood', {}).get('name'))
-                                    species = self.env['dl.wood.species'].search([('name', '=', species_name)], limit=1)
+                                    species = self.env['dl.wood.species'].search([
+                                        ('name', '=', species_name),
+                                        ('company_id', '=', self.company_id.id)
+                                    ], limit=1)
                                     if not species:
-                                        species = self.env['dl.wood.species'].create({'name': species_name})
+                                        species = self.env['dl.wood.species'].create({
+                                            'name': species_name,
+                                            'company_id': self.company_id.id
+                                        })
                                     
                                     # Tìm hồ sơ gỗ tương ứng nếu có miningId
                                     mining_id = bom.get('miningId')
-                                    dossier = self.env['dl.wood.dossier'].search([('x_woodpro_id', '=', mining_id)], limit=1)
+                                    dossier = self.env['dl.wood.dossier'].search([
+                                        ('x_woodpro_id', '=', mining_id),
+                                        ('company_id', '=', self.company_id.id)
+                                    ], limit=1)
                                     
                                     line_vals.append((0, 0, {
                                         'species_id': species.id,
@@ -759,6 +862,7 @@ class DlWoodproConfig(models.Model):
             response = requests.get(url, headers=headers, timeout=20)
             
             if response.status_code != 200:
+                self._add_debug_log("Attach Error", f"Không thể lấy file cho HS {dossier.name}: {response.text}")
                 return
                 
             res_data = response.json()
@@ -803,8 +907,11 @@ class DlWoodproConfig(models.Model):
                 })
                 count += 1
             
+            if count > 0:
+                _logger.info(f"Đã đồng bộ {count} tệp cho hồ sơ {dossier.name}")
+            
         except Exception as e:
-            self.x_debug_log = (self.x_debug_log or "") + f"<br/>Error syncing attachments for {dossier.name}: {str(e)}"
+            self._add_debug_log("Attach Exception", f"Lỗi đồng bộ file cho {dossier.name}: {str(e)}")
 
     def _show_notification(self, title, message):
         return {

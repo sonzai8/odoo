@@ -16,6 +16,7 @@
                 <field name="city"/>
                 <field name="state_id"/>
                 <field name="x_customer_code"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -64,6 +65,7 @@
                         <group string="Thông tin đơn hàng">
                             <field name="partner_id"/>
                             <field name="date_order"/>
+                            <field name="company_id" readonly="1"/>
                         </group>
                         <group string="Ghi chú">
                             <field name="note" nolabel="1"/>
@@ -107,6 +109,7 @@
                 <field name="date_order"/>
                 <field name="production_count" string="Lệnh SX"/>
                 <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -124,6 +127,7 @@
                 <filter string="Hoàn thành" name="filter_done" domain="[('state','=','done')]"/>
                 <separator/>
                 <filter string="Theo Khách hàng" name="group_by_partner" context="{'group_by':'partner_id'}"/>
+                <filter string="Theo Công ty" name="group_by_company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
             </search>
         </field>
     </record>
@@ -165,6 +169,7 @@
                             <field name="partner_id" readonly="1"/>
                             <field name="product_id"/>
                             <field name="uom_id" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
                         </group>
                         <group string="Số lượng &amp; Thời gian">
                             <field name="qty_planned"/>
@@ -217,6 +222,7 @@
                 <field name="total_volume_actual" string="KL NVL (m³)"/>
                 <field name="date_planned"/>
                 <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -237,6 +243,7 @@
                 <separator/>
                 <filter string="Theo Khách hàng" name="group_by_partner" context="{'group_by':'partner_id'}"/>
                 <filter string="Theo Sản phẩm" name="group_by_product" context="{'group_by':'product_id'}"/>
+                <filter string="Theo Công ty" name="group_by_company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
             </search>
         </field>
     </record>
@@ -246,33 +253,6 @@
         <field name="res_model">dl.wood.production.order</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_dl_wood_production_order_search"/>
-    </record>
-
-    <!-- ========================= -->
-    <!-- SEQUENCES (Tự sinh mã)    -->
-    <!-- ========================= -->
-    <record id="seq_dl_wood_sale_order_temp" model="ir.sequence">
-        <field name="name">Đơn đặt hàng gỗ (Tạm thời)</field>
-        <field name="code">dl.wood.sale.order.temp</field>
-        <field name="prefix">DL-DH-</field>
-        <field name="padding">5</field>
-        <field name="company_id" eval="False"/>
-    </record>
-
-    <record id="seq_dl_wood_sale_order" model="ir.sequence">
-        <field name="name">Đơn đặt hàng gỗ</field>
-        <field name="code">dl.wood.sale.order</field>
-        <field name="prefix">SO-GỖ/%(year)s/</field>
-        <field name="padding">4</field>
-        <field name="company_id" eval="False"/>
-    </record>
-
-    <record id="seq_dl_wood_production_order" model="ir.sequence">
-        <field name="name">Lệnh sản xuất gỗ</field>
-        <field name="code">dl.wood.production.order</field>
-        <field name="prefix">LSX/%(year)s/</field>
-        <field name="padding">4</field>
-        <field name="company_id" eval="False"/>
     </record>
 
     <!-- ========================= -->

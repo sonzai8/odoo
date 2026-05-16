@@ -33,6 +33,13 @@ class DlDossierLedger(models.Model):
         index=True,
         help='Bộ hồ sơ kiểm lâm bị ảnh hưởng bởi giao dịch này.',
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='dossier_id.company_id',
+        store=True,
+        index=True
+    )
     sale_id = fields.Many2one(
         'sale.order',
         string='Đơn Bán Hàng',

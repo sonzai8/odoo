@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequence cho Hồ sơ gỗ -->
+        <record id="seq_dl_wood_dossier" model="ir.sequence">
+            <field name="name">Hồ sơ gỗ</field>
+            <field name="code">dl.wood.dossier</field>
+            <field name="prefix">_HS_</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Sequence cho Lệnh sản xuất -->
+        <record id="seq_dl_wood_production_order" model="ir.sequence">
+            <field name="name">Lệnh sản xuất gỗ</field>
+            <field name="code">dl.wood.production.order</field>
+            <field name="prefix">_SX_%(month)s%(y)s_</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Sequence cho Đơn hàng bán gỗ -->
+        <record id="seq_dl_wood_sale_order" model="ir.sequence">
+            <field name="name">Đơn hàng bán gỗ</field>
+            <field name="code">dl.wood.sale.order</field>
+            <field name="prefix">_DH_%(month)s%(y)s_</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

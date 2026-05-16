@@ -16,10 +16,18 @@ class DLWoodLogConfig(models.Model):
     log_unlink = fields.Boolean(string='Theo dõi Xóa', default=True)
     
     active = fields.Boolean(string='Đang hoạt động', default=True)
-
-    _model_unique = models.Constraint(
-        'unique(model_id)', 'Mỗi model chỉ được cấu hình một lần!'
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
     )
+
+    _model_company_unique = models.Constraint(
+        'unique(model_id, company_id)',
+        'Mỗi model chỉ được cấu hình một lần trong một công ty!'
+    )
+
 
     @api.depends('model_id')
     def _compute_name(self):

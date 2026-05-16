@@ -26,6 +26,13 @@ class DlCoDeclaration(models.Model):
     sale_id = fields.Many2one(
         'sale.order', string='Đơn Hàng', required=True, ondelete='cascade', index=True,
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='sale_id.company_id',
+        store=True,
+        index=True
+    )
     dossier_id = fields.Many2one(
         'dl.wood.dossier', string='Hồ Sơ Gỗ',
         help='Chỉ chọn hồ sơ còn khả dụng (qty_available > 0).',

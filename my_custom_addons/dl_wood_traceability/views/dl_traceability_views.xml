@@ -8,7 +8,8 @@
                   decoration-info="state == 'draft'"
                   decoration-warning="state == 'exploiting'"
                   decoration-success="state == 'confirmed'">
-                <field name="name"/>
+                <field name="name" decoration-bf="1"/>
+                <field name="x_dossier_name"/>
                 <field name="partner_id"/>
                 <field name="x_start_date" optional="show"/>
                 <field name="x_end_date" optional="show"/>
@@ -18,6 +19,7 @@
                 <field name="remaining_qty"/>
                 <field name="qty_reserved"/>
                 <field name="qty_available"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -34,16 +36,19 @@
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="name" placeholder="Mã Hồ Sơ..."/></h1>
+                        <label for="x_dossier_name"/>
+                        <h1><field name="x_dossier_name" placeholder="Ví dụ: Lô gỗ rừng trồng hộ gia đình Nguyễn Văn A..."/></h1>
                     </div>
                     <group>
                         <group string="Thông Tin Chính">
+                            <field name="name" readonly="1" decoration-bf="1"/>
                             <field name="partner_id"/>
                             <field name="date_received"/>
                             <field name="x_start_date"/>
                             <field name="x_end_date"/>
                             <field name="x_addendum_num"/>
                             <field name="initial_qty"/>
+                            <field name="company_id" readonly="1"/>
                             <field name="x_woodpro_id" readonly="1"/>
                         </group>
                         <group string="Thông tin khai thác">
@@ -141,10 +146,11 @@
             <form string="Cấu hình WoodPro">
                 <header>
                     <button name="action_login" string="Login" type="object" class="btn-primary"/>
-                    <button name="action_sync_forest_owners" string="Đồng bộ Chủ rừng &amp; NCC" type="object" class="btn-secondary"/>
-                    <button name="action_sync_products" string="Đồng bộ Sản phẩm" type="object" class="btn-secondary"/>
-                    <button name="action_sync_minings" string="Đồng bộ Hồ sơ gỗ" type="object" class="btn-secondary"/>
-                    <button name="action_sync_customers" string="Đồng bộ Đơn hàng &amp; Sản xuất" type="object" class="btn-secondary"/>
+                    <button name="action_fetch_companies" string="Lấy DS Công ty" type="object" class="btn-info" icon="fa-refresh"/>
+                    <button name="action_sync_forest_owners" string="Đồng bộ Chủ rừng &amp; NCC" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
+                    <button name="action_sync_products" string="Đồng bộ Sản phẩm" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
+                    <button name="action_sync_minings" string="Đồng bộ Hồ sơ gỗ" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
+                    <button name="action_sync_customers" string="Đồng bộ Đơn hàng &amp; Sản xuất" type="object" class="btn-secondary" invisible="not x_woodpro_company_id"/>
                 </header>
                 <sheet>
                     <group>
@@ -155,7 +161,9 @@
                             <field name="password" password="1"/>
                         </group>
                         <group string="Trạng thái">
-                            <field name="token"/>
+                            <field name="token" readonly="1"/>
+                            <field name="x_woodpro_company_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
                             <field name="last_sync_date" readonly="1"/>
                         </group>
                     </group>
@@ -178,6 +186,7 @@
                 <field name="base_url"/>
                 <field name="username"/>
                 <field name="last_sync_date"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
             </list>
         </field>
     </record>
@@ -192,6 +201,7 @@
                 <field name="name_sci"/>
                 <field name="material_name"/>
                 <field name="code"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -210,8 +220,9 @@
                         </group>
                         <group>
                             <field name="name_en"/>
-                            <field name="name_sci"/>
-                        </group>
+                             <field name="name_sci"/>
+                             <field name="company_id" groups="base.group_multi_company"/>
+                         </group>
                     </group>
                     <notebook>
                         <page string="Phân loại chất lượng">
@@ -296,6 +307,7 @@
                 <filter string="Theo Loại gỗ" name="group_by_species" context="{'group_by':'species_id'}"/>
                 <filter string="Theo Chủ rừng" name="group_by_partner" context="{'group_by':'partner_id'}"/>
                 <filter string="Theo Hồ sơ" name="group_by_dossier" context="{'group_by':'dossier_id'}"/>
+                <filter string="Theo Công ty" name="group_by_company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
             </search>
         </field>
     </record>

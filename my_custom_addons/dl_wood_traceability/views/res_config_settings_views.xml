@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_dl_wood" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.dl.wood</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="90"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Truy Xuất Gỗ" string="Truy Xuất Gỗ" name="dl_wood_traceability">
+                    <block title="Cấu hình sinh mã tự động" name="wood_sequence_config">
+                        <setting id="wood_prefix_setting" string="Tiền tố mã Gỗ" help="Sử dụng để sinh mã Hồ sơ (HS) và Lệnh sản xuất (SX)">
+                            <field name="x_wood_prefix"/>
+                            <div class="text-muted mt-2">
+                                <strong>Quy tắc sinh mã:</strong>
+                                <ul class="mt-1">
+                                    <li><strong>Hồ sơ gỗ:</strong> [Tiền tố]_HS_xxxx (VD: <span class="text-primary">QTP_HS_0001</span>)</li>
+                                    <li><strong>Lệnh sản xuất:</strong> [Tiền tố]_SX_MMYY_xxxx (VD: <span class="text-primary">QTP_SX_0526_0001</span>)</li>
+                                    <li><strong>Đơn hàng:</strong> [Tiền tố]_DH_MMYY_xxxx (VD: <span class="text-primary">QTP_DH_0526_0001</span>)</li>
+                                </ul>
+                                <p class="small italic">(*) MMYY: Tháng năm hiện tại. xxxx: Số tự động tăng riêng cho từng công ty.</p>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_config_settings" model="ir.actions.act_window">
+        <field name="name">Cấu hình Chung</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module' : 'dl_wood_traceability'}</field>
+    </record>
+
+    <menuitem id="menu_dl_wood_settings"
+              name="Cấu hình mã"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_wood_config_settings"
+              sequence="5"/>
+</odoo>

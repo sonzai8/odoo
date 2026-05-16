@@ -13,10 +13,21 @@ class DlWoodSaleOrder(models.Model):
         string='Mã đơn hàng', required=True, copy=False,
         default=lambda self: _('Mới'), index=True
     )
+    
+    _name_company_unique = models.Constraint(
+        'unique(name, company_id)',
+        'Mã đơn hàng đã tồn tại trong công ty này!'
+    )
     partner_id = fields.Many2one(
         'res.partner', string='Khách hàng', required=True,
-        domain=[('x_is_wood_customer', '=', True)],
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('x_is_wood_customer', '=', True)]",
         index=True
+    )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
     )
     date_order = fields.Date(string='Ngày đặt hàng', default=fields.Date.context_today)
     x_invoice_code = fields.Char(string='Số hóa đơn', index=True)
@@ -45,7 +56,12 @@ class DlWoodSaleOrder(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', _('Mới')) == _('Mới'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('dl.wood.sale.order') or _('Mới')
+                company_id = vals.get('company_id') or self.env.company.id
+                company = self.env['res.company'].browse(company_id)
+                prefix = company.x_wood_prefix or 'QTP'
+                
+                seq = self.env['ir.sequence'].with_company(company).next_by_code('dl.wood.sale.order') or ''
+                vals['name'] = f"{prefix}{seq}"
         return super().create(vals_list)
 
     def action_confirm(self):
@@ -94,13 +110,20 @@ class DlWoodProductionOrder(models.Model):
     sale_order_id = fields.Many2one(
         'dl.wood.sale.order', string='Đơn đặt hàng', ondelete='cascade', index=True
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='sale_order_id.company_id',
+        store=True,
+        index=True
+    )
     partner_id = fields.Many2one(
         'res.partner', related='sale_order_id.partner_id',
         string='Khách hàng', store=True, index=True
     )
     product_id = fields.Many2one(
         'product.product', string='Sản phẩm sản xuất', required=True,
-        domain=[('type', 'in', ['consu', 'product'])]
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('type', 'in', ['consu', 'product'])]"
     )
     qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 2), default=1.0)
     qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2))
@@ -138,7 +161,17 @@ class DlWoodProductionOrder(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', _('Mới')) == _('Mới'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('dl.wood.production.order') or _('Mới')
+                company_id = vals.get('company_id')
+                if not company_id and vals.get('sale_order_id'):
+                    sale_order = self.env['dl.wood.sale.order'].browse(vals['sale_order_id'])
+                    company_id = sale_order.company_id.id
+                
+                company_id = company_id or self.env.company.id
+                company = self.env['res.company'].browse(company_id)
+                prefix = company.x_wood_prefix or 'QTP'
+                
+                seq = self.env['ir.sequence'].with_company(company).next_by_code('dl.wood.production.order') or ''
+                vals['name'] = f"{prefix}{seq}"
         return super().create(vals_list)
 
     def action_start(self):
@@ -204,10 +237,17 @@ class DlWoodProductionLine(models.Model):
         'dl.wood.production.order', string='Lệnh sản xuất',
         ondelete='cascade', required=True, index=True
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='production_order_id.company_id',
+        store=True,
+        index=True
+    )
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', required=True)
     dossier_id = fields.Many2one(
         'dl.wood.dossier', string='Hồ sơ gỗ nguồn',
-        domain="[('species_lines_species_id', '=', species_id)]",
+        domain="[('company_id', '=', company_id), ('species_lines_species_id', '=', species_id)]",
         help='Hồ sơ gỗ mà nguyên liệu được lấy từ đó để sản xuất.'
     )
     volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))

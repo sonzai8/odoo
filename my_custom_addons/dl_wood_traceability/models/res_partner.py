@@ -20,7 +20,7 @@ class ResPartner(models.Model):
     x_is_wood_supplier = fields.Selection([
         ('owner', 'Chủ Rừng'),
         ('supplier', 'Nhà Cung Cấp Gỗ')
-    ], string='Loại đối tác gỗ', default='owner')
+    ], string='Loại đối tác gỗ')
     x_is_wood_customer = fields.Boolean(string='Khách hàng mua gỗ', default=False,
                                          help='Đánh dấu đây là khách hàng mua gỗ thành phẩm từ công ty.')
 

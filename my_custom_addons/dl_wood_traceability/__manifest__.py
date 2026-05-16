@@ -8,8 +8,10 @@
     'depends': ['base', 'sale', 'stock', 'product', 'mrp', 'mail'],
     'data': [
         'security/dl_wood_security.xml',
+        'security/dl_wood_multi_company.xml',
         'security/ir.model.access.csv',
         'data/dl_wood_species_data.xml',
+        'data/ir_sequence_data.xml',
         'views/res_partner_views.xml',
         'views/product_template_views.xml',
         'views/dl_wood_log_views.xml',
@@ -18,6 +20,7 @@
         'views/dl_wood_production_views.xml',
         'views/mrp_production_views.xml',
         'views/stock_picking_views.xml',
+        'views/res_config_settings_views.xml',
         'wizard/dl_customer_import_wizard_views.xml',
     ],
     'installable': True,

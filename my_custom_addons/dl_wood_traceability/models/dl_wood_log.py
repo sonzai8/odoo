@@ -7,6 +7,12 @@ class DLWoodLog(models.Model):
     _order = 'datetime desc'
 
     user_id = fields.Many2one('res.users', string='Người thực hiện', index=True, readonly=True)
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
+    )
     datetime = fields.Datetime(string='Thời gian', default=fields.Datetime.now, index=True, readonly=True)
     model_id = fields.Many2one('ir.model', string='Model', index=True, readonly=True, ondelete='cascade')
     model_name = fields.Char(related='model_id.name', string='Tên Model', readonly=True)

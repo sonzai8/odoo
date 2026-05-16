@@ -11,7 +11,18 @@ class DlWoodContractTemplate(models.Model):
 
     name = fields.Char(string='Tên mẫu hợp đồng', required=True)
     partner_id = fields.Many2one('res.partner', string='Khách hàng', required=True, ondelete='cascade')
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        required=True,
+        default=lambda self: self.env.company
+    )
     file_url = fields.Char(string='Đường dẫn file', readonly=True)
+    
+    _name_partner_unique = models.Constraint(
+        'unique(name, partner_id, company_id)',
+        'Tên mẫu hợp đồng đã tồn tại cho khách hàng này!'
+    )
     file_upload = fields.Binary(string='Tải lên file (.doc/.docx)', store=False)
     file_name = fields.Char(string='Tên file')
 
