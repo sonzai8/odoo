@@ -75,12 +75,13 @@
                         <page string="Lệnh sản xuất">
                             <field name="production_order_ids" context="{'default_sale_order_id': id}">
                                 <list string="Lệnh sản xuất" editable="bottom">
+                                    <field name="x_select_production_id" readonly="id != False"/>
                                     <field name="name" readonly="1"/>
-                                    <field name="product_id"/>
-                                    <field name="qty_planned"/>
-                                    <field name="qty_done"/>
+                                    <field name="product_id" readonly="x_select_production_id != False"/>
+                                    <field name="qty_planned" readonly="x_select_production_id != False"/>
+                                    <field name="qty_done" readonly="x_select_production_id != False"/>
                                     <field name="uom_id" optional="hide"/>
-                                    <field name="date_planned"/>
+                                    <field name="date_planned" readonly="x_select_production_id != False"/>
                                     <field name="total_volume_actual" optional="show"/>
                                     <field name="state" widget="badge"
                                            decoration-info="state == 'draft'"
@@ -152,6 +153,8 @@
                             class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_done" string="Hoàn thành" type="object"
                             class="oe_highlight" invisible="state != 'in_progress'"/>
+                    <button name="action_previous_state" string="Quay lại trạng thái trước" type="object"
+                            invisible="state not in ('in_progress', 'done')"/>
                     <button name="action_cancel" string="Hủy" type="object"
                             invisible="state in ('done', 'cancelled')"/>
                     <button name="action_draft" string="Đặt lại" type="object"
@@ -160,22 +163,27 @@
                            statusbar_visible="draft,in_progress,done"/>
                 </header>
                 <sheet>
+                    <field name="x_select_production_id" invisible="True"/>
+                    <div class="alert alert-info text-center" role="alert" invisible="not x_select_production_id" style="margin-bottom:15px; font-weight:bold;">
+                        ℹ️ Lệnh sản xuất này được liên kết từ lệnh có sẵn. Các thông số sản xuất đã được khóa (chỉ cho xem).
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
                         <group string="Thông tin sản xuất">
-                            <field name="sale_order_id" readonly="state in ('done', 'cancelled')"/>
+                            <field name="sale_order_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="x_select_production_id" readonly="1" invisible="not x_select_production_id"/>
                             <field name="partner_id" readonly="1"/>
-                            <field name="product_id" readonly="state in ('done', 'cancelled')"/>
+                            <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
                             <field name="uom_id" readonly="1"/>
                             <field name="company_id" readonly="1"/>
                         </group>
                         <group string="Số lượng &amp; Thời gian">
-                            <field name="qty_planned" readonly="state in ('done', 'cancelled')"/>
-                            <field name="qty_done" readonly="state in ('done', 'cancelled')"/>
-                            <field name="x_co_yield" readonly="state in ('done', 'cancelled')"/>
-                            <field name="date_planned" readonly="state in ('done', 'cancelled')"/>
+                            <field name="qty_planned" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="qty_done" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="x_co_yield" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="date_planned" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
                             <field name="date_done" readonly="1"/>
                         </group>
                     </group>

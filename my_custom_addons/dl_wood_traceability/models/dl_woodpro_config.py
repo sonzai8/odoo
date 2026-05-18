@@ -641,8 +641,6 @@ class DlWoodproConfig(models.Model):
                         for part in addr_parts:
                             part_lower = part.lower()
                             if any(kw in part_lower for kw in ward_keywords):
-                                # Trích xuất tên (ví dụ: "Phường Bắc Giang" -> lấy "Bắc Giang")
-                                # Hoặc nếu anh muốn lấy cả cụm "Phường Bắc Giang" thì bỏ .replace bên dưới
                                 clean_ward = part
                                 for kw in ['Phường', 'Xã', 'Thị trấn', 'phường', 'xã', 'thị trấn', 'P.', 'X.']:
                                     clean_ward = clean_ward.replace(kw, '')
@@ -654,7 +652,7 @@ class DlWoodproConfig(models.Model):
                         'phone': item.get('receiverPhone') or False,
                         'email': item.get('receiverEmail') or False,
                         'street': receiver_address,
-                        'city': ward, # Lưu Xã/Phường vào trường city
+                        'city': ward,
                         'x_customer_code': receiver_code or False,
                         'company_type': company_type,
                         'is_company': is_company,
@@ -682,19 +680,146 @@ class DlWoodproConfig(models.Model):
                     if existing:
                         _logger.info(f"Cập nhật khách hàng: {receiver_name} ({receiver_code})")
                         existing.write(vals)
-                        partner = existing
                     else:
                         _logger.info(f"Tạo mới khách hàng: {receiver_name} ({receiver_code})")
-                        partner = partner_obj.create(vals)
+                        partner_obj.create(vals)
+
+                    total_synced += 1
+
+                if len(items) < limit:
+                    break
+                page += 1
+
+            _logger.info(f"=== ĐỒNG BỘ KHÁCH HÀNG HOÀN TẤT: {total_synced} BẢN GHI ===")
+            self.last_sync_date = fields.Datetime.now()
+            return self._show_notification(
+                _('Thành công'),
+                _('Đã đồng bộ %s khách hàng.') % total_synced
+            )
+        except Exception as e:
+            _logger.error(f"Lỗi ngoại lệ khi đồng bộ khách hàng: {str(e)}")
+            self.x_debug_log = (self.x_debug_log or '') + f"<br/>Error syncing customers: {str(e)}"
+            raise UserError(_('Lỗi đồng bộ khách hàng: %s') % str(e))
+
+    def action_sync_orders(self):
+        """Đồng bộ danh sách Đơn hàng và Lệnh sản xuất từ API /productions."""
+        self.ensure_one()
+        url = f"{self.base_url}/productions"
+        _logger.info("=== BẮT ĐẦU ĐỒNG BỘ ĐƠN HÀNG TỪ WOODPRO ===")
+
+        try:
+            if not self.token:
+                self.action_login()
+
+            headers = self._get_headers()
+            partner_obj = self.env['res.partner'].sudo()
+            page = 1
+            limit = 50
+            total_synced = 0
+            # Từ khóa nhận diện công ty (không phân biệt hoa/thường)
+            company_keywords = ['công ty', 'company', 'co.', 'corp', 'ltd', 'tnhh', 'cổ phần', 'hợp tác xã', 'htx']
+
+            # Lấy thông tin Việt Nam
+            vietnam = self.env['res.country'].sudo().search([('code', '=', 'VN')], limit=1)
+            vn_states = self.env['res.country.state'].sudo().search([('country_id', '=', vietnam.id)]) if vietnam else []
+
+            while True:
+                params = {'page': page, 'limit': limit}
+                if self.x_woodpro_company_id:
+                    params['companyId'] = self.x_woodpro_company_id.wp_id
+                
+                _logger.info(f"Đang gọi API trang {page} (limit {limit})...")
+                response = requests.get(url, headers=headers, params=params, timeout=20)
+
+                if response.status_code != 200:
+                    _logger.error(f"Lỗi API: Status {response.status_code} - {response.text}")
+                    break
+
+                data = response.json()
+                result_data = data.get('result', {})
+                items = []
+                if isinstance(result_data, dict):
+                    items = result_data.get('items', [])
+                
+                if not items:
+                    _logger.info("Không còn dữ liệu đơn hàng để đồng bộ.")
+                    break
+
+                _logger.info(f"Tìm thấy {len(items)} bản ghi sản xuất. Đang đồng bộ đơn hàng...")
+
+                for item in items:
+                    receiver_code = item.get('receiverCode') or ''
+                    receiver_name = item.get('receiverName') or ''
+                    receiver_address = item.get('receiverAddress') or ''
+
+                    if not receiver_name:
+                        continue
+
+                    # Tìm partner
+                    existing = False
+                    if receiver_code:
+                        existing = partner_obj.search([
+                            ('x_customer_code', '=', receiver_code),
+                            ('company_id', '=', self.company_id.id)
+                        ], limit=1)
+                    if not existing:
+                        existing = partner_obj.search([
+                            ('name', '=', receiver_name),
+                            ('x_is_wood_customer', '=', True),
+                            ('company_id', '=', self.company_id.id)
+                        ], limit=1)
+
+                    if not existing:
+                        # Tự tạo partner nếu chưa có
+                        name_lower = receiver_name.lower()
+                        is_company = any(kw in name_lower for kw in company_keywords)
+                        company_type = 'company' if is_company else 'person'
+
+                        state_id = False
+                        ward = False
+                        if receiver_address:
+                            addr_parts = [p.strip() for p in receiver_address.split(',')]
+                            if vn_states:
+                                potential_states = addr_parts[-2:] if len(addr_parts) >= 2 else addr_parts
+                                for part in potential_states:
+                                    if part.lower() in ['việt nam', 'vietnam']:
+                                        continue
+                                    clean_state_part = part.replace('Tỉnh', '').replace('Thành phố', '').replace('TP.', '').replace('TP', '').strip().lower()
+                                    match_state = vn_states.filtered(lambda s: clean_state_part in s.name.lower() or s.name.lower() in clean_state_part)
+                                    if match_state:
+                                        state_id = match_state[0].id
+                                        break
+                            for part in addr_parts:
+                                part_lower = part.lower()
+                                if any(kw in part_lower for kw in ['phường', 'xã', 'thị trấn', 'p.', 'x.']):
+                                    clean_ward = part
+                                    for kw in ['Phường', 'Xã', 'Thị trấn', 'phường', 'xã', 'thị trấn', 'P.', 'X.']:
+                                        clean_ward = clean_ward.replace(kw, '')
+                                    ward = clean_ward.strip()
+                                    break
+
+                        existing = partner_obj.create({
+                            'name': receiver_name,
+                            'phone': item.get('receiverPhone') or False,
+                            'email': item.get('receiverEmail') or False,
+                            'street': receiver_address,
+                            'city': ward,
+                            'x_customer_code': receiver_code or False,
+                            'company_type': company_type,
+                            'is_company': is_company,
+                            'x_is_wood_customer': True,
+                            'lang': 'vi_VN',
+                            'country_id': vietnam.id if vietnam else False,
+                            'state_id': state_id,
+                            'company_id': self.company_id.id,
+                        })
 
                     # --- ĐỒNG BỘ ĐƠN HÀNG VÀ LỆNH SẢN XUẤT ---
                     production_id = item.get('id')
-                    production_code = item.get('code') # Ví dụ: SX000001
-                    invoice_code = item.get('invoiceCode') # Số hóa đơn dùng để gom nhóm
+                    production_code = item.get('code')
+                    invoice_code = item.get('invoiceCode')
                     
                     if production_id:
-                        # 1. Tìm hoặc tạo Đơn đặt hàng
-                        # Ưu tiên tìm theo Số hóa đơn để gom nhóm, sau đó mới tìm theo WoodPro ID
                         sale_order_obj = self.env['dl.wood.sale.order']
                         sale_order = False
                         
@@ -711,37 +836,30 @@ class DlWoodproConfig(models.Model):
                             ], limit=1)
                         
                         if not sale_order:
-                            # Sử dụng Số hóa đơn làm mã đơn hàng, nếu không có mới dùng sequence
                             so_name = invoice_code
                             if not so_name:
                                 so_name = self.env['ir.sequence'].next_by_code('dl.wood.sale.order.temp') or 'DL-DH-00001'
                             
                             so_vals = {
                                 'name': so_name,
-                                'partner_id': partner.id,
+                                'partner_id': existing.id,
                                 'x_invoice_code': invoice_code,
                                 'date_order': item.get('timeAt')[:10] if item.get('timeAt') else fields.Date.today(),
                                 'x_woodpro_id': production_id,
-                                'state': 'done', # Tự động hoàn thành đơn hàng
+                                'state': 'done',
                                 'note': item.get('note'),
                                 'company_id': self.company_id.id,
                             }
                             sale_order = sale_order_obj.create(so_vals)
                             _logger.info(f"Đã tạo và Hoàn thành Đơn hàng: {sale_order.name}")
                         else:
-                            # Cập nhật thông tin nếu cần
                             if not sale_order.x_invoice_code and invoice_code:
                                 sale_order.write({'x_invoice_code': invoice_code})
-                            
-                            # Cập nhật trạng thái hoàn thành cho đơn hàng cũ
                             if sale_order.state != 'done':
                                 sale_order.write({'state': 'done'})
-                            
-                            # Kiểm tra và sửa lỗi lặp tiền tố nếu có
                             if sale_order.name and sale_order.name.startswith('DL-DH-DL-DH-'):
                                 new_name = sale_order.name.replace('DL-DH-DL-DH-', 'DL-DH-')
                                 sale_order.write({'name': new_name})
-                                _logger.info(f"Đã cập nhật đơn hàng cũ: {new_name}")
 
                         # 2. Xử lý các Production Details (Lệnh sản xuất)
                         prod_order_obj = self.env['dl.wood.production.order']
@@ -753,7 +871,6 @@ class DlWoodproConfig(models.Model):
                             product_name = woodpro_product.get('name', 'Sản phẩm WoodPro')
                             product_code = woodpro_product.get('code')
                             
-                            # Tìm hoặc tạo sản phẩm trong Odoo
                             product = self.env['product.product'].search([('default_code', '=', product_code)], limit=1)
                             if not product and product_code:
                                 product = self.env['product.product'].create({
@@ -762,7 +879,6 @@ class DlWoodproConfig(models.Model):
                                     'type': 'product',
                                 })
                             
-                            # Kiểm tra lệnh SX đã tồn tại chưa
                             prod_order = prod_order_obj.search([
                                 ('x_woodpro_id', '=', detail_id),
                                 ('company_id', '=', self.company_id.id)
@@ -778,7 +894,7 @@ class DlWoodproConfig(models.Model):
                                     'date_planned': item.get('timeAt')[:10] if item.get('timeAt') else fields.Date.today(),
                                     'date_done': item.get('createdAt')[:10] if item.get('createdAt') else fields.Date.today(),
                                     'x_woodpro_id': detail_id,
-                                    'state': 'done', # Tự động hoàn thành lệnh sản xuất
+                                    'state': 'done',
                                     'company_id': self.company_id.id,
                                 }
                                 prod_order = prod_order_obj.create(po_vals)
@@ -799,7 +915,6 @@ class DlWoodproConfig(models.Model):
                                             'company_id': self.company_id.id
                                         })
                                     
-                                    # Tìm hồ sơ gỗ tương ứng nếu có miningId
                                     mining_id = bom.get('miningId')
                                     dossier = self.env['dl.wood.dossier'].search([
                                         ('x_woodpro_id', '=', mining_id),
@@ -816,16 +931,11 @@ class DlWoodproConfig(models.Model):
                                 
                                 if line_vals:
                                     prod_order.write({'line_ids': line_vals})
-                                    # Quan trọng: Gọi hàm trừ lùi nguyên vật liệu và ghi sổ cái ngay lập tức
-                                    # Sử dụng force=True để bỏ qua kiểm tra tồn kho khi sync dữ liệu cũ
                                     prod_order._action_deduct_materials(force=True)
                             else:
-                                # Cập nhật trạng thái hoàn thành cho lệnh sản xuất cũ nếu chưa done
                                 if prod_order.state != 'done':
                                     prod_order.write({'state': 'done'})
-                                    # Nếu trước đó chưa trừ kho thì giờ trừ kho
                                     prod_order._action_deduct_materials(force=True)
-                                    _logger.info(f"Đã hoàn thành lệnh sản xuất cũ: {prod_order.name}")
 
                     total_synced += 1
 
@@ -833,16 +943,16 @@ class DlWoodproConfig(models.Model):
                     break
                 page += 1
 
-            _logger.info(f"=== ĐỒNG BỘ HOÀN TẤT: {total_synced} BẢN GHI === ")
+            _logger.info(f"=== ĐỒNG BỘ ĐƠN HÀNG HOÀN TẤT: {total_synced} ĐƠN HÀNG/LSX ===")
             self.last_sync_date = fields.Datetime.now()
             return self._show_notification(
                 _('Thành công'),
-                _('Đã đồng bộ %s khách hàng và các đơn hàng/lệnh sản xuất liên quan.') % total_synced
+                _('Đã đồng bộ %s đơn hàng và lệnh sản xuất liên quan.') % total_synced
             )
         except Exception as e:
-            _logger.error(f"Lỗi ngoại lệ khi đồng bộ: {str(e)}")
-            self.x_debug_log = (self.x_debug_log or '') + f"<br/>Error syncing: {str(e)}"
-            raise UserError(_('Lỗi đồng bộ: %s') % str(e))
+            _logger.error(f"Lỗi ngoại lệ khi đồng bộ đơn hàng: {str(e)}")
+            self.x_debug_log = (self.x_debug_log or '') + f"<br/>Error syncing orders: {str(e)}"
+            raise UserError(_('Lỗi đồng bộ đơn hàng: %s') % str(e))
 
     def _sync_dossier_attachments(self, dossier, headers):
         """Đồng bộ danh sách tệp đính kèm từ WoodPro"""

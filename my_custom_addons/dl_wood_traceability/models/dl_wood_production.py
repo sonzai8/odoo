@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class DlWoodSaleOrder(models.Model):
@@ -109,6 +112,12 @@ class DlWoodProductionOrder(models.Model):
     )
     sale_order_id = fields.Many2one(
         'dl.wood.sale.order', string='Đơn đặt hàng', ondelete='cascade', index=True
+    )
+    x_select_production_id = fields.Many2one(
+        'dl.wood.production.order',
+        string='Chọn lệnh SX có sẵn',
+        domain="[('sale_order_id', '=', False)]",
+        help='Chọn một lệnh sản xuất đã tạo sẵn chưa gắn với đơn hàng nào.'
     )
     company_id = fields.Many2one(
         'res.company',
@@ -226,22 +235,55 @@ class DlWoodProductionOrder(models.Model):
                 if abs(total_ratio - 100.0) > 0.01:
                     raise ValidationError(_('Tổng định mức (%%) tiêu hao nguyên vật liệu của các bộ hồ sơ gỗ phải bằng chính xác 100%% (Hiện tại là: %s%%).') % total_ratio)
 
+    @api.onchange('x_select_production_id')
+    def _onchange_x_select_production_id(self):
+        for rec in self:
+            if rec.x_select_production_id:
+                prod = rec.x_select_production_id
+                rec.product_id = prod.product_id
+                rec.qty_planned = prod.qty_planned
+                rec.qty_done = prod.qty_done
+                rec.date_planned = prod.date_planned
+                rec.x_co_yield = prod.x_co_yield
+                rec.note = prod.note
+
     @api.model_create_multi
     def create(self, vals_list):
+        new_vals_list = []
+        existing_records_to_update = []
+        
         for vals in vals_list:
-            if vals.get('name', _('Mới')) == _('Mới'):
-                company_id = vals.get('company_id')
-                if not company_id and vals.get('sale_order_id'):
-                    sale_order = self.env['dl.wood.sale.order'].browse(vals['sale_order_id'])
-                    company_id = sale_order.company_id.id
+            if vals.get('x_select_production_id'):
+                existing_records_to_update.append((vals['x_select_production_id'], vals))
+            else:
+                if vals.get('name', _('Mới')) == _('Mới'):
+                    company_id = vals.get('company_id')
+                    if not company_id and vals.get('sale_order_id'):
+                        sale_order = self.env['dl.wood.sale.order'].browse(vals['sale_order_id'])
+                        company_id = sale_order.company_id.id
+                    
+                    company_id = company_id or self.env.company.id
+                    company = self.env['res.company'].browse(company_id)
+                    prefix = company.x_wood_prefix or 'QTP'
+                    
+                    seq = self.env['ir.sequence'].with_company(company).next_by_code('dl.wood.production.order') or ''
+                    vals['name'] = f"{prefix}{seq}"
+                new_vals_list.append(vals)
                 
-                company_id = company_id or self.env.company.id
-                company = self.env['res.company'].browse(company_id)
-                prefix = company.x_wood_prefix or 'QTP'
+        records = super(DlWoodProductionOrder, self).create(new_vals_list)
+        
+        # Link existing production orders by writing sale_order_id!
+        for prod_id, vals in existing_records_to_update:
+            existing_prod = self.browse(prod_id)
+            if existing_prod:
+                existing_prod.write({
+                    'sale_order_id': vals.get('sale_order_id'),
+                    'x_select_production_id': prod_id,
+                })
+                records += existing_prod
                 
-                seq = self.env['ir.sequence'].with_company(company).next_by_code('dl.wood.production.order') or ''
-                vals['name'] = f"{prefix}{seq}"
-        return super().create(vals_list)
+        return records
+
 
     def action_start(self):
         """Bắt đầu sản xuất."""
@@ -268,6 +310,33 @@ class DlWoodProductionOrder(models.Model):
         """Về trạng thái dự thảo."""
         self.ensure_one()
         self.state = 'draft'
+
+    def action_previous_state(self):
+        """Quay lại trạng thái trước đó."""
+        self.ensure_one()
+        if self.state == 'in_progress':
+            # Từ Đang sản xuất quay về Dự thảo
+            self.state = 'draft'
+            _logger.info(f"Lệnh sản xuất {self.name} đã được chuyển về trạng thái Dự thảo.")
+        elif self.state == 'done':
+            # Từ Hoàn thành quay về Đang sản xuất
+            # Hoàn trả lại số lượng nguyên vật liệu đã trừ của từng hồ sơ gỗ nguồn
+            for line in self.line_ids:
+                if line.dossier_id and line.volume_actual:
+                    line.dossier_id.remaining_qty += line.volume_actual
+                    _logger.info(f"Đã hoàn trả {line.volume_actual} m3 gỗ cho hồ sơ nguồn {line.dossier_id.name}")
+            
+            # Xóa các bản ghi biến động sổ cái (Ledger) tương ứng
+            ledgers = self.env['dl.dossier.ledger'].search([('production_id', '=', self.id)])
+            if ledgers:
+                ledgers.unlink()
+                _logger.info(f"Đã xóa {len(ledgers)} dòng biến động sổ cái liên quan.")
+                
+            self.date_done = False
+            self.state = 'in_progress'
+            _logger.info(f"Lệnh sản xuất {self.name} đã được hoàn trả nguyên vật liệu và chuyển về Đang sản xuất.")
+        else:
+            raise UserError(_('Không hỗ trợ quay lại trạng thái trước từ trạng thái hiện tại.'))
 
     def _action_deduct_materials(self, force=False):
         """Trừ khối lượng gỗ thực tế từ các hồ sơ gỗ liên quan"""
@@ -299,7 +368,7 @@ class DlWoodProductionOrder(models.Model):
     def write(self, vals):
         for rec in self:
             if rec.state in ('done', 'cancelled'):
-                allowed_fields = {'note', 'date_done'}
+                allowed_fields = {'note', 'date_done', 'state'}
                 modified_fields = set(vals.keys())
                 if not modified_fields.issubset(allowed_fields):
                     raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
@@ -309,7 +378,14 @@ class DlWoodProductionOrder(models.Model):
         for rec in self:
             if rec.state in ('done', 'cancelled'):
                 raise UserError(_('Không thể xóa Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
-        return super(DlWoodProductionOrder, self).unlink()
+        
+        records_to_unlink = self.env['dl.wood.production.order']
+        for rec in self:
+            if rec.x_select_production_id:
+                rec.write({'sale_order_id': False})
+            else:
+                records_to_unlink += rec
+        return super(DlWoodProductionOrder, records_to_unlink).unlink()
 
 
 class DlWoodProductionLine(models.Model):
