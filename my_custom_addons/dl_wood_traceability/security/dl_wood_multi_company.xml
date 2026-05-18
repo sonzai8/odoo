@@ -103,5 +103,29 @@
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
 
+        <record id="dl_wood_vehicle_comp_rule" model="ir.rule">
+            <field name="name">Xe vận chuyển đa công ty</field>
+            <field name="model_id" ref="model_dl_wood_vehicle"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_transport_comp_rule" model="ir.rule">
+            <field name="name">Cấu hình vận chuyển đa công ty</field>
+            <field name="model_id" ref="model_dl_wood_dossier_transport"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_transport_ticket_comp_rule" model="ir.rule">
+            <field name="name">Phiếu vận chuyển đa công ty</field>
+            <field name="model_id" ref="model_dl_wood_dossier_transport_ticket"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_transport_ticket_line_comp_rule" model="ir.rule">
+            <field name="name">Chi tiết phiếu vận chuyển đa công ty</field>
+            <field name="model_id" ref="model_dl_wood_dossier_transport_ticket_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
     </data>
 </odoo>

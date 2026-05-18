@@ -22,6 +22,14 @@
                             </div>
                         </setting>
                     </block>
+                    <block title="Đại diện Công ty (Phục vụ In Hợp đồng/Tài liệu)" name="wood_company_representative">
+                        <setting id="wood_representative_setting" string="Thông tin đại diện" help="Người đại diện ký kết các hợp đồng hồ sơ nguồn gốc gỗ">
+                            <group>
+                                <field name="x_representative" placeholder="Ví dụ: Nguyễn Văn A"/>
+                                <field name="x_representative_position" placeholder="Ví dụ: Giám đốc"/>
+                            </group>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

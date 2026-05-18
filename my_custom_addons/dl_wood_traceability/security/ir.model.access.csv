@@ -21,3 +21,7 @@ access_dl_wood_dossier_document_user,dl.wood.dossier.document.user,model_dl_wood
 access_dl_wood_init_data_wizard_user,dl.wood.init.data.wizard.user,model_dl_wood_init_data_wizard,base.group_user,1,1,1,1
 access_dl_wood_report_version_user,dl.wood.report.version.user,model_dl_wood_report_version,base.group_user,1,1,1,1
 access_dl_wood_report_template_config_user,dl.wood.report.template.config.user,model_dl_wood_report_template_config,base.group_user,1,1,1,1
+access_dl_wood_vehicle_user,dl.wood.vehicle.user,model_dl_wood_vehicle,base.group_user,1,1,1,1
+access_dl_wood_dossier_transport_user,dl.wood.dossier.transport.user,model_dl_wood_dossier_transport,base.group_user,1,1,1,1
+access_dl_wood_dossier_transport_ticket_user,dl.wood.dossier.transport.ticket.user,model_dl_wood_dossier_transport_ticket,base.group_user,1,1,1,1
+access_dl_wood_dossier_transport_ticket_line_user,dl.wood.dossier.transport.ticket.line.user,model_dl_wood_dossier_transport_ticket_line,base.group_user,1,1,1,1

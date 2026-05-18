@@ -10,46 +10,16 @@ import base64
 import os
 import re
 import zipfile
+import traceback
 
-try:
-    from docxtpl import DocxTemplate
-except ImportError:
-    DocxTemplate = None
+# Import renderer và helper functions từ file riêng biệt
+from .dl_wood_dossier_renderer import (
+    DossierDocxRenderer,
+    date_to_vietnamese_text,
+    no_accent_vietnamese,
+)
 
 _logger = logging.getLogger(__name__)
-
-
-def date_to_vietnamese_text(d):
-    """Chuyển đổi date object sang chuỗi: ngày 06 tháng 04 năm 2026"""
-    if not d:
-        return ""
-    return f"ngày {d.day:02d} tháng {d.month:02d} năm {d.year}"
-
-
-def no_accent_vietnamese(s):
-    """Chuyển đổi tiếng Việt có dấu sang không dấu và chuẩn hóa cho tên file"""
-    if not s: return ""
-    s = s.lower()
-    map_chars = {
-        'a': 'áàảãạăắằẳẵặâấầẩẫậ',
-        'd': 'đ',
-        'e': 'éèẻẽẹêếềểễệ',
-        'i': 'íìỉĩị',
-        'o': 'óòỏõọôốồổỗộơớờởỡợ',
-        'u': 'úùủũụưứừửữự',
-        'y': 'ýỳỷỹỵ',
-    }
-    for dest, src in map_chars.items():
-        for char in src:
-            s = s.replace(char, dest)
-    # Loại bỏ ký tự đặc biệt, thay khoảng trắng bằng gạch dưới
-    import re
-    s = re.sub(r'[^a-z0-9\s]', '', s)
-    s = re.sub(r'\s+', '_', s.strip())
-    return s.upper()
-
-
-    return f"ngày {d.day:02d} tháng {d.month:02d} năm {d.year}"
 
 
 class DlWoodPdfMixin(models.AbstractModel):
@@ -105,53 +75,6 @@ class DlWoodPdfMixin(models.AbstractModel):
         return None
 
 
-class DlWoodSpecies(models.Model):
-    _name = 'dl.wood.species'
-    _description = 'Loài gỗ'
-    _inherit = ['dl.wood.log.mixin']
-
-    name = fields.Char(string='Tên loài', required=True)
-    name_en = fields.Char(string='Tên tiếng Anh')
-    name_sci = fields.Char(string='Tên khoa học')
-    material_name = fields.Char(string='Tên nguyên liệu')
-    code = fields.Char(string='Mã loài')
-    wood_type = fields.Selection([
-        ('wood', 'Gỗ'),
-        ('firewood', 'Củi')
-    ], string='Phân loại', default='wood', required=True)
-    note = fields.Text(string='Ghi chú')
-    active = fields.Boolean(default=True)
-    company_id = fields.Many2one('res.company', string='Công ty', default=lambda self: self.env.company)
-    
-    grade_ids = fields.One2many('dl.wood.species.grade', 'species_id', string='Phân loại')
-
-
-class DlWoodSpeciesGrade(models.Model):
-    _name = 'dl.wood.species.grade'
-    _description = 'Phân loại chất lượng loài gỗ'
-
-    species_id = fields.Many2one('dl.wood.species', string='Loài gỗ', ondelete='cascade')
-    name = fields.Char(string='Tên phân loại', required=True)
-    diameter_min = fields.Integer(string='Đường kính Min (cm)')
-    diameter_max = fields.Integer(string='Đường kính Max (cm)')
-    height = fields.Float(string='Chiều cao (m)')
-    default_price = fields.Integer(string='Giá mặc định')
-    note = fields.Char(string='Ghi chú')
-    company_id = fields.Many2one('res.company', related='species_id.company_id', store=True, index=True)
-
-    @api.depends('name', 'diameter_min', 'diameter_max', 'height')
-    def _compute_display_name(self):
-        for rec in self:
-            # Format: Tên loại - (đường kính min - đường kính max) - chiều cao
-            # Ví dụ: Loại A - (14-16) - 2,6
-            diameter_str = f"({rec.diameter_min}-{rec.diameter_max})" if rec.diameter_min or rec.diameter_max else ""
-            height_str = f"{rec.height:.1f}".replace('.', ',') if rec.height else ""
-            
-            parts = [rec.name]
-            if diameter_str: parts.append(diameter_str)
-            if height_str: parts.append(height_str)
-            
-            rec.display_name = " - ".join(parts)
 
 
 class DlWoodDossier(models.Model):
@@ -194,6 +117,11 @@ class DlWoodDossier(models.Model):
     x_exploitation_period_text = fields.Char(string='Thời gian khai thác (Văn bản)', compute='_compute_exploitation_period_text', store=False)
     x_addendum_num = fields.Char(string='Số phụ lục', compute='_compute_addendum_num', store=True, readonly=False)
 
+    # Thông tin Hợp đồng
+    x_contract_date = fields.Date(string='Ngày ký hợp đồng', default=fields.Date.context_today)
+    x_owner_representative = fields.Char(string='Đại diện chủ rừng')
+    x_owner_position = fields.Char(string='Chức vụ đại diện chủ rừng', default='Chủ rừng')
+
     @api.depends('x_start_date', 'company_id.x_wood_prefix', 'partner_id.name')
     def _compute_addendum_num(self):
         for record in self:
@@ -231,13 +159,14 @@ class DlWoodDossier(models.Model):
 
     # Chi tiết loài gỗ và khối lượng theo hồ sơ
     line_ids = fields.One2many('dl.wood.dossier.line', 'dossier_id', string='Chi tiết loài gỗ')
-    initial_qty = fields.Float(string='Tổng Khối Lượng (m³)', compute='_compute_initial_qty', store=True, digits=(16, 2))
-    initial_wood_qty = fields.Float(string='Tổng Gỗ (m³)', compute='_compute_initial_qty', store=True, digits=(16, 2))
-    initial_firewood_qty = fields.Float(string='Tổng Củi (m³)', compute='_compute_initial_qty', store=True, digits=(16, 2))
+    initial_qty = fields.Integer(string='Tổng Khối Lượng (m³)', compute='_compute_initial_qty', store=True)
+    initial_wood_qty = fields.Integer(string='Tổng Gỗ (m³)', compute='_compute_initial_qty', store=True)
+    initial_firewood_qty = fields.Integer(string='Tổng Củi (m³)', compute='_compute_initial_qty', store=True)
     
-    total_wood_amount = fields.Integer(string='Tổng Tiền Gỗ', compute='_compute_amounts', store=True)
-    total_firewood_amount = fields.Integer(string='Tổng Tiền Củi', compute='_compute_amounts', store=True)
-    total_amount = fields.Integer(string='Tổng Cộng Thành Tiền', compute='_compute_amounts', store=True)
+    total_wood_amount = fields.Float(string='Tổng Tiền Gỗ', compute='_compute_amounts', store=True, digits=(16, 2))
+    total_firewood_amount = fields.Float(string='Tổng Tiền Củi', compute='_compute_amounts', store=True, digits=(16, 2))
+    total_amount = fields.Float(string='Tổng Cộng Thành Tiền', compute='_compute_amounts', store=True, digits=(16, 2))
+
 
     # Tệp đính kèm
     x_internal_attachment_ids = fields.Many2many('ir.attachment', string='Tệp Đính Kèm (Hệ Thống)')
@@ -245,6 +174,10 @@ class DlWoodDossier(models.Model):
 
     # Danh sách 8 tài liệu hệ thống cố định
     document_ids = fields.One2many('dl.wood.dossier.document', 'dossier_id', string='Tài liệu hệ thống')
+
+    # Thông tin Vận chuyển
+    transport_ids = fields.One2many('dl.wood.dossier.transport', 'dossier_id', string='Cấu hình vận chuyển')
+    ticket_ids = fields.One2many('dl.wood.dossier.transport.ticket', 'dossier_id', string='Các chuyến xe')
 
     # -------------------------------------------------------------------------
     # Ledger Relation & Stock Calculation
@@ -254,6 +187,18 @@ class DlWoodDossier(models.Model):
     remaining_qty = fields.Float(string='Tồn Kho Thực Tế (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
     qty_reserved = fields.Float(string='Đang Giữ Đơn (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
     qty_available = fields.Float(string='Khả Dụng Để Bán (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
+    qty_consumed = fields.Float(string='Đã Tiêu Hao (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
+
+    x_production_ids = fields.Many2many(
+        'dl.wood.production.order',
+        string='Lệnh sản xuất liên quan',
+        compute='_compute_x_production_ids',
+        help='Các lệnh sản xuất đã tiêu hao nguyên vật liệu từ hồ sơ này.'
+    )
+    x_production_count = fields.Integer(
+        string='Số lệnh sản xuất',
+        compute='_compute_x_production_ids'
+    )
 
     @api.depends('line_ids.price_subtotal', 'line_ids.wood_type')
     def _compute_amounts(self):
@@ -274,14 +219,202 @@ class DlWoodDossier(models.Model):
             dossier.remaining_qty = round(dossier.initial_qty + sum(done_lines.mapped('actual_qty')), 4)
             dossier.qty_reserved = round(abs(sum(draft_lines.mapped('actual_qty'))), 4)
             dossier.qty_available = round(dossier.remaining_qty - dossier.qty_reserved, 4)
+            dossier.qty_consumed = round(max(0.0, dossier.initial_qty - dossier.remaining_qty), 4)
+
+    @api.depends('ledger_ids.production_id')
+    def _compute_x_production_ids(self):
+        for dossier in self:
+            # Sử dụng sudo() để lấy tất cả lệnh sản xuất mà không bị chặn bởi phân quyền đa công ty
+            ledgers = dossier.ledger_ids.sudo()
+            prod_orders = ledgers.filtered(lambda l: l.production_id).mapped('production_id')
+            
+            # Để tránh lỗi AccessError khi hiển thị Many2many trên giao diện của user,
+            # chúng ta chỉ gán những lệnh sản xuất thuộc công ty mà user hiện tại được phép truy cập.
+            allowed_company_ids = self.env.companies.ids
+            accessible_prod_orders = prod_orders.filtered(lambda p: p.company_id.id in allowed_company_ids)
+            
+            dossier.x_production_ids = accessible_prod_orders
+            dossier.x_production_count = len(prod_orders)
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if 'partner_id' in vals and vals.get('partner_id') and not vals.get('x_owner_representative'):
+                partner = self.env['res.partner'].browse(vals['partner_id'])
+                if partner:
+                    vals['x_owner_representative'] = partner.name
+                    
         records = super(DlWoodDossier, self).create(vals_list)
         for record in records:
             # Tự động tạo tài liệu mẫu khi tạo hồ sơ mới
             record._init_default_documents()
         return records
+
+    def action_generate_transport_tickets(self):
+        """Thuật toán tự động sinh chuyến xe dựa trên cấu hình vận chuyển (Bucket Distribution)"""
+        import random
+        import math
+        
+        for dossier in self:
+            # 1. Xóa tickets cũ
+            dossier.ticket_ids.unlink()
+
+            if not dossier.transport_ids:
+                continue
+
+            # Lấy cấu hình xe đầu tiên
+            first_transport = dossier.transport_ids[0]
+            vehicle = first_transport.vehicle_id
+            N = first_transport.vehicle_count
+            if not vehicle or N <= 0 or vehicle.capacity <= 0:
+                continue
+                
+            C = vehicle.capacity
+            fr_min = vehicle.fill_rate_min if vehicle.fill_rate_min else 95.0
+            fr_max = vehicle.fill_rate_max if vehicle.fill_rate_max else 98.9
+
+            # 2. Chuẩn bị dữ liệu
+            wood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume} for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'wood' and x.volume > 0)]
+            firewood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume} for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'firewood' and x.volume > 0)]
+
+            def get_total_remaining(lines):
+                return sum(x['remaining'] for x in lines)
+
+            total_wood = get_total_remaining(wood_lines)
+            total_firewood = get_total_remaining(firewood_lines)
+            total_volume = total_wood + total_firewood
+            
+            if total_volume <= 0:
+                continue
+
+            # 3. Tính toán tổng số xe đơn lẻ cần thiết (K)
+            # Dùng fr_max để tính số xe tối thiểu tuyệt đối cần thiết
+            max_capacity_per_vehicle = C * (fr_max / 100.0)
+            K = math.ceil(total_volume / max_capacity_per_vehicle)
+            if K == 0: K = 1
+            
+            # 4. Dàn đều khối lượng (Bucket Distribution)
+            avg_v = total_volume / K
+            vehicle_vols = [avg_v] * K
+            
+            # Tạo nhiễu ngẫu nhiên (Random Noise) cho các xe
+            if K > 1:
+                min_v = C * 0.5 # Rút xuống tối đa 50%
+                max_v = max_capacity_per_vehicle
+                for _ in range(K * 5):
+                    i = random.randint(0, K - 1)
+                    j = random.randint(0, K - 1)
+                    if i == j: continue
+                    transfer = random.uniform(0, C * 0.05)
+                    if vehicle_vols[i] - transfer >= min_v and vehicle_vols[j] + transfer <= max_v:
+                        vehicle_vols[i] -= transfer
+                        vehicle_vols[j] += transfer
+
+            # 5. Gom xe thành các Chuyến (Tickets)
+            trips = []
+            for i in range(0, K, N):
+                chunk = vehicle_vols[i:i+N]
+                trips.append({
+                    'capacity': sum(chunk),
+                    'vehicle_count': len(chunk)
+                })
+
+            tickets_vals = []
+            trip_counter = 1
+
+            # 6. Phân bổ tuần tự Gỗ/Củi vào từng chuyến
+            for trip in trips:
+                actual_capacity = trip['capacity']
+                v_count = trip['vehicle_count']
+                nominal_cap = v_count * C
+                fill_rate = round((actual_capacity / nominal_cap), 4) if nominal_cap > 0 else 0.0
+                
+                total_wood_rem = get_total_remaining(wood_lines)
+                total_firewood_rem = get_total_remaining(firewood_lines)
+                
+                # Tính tải trọng Củi & Gỗ
+                if total_wood_rem > 0:
+                    max_f = actual_capacity * 0.20
+                else:
+                    max_f = actual_capacity
+                    
+                f_load = min(total_firewood_rem, max_f)
+                w_load = min(total_wood_rem, actual_capacity - f_load)
+                
+                # Nếu gỗ không đủ để lấp đầy phần còn lại, dồn thêm củi vào!
+                unused = actual_capacity - (f_load + w_load)
+                if unused > 0 and total_firewood_rem - f_load > 0:
+                    extra_f = min(total_firewood_rem - f_load, unused)
+                    f_load += extra_f
+
+                # Dòng ticket line
+                lines_to_create = []
+                
+                # Phân bổ Gỗ
+                w_needed = w_load
+                for w in wood_lines:
+                    if w_needed <= 0.001: break
+                    if w['remaining'] > 0.001:
+                        take = min(w['remaining'], w_needed)
+                        lines_to_create.append({
+                            'species_id': w['id'],
+                            'wood_type': w['wood_type'],
+                            'volume': take
+                        })
+                        w['remaining'] -= take
+                        w_needed -= take
+
+                # Phân bổ Củi
+                f_needed = f_load
+                for f in firewood_lines:
+                    if f_needed <= 0.001: break
+                    if f['remaining'] > 0.001:
+                        take = min(f['remaining'], f_needed)
+                        lines_to_create.append({
+                            'species_id': f['id'],
+                            'wood_type': f['wood_type'],
+                            'volume': take
+                        })
+                        f['remaining'] -= take
+                        f_needed -= take
+
+                if lines_to_create:
+                    tickets_vals.append({
+                        'dossier_id': dossier.id,
+                        'name': f'Chuyến {trip_counter:02d}',
+                        'vehicle_count': v_count,
+                        'fill_rate': fill_rate,
+                        'ticket_line_ids': [(0, 0, vals) for vals in lines_to_create]
+                    })
+                    trip_counter += 1
+
+            # Lưu vào database
+            if tickets_vals:
+                self.env['dl.wood.dossier.transport.ticket'].create(tickets_vals)
+                
+
+    @api.onchange('x_start_date', 'line_ids')
+    def _onchange_suggest_end_date(self):
+        """Tự động gợi ý ngày kết thúc khai thác dựa trên ngày bắt đầu và tổng khối lượng gỗ."""
+        if self.x_start_date:
+            # Tính tổng volume từ các line (vì lúc onchange, compute field initial_qty chưa được cập nhật xuống database)
+            total_vol = sum(self.line_ids.mapped('volume'))
+            
+            # Áp dụng công thức hồi quy tuyến tính: y = 0.016 * x + 16.5
+            days_needed = int(round(0.016 * total_vol + 16.5))
+            if days_needed < 1:
+                days_needed = 1
+                
+            from datetime import timedelta
+            self.x_end_date = self.x_start_date + timedelta(days=days_needed)
+
+
+    @api.onchange('partner_id')
+    def _onchange_partner_id_populate_rep(self):
+        """Tự động điền người đại diện chủ rừng mặc định khi chọn chủ rừng."""
+        if self.partner_id:
+            self.x_owner_representative = self.partner_id.name
+
 
     @api.onchange('x_report_version_id')
     def _onchange_report_version_id(self):
@@ -335,9 +468,9 @@ class DlWoodDossier(models.Model):
     @api.depends('line_ids.volume', 'line_ids.wood_type')
     def _compute_initial_qty(self):
         for record in self:
-            record.initial_wood_qty = round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'wood').mapped('volume')), 2)
-            record.initial_firewood_qty = round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'firewood').mapped('volume')), 2)
-            record.initial_qty = round(record.initial_wood_qty + record.initial_firewood_qty, 2)
+            record.initial_wood_qty = int(round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'wood').mapped('volume'))))
+            record.initial_firewood_qty = int(round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'firewood').mapped('volume'))))
+            record.initial_qty = record.initial_wood_qty + record.initial_firewood_qty
 
     # --- QUẢN LÝ TRẠNG THÁI (STATE MACHINE) ---
     def action_draft(self):
@@ -355,87 +488,78 @@ class DlWoodDossier(models.Model):
                 raise UserError(_("Vui lòng nhập chi tiết loại gỗ trước khi xác nhận."))
         self.write({'state': 'confirmed'})
 
-    # --- XUẤT FILE WORD (Cơ chế render trực tiếp không lưu file) ---
-    def _prepare_pakt_context(self):
-        """Chuẩn bị dữ liệu để điền vào template PAKT theo chuẩn Jinja2 {{ }}"""
+    # --- XUẤT FILE WORD (Tách logic render sang dl_wood_dossier_renderer.py) ---
+    def _get_template_source(self, template_key):
+        """Tìm nguồn template: Tạm thời lấy trực tiếp từ ổ đĩa (static/TEMPLATES/) để sửa đổi nhanh chóng."""
         self.ensure_one()
-        partner = self.partner_id
-        
-        def format_date(d):
-            return d.strftime('%d/%m/%Y') if d else ""
-
-        mining_method_map = {
-            'white': _('Khai thác trắng toàn bộ'),
-            'group': _('Khai thác theo đám')
+        key_aliases = {
+            # Hợp đồng hồ sơ nguồn gốc
+            'hdhsg': 'hd_hsg',
+            'hdsg': 'hd_hsg',
+            'hop_dong_hsg': 'hd_hsg',
+            'hop_dong_ho_so_nguon_goc': 'hd_hsg',
+            
+            # Phương án khai thác
+            'pakt': 'pakt',
+            'phuong_an_khai_thac': 'pakt',
+            
+            # Phiếu thông tin khai thác (ptkt)
+            'ptkt': 'pakt',  # ptkt tạm dùng chung mẫu với pakt nếu chưa có mẫu riêng
+            'phieu_thong_tin_khai_thac': 'pakt',
+            
+            # Bảng kê lâm sản
+            'bkls': 'bkls',
+            'ban_ke_lam_san': 'bkls',
+            'bang_ke_lam_san': 'bkls',
+            
+            # Đơn đề nghị xác nhận
+            'ddnx': 'ddnx',
+            'don_de_nghi_xac_nhan': 'ddnx',
+            
+            # Biên bản xác minh
+            'bbxm': 'bbxm',
+            'bien_ban_xac_minh': 'bbxm',
+            
+            # Các mẫu khác (nếu tải lên sau này)
+            'cnbk': 'cnbk',
+            'cam_ket_nguon_goc': 'cnbk',
+            'pnk': 'pnk',
+            'phieu_nhap_kho': 'pnk',
+            'bbbg': 'bbbg',
+            'bien_ban_ban_giao': 'bbbg',
+            'gbn': 'gbn',
+            'giay_ban_no': 'gbn'
         }
-
-        total_volume = self.initial_wood_qty
-
-        context = {
-            'forestOwnerName': partner.name or "",
-            'forestOwnerAddr': self.partner_address or "",
-            'forestCity': partner.city or "",
-            'foestOwnerCccd': partner.x_cccd or "",
-            'cccdDate': format_date(partner.x_cccd_date),
-            'cccdPlace': partner.x_cccd_place or "",
-            'forestOwnerPhoneNumber': partner.phone or "",
-            'miningArea': self.x_area or 0.0,
-            'forestAddr': self.exploitation_location_id.name or self.partner_address or "",
-            'typeMining': mining_method_map.get(self.x_mining_method, ""),
-            'projectedMiningOutput': f"{total_volume:,.2f} m3".replace(',', '.'),
-            'miningFromDate': date_to_vietnamese_text(self.x_start_date),
-            'miningFromdate': date_to_vietnamese_text(self.x_start_date),
-            'miningToDate': date_to_vietnamese_text(self.x_end_date),
-            'representative': self.x_pakt_representative or "",
-            'position': self.x_pakt_position or "",
-            'companyName': self.company_id.name or "",
-            'table_rows': [{
-                'stt': idx,
-                'species': line.species_id.name or "",
-                'name_en': line.name_en or "",
-                'grade': line.grade_id.name or "",
-                'quantity': line.quantity or 0,
-                'volume': f"{line.volume:,.2f}".replace(',', '.'),
-                'diameter': line.diameter_display or "",
-                'height': line.height_display or "",
-                'price_subtotal': f"{line.price_subtotal:,}".replace(',', '.'),
-                'note': line.note or ""
-            } for idx, line in enumerate(self.line_ids, 1)]
-        }
-        return context
+        disk_key = key_aliases.get(template_key, template_key)
+        template_filename = f"TEMPLATE_{disk_key.upper()}.docx"
+        try:
+            path = tools.file_path(f'dl_wood_traceability/static/TEMPLATES/{template_filename}')
+            _logger.info("[_get_template_source] [BYPASS DB] template_key='%s' → lấy trực tiếp từ ổ đĩa: %s",
+                         template_key, path)
+            return path
+        except FileNotFoundError:
+            raise UserError(
+                _("Không tìm thấy file mẫu cho tài liệu '%s' (tên file: %s) trong thư mục static/TEMPLATES/.") 
+                % (template_key, template_filename)
+            )
 
     def _render_docx(self, template_key):
-        """Render file docx từ template (Binary hoặc Disk)"""
+        """Render file .docx: tìm template → giao DossierDocxRenderer xử lý."""
         self.ensure_one()
-        if not DocxTemplate:
-            raise UserError(_("Thư viện 'docxtpl' chưa được cài đặt."))
-
-        # 1. Tìm bản ghi document tương ứng trong hồ sơ
-        doc_record = self.document_ids.filtered(lambda d: d.template_key == template_key)
-        
-        # 2. Ưu tiên lấy template từ cấu hình người dùng tải lên (Binary)
-        if doc_record and doc_record[0].config_id and doc_record[0].config_id.template_file:
-            template_source = io.BytesIO(base64.b64decode(doc_record[0].config_id.template_file))
-        else:
-            # 3. Fallback lấy template mặc định từ ổ đĩa
-            template_filename = f"TEMPLATE_{template_key.upper()}.docx"
-            try:
-                template_source = tools.file_path(f'dl_wood_traceability/static/TEMPLATES/{template_filename}')
-            except FileNotFoundError:
-                # Fallback cuối cùng về PAKT
-                template_source = tools.file_path('dl_wood_traceability/static/TEMPLATES/TEMPLATE_PAKT.docx')
-
-        # 4. Chuẩn bị context và render
-        context = self._prepare_pakt_context()
+        template_source = self._get_template_source(template_key)
+        renderer = DossierDocxRenderer(self)
         try:
-            doc = DocxTemplate(template_source)
-            doc.render(context)
-            output = io.BytesIO()
-            doc.save(output)
-            return output.getvalue()
+            return renderer.render(template_key, template_source)
         except Exception as e:
-            _logger.error("Lỗi khi render %s: %s", template_key, e)
-            raise UserError(_("Lỗi định dạng hoặc không thể đọc template %s: %s") % (template_key, str(e)))
+            tb = traceback.format_exc()
+            _logger.error("[_render_docx] Lỗi khi render template '%s':\n%s", template_key, tb)
+            raise UserError(
+                _("Lỗi định dạng hoặc không thể đọc template %s: %s\n\n"
+                  "=== CHI TIẾT TRACEBACK LỖI ===\n%s") % (template_key, str(e), tb)
+            )
+
+
+
 
     def action_export_pakt_docx(self):
         """Nút bấm nhanh cho PAKT (Giữ lại để tương thích view cũ nếu cần)"""
@@ -508,7 +632,7 @@ class DlWoodDossierDocument(models.Model):
     dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ Sơ Gỗ', ondelete='cascade')
     sequence = fields.Integer(string='STT', default=10)
     name = fields.Char(string='Tên tài liệu', required=True)
-    template_key = fields.Char(string='Mã template')
+    template_key = fields.Char(string='Mã template', related='config_id.template_key', readonly=True)
     is_enabled = fields.Boolean(string='Đang dùng', related='config_id.is_enabled', readonly=True)
     config_id = fields.Many2one('dl.wood.report.template.config', string='Cấu hình mẫu', ondelete='set null')
     x_category = fields.Selection([
@@ -552,16 +676,17 @@ class DlWoodDossierLine(models.Model):
     wood_type = fields.Selection(related='species_id.wood_type', store=True, readonly=True)
     name_en = fields.Char(string='Tên tiếng Anh', related='species_id.name_en', readonly=True)
     name_sci = fields.Char(string='Tên khoa học', related='species_id.name_sci', readonly=True)
+    x_species_group = fields.Selection(related='species_id.x_species_group', string='Nhóm loài', readonly=True)
     
     quantity = fields.Integer(string='Số lượng (Cây)')
-    volume = fields.Float(string='Khối lượng (m³)', required=True, digits=(16, 2))
+    volume = fields.Integer(string='Khối lượng (m³)', required=True)
     price_unit = fields.Integer(string='Đơn giá')
-    price_subtotal = fields.Integer(string='Thành tiền', compute='_compute_price_subtotal', store=True)
+    price_subtotal = fields.Float(string='Thành tiền', compute='_compute_price_subtotal', store=True, digits=(16, 2))
 
     @api.depends('volume', 'price_unit')
     def _compute_price_subtotal(self):
         for line in self:
-            line.price_subtotal = int(round(line.volume * line.price_unit))
+            line.price_subtotal = round(line.volume * line.price_unit, 2)
 
     @api.onchange('species_id')
     def _onchange_species_id(self):
@@ -698,19 +823,169 @@ class DlWoodReportTemplateConfig(models.Model):
     ], string='Phân loại', default='exploitation')
     template_file = fields.Binary(string='File mẫu (.docx)')
     template_filename = fields.Char(string='Tên file mẫu')
+    dl_upload_date = fields.Datetime(string='Ngày tải lên', readonly=True)
+
+    def _sanitize_docx_template(self, file_bytes):
+        """
+        Tự động làm sạch split-runs cho {%tr và phân tách các hàng bảng
+        bị gộp {%tr for %} và {%tr endfor %} thành 3 hàng chuẩn theo docxtpl.
+        """
+        import io
+        import re
+        import zipfile
+
+        def extract_text_from_xml_runs(xml_fragment):
+            texts = re.findall(r'<w:t[^>]*>([^<]*)</w:t>', xml_fragment)
+            return ''.join(texts)
+
+        def fix_tr_tags_in_xml(xml_str):
+            # 1. Gộp {% + tr bị tách
+            pattern_split_pct_tr = re.compile(
+                r'\{%</w:t>'
+                r'</w:r>'
+                r'(?:<w:r[^>]*>)'
+                r'<w:t>'
+                r'tr'
+                r'</w:t>'
+                r'</w:r>'
+            )
+            new_xml = pattern_split_pct_tr.sub(lambda m: '{%tr', xml_str)
+            # Chuẩn hóa khoảng trắng
+            new_xml = re.sub(r'\{%tr\s+', '{%tr ', new_xml)
+            
+            # 2. Gộp XML runs sau {%tr
+            def replace_tr_block(m):
+                full_match = m.group(0)
+                xml_inner = full_match[4:]
+                raw_text = extract_text_from_xml_runs(xml_inner)
+                if not raw_text:
+                    raw_text = re.sub(r'<[^>]+>', '', xml_inner)
+                clean_text = raw_text.strip()
+                return '{%tr ' + clean_text
+                
+            pattern_split_block = re.compile(
+                r'\{%tr'
+                r'(?![\s])'
+                r'(?:[^%]|%(?!\}))*'
+                r'%\}'
+            )
+            new_xml = pattern_split_block.sub(replace_tr_block, new_xml)
+            return new_xml
+
+        def split_combined_table_rows(xml_str):
+            tr_pattern = re.compile(r'<w:tr\b[^>]*>.*?</w:tr>', re.DOTALL)
+            fixed_count = 0
+            new_xml_parts = []
+            last_idx = 0
+            
+            for m in tr_pattern.finditer(xml_str):
+                tr_content = m.group(0)
+                if '{%tr for' in tr_content and '{%tr endfor' in tr_content:
+                    tr_attrs = re.match(r'<w:tr\b([^>]*)>', tr_content).group(0)
+                    tc_pattern = re.compile(r'<w:tc\b[^>]*>.*?</w:tc>', re.DOTALL)
+                    tcs = tc_pattern.findall(tr_content)
+                    if len(tcs) >= 2:
+                        cell_for = tcs[0]
+                        cell_endfor = tcs[-1]
+                        
+                        # Trích xuất tag {%tr for ... %} một cách tổng quát
+                        for_tag_match = re.search(r'\{%tr\s+for\s+[^%]+%\}', cell_for)
+                        endfor_tag_match = re.search(r'\{%tr\s+endfor\s*%\}', cell_endfor)
+                        
+                        if for_tag_match and endfor_tag_match:
+                            for_tag = for_tag_match.group(0)
+                            endfor_tag = endfor_tag_match.group(0)
+                            
+                            row_for = f"{tr_attrs}{cell_for}</w:tr>"
+                            row_endfor = f"{tr_attrs}{cell_endfor}</w:tr>"
+                            
+                            cell_for_clean = cell_for.replace(for_tag, '')
+                            cell_endfor_clean = cell_endfor.replace(endfor_tag, '')
+                            
+                            row_data_cells = [cell_for_clean] + tcs[1:-1] + [cell_endfor_clean]
+                            row_data = f"{tr_attrs}{''.join(row_data_cells)}</w:tr>"
+                            
+                            three_rows = f"{row_for}\n{row_data}\n{row_endfor}"
+                            
+                            new_xml_parts.append(xml_str[last_idx:m.start()])
+                            new_xml_parts.append(three_rows)
+                            last_idx = m.end()
+                            fixed_count += 1
+                            continue
+            if fixed_count > 0:
+                new_xml_parts.append(xml_str[last_idx:])
+                return ''.join(new_xml_parts)
+            else:
+                return xml_str
+
+        output = io.BytesIO()
+        fixed = False
+        
+        try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes), 'r') as zin:
+                with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zout:
+                    for item in zin.infolist():
+                        data = zin.read(item.filename)
+                        if item.filename.endswith('.xml') and (item.filename.startswith('word/') or item.filename == '[Content_Types].xml'):
+                            xml_str = data.decode('utf-8', errors='ignore')
+                            # 1. Sửa lỗi split runs cho {%tr
+                            xml_fixed = fix_tr_tags_in_xml(xml_str)
+                            # 2. Phân tách hàng bảng bị gộp
+                            xml_fixed = split_combined_table_rows(xml_fixed)
+                            if xml_fixed != xml_str:
+                                fixed = True
+                                data = xml_fixed.encode('utf-8')
+                        zout.writestr(item, data)
+            if fixed:
+                return output.getvalue()
+        except Exception as zip_err:
+            _logger.error("Lỗi khi giải nén/làm sạch file docx mẫu: %s", zip_err)
+            
+        return file_bytes
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        import base64
+        for vals in vals_list:
+            if 'template_file' in vals and vals['template_file']:
+                vals['dl_upload_date'] = fields.Datetime.now()
+                try:
+                    file_bytes = base64.b64decode(vals['template_file'])
+                    sanitized = self._sanitize_docx_template(file_bytes)
+                    if sanitized != file_bytes:
+                        vals['template_file'] = base64.b64encode(sanitized)
+                        _logger.info("Tự động tối ưu hóa và làm sạch file mẫu thành công khi tạo mới.")
+                except Exception as e:
+                    _logger.warning("Lỗi tự động làm sạch file mẫu khi tạo mới: %s", e)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        import base64
+        if 'template_file' in vals:
+            if vals.get('template_file'):
+                vals['dl_upload_date'] = fields.Datetime.now()
+                try:
+                    file_bytes = base64.b64decode(vals['template_file'])
+                    sanitized = self._sanitize_docx_template(file_bytes)
+                    if sanitized != file_bytes:
+                        vals['template_file'] = base64.b64encode(sanitized)
+                        _logger.info("Tự động tối ưu hóa và làm sạch file mẫu thành công khi cập nhật.")
+                except Exception as e:
+                    _logger.warning("Lỗi tự động làm sạch file mẫu khi cập nhật: %s", e)
+            else:
+                vals['dl_upload_date'] = False
+        return super().write(vals)
 
     @api.depends('name')
     def _compute_template_key(self):
         for rec in self:
-            if rec.name:
-                # Loại bỏ số thứ tự ở đầu nếu có (ví dụ: "1. Tên file")
+            # Chỉ tự động sinh mã kỹ thuật nếu mã kỹ thuật đang trống và có tên tài liệu
+            if rec.name and not rec.template_key:
                 raw_name = rec.name
                 if '. ' in raw_name:
                     raw_name = raw_name.split('. ', 1)[1]
                 
                 clean = no_accent_vietnamese(raw_name).lower()
-                # Hàm no_accent_vietnamese đã xử lý thay thế khoảng trắng bằng '_'
-                # Chúng ta chỉ cần đảm bảo nó ở dạng chữ thường
                 rec.template_key = clean
-            else:
+            elif not rec.name:
                 rec.template_key = False

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- View cho dl.wood.vehicle -->
+    <record id="view_dl_wood_vehicle_list" model="ir.ui.view">
+        <field name="name">dl.wood.vehicle.list</field>
+        <field name="model">dl.wood.vehicle</field>
+        <field name="arch" type="xml">
+            <list string="Phương tiện vận chuyển" editable="bottom">
+                <field name="name"/>
+                <field name="capacity"/>
+                <field name="fill_rate_min"/>
+                <field name="fill_rate_max"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action cho dl.wood.vehicle -->
+    <record id="action_dl_wood_vehicle" model="ir.actions.act_window">
+        <field name="name">Loại xe vận chuyển</field>
+        <field name="res_model">dl.wood.vehicle</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_dl_wood_vehicle"
+              name="Phương tiện vận chuyển"
+              parent="dl_wood_traceability.menu_dl_wood_config_root"
+              action="action_dl_wood_vehicle"
+              sequence="50"/>
+</odoo>

@@ -18,6 +18,7 @@
         'views/dl_wood_log_views.xml',
         'views/ui_cleanup_views.xml',
         'views/dl_traceability_views.xml',
+        'views/dl_wood_transport_views.xml',
         'views/dl_wood_production_views.xml',
         'views/mrp_production_views.xml',
         'views/stock_picking_views.xml',

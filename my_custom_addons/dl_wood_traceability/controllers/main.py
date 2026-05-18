@@ -5,27 +5,11 @@ import json
 import io
 import logging
 
+# Import helper function từ renderer — tránh code trùng lặp
+from odoo.addons.dl_wood_traceability.models.dl_wood_dossier_renderer import no_accent_vietnamese
+
 _logger = logging.getLogger(__name__)
 
-def no_accent_vietnamese(s):
-    """Chuyển đổi tiếng Việt có dấu sang không dấu cho tên file"""
-    if not s: return ""
-    import re
-    s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵ]', 'a', s)
-    s = re.sub(r'[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'A', s)
-    s = re.sub(r'[èéẹẻẽêềếệểễ]', 'e', s)
-    s = re.sub(r'[ÈÉẸẺẼÊỀẾỆỂỄ]', 'E', s)
-    s = re.sub(r'[ìíịỉĩ]', 'i', s)
-    s = re.sub(r'[ÌÍỊỈĨ]', 'I', s)
-    s = re.sub(r'[òóọỏõôồốộổỗơờớợởỡ]', 'o', s)
-    s = re.sub(r'[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]', 'O', s)
-    s = re.sub(r'[ùúụủũưừứựửữ]', 'u', s)
-    s = re.sub(r'[ÙÚỤỦŨƯỪỨỰỬỮ]', 'U', s)
-    s = re.sub(r'[ỳýỵỷỹ]', 'y', s)
-    s = re.sub(r'[ỲÝỴỶỸ]', 'Y', s)
-    s = re.sub(r'[đ]', 'd', s)
-    s = re.sub(r'[Đ]', 'D', s)
-    return s.replace(' ', '_')
 
 class WoodDossierController(http.Controller):
 

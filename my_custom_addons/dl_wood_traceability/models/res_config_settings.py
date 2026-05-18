@@ -9,3 +9,13 @@ class ResConfigSettings(models.TransientModel):
         string='Tiền tố mã Gỗ',
         readonly=False
     )
+    x_representative = fields.Char(
+        related='company_id.x_representative',
+        string='Người đại diện công ty',
+        readonly=False
+    )
+    x_representative_position = fields.Char(
+        related='company_id.x_representative_position',
+        string='Chức vụ đại diện',
+        readonly=False
+    )

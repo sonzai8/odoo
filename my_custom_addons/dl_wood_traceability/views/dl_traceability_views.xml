@@ -53,54 +53,69 @@
                         <label for="x_dossier_name"/>
                         <h1><field name="x_dossier_name" placeholder="Ví dụ: Lô gỗ rừng trồng hộ gia đình Nguyễn Văn A..."/></h1>
                     </div>
-                    <group>
-                        <group string="Thông Tin Chính">
+                    
+                    <!-- PHÂN KHU 1: THÔNG TIN HÀNH CHÍNH & CHỦ RỪNG -->
+                    <group string="1. Thông Tin Đối Tác &amp; Pháp Lý">
+                        <group>
+                            <field name="partner_id" placeholder="Chọn chủ rừng..."/>
+                            <field name="partner_address" placeholder="Địa chỉ tự động load..."/>
+                            <field name="x_owner_representative" placeholder="Mặc định lấy tên chủ rừng"/>
+                            <field name="x_owner_position" placeholder="Ví dụ: Đại diện hộ gia đình / Giám đốc..."/>
+                        </group>
+                        <group>
                             <field name="name" readonly="1" decoration-bf="1"/>
-                            <field name="partner_id"/>
-                            <field name="date_received"/>
-                            <label for="x_report_version_id"/>
+                            <label for="x_report_version_id" class="fw-bold"/>
                             <div class="o_row">
                                 <field name="x_report_version_id" options="{'no_create': True}"/>
-                                <button name="action_refresh_documents" type="object" string="Làm mới danh sách tệp" icon="fa-refresh" class="btn btn-link py-0"/>
+                                <button name="action_refresh_documents" type="object" string="Làm mới tệp" icon="fa-refresh" class="btn btn-link py-0"/>
                             </div>
-                            <field name="x_start_date"/>
-                            <field name="x_end_date"/>
-                            <field name="company_id" readonly="1"/>
-                        </group>
-                        <group string="Thông tin khai thác">
-                            <field name="partner_address" readonly="1"/>
-                            <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
-                            <field name="x_mining_method"/>
-                            <field name="x_area"/>
+                            <field name="date_received"/>
+                            <field name="x_contract_date"/>
                             <field name="x_addendum_num"/>
-                            <field name="x_woodpro_id" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
                         </group>
                     </group>
 
-                    <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-3 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
-                        Tổng hợp khối lượng (m³)
-                    </div>
-                    <div class="d-flex justify-content-around text-center py-2 border rounded bg-light shadow-sm mb-3 w-100">
-                        <div class="flex-fill border-end border-2">
-                            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Gỗ</div>
-                            <field name="initial_wood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-primary mb-0"/>
-                        </div>
-                        <div class="flex-fill border-end border-2">
-                            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Củi</div>
-                            <field name="initial_firewood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-warning mb-0"/>
-                        </div>
-                        <div class="flex-fill">
-                            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Cộng</div>
-                            <field name="initial_qty" readonly="1" nolabel="1" class="h4 fw-bold text-success mb-0"/>
-                        </div>
-                    </div>
+                    <!-- PHÂN KHU 2: KẾ HOẠCH & QUY HOẠCH KHAI THÁC -->
+                    <group string="2. Kế Hoạch &amp; Quy Hoạch Khai Thác">
+                        <group string="Quy mô &amp; Phương pháp">
+                            <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
+                            <field name="x_mining_method"/>
+                            <field name="x_area" placeholder="Diện tích (ha)"/>
+                            <field name="x_woodpro_id" readonly="1"/>
+                        </group>
+                        <group string="Thời gian Khai thác">
+                            <field name="x_start_date"/>
+                            <field name="x_end_date" help="Tự động tính dựa vào diện tích khai thác"/>
+                        </group>
+                    </group>
 
+                    <!-- PHÂN KHU 3: BẢNG CHI TIẾT & TÍNH TOÁN -->
                     <notebook>
                         <page string="Chi tiết gỗ khai thác">
+                            <!-- Di chuyển Widget Tổng Hợp Khối Lượng vào đây -->
+                            <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-2 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                                Tổng hợp sản lượng gỗ khai thác (m³)
+                            </div>
+                            <div class="d-flex justify-content-around text-center py-2 border rounded bg-light shadow-sm mb-3 w-100">
+                                <div class="flex-fill border-end border-2">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Gỗ</div>
+                                    <field name="initial_wood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-primary mb-0"/>
+                                </div>
+                                <div class="flex-fill border-end border-2">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Củi</div>
+                                    <field name="initial_firewood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-warning mb-0"/>
+                                </div>
+                                <div class="flex-fill">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Cộng</div>
+                                    <field name="initial_qty" readonly="1" nolabel="1" class="h4 fw-bold text-success mb-0"/>
+                                </div>
+                            </div>
+
                             <field name="line_ids" class="o_wood_dossier_line_list">
                                 <list editable="bottom">
                                     <field name="species_id"/>
-                                    <field name="name_en"/>
+                                    <field name="name_en" optional="hide"/>
                                     <field name="grade_id" string="Phân Loại" options="{'no_create': True, 'no_open': True}" class="o_column_fixed_140"/>
                                     <field name="name_sci" optional="hide"/>
                                     <field name="volume" sum="Tổng khối lượng" class="o_column_fixed_70"/>
@@ -108,14 +123,59 @@
                                     <field name="diameter_display" class="o_column_fixed_70"/>
                                     <field name="diameter_min" optional="hide"/>
                                     <field name="diameter_max" optional="hide"/>
-                                    <field name="height_display" string="Cao (m)" class="o_column_fixed_70"/>
-                                    <field name="height" optional="hide"/>
+                                    <field name="height" string="Cao (m)" class="o_column_fixed_70"/>
+                                    <field name="height_display" optional="hide"/>
                                     <field name="avg_diameter" optional="hide"/>
                                     <field name="avg_height" optional="hide"/>
                                     <field name="price_unit" class="o_column_fixed_120" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="price_subtotal" sum="Tổng cộng" class="o_column_money" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="note"/>
                                 </list>
+                            </field>
+                        </page>
+                        <page string="Chi tiết vận chuyển">
+                            <div class="row mt-2 mb-3">
+                                <div class="col-md-8">
+                                    <div class="alert alert-info mb-0" role="alert">
+                                        <i class="fa fa-info-circle mr-2"></i> Hệ thống sẽ tự động tính toán và chia nhỏ khối lượng thành các chuyến xe dựa vào tổng sức chở.
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button name="action_generate_transport_tickets" type="object" string="Tính toán &amp; Chia chuyến" class="btn btn-primary h-100 w-100" icon="fa-cogs"/>
+                                </div>
+                            </div>
+                            <separator string="Cấu hình xe vận chuyển"/>
+                            <field name="transport_ids" nolabel="1" class="w-100">
+                                <list editable="bottom">
+                                    <field name="vehicle_id"/>
+                                    <field name="vehicle_count"/>
+                                    <field name="total_nominal_capacity"/>
+                                    <field name="company_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <separator string="Các chuyến xe (Phiếu chia nhỏ)"/>
+                            <field name="ticket_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="vehicle_count"/>
+                                    <field name="fill_rate" widget="percentage"/>
+                                    <field name="total_volume"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <field name="name" readonly="1"/>
+                                        <field name="vehicle_count" readonly="1"/>
+                                        <field name="fill_rate" readonly="1" widget="percentage"/>
+                                        <field name="total_volume" readonly="1"/>
+                                    </group>
+                                    <field name="ticket_line_ids" readonly="1">
+                                        <list>
+                                            <field name="species_id"/>
+                                            <field name="wood_type"/>
+                                            <field name="volume"/>
+                                        </list>
+                                    </field>
+                                </form>
                             </field>
                         </page>
                         <page string="Lịch Sử Biến Động">
@@ -129,23 +189,51 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Tồn Kho">
-                            <group>
-                                <field name="remaining_qty" readonly="1"/>
-                                <field name="qty_reserved" readonly="1"/>
-                                <field name="qty_available" readonly="1"/>
-                            </group>
+                        <page string="Theo Dõi Sản Xuất &amp; Tồn Kho">
+                            <!-- 1. BẢNG TỔNG HỢP TỒN KHO & TIÊU HAO -->
+                            <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-2 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                                Tổng hợp số liệu Tồn kho &amp; Tiêu hao sản xuất (m³)
+                            </div>
+                            <div class="d-flex justify-content-around text-center py-2 border rounded bg-light shadow-sm mb-4 w-100">
+                                <div class="flex-fill border-end border-2">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Sản lượng Ban Đầu</div>
+                                    <field name="initial_qty" readonly="1" nolabel="1" class="h4 fw-bold text-primary mb-0"/>
+                                </div>
+                                <div class="flex-fill border-end border-2">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Đã Sản Xuất/Tiêu Hao</div>
+                                    <field name="qty_consumed" readonly="1" nolabel="1" class="h4 fw-bold text-danger mb-0"/>
+                                </div>
+                                <div class="flex-fill border-end border-2">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Khối Lượng Còn Lại (Thực Tế)</div>
+                                    <field name="remaining_qty" readonly="1" nolabel="1" class="h4 fw-bold text-warning mb-0"/>
+                                </div>
+                                <div class="flex-fill border-end border-2">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Đang Giữ Hàng</div>
+                                    <field name="qty_reserved" readonly="1" nolabel="1" class="h4 fw-bold text-muted mb-0"/>
+                                </div>
+                                <div class="flex-fill">
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Khối Lượng Khả Dụng</div>
+                                    <field name="qty_available" readonly="1" nolabel="1" class="h4 fw-bold text-success mb-0"/>
+                                </div>
+                            </div>
+
+                            <!-- 2. DANH SÁCH LỆNH SẢN XUẤT LIÊN QUAN -->
+                            <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-2 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                                Danh sách các Lệnh sản xuất đã sử dụng gỗ từ hồ sơ này
+                            </div>
+                            <field name="x_production_ids" readonly="1">
+                                <list string="Lệnh sản xuất liên quan" create="false" edit="false" delete="false">
+                                    <field name="name" string="Mã lệnh SX" class="fw-bold"/>
+                                    <field name="product_id" string="Sản phẩm đầu ra"/>
+                                    <field name="qty_planned" string="Số lượng kế hoạch"/>
+                                    <field name="qty_done" string="Số lượng thực tế"/>
+                                    <field name="uom_id" string="Đơn vị"/>
+                                    <field name="date_done" string="Ngày hoàn thành"/>
+                                    <field name="state" widget="badge" decoration-success="state=='done'" decoration-info="state=='in_progress'" decoration-muted="state=='draft'"/>
+                                </list>
+                            </field>
                         </page>
-                        <page string="Thông tin PAKT">
-                            <group>
-                                <group>
-                                    <field name="x_pakt_date"/>
-                                    <field name="x_pakt_representative"/>
-                                    <field name="x_pakt_position"/>
-                                </group>
-                            </group>
-                        </page>
-                        <page string="Tải Tài Liệu (Thông minh)">
+                        <page string="Tải Tài Liệu">
                             <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
                                 <i class="fa fa-info-circle me-3 fa-2x" title="Thông tin"/>
                                 <div>
@@ -282,6 +370,7 @@
                 <field name="name_en"/>
                 <field name="code"/>
                 <field name="wood_type" widget="badge" decoration-info="wood_type == 'wood'" decoration-warning="wood_type == 'firewood'"/>
+                <field name="x_species_group"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
         </field>
@@ -301,6 +390,7 @@
                         <group>
                             <field name="code"/>
                             <field name="wood_type"/>
+                            <field name="x_species_group"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group>
@@ -372,11 +462,12 @@
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
-                                    <field name="template_key" readonly="1" force_save="1"/>
+                                    <field name="template_key"/>
                                     <field name="is_enabled" widget="boolean_toggle"/>
                                     <field name="category"/>
                                     <field name="template_file" filename="template_filename"/>
-                                    <field name="template_filename" column_invisible="True"/>
+                                    <field name="template_filename" readonly="1" force_save="1"/>
+                                    <field name="dl_upload_date" readonly="1" force_save="1"/>
                                 </list>
                             </field>
                         </page>

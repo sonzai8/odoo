@@ -113,8 +113,11 @@ class DlWoodProductionOrder(models.Model):
     company_id = fields.Many2one(
         'res.company',
         string='Công ty',
-        related='sale_order_id.company_id',
+        compute='_compute_company_id',
         store=True,
+        readonly=False,
+        required=True,
+        default=lambda self: self.env.company,
         index=True
     )
     partner_id = fields.Many2one(
@@ -123,10 +126,10 @@ class DlWoodProductionOrder(models.Model):
     )
     product_id = fields.Many2one(
         'product.product', string='Sản phẩm sản xuất', required=True,
-        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('type', 'in', ['consu', 'product'])]"
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_wood_product', '=', True)]"
     )
     qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 2), default=1.0)
-    qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2))
+    qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2), default=1.0)
     uom_id = fields.Many2one(
         'uom.uom', related='product_id.uom_id', string='Đơn vị tính', readonly=True
     )
@@ -156,6 +159,20 @@ class DlWoodProductionOrder(models.Model):
         for rec in self:
             rec.total_volume_planned = sum(rec.line_ids.mapped('volume_planned'))
             rec.total_volume_actual = sum(rec.line_ids.mapped('volume_actual'))
+
+    @api.depends('sale_order_id.company_id')
+    def _compute_company_id(self):
+        for rec in self:
+            if rec.sale_order_id:
+                rec.company_id = rec.sale_order_id.company_id
+            elif not rec.company_id:
+                rec.company_id = self.env.company
+
+    @api.onchange('qty_planned')
+    def _onchange_qty_planned(self):
+        for rec in self:
+            if rec.qty_planned:
+                rec.qty_done = rec.qty_planned
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -227,6 +244,21 @@ class DlWoodProductionOrder(models.Model):
                 'date': fields.Datetime.now(),
             })
 
+    def write(self, vals):
+        for rec in self:
+            if rec.state in ('done', 'cancelled'):
+                allowed_fields = {'note', 'date_done'}
+                modified_fields = set(vals.keys())
+                if not modified_fields.issubset(allowed_fields):
+                    raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodProductionOrder, self).write(vals)
+
+    def unlink(self):
+        for rec in self:
+            if rec.state in ('done', 'cancelled'):
+                raise UserError(_('Không thể xóa Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodProductionOrder, self).unlink()
+
 
 class DlWoodProductionLine(models.Model):
     """Chi tiết tiêu hao nguyên vật liệu của một lệnh sản xuất."""
@@ -247,9 +279,60 @@ class DlWoodProductionLine(models.Model):
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', required=True)
     dossier_id = fields.Many2one(
         'dl.wood.dossier', string='Hồ sơ gỗ nguồn',
-        domain="[('company_id', '=', company_id), ('species_lines_species_id', '=', species_id)]",
+        domain="[('company_id', '=', company_id), ('state', '!=', 'cancelled')]",
         help='Hồ sơ gỗ mà nguyên liệu được lấy từ đó để sản xuất.'
+    )
+    x_available_species_ids = fields.Many2many(
+        'dl.wood.species',
+        compute='_compute_x_available_species_ids',
+        string='Loài gỗ khả dụng'
     )
     volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
     volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
     note = fields.Char(string='Ghi chú')
+
+    @api.depends('dossier_id')
+    def _compute_x_available_species_ids(self):
+        for line in self:
+            if line.dossier_id:
+                species_ids = line.dossier_id.line_ids.mapped('species_id').ids
+                line.x_available_species_ids = [(6, 0, species_ids)]
+            else:
+                line.x_available_species_ids = [(6, 0, [])]
+
+    @api.onchange('dossier_id')
+    def _onchange_dossier_id(self):
+        if self.dossier_id:
+            species = self.dossier_id.line_ids.mapped('species_id')
+            if len(species) == 1:
+                self.species_id = species[0]
+            else:
+                self.species_id = False
+        else:
+            self.species_id = False
+
+    @api.onchange('volume_planned')
+    def _onchange_volume_planned(self):
+        if self.volume_planned:
+            self.volume_actual = self.volume_planned
+
+    def write(self, vals):
+        for line in self:
+            if line.production_order_id.state in ('done', 'cancelled'):
+                raise UserError(_('Không thể chỉnh sửa tiêu hao nguyên vật liệu của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodProductionLine, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('production_order_id'):
+                order = self.env['dl.wood.production.order'].browse(vals['production_order_id'])
+                if order.state in ('done', 'cancelled'):
+                    raise UserError(_('Không thể thêm tiêu hao nguyên vật liệu cho Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodProductionLine, self).create(vals_list)
+
+    def unlink(self):
+        for line in self:
+            if line.production_order_id.state in ('done', 'cancelled'):
+                raise UserError(_('Không thể xóa tiêu hao nguyên vật liệu của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodProductionLine, self).unlink()
