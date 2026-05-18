@@ -83,6 +83,13 @@ class DlWoodDossier(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'dl.wood.log.mixin', 'dl.wood.pdf.mixin']
     _order = 'id desc'
 
+    @api.depends('name', 'partner_id.name', 'qty_available')
+    def _compute_display_name(self):
+        for dossier in self:
+            partner_name = dossier.partner_id.name or 'Không có chủ rừng'
+            qty_avail = dossier.qty_available or 0.0
+            dossier.display_name = f"{dossier.name} - {partner_name} - {qty_avail:.2f} m³"
+
     @api.model
     def _get_default_name(self):
         prefix = self.env.company.x_wood_prefix or "XX"
@@ -159,9 +166,9 @@ class DlWoodDossier(models.Model):
 
     # Chi tiết loài gỗ và khối lượng theo hồ sơ
     line_ids = fields.One2many('dl.wood.dossier.line', 'dossier_id', string='Chi tiết loài gỗ')
-    initial_qty = fields.Integer(string='Tổng Khối Lượng (m³)', compute='_compute_initial_qty', store=True)
-    initial_wood_qty = fields.Integer(string='Tổng Gỗ (m³)', compute='_compute_initial_qty', store=True)
-    initial_firewood_qty = fields.Integer(string='Tổng Củi (m³)', compute='_compute_initial_qty', store=True)
+    initial_qty = fields.Float(string='Tổng Khối Lượng (m³)', compute='_compute_initial_qty', store=True, digits=(16, 2))
+    initial_wood_qty = fields.Float(string='Tổng Gỗ (m³)', compute='_compute_initial_qty', store=True, digits=(16, 2))
+    initial_firewood_qty = fields.Float(string='Tổng Củi (m³)', compute='_compute_initial_qty', store=True, digits=(16, 2))
     
     total_wood_amount = fields.Float(string='Tổng Tiền Gỗ', compute='_compute_amounts', store=True, digits=(16, 2))
     total_firewood_amount = fields.Float(string='Tổng Tiền Củi', compute='_compute_amounts', store=True, digits=(16, 2))
@@ -184,10 +191,10 @@ class DlWoodDossier(models.Model):
     # -------------------------------------------------------------------------
     ledger_ids = fields.One2many('dl.dossier.ledger', 'dossier_id', string='Sổ Cái Biến Động')
 
-    remaining_qty = fields.Float(string='Tồn Kho Thực Tế (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
-    qty_reserved = fields.Float(string='Đang Giữ Đơn (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
-    qty_available = fields.Float(string='Khả Dụng Để Bán (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
-    qty_consumed = fields.Float(string='Đã Tiêu Hao (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 4))
+    remaining_qty = fields.Float(string='Tồn Kho Thực Tế (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
+    qty_reserved = fields.Float(string='Đang Giữ Đơn (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
+    qty_available = fields.Float(string='Khả Dụng Để Bán (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
+    qty_consumed = fields.Float(string='Đã Tiêu Hao (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
 
     x_production_ids = fields.Many2many(
         'dl.wood.production.order',
@@ -216,10 +223,10 @@ class DlWoodDossier(models.Model):
             done_lines = dossier.ledger_ids.filtered(lambda l: l.state == 'done')
             draft_lines = dossier.ledger_ids.filtered(lambda l: l.state == 'draft')
             
-            dossier.remaining_qty = round(dossier.initial_qty + sum(done_lines.mapped('actual_qty')), 4)
-            dossier.qty_reserved = round(abs(sum(draft_lines.mapped('actual_qty'))), 4)
-            dossier.qty_available = round(dossier.remaining_qty - dossier.qty_reserved, 4)
-            dossier.qty_consumed = round(max(0.0, dossier.initial_qty - dossier.remaining_qty), 4)
+            dossier.remaining_qty = round(dossier.initial_qty + sum(done_lines.mapped('actual_qty')), 2)
+            dossier.qty_reserved = round(abs(sum(draft_lines.mapped('actual_qty'))), 2)
+            dossier.qty_available = round(dossier.remaining_qty - dossier.qty_reserved, 2)
+            dossier.qty_consumed = round(max(0.0, dossier.initial_qty - dossier.remaining_qty), 2)
 
     @api.depends('ledger_ids.production_id')
     def _compute_x_production_ids(self):
@@ -468,9 +475,9 @@ class DlWoodDossier(models.Model):
     @api.depends('line_ids.volume', 'line_ids.wood_type')
     def _compute_initial_qty(self):
         for record in self:
-            record.initial_wood_qty = int(round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'wood').mapped('volume'))))
-            record.initial_firewood_qty = int(round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'firewood').mapped('volume'))))
-            record.initial_qty = record.initial_wood_qty + record.initial_firewood_qty
+            record.initial_wood_qty = round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'wood').mapped('volume')), 2)
+            record.initial_firewood_qty = round(sum(record.line_ids.filtered(lambda l: l.wood_type == 'firewood').mapped('volume')), 2)
+            record.initial_qty = round(record.initial_wood_qty + record.initial_firewood_qty, 2)
 
     # --- QUẢN LÝ TRẠNG THÁI (STATE MACHINE) ---
     def action_draft(self):

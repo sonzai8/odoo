@@ -130,6 +130,7 @@ class DlWoodProductionOrder(models.Model):
     )
     qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 2), default=1.0)
     qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2), default=1.0)
+    x_co_yield = fields.Float(string='Khai CO mặc định', digits=(16, 2), default=1.3, help='Hệ số Khai CO mặc định dùng để điền tự động khi thêm các bộ hồ sơ.')
     uom_id = fields.Many2one(
         'uom.uom', related='product_id.uom_id', string='Đơn vị tính', readonly=True
     )
@@ -147,6 +148,18 @@ class DlWoodProductionOrder(models.Model):
     total_volume_actual = fields.Float(
         string='Tổng KL thực tế (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
     )
+    x_total_ratio = fields.Float(
+        string='Tổng định mức (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+    )
+    x_remaining_ratio = fields.Float(
+        string='Định mức còn thiếu (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+    )
+    x_remaining_volume_planned = fields.Float(
+        string='KL kế hoạch còn thiếu (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+    )
+    x_remaining_volume_actual = fields.Float(
+        string='KL thực tế còn thiếu (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+    )
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('in_progress', 'Đang sản xuất'),
@@ -154,11 +167,25 @@ class DlWoodProductionOrder(models.Model):
         ('cancelled', 'Đã hủy'),
     ], string='Trạng thái', default='draft', index=True)
 
-    @api.depends('line_ids.volume_planned', 'line_ids.volume_actual')
+    @api.depends('line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_ratio', 'qty_planned', 'qty_done', 'x_co_yield')
     def _compute_total_volume(self):
         for rec in self:
-            rec.total_volume_planned = sum(rec.line_ids.mapped('volume_planned'))
-            rec.total_volume_actual = sum(rec.line_ids.mapped('volume_actual'))
+            total_vol_plan = sum(rec.line_ids.mapped('volume_planned'))
+            total_vol_act = sum(rec.line_ids.mapped('volume_actual'))
+            rec.total_volume_planned = round(total_vol_plan, 2)
+            rec.total_volume_actual = round(total_vol_act, 2)
+
+            total_ratio = sum(rec.line_ids.mapped('x_ratio'))
+            rec.x_total_ratio = round(total_ratio, 2)
+            
+            remaining_ratio = max(0.0, 100.0 - total_ratio)
+            rec.x_remaining_ratio = round(remaining_ratio, 2)
+            
+            total_vol_planned_needed = rec.qty_planned * rec.x_co_yield
+            rec.x_remaining_volume_planned = round(max(0.0, total_vol_planned_needed - total_vol_plan), 2)
+            
+            total_vol_actual_needed = rec.qty_done * rec.x_co_yield
+            rec.x_remaining_volume_actual = round(max(0.0, total_vol_actual_needed - total_vol_act), 2)
 
     @api.depends('sale_order_id.company_id')
     def _compute_company_id(self):
@@ -173,6 +200,31 @@ class DlWoodProductionOrder(models.Model):
         for rec in self:
             if rec.qty_planned:
                 rec.qty_done = rec.qty_planned
+
+    @api.onchange('qty_planned', 'qty_done')
+    def _onchange_production_quantities(self):
+        for rec in self:
+            for line in rec.line_ids:
+                if line.x_ratio:
+                    line.volume_planned = round((rec.qty_planned * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    line.volume_actual = round((rec.qty_done * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+
+    @api.onchange('x_co_yield')
+    def _onchange_x_co_yield(self):
+        for rec in self:
+            for line in rec.line_ids:
+                line.x_co_yield = rec.x_co_yield
+                if line.x_ratio:
+                    line.volume_planned = round((rec.qty_planned * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    line.volume_actual = round((rec.qty_done * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+
+    @api.constrains('line_ids', 'state')
+    def _check_ratios_total(self):
+        for rec in self:
+            if rec.state in ('in_progress', 'done') and rec.line_ids:
+                total_ratio = sum(rec.line_ids.mapped('x_ratio'))
+                if abs(total_ratio - 100.0) > 0.01:
+                    raise ValidationError(_('Tổng định mức (%%) tiêu hao nguyên vật liệu của các bộ hồ sơ gỗ phải bằng chính xác 100%% (Hiện tại là: %s%%).') % total_ratio)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -287,6 +339,8 @@ class DlWoodProductionLine(models.Model):
         compute='_compute_x_available_species_ids',
         string='Loài gỗ khả dụng'
     )
+    x_ratio = fields.Float(string='Định mức %', digits=(16, 2), default=0.0)
+    x_co_yield = fields.Float(string='Khai CO', digits=(16, 2), default=1.3, help='Hệ số hao hụt nguyên vật liệu/thành phẩm của bộ hồ sơ này.')
     volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
     volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
     note = fields.Char(string='Ghi chú')
@@ -308,8 +362,42 @@ class DlWoodProductionLine(models.Model):
                 self.species_id = species[0]
             else:
                 self.species_id = False
+            
+            order = self.production_order_id
+            if order:
+                self.x_co_yield = order.x_co_yield
+                
+                # Tính định mức tự động thông minh dựa trên khối lượng còn lại của hồ sơ gỗ
+                if order.qty_planned > 0:
+                    total_volume_needed = order.qty_planned * self.x_co_yield
+                    if total_volume_needed > 0:
+                        other_lines = order.line_ids - self
+                        other_lines_ratio_sum = sum(other_lines.mapped('x_ratio'))
+                        remaining_ratio_needed = max(0.0, 100.0 - other_lines_ratio_sum)
+                        
+                        raw_volume_needed = total_volume_needed * (remaining_ratio_needed / 100.0)
+                        # Khối lượng khả dụng còn lại của bộ hồ sơ gỗ
+                        dossier_qty_avail = max(0.0, self.dossier_id.qty_available)
+                        
+                        if dossier_qty_avail >= raw_volume_needed:
+                            self.x_ratio = round(remaining_ratio_needed, 2)
+                        else:
+                            allocated_ratio = (dossier_qty_avail / total_volume_needed) * 100.0
+                            self.x_ratio = round(allocated_ratio, 2)
+                            
+                        # Tính toán KL planned/actual của dòng
+                        self.volume_planned = round((order.qty_planned * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+                        self.volume_actual = round((order.qty_done * self.x_co_yield) * (self.x_ratio / 100.0), 2)
         else:
             self.species_id = False
+
+    @api.onchange('x_ratio', 'x_co_yield')
+    def _onchange_ratio_and_co(self):
+        for line in self:
+            if line.x_ratio:
+                order = line.production_order_id
+                line.volume_planned = round((order.qty_planned * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                line.volume_actual = round((order.qty_done * line.x_co_yield) * (line.x_ratio / 100.0), 2)
 
     @api.onchange('volume_planned')
     def _onchange_volume_planned(self):

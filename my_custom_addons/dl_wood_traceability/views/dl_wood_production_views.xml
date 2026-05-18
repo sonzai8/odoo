@@ -174,6 +174,7 @@
                         <group string="Số lượng &amp; Thời gian">
                             <field name="qty_planned" readonly="state in ('done', 'cancelled')"/>
                             <field name="qty_done" readonly="state in ('done', 'cancelled')"/>
+                            <field name="x_co_yield" readonly="state in ('done', 'cancelled')"/>
                             <field name="date_planned" readonly="state in ('done', 'cancelled')"/>
                             <field name="date_done" readonly="1"/>
                         </group>
@@ -187,14 +188,24 @@
                                     <field name="x_available_species_ids" column_invisible="True"/>
                                     <field name="species_id"
                                            domain="[('id', 'in', x_available_species_ids)]"/>
+                                    <field name="x_ratio"/>
+                                    <field name="x_co_yield"/>
                                     <field name="volume_planned"/>
                                     <field name="volume_actual"/>
                                     <field name="note"/>
                                 </list>
                             </field>
-                            <group class="oe_subtotal_footer">
-                                <field name="total_volume_planned" readonly="1"/>
-                                <field name="total_volume_actual" readonly="1"/>
+                            <group col="12" class="mt-2">
+                                <group colspan="6" string="Tổng cộng hiện tại">
+                                    <field name="x_total_ratio" readonly="1"/>
+                                    <field name="total_volume_planned" readonly="1"/>
+                                    <field name="total_volume_actual" readonly="1"/>
+                                </group>
+                                <group colspan="6" string="Còn thiếu cho sản xuất">
+                                    <field name="x_remaining_ratio" readonly="1" decoration-danger="x_remaining_ratio &gt; 0" decoration-success="x_remaining_ratio == 0"/>
+                                    <field name="x_remaining_volume_planned" readonly="1" decoration-danger="x_remaining_volume_planned &gt; 0" decoration-success="x_remaining_volume_planned == 0"/>
+                                    <field name="x_remaining_volume_actual" readonly="1" decoration-danger="x_remaining_volume_actual &gt; 0" decoration-success="x_remaining_volume_actual == 0"/>
+                                </group>
                             </group>
                         </page>
                         <page string="Ghi chú">
