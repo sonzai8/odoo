@@ -127,8 +127,8 @@ class ProductionLogProductLine(models.Model):
     
     # Thông số từ sản phẩm (Read-only)
     x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)
-    x_length = fields.Float(related='product_id.x_length', string='Dài (cm)', readonly=True)
-    x_width = fields.Float(related='product_id.x_width', string='Rộng (cm)', readonly=True)
+    x_length = fields.Float(related='product_id.x_length', string='Dài (mm)', readonly=True)
+    x_width = fields.Float(related='product_id.x_width', string='Rộng (mm)', readonly=True)
     
     # Các trường mở rộng cho bước Ép Film
     x_film_brand_id = fields.Many2one('dl.film.brand', string='Thương hiệu Film')

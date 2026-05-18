@@ -12,7 +12,7 @@ with registry.cursor() as cr:
     print("=== KIỂM TRA COMPANY CỦA SẢN PHẨM ===")
     wood_products = env['product.product'].search([('is_wood_product', '=', True)], limit=10)
     for p in wood_products:
-        print(f"ID: {p.id}, Tên: {p.name[:50]}, Company: {p.company_id.name} (ID: {p.company_id.id if p.company_id else 'None'})")
+        print(f"ID: {p.id}, Tên: {p.name[:50]}, Code: {p.default_code}, Display Name: {p.display_name}, Company: {p.company_id.name} (ID: {p.company_id.id if p.company_id else 'None'})")
         
     print("\n=== KIỂM TRA LỆNH SẢN XUẤT MỚI (DỰ THẢO) ===")
     # Lấy company_id mặc định của user 1 hoặc res.company

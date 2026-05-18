@@ -178,8 +178,8 @@ class PieceRatePricelistLine(models.Model):
     
     # Related fields từ sản phẩm (Read-only)
     x_thickness = fields.Float(related='product_id.x_thickness', string='Độ dày (mm)', readonly=True)
-    x_length = fields.Float(related='product_id.x_length', string='Dài (cm)', readonly=True)
-    x_width = fields.Float(related='product_id.x_width', string='Rộng (cm)', readonly=True)
+    x_length = fields.Float(related='product_id.x_length', string='Dài (mm)', readonly=True)
+    x_width = fields.Float(related='product_id.x_width', string='Rộng (mm)', readonly=True)
     layer_info = fields.Char(related='product_id.x_structure_summary', string='Thông số kỹ thuật', readonly=True)
     
     currency_id = fields.Many2one(related='pricelist_id.currency_id', string='Tiền tệ', store=True)

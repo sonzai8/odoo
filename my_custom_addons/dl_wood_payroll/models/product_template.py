@@ -10,8 +10,8 @@ class ProductTemplate(models.Model):
     x_is_support_product = fields.Boolean(string='Là sản phẩm hỗ trợ', default=False, help='Sản phẩm tính lương cho chuyền nhưng không tính vào báo cáo sản lượng chính.')
     x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
     x_thickness_alias = fields.Char(string='Ký hiệu độ dày', help='Dùng để tra cứu bảng giá Ép Film (ví dụ: 11M, 14D...)')
-    x_length = fields.Float(string='Chiều dài (cm)', digits=(16, 1))
-    x_width = fields.Float(string='Chiều rộng (cm)', digits=(16, 1))
+    x_length = fields.Float(string='Chiều dài (mm)', digits=(16, 1))
+    x_width = fields.Float(string='Chiều rộng (mm)', digits=(16, 1))
     
     x_dimension_id = fields.Many2one('product.attribute.value', string='Khổ ván (Kích thước)', 
                                     domain=[('attribute_id.name', 'ilike', 'Kích thước')])
@@ -40,7 +40,8 @@ class ProductTemplate(models.Model):
     @api.depends('x_length', 'x_width', 'x_thickness')
     def _compute_wood_measurements(self):
         for product in self:
-            area = (product.x_length * product.x_width) / 10000.0
+            # Quy đổi từ mm2 sang m2: chia cho 1,000,000.0
+            area = (product.x_length * product.x_width) / 1000000.0
             product.x_area_m2 = area
             product.x_volume_m3 = (area * product.x_thickness) / 1000.0
 
@@ -86,6 +87,16 @@ class ProductTemplate(models.Model):
                 if product.x_length <= 0 or product.x_width <= 0 or product.x_thickness <= 0:
                     raise ValidationError("Kích thước và Độ dày sản phẩm gỗ phải lớn hơn 0!")
 
+    x_unit = fields.Selection([
+        ('sheet', 'Tấm'),
+        ('m3', 'Mét khối (M3)'),
+    ], string='Đơn vị tính (Gỗ)', default='sheet')
+
+    x_sale_state = fields.Selection([
+        ('active', 'Đang kinh doanh'),
+        ('inactive', 'Ngừng kinh doanh'),
+    ], string='Trạng thái kinh doanh', default='active')
+
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
@@ -96,3 +107,5 @@ class ProductProduct(models.Model):
     x_length = fields.Float(related='product_tmpl_id.x_length', readonly=True)
     x_width = fields.Float(related='product_tmpl_id.x_width', readonly=True)
     x_quality = fields.Selection(related='product_tmpl_id.x_quality', readonly=True)
+    x_unit = fields.Selection(related='product_tmpl_id.x_unit', readonly=True)
+    x_sale_state = fields.Selection(related='product_tmpl_id.x_sale_state', readonly=True)

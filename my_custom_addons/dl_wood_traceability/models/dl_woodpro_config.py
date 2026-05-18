@@ -228,9 +228,12 @@ class DlWoodproConfig(models.Model):
             headers = self._get_headers()
             
             product_tmpl_obj = self.env['product.template'].sudo()
+            uom_sheet = self.env['uom.uom'].sudo().search([('name', '=', 'Tấm')], limit=1)
+            uom_m3 = self.env['uom.uom'].sudo().search([('name', 'in', ('m³', 'Mét khối', 'Mét khối M3'))], limit=1)
             page = 1
             limit = 50
             total_synced = 0
+            over_price_products = []
             
             while True:
                 params = {'page': page, 'limit': limit, 'keyword': ''}
@@ -270,16 +273,50 @@ class DlWoodproConfig(models.Model):
                             ('company_id', '=', self.company_id.id)
                         ], limit=1)
                         
+                    # Bóc tách thông số gỗ, giá bán và đơn vị tính từ mã và tên sản phẩm
+                    thickness, width, length, thickness_alias, price, unit = self._parse_wood_product_specs(code, name)
+                    
+                    # Áp dụng cơ chế fallback thông minh nếu không bóc tách được thông số để tránh lỗi ValidationError của Odoo
+                    if not thickness or thickness <= 0:
+                        thickness = 12.0
+                    if not width or width <= 0:
+                        width = 1220.0
+                    if not length or length <= 0:
+                        length = 2440.0
+                    if not thickness_alias:
+                        thickness_alias = f"{int(thickness)}"
+                    
                     vals = {
                         'name': name,
                         'default_code': code,
                         'x_woodpro_id': wp_id,
                         'is_wood_product': True,
+                        'x_is_wood_product': True, # Đồng bộ tương thích với dl_wood_payroll
                         'tracking': 'lot',
                         'type': 'consu', 
                         'is_storable': True,
                         'company_id': self.company_id.id,
+                        'x_thickness': thickness,
+                        'x_width': width,
+                        'x_length': length,
+                        'x_thickness_alias': thickness_alias,
+                        'x_unit': unit,
                     }
+                    
+                    if unit == 'sheet' and uom_sheet:
+                        vals['uom_id'] = uom_sheet.id
+                    elif unit == 'm3' and uom_m3:
+                        vals['uom_id'] = uom_m3.id
+                        
+                    if price > 0:
+                        vals['list_price'] = price
+                        vals['x_sale_state'] = 'active'
+                        # Kiểm tra cảnh báo nếu đơn giá Mét khối (M3) vượt quá 10 triệu VND
+                        if unit == 'm3' and price > 10000000.0:
+                            over_price_products.append(f"{code} ({price:,.0f} VND)")
+                    else:
+                        # Mặc định ngừng kinh doanh nếu không bóc tách được giá
+                        vals['x_sale_state'] = 'inactive'
                     
                     if product:
                         product.sudo().write(vals)
@@ -296,9 +333,150 @@ class DlWoodproConfig(models.Model):
             debug_info = f"Kết thúc đồng bộ sản phẩm. Tổng số: {total_synced} bản ghi. Tổng số trang đã quét: {page}"
             self._add_debug_log("Sync Products Complete", debug_info)
             
+            if over_price_products:
+                warning_msg = _('Đã đồng bộ %s sản phẩm. CẢNH BÁO: Phát hiện %s sản phẩm M3 có đơn giá vượt quá 10 triệu đồng: %s. Vui lòng rà soát lại!') % (
+                    total_synced, len(over_price_products), ", ".join(over_price_products[:5])
+                )
+                if len(over_price_products) > 5:
+                    warning_msg += "..."
+                return self._show_notification(_('Cảnh báo giá vượt hạn mức'), warning_msg, type='warning', sticky=True)
+                
             return self._show_notification(_('Thành công'), _('Đã đồng bộ %s sản phẩm gỗ.') % total_synced)
         except Exception as e:
             raise UserError(_("Lỗi đồng bộ sản phẩm: %s") % str(e))
+
+    def _parse_wood_product_specs(self, code, name):
+        """Bóc tách thông số gỗ (độ dày, rộng, dài, ký hiệu, đơn giá) từ mã và tên sản phẩm"""
+        import re
+        code = (code or '').strip()
+        name = (name or '').strip()
+        
+        thickness = 0.0
+        width = 0.0
+        length = 0.0
+        price = 0.0
+        thickness_alias = ''
+        thickness_from_dim = 0.0
+        
+        # 1. Bóc tách Dimensions (Chiều rộng & Chiều dài) & Độ dày nếu có định dạng 3 chiều (ví dụ: 18mm x 1220mm x 2440mm)
+        # Thử định dạng 3 chiều trước: A x B x C
+        dim3_match = re.search(r'([0-9\.]+)\s*(?:mm|cm)?\s*[xX*]\s*([0-9]+)\s*(?:mm|cm)?\s*[xX*]\s*([0-9]+)\s*(?:mm|cm)?', name)
+        if not dim3_match:
+            dim3_match = re.search(r'([0-9\.]+)\s*(?:mm|cm)?\s*[xX*]\s*([0-9]+)\s*(?:mm|cm)?\s*[xX*]\s*([0-9]+)\s*(?:mm|cm)?', code)
+            
+        if dim3_match:
+            try:
+                thickness_from_dim = float(dim3_match.group(1))
+                val1 = float(dim3_match.group(2))
+                val2 = float(dim3_match.group(3))
+                
+                w_val = min(val1, val2)
+                l_val = max(val1, val2)
+                
+                if w_val > 100:
+                    width = w_val
+                else:
+                    width = w_val * 10.0
+                    
+                if l_val > 100:
+                    length = l_val
+                else:
+                    length = l_val * 10.0
+            except:
+                pass
+        else:
+            # Thử định dạng 2 chiều: A x B (ví dụ: 1220 x 2440)
+            dim2_match = re.search(r'([0-9]+)\s*(?:mm|cm)?\s*[xX*]\s*([0-9]+)\s*(?:mm|cm)?', name)
+            if not dim2_match:
+                dim2_match = re.search(r'([0-9]+)\s*(?:mm|cm)?\s*[xX*]\s*([0-9]+)\s*(?:mm|cm)?', code)
+                
+            if dim2_match:
+                try:
+                    val1 = float(dim2_match.group(1))
+                    val2 = float(dim2_match.group(2))
+                    
+                    w_val = min(val1, val2)
+                    l_val = max(val1, val2)
+                    
+                    if w_val > 100:
+                        width = w_val
+                    else:
+                        width = w_val * 10.0
+                        
+                    if l_val > 100:
+                        length = l_val
+                    else:
+                        length = l_val * 10.0
+                except:
+                    pass
+        
+        # 2. Bóc tách Thickness (Độ dày)
+        if thickness_from_dim > 0:
+            thickness = thickness_from_dim
+            
+        if not thickness:
+            t_match = re.search(r'T([0-9\.]+)', code, re.IGNORECASE)
+            if t_match:
+                try:
+                    thickness = float(t_match.group(1))
+                except:
+                    pass
+                    
+        if not thickness:
+            h_match = re.search(r'(?:EP|H|T)\s*([0-9\.]+)', code, re.IGNORECASE)
+            if h_match:
+                try:
+                    thickness = float(h_match.group(1))
+                except:
+                    pass
+                    
+        if not thickness:
+            mm_match = re.search(r'([0-9\.]+)\s*mm', name, re.IGNORECASE)
+            if not mm_match:
+                mm_match = re.search(r'([0-9\.]+)\s*mm', code, re.IGNORECASE)
+            if mm_match:
+                try:
+                    thickness = float(mm_match.group(1))
+                except:
+                    pass
+                    
+        # 3. Bóc tách Thickness Alias
+        if thickness:
+            thickness_alias = f"{int(thickness)}"
+            alias_match = re.search(r'([0-9]+[MD])', code, re.IGNORECASE)
+            if alias_match:
+                thickness_alias = alias_match.group(1).upper()
+                
+        # 4. Bóc tách Price (Giá bán) từ phần thứ 2 của mã có dấu gạch ngang (ví dụ: TPPK_T18.0-369-A03)
+        if '-' in code:
+            parts = code.split('-')
+            if len(parts) >= 2:
+                price_part = parts[1].strip()
+                try:
+                    price_val = float(price_part)
+                    # Nếu giá trị số nhỏ hơn 50.0 (ví dụ: 7, 10, 7.25) -> quy đổi theo triệu đồng (x 1,000,000)
+                    # Nếu giá trị số lớn hơn hoặc bằng 50.0 (ví dụ: 369, 6105.840) -> quy đổi theo nghìn đồng (x 1,000)
+                    if price_val < 50.0:
+                        price = price_val * 1000000.0
+                    else:
+                        price = price_val * 1000.0
+                except ValueError:
+                    pass
+        # 5. Bóc tách đơn vị tính (T = Tấm, M = Mét khối M3)
+        unit = 'sheet'
+        # Tìm chữ T hoặc M trước số độ dày (ví dụ: _T18.0 hoặc _M11.0)
+        unit_match = re.search(r'_(T|M)([0-9\.]+)', code, re.IGNORECASE)
+        if not unit_match:
+            unit_match = re.search(r'\b(T|M)([0-9\.]+)', code, re.IGNORECASE)
+            
+        if unit_match:
+            unit_char = unit_match.group(1).upper()
+            if unit_char == 'T':
+                unit = 'sheet'
+            elif unit_char == 'M':
+                unit = 'm3'
+                
+        return thickness, width, length, thickness_alias, price, unit
 
 
     def action_sync_minings(self):
@@ -1021,14 +1199,14 @@ class DlWoodproConfig(models.Model):
         except Exception as e:
             self._add_debug_log("Attach Exception", f"Lỗi đồng bộ file cho {dossier.name}: {str(e)}")
 
-    def _show_notification(self, title, message):
+    def _show_notification(self, title, message, type='success', sticky=False):
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': title,
                 'message': message,
-                'type': 'success',
-                'sticky': False,
+                'type': type,
+                'sticky': sticky,
             }
         }

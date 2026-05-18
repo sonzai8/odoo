@@ -40,15 +40,17 @@
                             <span class="text-muted opacity-50 mx-2">|</span>
                             
                             <i class="fa fa-arrows-v dl_field_icon text-muted me-1" title="Chiều dài"/>
-                            <field name="x_length" placeholder="Dài (cm)" title="Chiều dài (cm)" class="o_field_number"/>
-                            <span class="dl_unit_badge me-2">cm</span>
+                            <field name="x_length" placeholder="Dài (mm)" title="Chiều dài (mm)" class="o_field_number"/>
+                            <span class="dl_unit_badge me-2">mm</span>
                             
                             <span class="text-muted opacity-50 mx-1">x</span>
                             
                             <i class="fa fa-expand dl_field_icon text-muted me-1" title="Chiều rộng"/>
-                            <field name="x_width" placeholder="Rộng (cm)" title="Chiều rộng (cm)" class="o_field_number"/>
-                            <span class="dl_unit_badge">cm</span>
+                            <field name="x_width" placeholder="Rộng (mm)" title="Chiều rộng (mm)" class="o_field_number"/>
+                            <span class="dl_unit_badge">mm</span>
                         </div>
+                        <field name="x_unit" widget="radio" options="{'horizontal': true}"/>
+                        <field name="x_sale_state" widget="radio" options="{'horizontal': true}"/>
                     </group>
 
                     <!-- 2. Thông số lớp gỗ (Layers) -->
@@ -104,9 +106,10 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
                 <field name="x_thickness" optional="show" decoration-bf="1"/>
-                <field name="x_length" string="Dài (cm)" optional="show"/>
-                <field name="x_width" string="Rộng (cm)" optional="show"/>
+                <field name="x_length" string="Dài (mm)" optional="show"/>
+                <field name="x_width" string="Rộng (mm)" optional="show"/>
                 <field name="x_structure_summary" optional="show" widget="badge" decoration-info="1"/>
+                <field name="x_sale_state" widget="badge" decoration-success="x_sale_state == 'active'" decoration-danger="x_sale_state == 'inactive'"/>
             </xpath>
         </field>
     </record>
@@ -122,6 +125,7 @@
             </xpath>
             <xpath expr="//search/group" position="inside">
                 <filter string="Độ dày" name="group_by_thickness" context="{'group_by': 'x_thickness'}"/>
+                <filter string="Trạng thái kinh doanh" name="group_by_sale_state" context="{'group_by': 'x_sale_state'}"/>
             </xpath>
         </field>
     </record>

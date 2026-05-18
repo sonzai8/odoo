@@ -16,3 +16,22 @@ class ProductTemplate(models.Model):
         """Tự động thiết lập quản lý theo Lô khi tích chọn là sản phẩm Gỗ"""
         if self.is_wood_product:
             self.tracking = 'lot'
+
+
+class ProductProduct(models.Model):
+    _inherit = 'product.product'
+
+    def _compute_display_name(self):
+        super()._compute_display_name()
+        for product in self:
+            is_wood = product.product_tmpl_id.is_wood_product or getattr(product, 'x_is_wood_product', False)
+            if is_wood and product.default_code:
+                code = product.default_code.strip()
+                if code:
+                    name = product.name or ''
+                    spec = getattr(product.product_tmpl_id, 'x_structure_summary', False)
+                    # Định dạng: [Mã] Tên [Thông số kỹ thuật]
+                    if spec:
+                        product.display_name = f"[{code}] {name} [{spec}]"
+                    else:
+                        product.display_name = f"[{code}] {name}"
