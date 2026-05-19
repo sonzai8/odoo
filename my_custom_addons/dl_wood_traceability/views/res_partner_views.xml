@@ -7,7 +7,7 @@
             <list string="Chủ rừng" create="1" delete="1">
                 <field name="name"/>
                 <field name="phone"/>
-                <field name="street" string="Địa chỉ"/>
+                <field name="x_full_address" string="Địa chỉ đầy đủ"/>
                 <field name="x_woodpro_id" string="ID WoodPro" readonly="1"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
@@ -23,6 +23,15 @@
                 <attribute name="readonly">1</attribute>
                 <attribute name="invisible">0</attribute>
             </xpath>
+            <xpath expr="//field[@name='website']" position="attributes">
+                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+            </xpath>
+            <xpath expr="//field[@name='category_id']" position="attributes">
+                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+            </xpath>
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+            </xpath>
             <xpath expr="//field[@name='vat']" position="after">
                 <field name="x_cccd"/>
                 <field name="x_cccd_date"/>
@@ -35,12 +44,22 @@
                         <list editable="bottom">
                             <field name="is_main" widget="boolean_favorite" nolabel="1"/>
                             <field name="name"/>
+                            <field name="x_area_ha" string="Diện tích (ha)"/>
                             <field name="street"/>
                             <field name="city"/>
                             <field name="state_id"/>
                             <field name="note"/>
                         </list>
                     </field>
+                </page>
+                <page string="Thông Tin Thanh Toán">
+                    <group>
+                        <group string="Tài khoản Ngân hàng">
+                            <field name="x_bank_name_id" options="{'no_open': False, 'no_create': False}"/>
+                            <field name="x_bank_account_number"/>
+                            <field name="x_bank_account_holder"/>
+                        </group>
+                    </group>
                 </page>
             </xpath>
         </field>

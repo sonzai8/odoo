@@ -17,4 +17,5 @@ from . import dl_wood_production
 from . import res_company
 from . import res_config_settings
 from . import dl_wood_transport
+from . import dl_vietnam_bank
 

@@ -18,7 +18,7 @@ try:
 except ImportError:
     DocxTemplate = None
 
-from odoo import _
+from odoo import _, fields
 
 _logger = logging.getLogger(__name__)
 
@@ -176,10 +176,13 @@ class DossierDocxRenderer:
         # Đơn đề nghị xác nhận
         'ddnx':                     '_prepare_ddnx_context',
         'don_de_nghi_xac_nhan':     '_prepare_ddnx_context',
+        'xac_nhan_bkls':            '_prepare_ddnx_context',
+        'xn_bkls':                  '_prepare_ddnx_context',
         
         # Biên bản xác minh
         'bbxm':                     '_prepare_bbxm_context',
         'bien_ban_xac_minh':        '_prepare_bbxm_context',
+        'bien_ban_xac_minh_ngls':   '_prepare_bien_ban_xac_minh_ngls_context',
         
         # Các mẫu phụ
         'cnbk':                     '_prepare_cnbk_context',
@@ -234,9 +237,76 @@ class DossierDocxRenderer:
         context = self.get_context(template_key)
         doc = DocxTemplate(template_source)
         doc.render(context)
+        
+        # Tự động gộp ô dọc cho cột Đơn giá cố định trong hợp đồng HDSG
+        if template_key in ('hdsg', 'hop_dong_hsg'):
+            try:
+                self._post_process_hdsg_cell_merge(doc)
+            except Exception as e:
+                _logger.error("Lỗi khi tự động gộp ô dọc cột Đơn giá HDSG: %s", e)
+
         output = io.BytesIO()
         doc.save(output)
         return output.getvalue()
+
+    def _post_process_hdsg_cell_merge(self, doc):
+        """
+        Tự động quét qua tất cả các bảng trong hợp đồng, tìm cột chứa đơn giá cố định
+        và thực hiện gộp ô dọc (Vertical Cell Merge) từ dòng dữ liệu đầu tiên đến dòng cuối cùng.
+        """
+        _logger.info("=== HDSG POST PROCESS: CELL MERGING START ===")
+        _logger.info("Total tables in document: %d", len(doc.tables))
+        
+        from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Pt
+        
+        for t_idx, table in enumerate(doc.tables):
+            _logger.info("Inspecting Table %d (Rows: %d)", t_idx, len(table.rows))
+            target_col_idx = -1
+            matching_rows = []
+            
+            for r_idx, row in enumerate(table.rows):
+                for c_idx, cell in enumerate(row.cells):
+                    txt = cell.text.strip()
+                    if "Theo thỏa thuận, theo giá thị trường" in txt:
+                        _logger.info("Match found in Table %d, Row %d, Col %d: '%s'", t_idx, r_idx, c_idx, txt[:40] + "...")
+                        target_col_idx = c_idx
+                        matching_rows.append(r_idx)
+                        break
+                        
+            if target_col_idx != -1:
+                _logger.info("Table %d target column is %d. Rows to merge: %s", t_idx, target_col_idx, matching_rows)
+                if len(matching_rows) > 1:
+                    start_row = matching_rows[0]
+                    end_row = matching_rows[-1]
+                    
+                    _logger.info("Merging column %d from row %d to row %d in Table %d...", target_col_idx, start_row, end_row, t_idx)
+                    start_cell = table.cell(start_row, target_col_idx)
+                    end_cell = table.cell(end_row, target_col_idx)
+                    
+                    merged_text = "Theo thỏa thuận, theo giá thị trường tại từng thời điểm mua bán"
+                    
+                    # Thực hiện gộp ô dọc
+                    start_cell.merge(end_cell)
+                    
+                    # Căn giữa và định dạng lại văn bản
+                    start_cell.text = ""
+                    p = start_cell.paragraphs[0]
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    run = p.add_run(merged_text)
+                    run.font.name = 'Times New Roman'
+                    run.font.size = Pt(11)
+                    
+                    # Căn giữa dọc
+                    start_cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                    _logger.info("Table %d column %d merged successfully!", t_idx, target_col_idx)
+                else:
+                    _logger.info("Only %d row matches found in Table %d. Merging skipped.", len(matching_rows), t_idx)
+            else:
+                _logger.info("No matching price cell found in Table %d.", t_idx)
+                
+        _logger.info("=== HDSG POST PROCESS: CELL MERGING END ===")
 
     # =========================================================================
     # PRIVATE HELPERS — Dùng chung giữa các hàm prepare_context
@@ -290,16 +360,42 @@ class DossierDocxRenderer:
             'owner_position':        owner_pos,
             'owner_positon':         owner_pos,   # dự phòng lỗi gõ phím trong template cũ
             'owner_pos':             owner_pos,
+            # Thông tin thanh toán (Ngân hàng)
+            'owner_bank_account_number': p.x_bank_account_number or "",
+            'owner_bank_account_holder': p.x_bank_account_holder or "",
+            'owner_bank_name':           p.x_bank_name or "",
+            # Các biến thanh toán mới của chủ rừng theo template HD_HSG mới
+            'bank_name':                 p.x_bank_name or "",
+            'forest_owner_bank_name':    p.x_bank_name or "",
+            'forest_owner_acc_hoder':    p.x_bank_account_holder or "",
+            'forest_owner_acc_holder':   p.x_bank_account_holder or "",
+            'forest_owner_bank_acc':     p.x_bank_account_number or "",
+            'forest_owner_bank_account': p.x_bank_account_number or "",
+            # Dự phòng các biến viết tắt khác để dễ dùng trong template Word
+            'owner_bank_acc':            p.x_bank_account_number or "",
+            'owner_bank_holder':         p.x_bank_account_holder or "",
+            'owner_bank':                p.x_bank_name or "",
+            'owner_acc':                 p.x_bank_account_number or "",
         }
 
     def _get_company_info(self):
         """Trích xuất thông tin công ty (bên mua) thành dict."""
         c = self.dossier.company_id
-        rep  = c.x_representative or ""
-        pos  = c.x_representative_position or ""
+        d = self.dossier
+        rep = d.x_company_representative or c.x_representative or ""
+        pos = d.x_company_position or getattr(c, 'x_representative_position', '') or "Giám đốc"
+        
+        # Lấy đầy đủ thông tin địa chỉ thôn, xã, huyện, tỉnh của công ty
+        addr_parts = []
+        if c.street: addr_parts.append(c.street)
+        if c.street2: addr_parts.append(c.street2)
+        if c.city: addr_parts.append(c.city)
+        if c.state_id: addr_parts.append(c.state_id.name)
+        company_address = ", ".join(addr_parts) if addr_parts else ""
+
         return {
             'company_name':           c.name or "",
-            'company_address':        c.street or "",
+            'company_address':        company_address,
             'company_tax_number':     c.vat or "",
             'company_representative': rep,
             'company_ representative': rep,   # dự phòng lỗi gõ phím trong template cũ
@@ -384,8 +480,8 @@ class DossierDocxRenderer:
             'white': _('Khai thác trắng toàn bộ'),
             'group': _('Khai thác theo đám'),
         }
-        c_rep = d.company_id.x_representative or ""
-        c_pos = d.company_id.x_representative_position or ""
+        c_rep = d.x_company_representative or d.company_id.x_representative or ""
+        c_pos = d.x_company_position or getattr(d.company_id, 'x_representative_position', '') or "Giám đốc"
 
         context = {
             # Thông tin chủ rừng
@@ -400,14 +496,14 @@ class DossierDocxRenderer:
             'miningArea':             d.x_area or 0.0,
             'forestAddr':             d.exploitation_location_id.name or d.partner_address or "",
             'typeMining':             mining_method_map.get(d.x_mining_method, ""),
-            'projectedMiningOutput':  f"{int(round(d.initial_wood_qty)):,} m3".replace(',', '.'),
+            'projectedMiningOutput':  ", ".join([f"{l.species_id.name} {int(round(l.volume)):,}".replace(',', '.') + " m³" for l in d.line_ids]) if d.line_ids else "0 m³",
             # Thời gian khai thác
             'miningFromDate':         date_to_vietnamese_text(d.x_start_date),
             'miningFromdate':         date_to_vietnamese_text(d.x_start_date),  # dự phòng
             'miningToDate':           date_to_vietnamese_text(d.x_end_date),
             # Đại diện công ty
-            'representative':         c_rep or d.x_pakt_representative or "",
-            'position':               c_pos or d.x_pakt_position or "",
+            'representative':         c_rep,
+            'position':               c_pos,
             'companyName':            d.company_id.name or "",
             # Bảng loài gỗ
             'table_rows':             self._build_table_rows(),
@@ -507,7 +603,18 @@ class DossierDocxRenderer:
                 'quantity':      f"{int(line.quantity or 0):,}".replace(',', '.'),
             })
             
+        # Mã số và ngày lập bảng kê lâm sản
+        bkls_date = d.x_bkls_date or d.x_contract_date or d.x_end_date or fields.Date.today()
+        vietnamese_bkls_date = date_to_vietnamese_text(bkls_date)
+        forest_owner_city = p.city or p.state_id.name or ""
+            
         context = {
+            # Bảng kê lâm sản
+            'bkls_number':            d.x_bkls_number or "",
+            'bkls_code':              d.x_bkls_number or "",
+            'vietnamese_bkls_date':   vietnamese_bkls_date,
+            'forest_owner_city':      forest_owner_city,
+
             # Bên mua
             'company_name':           company_info.get('company_name', ''),
             'company_address':        company_info.get('company_address', ''),
@@ -555,9 +662,105 @@ class DossierDocxRenderer:
         return context
 
     def _prepare_ddnx_context(self):
-        """[SKELETON] Đề nghị xuất (DDNX). TODO: bổ sung biến riêng."""
-        _logger.info("[Renderer] _prepare_ddnx_context — tạm dùng context HDSG")
-        return self._prepare_hop_dong_hsg_context()
+        """
+        Chuẩn bị dữ liệu cho Đơn đề nghị xác nhận Bảng kê lâm sản (xac_nhan_bkls / ddnx).
+        
+        Quy tắc nghiệp vụ:
+          - Ngày lập đơn/ngày xin xác nhận = Ngày cuối cùng khai thác (x_end_date) + 1 ngày.
+        """
+        self.dossier.ensure_one()
+        d = self.dossier
+        p = d.partner_id
+        
+        # 1. Lấy ngày xin xác nhận / Kiểm lâm xác nhận
+        proposal_date = d.x_verify_date or d.x_contract_date or d.x_end_date or fields.Date.today()
+        vietnamese_proposal_date = date_to_vietnamese_text(proposal_date)
+        
+        # 2. Lấy thông tin công ty và chủ rừng
+        company_info = self._get_company_info()
+        owner_info = self._get_owner_info()
+        
+        # 3. Phân nhóm lâm sản (Gỗ vs Củi) để tính toán
+        line_ids = d.line_ids
+        wood_lines = line_ids.filtered(lambda l: l.wood_type == 'wood')
+        firewood_lines = line_ids.filtered(lambda l: l.wood_type == 'firewood')
+        
+        species_lines = []
+        for l in line_ids:
+            label = "Gỗ" if l.wood_type == 'wood' else "Củi"
+            fmt_qty = f"{int(l.quantity):,}".replace(',', '.')
+            fmt_vol = f"{int(round(l.volume)):,}".replace(',', '.')
+            
+            words_qty = number_to_vietnamese_words(l.quantity)
+            words_vol = number_to_vietnamese_words(l.volume)
+            
+            # Viết chữ hoa chữ cái đầu tiên cho đẹp
+            if words_qty:
+                words_qty = words_qty[0].upper() + words_qty[1:]
+            if words_vol:
+                words_vol = words_vol[0].upper() + words_vol[1:]
+                
+            species_lines.append({
+                'species_label': label,
+                'species_name': l.species_id.name or "",
+                'quantity': fmt_qty,
+                'volume': fmt_vol,
+                'vietnamese_quantity': words_qty,
+                'vietnamese_volume': words_vol,
+            })
+        
+        main_species = ", ".join(list(set(line_ids.filtered(lambda l: l.species_id).mapped('species_id.name')))) if line_ids else ""
+        
+        # Tổng số lượng (khúc) và thể tích (m3)
+        # Bảng kê lâm sản thường đếm tổng số lượng (khúc gỗ) và tổng thể tích (m3)
+        total_vol = sum(line_ids.mapped('volume'))
+        total_qty = sum(line_ids.mapped('quantity'))
+        
+        # Lấy địa danh (Xã/Phường) của địa bàn khai thác
+        commune_name = d.exploitation_location_id.city or p.city or ""
+        
+        # Lấy Hạt kiểm lâm quản lý (nếu có trường x_ranger_agency hoặc mặc định bỏ trống)
+        ranger_agency = getattr(d, 'x_ranger_agency', '') or ""
+        
+        context = {
+            # Kính gửi
+            'ranger_agency':            ranger_agency,
+            'district_ranger_office':   ranger_agency,
+            
+            # Thông tin chủ rừng (Bên bán)
+            'forest_owner_name':        p.name or "",
+            'forest_owner_cccd':        p.x_cccd or "",
+            'forest_owner_address':     d.partner_address or "",
+            'forest_owner_phone':       p.phone or "",
+            'forest_owner_email':       p.email or "",
+            
+            # Thông tin lâm sản
+            'species_name':             main_species,
+            
+            # Định dạng số lượng và khối lượng
+            'quantity':                 f"{int(total_qty):,}".replace(',', '.'),
+            'volume':                   f"{int(round(total_vol)):,}".replace(',', '.'),
+            'total_quantity':           f"{int(total_qty):,}".replace(',', '.'),
+            'total_volume':             f"{int(round(total_vol)):,}".replace(',', '.'),
+            
+            # Đọc số thành chữ tiếng Việt chuẩn xác
+            'vietnamese_quantity':      number_to_vietnamese_words(total_qty),
+            'vietnamese_volume':        number_to_vietnamese_words(total_vol),
+            
+            # Thông tin bảng kê
+            'bkls_number':              d.x_bkls_number or d.name or "",
+            'bkls_code':                d.x_bkls_number or d.name or "",
+            'proposal_date':            proposal_date.strftime('%d/%m/%Y') if proposal_date else "",
+            'vietnamese_bkls_date':     vietnamese_proposal_date,
+            'vietnamese_proposal_date': vietnamese_proposal_date,
+            
+            # Địa danh & Ký tên
+            'forest_owner_city':        commune_name,
+            'commune_name':             commune_name,
+            'location_commune':         commune_name,
+            'species_lines':            species_lines,
+        }
+        return context
 
     def _prepare_bbxm_context(self):
         """[SKELETON] Biên bản xác nhận mua (BBXM). TODO: bổ sung biến riêng."""
@@ -583,3 +786,63 @@ class DossierDocxRenderer:
         """[SKELETON] Giấy biên nhận (GBN). TODO: bổ sung biến riêng."""
         _logger.info("[Renderer] _prepare_gbn_context — tạm dùng context HDSG")
         return self._prepare_hop_dong_hsg_context()
+
+    def _prepare_bien_ban_xac_minh_ngls_context(self):
+        """
+        Chuẩn bị dữ liệu cho Biên bản xác minh nguồn gốc lâm sản (bien_ban_xac_minh_ngls).
+        """
+        self.dossier.ensure_one()
+        d = self.dossier
+        p = d.partner_id
+
+        # 1. Tên loài cây gỗ/lâm sản
+        species_name = ", ".join(
+            list(set(d.line_ids.filtered(lambda l: l.species_id).mapped('species_id.name')))
+        ) if d.line_ids else ""
+
+        # 2. Khối lượng và chữ số
+        total_vol = d.initial_qty or 0.0
+        total_volume_str = f"{total_vol:,.3f}".replace(',', '_').replace('.', ',').replace('_', '.')
+        if total_vol.is_integer():
+            total_volume_str = f"{int(total_vol):,}".replace(',', '.')
+        
+        vietnamese_total_volume = number_to_vietnamese_words(total_vol)
+
+        # 3. Diện tích ha
+        x_area = f"{d.x_area:.2f}".replace('.', ',') if d.x_area else "0"
+
+        # 4. Địa chỉ rừng và địa điểm xác minh
+        forest_addr = d.exploitation_location_id.full_address or p.x_full_address or ""
+        vietnamese_forest_address = forest_addr
+
+        # 5. Các mốc thời gian dạng chữ Tiếng Việt thông minh
+        x_bkls_date_str = date_to_vietnamese_text(d.x_bkls_date)
+        x_verify_date_str = date_to_vietnamese_text(d.x_verify_date)
+        
+        # Để tránh lặp từ "ngày" nếu trong template đã ghi sẵn: "từ ngày {{vietnamese_x_start_date}}"
+        vietnamese_x_start_date = ""
+        if d.x_start_date:
+            vietnamese_x_start_date = f"{d.x_start_date.day:02d} tháng {d.x_start_date.month:02d} năm {d.x_start_date.year}"
+            
+        # Không có chữ "ngày" trong template trước {{vietnamese_x_end_date}}, nên phải có chữ "ngày" ở đầu
+        vietnamese_x_end_date = ""
+        if d.x_end_date:
+            vietnamese_x_end_date = f"ngày {d.x_end_date.day:02d} tháng {d.x_end_date.month:02d} năm {d.x_end_date.year}"
+
+        context = {
+            'x_bkls_date':               x_bkls_date_str,
+            'forest_owner_name':         p.name or "",
+            'x_verify_date':             x_verify_date_str,
+            'vietnamese_forest_address':  vietnamese_forest_address,
+            'species_name':              species_name,
+            'x_area':                    x_area,
+            'forest_address':            forest_addr,
+            'total_volume':              total_volume_str,
+            'vietnamese_total_volume':   vietnamese_total_volume,
+            'forest_owner_cccd':         p.x_cccd or "",
+            'vietnamese_x_start_date':   vietnamese_x_start_date,
+            'vietnamese_x_end_date':     vietnamese_x_end_date,
+        }
+        
+        _logger.info("[Renderer] bien_ban_xac_minh_ngls context: %s", context)
+        return context

@@ -135,7 +135,7 @@ class DlWoodProductionOrder(models.Model):
     )
     product_id = fields.Many2one(
         'product.product', string='Sản phẩm sản xuất', required=True,
-        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_wood_product', '=', True)]"
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_wood_product', '=', True), ('sale_ok', '=', True), ('active', '=', True)]"
     )
     qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 2), default=1.0)
     qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2), default=1.0)
@@ -176,6 +176,209 @@ class DlWoodProductionOrder(models.Model):
         ('cancelled', 'Đã hủy'),
     ], string='Trạng thái', default='draft', index=True)
 
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='company_id.currency_id',
+        string='Tiền tệ',
+        readonly=True
+    )
+    x_total_wood_cost = fields.Float(
+        string='Tổng tiền gỗ (VND)',
+        compute='_compute_production_costs',
+        store=True,
+        digits=(16, 2)
+    )
+    x_avg_production_price = fields.Float(
+        string='Giá SX trung bình (VND/m³ thành phẩm)',
+        compute='_compute_production_costs',
+        store=True,
+        digits=(16, 2)
+    )
+    x_avg_production_price_explanation = fields.Html(
+        string='Giải thích chi tiết chi phí',
+        compute='_compute_production_costs',
+        store=True
+    )
+
+    # ── Hiển thị quy đổi số lượng → m³ thành phẩm ───────────────────────────
+    x_uom_is_piece = fields.Boolean(
+        string='Đơn vị là Tấm',
+        compute='_compute_x_volume_conversion',
+        store=False,
+        help='True nếu đơn vị tính của sản phẩm có chứa từ "tấm" — dùng để hiện thị thông tin quy đổi.'
+    )
+    x_qty_planned_m3 = fields.Float(
+        string='Số lượng kế hoạch (m³)',
+        compute='_compute_x_volume_conversion',
+        store=False,
+        digits=(16, 2),
+        help='Quy đổi số lượng kế hoạch sang m³ dựa trên x_volume_m3 của sản phẩm.'
+    )
+    x_qty_done_m3 = fields.Float(
+        string='Số lượng thực tế (m³)',
+        compute='_compute_x_volume_conversion',
+        store=False,
+        digits=(16, 2),
+        help='Quy đổi số lượng thực tế sang m³ dựa trên x_volume_m3 của sản phẩm.'
+    )
+
+    def _get_vol_per_unit(self):
+        """Helper để lấy thể tích m³ trên mỗi đơn vị (Tấm/m³...) của sản phẩm."""
+        self.ensure_one()
+        vol_per_unit = self.product_id.x_volume_m3 if self.product_id else 0.0
+        if not vol_per_unit and self.product_id:
+            uom_name = self.product_id.uom_id.name or ''
+            if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']):
+                vol_per_unit = 1.0
+            else:
+                p = self.product_id
+                if p.x_length and p.x_width and p.x_thickness:
+                    area = (p.x_length * p.x_width) / 1_000_000.0  # mm² → m²
+                    vol_per_unit = (area * p.x_thickness) / 1_000.0  # mm → m
+        if not vol_per_unit:
+            # Mặc định là 1.0 để tránh bị nhân với 0 làm mất khối lượng của các sản phẩm có UoM là m³ nhưng chưa khai báo trường x_volume_m3
+            vol_per_unit = 1.0
+        return vol_per_unit
+
+    @api.depends('qty_planned', 'qty_done', 'product_id', 'product_id.uom_id',
+                 'product_id.x_volume_m3', 'product_id.x_length',
+                 'product_id.x_width', 'product_id.x_thickness')
+    def _compute_x_volume_conversion(self):
+        """Tính quy đổi số lượng tấm → m³ và detect đơn vị là Tấm."""
+        for rec in self:
+            uom_name = (rec.product_id.uom_id.name or '').strip().lower()
+            rec.x_uom_is_piece = 'tấm' in uom_name or 'tam' in uom_name
+
+            vol_per_unit = rec._get_vol_per_unit()
+            rec.x_qty_planned_m3 = round(rec.qty_planned * vol_per_unit, 2)
+            rec.x_qty_done_m3    = round(rec.qty_done    * vol_per_unit, 2)
+
+    @api.depends('line_ids.x_subtotal_cost', 'line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_price_unit', 'qty_done', 'qty_planned', 'product_id.x_volume_m3', 'product_id.uom_id.name', 'state')
+    def _compute_production_costs(self):
+        for rec in self:
+            total_cost = sum(rec.line_ids.mapped('x_subtotal_cost'))
+            rec.x_total_wood_cost = round(total_cost, 2)
+
+            qty = rec.qty_done if rec.state in ('in_progress', 'done') else rec.qty_planned
+            if not qty:
+                qty = rec.qty_planned or 1.0
+
+            vol_per_unit = rec._get_vol_per_unit()
+
+            total_finished_volume = qty * vol_per_unit
+            if total_finished_volume > 0:
+                rec.x_avg_production_price = round(total_cost / total_finished_volume, 2)
+            else:
+                rec.x_avg_production_price = round(total_cost / qty, 2) if qty > 0 else 0.0
+
+            # Xây dựng phần giải thích chi tiết - hiển thị công thức đầy đủ theo yêu cầu:
+            # ( 30M3 x 1.900.000 + 50M3 x 1.800.000 ) / ( 30M3 + 50M3 ) = XX
+            explanation_html = ""
+            active_lines = rec.line_ids.filtered(lambda l: (l.volume_planned if rec.state == 'draft' else l.volume_actual) > 0)
+
+            if not active_lines:
+                explanation_html = """
+                    <div style="font-size: 0.85rem; color: #7f8c8d; padding: 10px; background-color: #f8f9fa; border-radius: 4px; border: 1px dashed #dee2e6; margin-top: 15px;">
+                        <i class="fa fa-info-circle" style="color: #6c757d; margin-right: 5px;"></i>
+                        Chưa có dòng tiêu hao nguyên vật liệu nào có khối lượng lớn hơn 0 để hiển thị chi tiết phép tính.
+                    </div>
+                """
+            else:
+                # Thu thập dữ liệu từng dòng nguyên liệu
+                parts_numerator = []   # ["30,00 m³ x 1.900.000", "50,00 m³ x 1.800.000"]
+                parts_vol_denom = []   # ["30,00 m³", "50,00 m³"]
+                total_vol_raw = 0.0
+
+                for line in active_lines:
+                    v = line.volume_planned if rec.state == 'draft' else line.volume_actual
+                    total_vol_raw += v
+                    fmt_price = f"{int(line.x_price_unit):,}".replace(",", ".")
+                    fmt_vol   = f"{v:,.2f}"
+                    parts_numerator.append(f"{fmt_vol} M³ x {fmt_price}")
+                    parts_vol_denom.append(f"{fmt_vol} M³")
+
+                # ── Giá trung bình gỗ nguyên liệu (cách 1) ──────────────────────────────
+                avg_raw_price = round(total_cost / total_vol_raw, 2) if total_vol_raw > 0 else 0.0
+                fmt_avg_raw   = f"{int(avg_raw_price):,}".replace(",", ".")
+                fmt_total_cost = f"{int(total_cost):,}".replace(",", ".")
+                fmt_vol_raw   = f"{total_vol_raw:,.2f}"
+
+                # Ví dụ: ( 30,00 M³ x 1.900.000 + 50,00 M³ x 1.800.000 ) / ( 30,00 M³ + 50,00 M³ ) = 1.843.750 VND/m³ gỗ NL
+                raw_numerator  = " + ".join(parts_numerator)
+                raw_denominator = " + ".join(parts_vol_denom)
+                raw_formula_full = (
+                    f"( {raw_numerator} ) / ( {raw_denominator} )"
+                    f" = <strong>{fmt_avg_raw} VND / m³ gỗ nguyên liệu</strong>"
+                )
+                # Dòng rút gọn: tổng tiền / tổng m³ = kết quả
+                raw_simplified = (
+                    f"{fmt_total_cost} / {fmt_vol_raw} m³"
+                    f" = <strong>{fmt_avg_raw} VND / m³ gỗ nguyên liệu</strong>"
+                )
+
+                # ── Chi phí gỗ trên mỗi m³ thành phẩm (cách 2) ─────────────────────────
+                fmt_avg_prod = f"{int(rec.x_avg_production_price):,}".replace(",", ".")
+
+                if total_finished_volume > 0:
+                    fmt_fin_vol  = f"{total_finished_volume:,.3f}"
+                    unit_label   = "m³ thành phẩm"
+                    # Ví dụ: ( 30,00 M³ x 1.900.000 + 50,00 M³ x 1.800.000 ) / 2,400 m³ thành phẩm = XX VND/m³
+                    fin_formula_full = (
+                        f"( {raw_numerator} ) / {fmt_fin_vol} m³ thành phẩm"
+                        f" = <strong>{fmt_avg_prod} VND / m³ thành phẩm</strong>"
+                    )
+                    fin_simplified = (
+                        f"{fmt_total_cost} / {fmt_fin_vol} m³ thành phẩm"
+                        f" = <strong>{fmt_avg_prod} VND / m³ thành phẩm</strong>"
+                    )
+                    note_finished = (
+                        f"* Thể tích thành phẩm = {qty:,.0f} {rec.product_id.uom_id.name or 'đơn vị'}"
+                        f" × {vol_per_unit:,.5f} m³/đơn vị = {fmt_fin_vol} m³"
+                    )
+                else:
+                    fmt_qty = f"{qty:,.0f}"
+                    fin_formula_full = (
+                        f"( {raw_numerator} ) / {fmt_qty} đơn vị"
+                        f" = <strong>{fmt_avg_prod} VND / đơn vị</strong>"
+                    )
+                    fin_simplified = (
+                        f"{fmt_total_cost} / {fmt_qty} đơn vị"
+                        f" = <strong>{fmt_avg_prod} VND / đơn vị</strong>"
+                    )
+                    note_finished = f"* Chưa có thể tích m³/đơn vị — tính theo số lượng đơn vị."
+
+                state_label = "Dự thảo – Ước tính" if rec.state == 'draft' else "Thực tế sản xuất"
+
+                explanation_html = f"""
+                    <div style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 0.85rem; color: #444; line-height: 1.7; margin-top: 0px; border-top: 1px dashed #ced4da; padding-top: 12px;">
+
+                        <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px; display: flex; align-items: center; font-size: 0.9rem;">
+                            <i class="fa fa-calculator" style="color: #00878a; margin-right: 6px; font-size: 1rem;"></i>
+                            Chi tiết tính toán chi phí ({state_label}):
+                        </div>
+
+                        <!-- MỤC 1: Giá NL trung bình / m³ gỗ nguyên liệu -->
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+                            <div style="font-weight: 600; color: #3182ce; margin-bottom: 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                                <i class="fa fa-arrow-right" style="font-size: 0.75rem; margin-right: 4px;"></i>
+                                1. Giá gỗ nguyên liệu trung bình đầu vào:
+                            </div>
+                            <!-- Công thức đầy đủ -->
+                            <div style="font-family: Consolas, 'Courier New', monospace; background: #fff; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.82rem; color: #2d3748; overflow-x: auto; white-space: nowrap; margin-bottom: 6px;">
+                                {raw_formula_full}
+                            </div>
+                            <!-- Dòng rút gọn -->
+                            <div style="font-family: Consolas, 'Courier New', monospace; background: #edf2f7; padding: 6px 12px; border-radius: 4px; font-size: 0.82rem; color: #4a5568; overflow-x: auto; white-space: nowrap;">
+                                ≡&nbsp; {raw_simplified}
+                            </div>
+                        </div>
+
+                        <!-- MỤC 2: TẠM ẨN — xem code Python để bật lại -->
+
+                    </div>
+                """
+            rec.x_avg_production_price_explanation = explanation_html
+
     @api.depends('line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_ratio', 'qty_planned', 'qty_done', 'x_co_yield')
     def _compute_total_volume(self):
         for rec in self:
@@ -190,10 +393,11 @@ class DlWoodProductionOrder(models.Model):
             remaining_ratio = max(0.0, 100.0 - total_ratio)
             rec.x_remaining_ratio = round(remaining_ratio, 2)
             
-            total_vol_planned_needed = rec.qty_planned * rec.x_co_yield
+            vol_per_unit = rec._get_vol_per_unit()
+            total_vol_planned_needed = (rec.qty_planned * vol_per_unit) * rec.x_co_yield
             rec.x_remaining_volume_planned = round(max(0.0, total_vol_planned_needed - total_vol_plan), 2)
             
-            total_vol_actual_needed = rec.qty_done * rec.x_co_yield
+            total_vol_actual_needed = (rec.qty_done * vol_per_unit) * rec.x_co_yield
             rec.x_remaining_volume_actual = round(max(0.0, total_vol_actual_needed - total_vol_act), 2)
 
     @api.depends('sale_order_id.company_id')
@@ -213,19 +417,31 @@ class DlWoodProductionOrder(models.Model):
     @api.onchange('qty_planned', 'qty_done')
     def _onchange_production_quantities(self):
         for rec in self:
+            vol_per_unit = rec._get_vol_per_unit()
             for line in rec.line_ids:
                 if line.x_ratio:
-                    line.volume_planned = round((rec.qty_planned * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                    line.volume_actual = round((rec.qty_done * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    if line.dossier_id:
+                        vol_planned = min(vol_planned, line.dossier_id.remaining_qty)
+                        vol_actual = min(vol_actual, line.dossier_id.remaining_qty)
+                    line.volume_planned = vol_planned
+                    line.volume_actual = vol_actual
 
     @api.onchange('x_co_yield')
     def _onchange_x_co_yield(self):
         for rec in self:
+            vol_per_unit = rec._get_vol_per_unit()
             for line in rec.line_ids:
                 line.x_co_yield = rec.x_co_yield
                 if line.x_ratio:
-                    line.volume_planned = round((rec.qty_planned * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                    line.volume_actual = round((rec.qty_done * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    if line.dossier_id:
+                        vol_planned = min(vol_planned, line.dossier_id.remaining_qty)
+                        vol_actual = min(vol_actual, line.dossier_id.remaining_qty)
+                    line.volume_planned = vol_planned
+                    line.volume_actual = vol_actual
 
     @api.constrains('line_ids', 'state')
     def _check_ratios_total(self):
@@ -347,11 +563,17 @@ class DlWoodProductionOrder(models.Model):
             vol = line.volume_actual
             dossier = line.dossier_id
             
+            # Khắc phục sai số làm tròn cực kỳ nhỏ (<= 0.05 m³) so với tồn kho thực tế
             if not force and dossier.remaining_qty < vol:
-                raise ValidationError(_(
-                    'Hồ sơ gỗ "%s" không đủ tồn kho!\n'
-                    'Tồn kho hiện tại: %.2f m³ — Cần trừ: %.2f m³'
-                ) % (dossier.name, dossier.remaining_qty, vol))
+                diff = vol - dossier.remaining_qty
+                if diff <= 0.05:
+                    vol = dossier.remaining_qty
+                    line.volume_actual = vol
+                else:
+                    raise ValidationError(_(
+                        'Hồ sơ gỗ "%s" không đủ tồn kho!\n'
+                        'Tồn kho hiện tại: %.2f m³ — Cần trừ: %.2f m³'
+                    ) % (dossier.name, dossier.remaining_qty, vol))
             
             # Trừ số lượng tồn kho
             dossier.remaining_qty -= vol
@@ -404,6 +626,12 @@ class DlWoodProductionLine(models.Model):
         store=True,
         index=True
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='company_id.currency_id',
+        string='Tiền tệ',
+        readonly=True
+    )
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', required=True)
     dossier_id = fields.Many2one(
         'dl.wood.dossier', string='Hồ sơ gỗ nguồn',
@@ -420,6 +648,36 @@ class DlWoodProductionLine(models.Model):
     volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
     volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
     note = fields.Char(string='Ghi chú')
+    x_price_unit = fields.Float(
+        string='Đơn giá gỗ (VND/m³)',
+        compute='_compute_x_price_unit',
+        store=True,
+        digits=(16, 2)
+    )
+    x_subtotal_cost = fields.Float(
+        string='Thành tiền gỗ (VND)',
+        compute='_compute_x_subtotal_cost',
+        store=True,
+        digits=(16, 2)
+    )
+
+    @api.depends('dossier_id', 'species_id')
+    def _compute_x_price_unit(self):
+        for line in self:
+            price = 0.0
+            if line.dossier_id and line.species_id:
+                dossier_line = line.dossier_id.line_ids.filtered(lambda dl: dl.species_id == line.species_id)
+                if dossier_line:
+                    price = dossier_line[0].price_unit
+            line.x_price_unit = price
+
+    @api.depends('volume_actual', 'volume_planned', 'x_price_unit', 'production_order_id.state')
+    def _compute_x_subtotal_cost(self):
+        for line in self:
+            order = line.production_order_id
+            # Nếu là Dự thảo (draft), dùng volume_planned, ngược lại dùng volume_actual
+            vol = line.volume_planned if order and order.state == 'draft' else line.volume_actual
+            line.x_subtotal_cost = round(vol * line.x_price_unit, 2)
 
     @api.depends('dossier_id')
     def _compute_x_available_species_ids(self):
@@ -442,10 +700,11 @@ class DlWoodProductionLine(models.Model):
             order = self.production_order_id
             if order:
                 self.x_co_yield = order.x_co_yield
+                vol_per_unit = order._get_vol_per_unit()
                 
                 # Tính định mức tự động thông minh dựa trên khối lượng còn lại của hồ sơ gỗ
                 if order.qty_planned > 0:
-                    total_volume_needed = order.qty_planned * self.x_co_yield
+                    total_volume_needed = (order.qty_planned * vol_per_unit) * self.x_co_yield
                     if total_volume_needed > 0:
                         other_lines = order.line_ids - self
                         other_lines_ratio_sum = sum(other_lines.mapped('x_ratio'))
@@ -462,8 +721,13 @@ class DlWoodProductionLine(models.Model):
                             self.x_ratio = round(allocated_ratio, 2)
                             
                         # Tính toán KL planned/actual của dòng
-                        self.volume_planned = round((order.qty_planned * self.x_co_yield) * (self.x_ratio / 100.0), 2)
-                        self.volume_actual = round((order.qty_done * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+                        vol_plan = round(((order.qty_planned * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+                        vol_act = round(((order.qty_done * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+                        if self.dossier_id:
+                            vol_plan = min(vol_plan, self.dossier_id.remaining_qty)
+                            vol_act = min(vol_act, self.dossier_id.remaining_qty)
+                        self.volume_planned = vol_plan
+                        self.volume_actual = vol_act
         else:
             self.species_id = False
 
@@ -472,12 +736,20 @@ class DlWoodProductionLine(models.Model):
         for line in self:
             if line.x_ratio:
                 order = line.production_order_id
-                line.volume_planned = round((order.qty_planned * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                line.volume_actual = round((order.qty_done * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_per_unit = order._get_vol_per_unit()
+                vol_plan = round(((order.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_act = round(((order.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                if line.dossier_id:
+                    vol_plan = min(vol_plan, line.dossier_id.remaining_qty)
+                    vol_act = min(vol_act, line.dossier_id.remaining_qty)
+                line.volume_planned = vol_plan
+                line.volume_actual = vol_act
 
     @api.onchange('volume_planned')
     def _onchange_volume_planned(self):
         if self.volume_planned:
+            if self.dossier_id:
+                self.volume_planned = min(self.volume_planned, self.dossier_id.remaining_qty)
             self.volume_actual = self.volume_planned
 
     def write(self, vals):

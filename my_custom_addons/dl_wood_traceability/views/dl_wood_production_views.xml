@@ -180,8 +180,33 @@
                             <field name="company_id" readonly="1"/>
                         </group>
                         <group string="Số lượng &amp; Thời gian">
-                            <field name="qty_planned" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
-                            <field name="qty_done" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="x_uom_is_piece" invisible="True"/>
+                            <field name="x_qty_planned_m3" invisible="True"/>
+                            <field name="x_qty_done_m3" invisible="True"/>
+                            <label for="qty_planned"/>
+                            <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
+                                <field name="qty_planned" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
+                                       style="max-width:120px;"/>
+                                <span style="color:#6c757d; font-weight:500;">
+                                    <field name="uom_id" nolabel="1" readonly="1" style="display:inline;"/>
+                                </span>
+                                <span invisible="not x_uom_is_piece or x_qty_planned_m3 == 0"
+                                      style="color:#007bff; font-size:0.82rem; font-style:italic;">
+                                    ≈ <field name="x_qty_planned_m3" nolabel="1" readonly="1" style="display:inline; color:#007bff;"/> m³
+                                </span>
+                            </div>
+                            <label for="qty_done"/>
+                            <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
+                                <field name="qty_done" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
+                                       style="max-width:120px;"/>
+                                <span style="color:#6c757d; font-weight:500;">
+                                    <field name="uom_id" nolabel="1" readonly="1" style="display:inline;"/>
+                                </span>
+                                <span invisible="not x_uom_is_piece or x_qty_done_m3 == 0"
+                                      style="color:#28a745; font-size:0.82rem; font-style:italic;">
+                                    ≈ <field name="x_qty_done_m3" nolabel="1" readonly="1" style="display:inline; color:#28a745;"/> m³
+                                </span>
+                            </div>
                             <field name="x_co_yield" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
                             <field name="date_planned" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
                             <field name="date_done" readonly="1"/>
@@ -200,6 +225,9 @@
                                     <field name="x_co_yield"/>
                                     <field name="volume_planned"/>
                                     <field name="volume_actual"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="x_price_unit" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" optional="show"/>
+                                    <field name="x_subtotal_cost" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Tổng tiền gỗ" readonly="1" optional="show"/>
                                     <field name="note"/>
                                 </list>
                             </field>
@@ -215,6 +243,37 @@
                                     <field name="x_remaining_volume_actual" readonly="1" decoration-danger="x_remaining_volume_actual &gt; 0" decoration-success="x_remaining_volume_actual == 0"/>
                                 </group>
                             </group>
+                            
+                            <!-- BẢNG GIẢI THÍCH CHI PHÍ SẢN XUẤT TRUNG BÌNH CAO CẤP -->
+                            <div class="card bg-light border-info mt-3" style="border-left: 5px solid #17a2b8; border-radius: 4px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 20px;">
+                                <h4 class="card-title text-info mb-3 font-weight-bold" style="display: flex; align-items: center; font-size: 1.1rem; margin-bottom: 12px; color: #00878a;">
+                                    <i class="fa fa-calculator" style="font-size: 1.2rem; margin-right: 8px;"></i>
+                                    Hiệu Suất Chi Phí Gỗ Nguyên Liệu &amp; Giá Sản Xuất
+                                </h4>
+                                <div class="row" style="display: flex; flex-wrap: wrap; margin-right: -15px; margin-left: -15px;">
+                                    <!-- CỘT TRÁI: Tổng tiền + Giá TB -->
+                                    <div class="col-md-4" style="flex: 0 0 33%; max-width: 33%; padding: 0 15px;">
+                                        <div style="background: white; border-radius: 4px; padding: 12px; border: 1px solid #dee2e6; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+                                            <div style="font-size: 0.8rem; color: #6c757d; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">TỔNG TIỀN GỖ TIÊU HAO</div>
+                                            <div style="margin-top: 5px; margin-bottom: 8px; font-size: 1.6rem; font-weight: bold; color: #333;">
+                                                <field name="currency_id" invisible="1"/>
+                                                <field name="x_total_wood_cost" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                            </div>
+                                            <div style="border-top: 1px dashed #dee2e6; padding-top: 8px; margin-top: 4px;">
+                                                <div style="font-size: 0.75rem; color: #6c757d; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">GIÁ SX TRUNG BÌNH</div>
+                                                <div style="font-size: 1.2rem; font-weight: bold; color: #28a745; margin-top: 3px;">
+                                                    <field name="x_avg_production_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                                    <span style="font-size: 0.8rem; color: #6c757d; font-weight: normal; margin-left: 4px;">/ m³ thành phẩm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- CỘT PHẢI: Công thức chi tiết -->
+                                    <div class="col-md-8" style="flex: 0 0 67%; max-width: 67%; padding: 0 15px;">
+                                        <field name="x_avg_production_price_explanation" readonly="1"/>
+                                    </div>
+                                </div>
+                            </div>
                         </page>
                         <page string="Ghi chú">
                             <field name="note"/>
@@ -240,6 +299,8 @@
                 <field name="qty_planned"/>
                 <field name="qty_done"/>
                 <field name="total_volume_actual" string="KL NVL (m³)"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="x_avg_production_price" widget="monetary" options="{'currency_field': 'currency_id'}" string="Giá SX TB (/m³)"/>
                 <field name="date_planned"/>
                 <field name="state" widget="badge"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>

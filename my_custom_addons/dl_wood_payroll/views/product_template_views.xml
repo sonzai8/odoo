@@ -16,7 +16,7 @@
                 </div>
             </xpath>
 
-            <!-- 2. Thêm Tab Thông tin Gỗ vào notebook -->
+            <!-- 2. Thêm Tab Tab Thông tin Gỗ vào notebook -->
             <xpath expr="//notebook" position="inside">
                 <page string="Thông tin Gỗ" name="wood_info_tab" invisible="not x_is_wood_product">
                     <!-- Alert gợi ý đặt tên -->
@@ -28,71 +28,56 @@
                         </div>
                     </div>
 
-                    <!-- 1. Kích thước (Dimensions) -->
-                    <group string="Kích thước cơ bản" class="dl_card mb-3">
-                        <label for="x_thickness" string="Kích thước"/>
-                        <div class="dl_row_units">
-                            <i class="fa fa-arrows-h dl_field_icon text-muted me-1" title="Độ dày"/>
-                            <field name="x_thickness" placeholder="Dày (mm)" title="Độ dày (mm)" class="fw-bold o_field_number"/>
-                            <field name="x_thickness_alias" placeholder="Ký hiệu (11M, 14D...)" title="Ký hiệu độ dày" class="ms-2"/>
-                            <span class="dl_unit_badge me-2">mm</span>
-                            
-                            <span class="text-muted opacity-50 mx-2">|</span>
-                            
-                            <i class="fa fa-arrows-v dl_field_icon text-muted me-1" title="Chiều dài"/>
-                            <field name="x_length" placeholder="Dài (mm)" title="Chiều dài (mm)" class="o_field_number"/>
-                            <span class="dl_unit_badge me-2">mm</span>
-                            
-                            <span class="text-muted opacity-50 mx-1">x</span>
-                            
-                            <i class="fa fa-expand dl_field_icon text-muted me-1" title="Chiều rộng"/>
-                            <field name="x_width" placeholder="Rộng (mm)" title="Chiều rộng (mm)" class="o_field_number"/>
-                            <span class="dl_unit_badge">mm</span>
+                    <!-- 1. Kích thước (Dimensions) và Giao dịch -->
+                    <div class="dl_card mb-3 p-3 border rounded bg-white">
+                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Kích thước và Bán hàng</h5>
+                        <div class="row">
+                            <div class="col-4">
+                                <label for="x_thickness" class="fw-bold text-muted small d-block mb-1" string="Độ dày (mm)"/>
+                                <field name="x_thickness" class="w-100 fw-bold o_field_number"/>
+                            </div>
+                            <div class="col-4">
+                                <label for="x_length" class="fw-bold text-muted small d-block mb-1" string="Chiều dài (mm)"/>
+                                <field name="x_length" class="w-100 o_field_number"/>
+                            </div>
+                            <div class="col-4">
+                                <label for="x_width" class="fw-bold text-muted small d-block mb-1" string="Chiều rộng (mm)"/>
+                                <field name="x_width" class="w-100 o_field_number"/>
+                            </div>
                         </div>
-                        <field name="x_unit" widget="radio" options="{'horizontal': true}"/>
-                        <field name="x_sale_state" widget="radio" options="{'horizontal': true}"/>
-                    </group>
-
-                    <!-- 2. Thông số lớp gỗ (Layers) -->
-                    <group string="Cấu tạo &amp; Số lớp" class="dl_card mb-3">
-                        <field name="x_quality" widget="radio" options="{'horizontal': true}"/>
-                        <field name="x_layer_a_count" placeholder="0"/>
-                        <field name="x_layer_b_count" placeholder="0"/>
-                        <field name="x_layer_c_count" placeholder="0"/>
-                        <label for="x_structure_summary" string="Kết cấu"/>
-                        <div class="o_row">
-                            <field name="x_structure_summary" class="text-primary fw-bold" readonly="1"/>
-                            <span class="badge rounded-pill bg-info-light text-info ms-2 px-2" invisible="not x_is_wood_product">
-                                <i class="fa fa-info-circle me-1"/>Tự động
-                            </span>
+                        
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <label for="x_unit" class="fw-bold text-muted small d-block mb-1" string="Đơn vị tính"/>
+                                <field name="x_unit" widget="radio" options="{'horizontal': true}"/>
+                            </div>
+                            <div class="col-6">
+                                <label for="x_sale_state" class="fw-bold text-muted small d-block mb-1" string="Trạng thái kinh doanh"/>
+                                <field name="x_sale_state" widget="radio" options="{'horizontal': true}"/>
+                            </div>
                         </div>
-                    </group>
-
-                    <!-- 3. Thông tin phủ phim (Coating) -->
-                    <group string="Xử lý bề mặt &amp; Phủ phim" class="dl_card mb-3">
-                        <field name="x_is_film_product"/>
-                        <field name="x_is_support_product"/>
-                    </group>
+                    </div>
                     
-                    <!-- 4. Kết quả quy đổi (Results Dashboard) -->
-                    <group string="Kết quả tính toán" class="dl_card mb-3 border-primary-light">
-                        <div class="d-flex align-items-center justify-content-start py-2">
-                            <div class="me-5 text-center px-4 border-end">
-                                <div class="text-muted small text-uppercase mb-1">Diện tích</div>
-                                <div class="d-flex align-items-baseline justify-content-center">
-                                    <field name="x_area_m2" readonly="1" class="h3 fw-bold mb-0 text-pine-green"/>
+                    <!-- 2. Kết quả tính toán (Quy đổi) -->
+                    <div class="dl_card mb-3 p-3 border rounded bg-white border-primary-light">
+                        <h5 class="fw-bold mb-3 text-pine-green border-bottom pb-2">Kết quả tính toán</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="x_area_m2" class="fw-bold text-muted small d-block mb-1" string="Diện tích"/>
+                                <div class="d-flex align-items-baseline">
+                                    <field name="x_area_m2" readonly="1" class="h4 fw-bold mb-0 text-pine-green"/>
                                     <span class="ms-1 text-muted">m²</span>
                                 </div>
                             </div>
-                            <div class="text-center px-4">
-                                <div class="text-muted small text-uppercase mb-1">Khối lượng</div>
-                                <div class="d-flex align-items-baseline justify-content-center">
-                                    <field name="x_volume_m3" readonly="1" class="dl_highlight mb-0"/>
+                            <div class="col-6">
+                                <label for="x_volume_m3" class="fw-bold text-muted small d-block mb-1" string="Khối lượng"/>
+                                <div class="d-flex align-items-baseline">
+                                    <field name="x_volume_m3" readonly="1" class="h4 fw-bold mb-0 text-primary"/>
                                     <span class="ms-2 text-muted fw-bold">m³</span>
                                 </div>
                             </div>
                         </div>
-                    </group>
+                    </div>
                 </page>
             </xpath>
         </field>
@@ -134,7 +119,7 @@
         <field name="name">Sản phẩm ngành gỗ</field>
         <field name="res_model" >product.template</field>
         <field name="view_mode">list,kanban,form</field>
-        <field name="context">{'default_x_is_wood_product': True, 'search_default_wood_products': 1}</field>
+        <field name="context">{'default_x_is_wood_product': True, 'default_is_wood_product': True, 'search_default_wood_products': 1}</field>
         <field name="domain">[('x_is_wood_product', '=', True)]</field>
     </record>
 

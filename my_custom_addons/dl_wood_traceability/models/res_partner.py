@@ -29,6 +29,68 @@ class ResPartner(models.Model):
     x_cccd_date = fields.Date(string='Ngày cấp CCCD')
     x_cccd_place = fields.Char(string='Nơi cấp CCCD')
 
+    # Thông tin thanh toán (Ngân hàng)
+    x_bank_name_id = fields.Many2one('dl.vietnam.bank', string='Ngân hàng')
+    x_bank_name = fields.Char(
+        string='Ngân hàng (Tên viết tắt)',
+        compute='_compute_x_bank_name',
+        store=True,
+        readonly=False
+    )
+    x_bank_account_number = fields.Char(string='Số tài khoản')
+    x_bank_account_holder = fields.Char(
+        string='Chủ tài khoản',
+        compute='_compute_x_bank_account_holder',
+        store=True,
+        readonly=False
+    )
+    x_full_address = fields.Char(
+        string='Địa chỉ đầy đủ',
+        compute='_compute_x_full_address',
+        store=True
+    )
+
+    @api.depends('x_bank_name_id.short_name')
+    def _compute_x_bank_name(self):
+        for partner in self:
+            if partner.x_bank_name_id:
+                partner.x_bank_name = partner.x_bank_name_id.short_name
+            elif not partner.x_bank_name:
+                partner.x_bank_name = ""
+
+    @api.depends('name', 'x_bank_account_number')
+    def _compute_x_bank_account_holder(self):
+        for partner in self:
+            if not partner.x_bank_account_number:
+                partner.x_bank_account_holder = partner.name or ""
+            else:
+                partner.x_bank_account_holder = partner.x_bank_account_holder or ""
+
+    @api.depends('street', 'street2', 'city', 'state_id')
+    def _compute_x_full_address(self):
+        for partner in self:
+            parts = []
+            if partner.street:
+                parts.append(partner.street)
+            if partner.street2:
+                parts.append(partner.street2)
+                
+            city_str = partner.city or ""
+            if city_str:
+                city_str_cleaned = city_str.strip()
+                if not any(city_str_cleaned.startswith(prefix) for prefix in ['Xã', 'Phường', 'Thị trấn', 'xã', 'phường', 'thị trấn', 'Quận', 'Huyện', 'quận', 'huyện']):
+                    city_str_cleaned = f"Xã {city_str_cleaned}"
+                parts.append(city_str_cleaned)
+                
+            state_str = partner.state_id.name or ""
+            if state_str:
+                state_str_cleaned = state_str.strip()
+                if not any(state_str_cleaned.startswith(prefix) for prefix in ['Tỉnh', 'Thành phố', 'Tp', 'tỉnh', 'thành phố', 'tp', 'TP']):
+                    state_str_cleaned = f"Tỉnh {state_str_cleaned}"
+                parts.append(state_str_cleaned)
+                
+            partner.x_full_address = ", ".join(parts) if parts else ""
+
     exploitation_location_ids = fields.One2many(
         'dl.wood.exploitation.location', 
         'partner_id', 
@@ -40,17 +102,22 @@ class ResPartner(models.Model):
         super()._compute_display_name()
         for partner in self:
             if partner.x_is_wood_supplier:
-                name = partner.name
+                name = partner.name or ""
                 cccd = partner.x_cccd or ""
                 state = partner.state_id.name or ""
                 
-                parts = [name]
+                parts = []
+                if name:
+                    parts.append(name)
                 if cccd:
                     parts.append(cccd)
                 if state:
                     parts.append(state)
                 
-                partner.display_name = " - ".join(parts)
+                if parts:
+                    partner.display_name = " - ".join(parts)
+                else:
+                    partner.display_name = ""
 
     @api.model_create_multi
     def create(self, vals_list):

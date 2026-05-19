@@ -527,15 +527,31 @@ class DlWoodproConfig(models.Model):
                     code = item.get('miningCode') or item.get('index')
                     if not wp_id: continue
                     
-                    partner = partner_obj.sudo().search([
-                        ('x_woodpro_id', '=', (item.get('forestOwner') or {}).get('id')),
-                        ('company_id', '=', self.company_id.id)
-                    ], limit=1)
+                    fo = item.get('forestOwner') or {}
+                    fo_id = fo.get('id')
+                    fo_name = fo.get('name')
+                    partner = False
+                    if fo_id:
+                        partner = partner_obj.sudo().search([
+                            ('x_woodpro_id', '=', fo_id),
+                            ('company_id', '=', self.company_id.id)
+                        ], limit=1)
+                        if not partner and fo_name:
+                            partner = partner_obj.sudo().create({
+                                'name': fo_name,
+                                'phone': fo.get('phone'),
+                                'x_woodpro_id': fo_id,
+                                'company_id': self.company_id.id,
+                                'lang': 'vi_VN',
+                                'customer_rank': 1,
+                                'x_is_wood_supplier': 'owner',
+                            })
                     
                     # Woods - Một hồ sơ có nhiều loại gỗ
                     woods = item.get('woods', [])
                     line_vals = []
                     main_product = False
+                    exploitation_location = False
                     
                     # Bóc tách thông số đường kính từ chuỗi (Ví dụ: "12-30")
                     for w in woods:
@@ -567,7 +583,7 @@ class DlWoodproConfig(models.Model):
                                 ], limit=1)
                         
                         # Xử lý bóc tách đường kính từ API (Ví dụ: "12-30")
-                        d_api = str(w.get('avgDiameter', '0'))
+                        d_api = str(w.get('avgDiameter') or '0')
                         d_min, d_max = 0.0, 0.0
                         if '-' in d_api:
                             try:
@@ -580,8 +596,22 @@ class DlWoodproConfig(models.Model):
                                 d_min = d_max = float(d_api)
                             except: pass
 
-                        # Chiều cao trung bình
-                        avg_height = float(w.get('avgHeight') or 0)
+                        # Chiều cao trung bình (an toàn trước định dạng phạm vi hoặc chuỗi không hợp lệ)
+                        avg_height = 0.0
+                        h_val = w.get('avgHeight')
+                        if h_val:
+                            h_str = str(h_val).strip()
+                            if '-' in h_str:
+                                try:
+                                    h_parts = h_str.split('-')
+                                    avg_height = (float(h_parts[0]) + float(h_parts[1])) / 2.0
+                                except:
+                                    pass
+                            else:
+                                try:
+                                    avg_height = float(h_str)
+                                except:
+                                    pass
                         
                         # Lấy đơn giá từ API hoặc tra cứu từ Phân loại chất lượng
                         price_unit = w.get('price') or w.get('unitPrice') or 0
@@ -656,11 +686,10 @@ class DlWoodproConfig(models.Model):
                         else:
                             street = mining_address
 
-                        # Tìm xem địa điểm này đã có chưa (dựa trên địa chỉ)
+                        # Tìm xem địa điểm này đã có chưa (dựa trên các trường của Unique Constraint: partner_id, name, company_id)
                         existing_loc = loc_obj.search([
                             ('partner_id', '=', partner.id),
-                            ('street', '=', street),
-                            ('city', '=', city),
+                            ('name', '=', loc_name),
                             ('company_id', '=', self.company_id.id)
                         ], limit=1)
                         

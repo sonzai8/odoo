@@ -117,17 +117,262 @@ class DlWoodDossier(models.Model):
         ('group', 'Khai thác theo đám')
     ], string='Phương thức khai thác', default='white')
     
+    def _default_x_report_version_id(self):
+        version = self.env['dl.wood.report.version'].search([
+            ('active', '=', True)
+        ], order='id desc', limit=1)
+        return version.id if version else False
+
     date_received = fields.Date(string='Ngày nhận hồ sơ', default=fields.Date.context_today)
-    x_start_date = fields.Date(string='Từ ngày')
-    x_end_date = fields.Date(string='Đến ngày')
-    x_report_version_id = fields.Many2one('dl.wood.report.version', string='Phiên bản biểu mẫu', ondelete='restrict')
+    x_start_date = fields.Date(string='Khai thác từ', help='Ngày bắt đầu khai thác gỗ thực tế tại rừng.')
+    x_end_date = fields.Date(string='Khai thác đến', help='Tự động tính: [Khai thác từ] + [Thời gian khai thác cần thiết]. Trong đó, thời gian khai thác tính tự động dựa trên tổng diện tích (ha) của địa bàn.')
+    x_report_version_id = fields.Many2one(
+        'dl.wood.report.version', 
+        string='Phiên bản biểu mẫu', 
+        ondelete='restrict',
+        default=_default_x_report_version_id
+    )
     x_exploitation_period_text = fields.Char(string='Thời gian khai thác (Văn bản)', compute='_compute_exploitation_period_text', store=False)
     x_addendum_num = fields.Char(string='Số phụ lục', compute='_compute_addendum_num', store=True, readonly=False)
+    x_bkls_number = fields.Char(string='Mã số Bảng kê lâm sản', compute='_compute_x_bkls_number', store=True, readonly=False)
 
     # Thông tin Hợp đồng
-    x_contract_date = fields.Date(string='Ngày ký hợp đồng', default=fields.Date.context_today)
+    x_contract_date = fields.Date(
+        string='Ngày ký hợp đồng',
+        compute='_compute_contract_date_default',
+        store=True,
+        readonly=False,
+        help='Tự động tính: [Khai thác đến] + 1 ngày (nếu vào Chủ Nhật sẽ tự động +1 ngày để sang Thứ Hai). Hợp đồng được ký ngay sau khi kết thúc khai thác để đảm bảo kiểm đếm số liệu gỗ chính xác.'
+    )
     x_owner_representative = fields.Char(string='Đại diện chủ rừng')
     x_owner_position = fields.Char(string='Chức vụ đại diện chủ rừng', default='Chủ rừng')
+    
+    # 3 trường ngày mới liên kết đồng bộ
+    x_addendum_date = fields.Date(
+        string='Ngày lập phụ lục',
+        compute='_compute_paper_dates',
+        store=True,
+        readonly=False,
+        help='Mặc định tự động lấy bằng Ngày ký hợp đồng.'
+    )
+    x_bkls_date = fields.Date(
+        string='Ngày lập bảng kê lâm sản',
+        compute='_compute_paper_dates',
+        store=True,
+        readonly=False,
+        help='Mặc định tự động lấy bằng Ngày ký hợp đồng.'
+    )
+    x_verify_date = fields.Date(
+        string='Ngày Kiểm lâm xác nhận',
+        compute='_compute_paper_dates',
+        store=True,
+        readonly=False,
+        help='Mặc định tự động lấy bằng Ngày ký hợp đồng.'
+    )
+    
+    # Đại diện Công ty (thay cho Lập Phương án PAKT)
+    x_company_representative = fields.Char(string='Đại diện công ty', compute='_compute_company_rep_info', store=True, readonly=False)
+    x_company_position = fields.Char(string='Chức vụ đại diện công ty', compute='_compute_company_rep_info', store=True, readonly=False)
+    
+    # Mốc thời gian vận chuyển / giao hàng
+    x_delivery_start_date = fields.Date(
+        string='Giao hàng từ',
+        compute='_compute_delivery_dates',
+        store=True,
+        readonly=False,
+        help='Tự động tính: [Ngày khai thác đến] + trễ từ 2 đến 5 ngày tùy theo khối lượng gỗ (Nếu trùng Chủ Nhật sẽ tự động cộng 1 ngày để sang Thứ Hai).'
+    )
+    x_delivery_end_date = fields.Date(
+        string='Giao hàng đến',
+        compute='_compute_delivery_dates',
+        store=True,
+        readonly=False,
+        help='Tự động tính: Mỗi ngày vận chuyển 1 chuyến xe (dựa theo số chuyến thực tế hoặc ước tính), tự động bỏ qua các ngày Chủ Nhật.'
+    )
+    x_delivery_explanation = fields.Html(
+        string='Giải thích lịch giao hàng',
+        compute='_compute_delivery_explanation'
+    )
+
+    @api.depends('x_end_date', 'initial_qty', 'ticket_ids', 'transport_ids', 'x_delivery_start_date', 'x_delivery_end_date')
+    def _compute_delivery_explanation(self):
+        import math
+        from datetime import timedelta
+        for record in self:
+            if not record.x_end_date or not record.x_delivery_start_date or not record.x_delivery_end_date:
+                record.x_delivery_explanation = False
+                continue
+
+            # 1. Xác định delay
+            volume = record.initial_qty or 0.0
+            if volume <= 100:
+                delay = 2
+            elif volume <= 300:
+                delay = 3
+            elif volume <= 600:
+                delay = 4
+            else:
+                delay = 5
+
+            # Tính ngày bắt đầu thô và kiểm tra xem có trùng Chủ Nhật không
+            raw_start_date = record.x_end_date + timedelta(days=delay)
+            was_sunday = (raw_start_date.weekday() == 6)
+
+            # 2. Xác định số chuyến
+            trips_count = len(record.ticket_ids)
+            if trips_count == 0:
+                if record.transport_ids:
+                    first_transport = record.transport_ids[0]
+                    capacity = first_transport.vehicle_id.capacity or 1.0
+                    if capacity > 0 and volume > 0:
+                        trips_count = math.ceil(volume / (capacity * 0.98))
+                if trips_count == 0:
+                    trips_count = 1
+
+            # 3. Đếm số ngày Chủ Nhật bị loại trừ trong khoảng giao hàng
+            sundays = []
+            current_date = record.x_delivery_start_date
+            trips_delivered = 1
+            while trips_delivered < trips_count:
+                current_date += timedelta(days=1)
+                if current_date.weekday() == 6:
+                    sundays.append(current_date.strftime('%d/%m/%Y'))
+                else:
+                    trips_delivered += 1
+
+            # 4. Tạo chuỗi giải thích tiếng Việt cực kỳ chi tiết
+            end_date_str = record.x_end_date.strftime('%d/%m/%Y')
+            start_date_str = record.x_delivery_start_date.strftime('%d/%m/%Y')
+            delivery_end_str = record.x_delivery_end_date.strftime('%d/%m/%Y')
+            
+            # Tiêu đề khoảng khối lượng để in ra giải thích
+            if volume <= 100:
+                vol_range_str = "nhỏ (&le; 100 m³)"
+            elif volume <= 300:
+                vol_range_str = "trung bình (101 - 300 m³)"
+            elif volume <= 600:
+                vol_range_str = "khá lớn (301 - 600 m³)"
+            else:
+                vol_range_str = "rất lớn (&gt; 600 m³)"
+            
+            explanation = f"""
+            <div class="text-muted alert alert-info mt-2 mb-0 border-0 p-2" style="font-size: 0.85em; background-color: #f0f8ff;" role="status">
+                <i class="fa fa-info-circle text-info mr-1" title="Chi tiết tính toán"></i>
+                <strong>Chi tiết cách tính lịch giao hàng:</strong><br/>
+                • Ngày khai thác đến là <strong>{end_date_str}</strong>.<br/>
+                • Do tổng khối lượng gỗ là <strong>{volume:,.2f} m³</strong> thuộc khoảng {vol_range_str}, hệ thống tự động áp dụng thời gian trễ là <strong>{delay} ngày</strong>.
+            """
+            
+            if was_sunday:
+                raw_start_str = raw_start_date.strftime('%d/%m/%Y')
+                explanation += f" Ngày bắt đầu dự tính là <em>{raw_start_str} (Chủ Nhật)</em> nên tự động lùi 1 ngày sang Thứ Hai ngày <strong>{start_date_str}</strong>.<br/>"
+            else:
+                explanation += f" Ngày bắt đầu giao hàng thực tế là ngày <strong>{start_date_str}</strong>.<br/>"
+
+            explanation += f"• Tổng cộng có <strong>{trips_count} chuyến xe</strong> vận chuyển (tần suất mỗi ngày chở 1 chuyến).<br/>"
+            
+            if sundays:
+                sundays_str = ", ".join(sundays)
+                explanation += f"• Hệ thống tự động phát hiện và <strong>loại trừ {len(sundays)} ngày Chủ Nhật</strong> ({sundays_str}) nghỉ làm việc.<br/>"
+            else:
+                explanation += "• Lịch trình giao hàng liên tục không trải qua ngày Chủ Nhật nào.<br/>"
+
+            explanation += f"• Vì vậy, ngày kết thúc giao hàng chính xác là <strong>{delivery_end_str}</strong>."
+            explanation += "</div>"
+            
+            record.x_delivery_explanation = explanation
+
+    @api.depends('x_end_date', 'initial_qty', 'ticket_ids', 'transport_ids')
+    def _compute_delivery_dates(self):
+        import math
+        from datetime import timedelta
+        for record in self:
+            if not record.x_end_date:
+                record.x_delivery_start_date = False
+                record.x_delivery_end_date = False
+                continue
+
+            # 1. Tính ngày bắt đầu giao hàng (Khai thác đến + delay từ 2 đến 5 ngày dựa theo khối lượng)
+            volume = record.initial_qty or 0.0
+            if volume <= 100:
+                delay = 2
+            elif volume <= 300:
+                delay = 3
+            elif volume <= 600:
+                delay = 4
+            else:
+                delay = 5
+                
+            start_date = record.x_end_date + timedelta(days=delay)
+            if start_date.weekday() == 6:  # Nếu là Chủ Nhật
+                start_date += timedelta(days=1)  # Chuyển sang thứ 2
+            record.x_delivery_start_date = start_date
+
+            # 2. Tính số chuyến (số tickets hoặc ước lượng)
+            trips_count = len(record.ticket_ids)
+            if trips_count == 0:
+                if record.transport_ids:
+                    first_transport = record.transport_ids[0]
+                    capacity = first_transport.vehicle_id.capacity or 1.0
+                    if capacity > 0 and volume > 0:
+                        trips_count = math.ceil(volume / (capacity * 0.98))
+                if trips_count == 0:
+                    trips_count = 1
+
+            # 3. Tính ngày kết thúc giao hàng (Mỗi ngày chở 1 chuyến, không tính Chủ Nhật, bắt đầu từ ngày đầu tiên)
+            current_date = start_date
+            trips_delivered = 1
+            while trips_delivered < trips_count:
+                current_date += timedelta(days=1)
+                if current_date.weekday() != 6: # Khác Chủ Nhật
+                    trips_delivered += 1
+            
+            record.x_delivery_end_date = current_date
+
+    @api.depends('company_id')
+    def _compute_company_rep_info(self):
+        for record in self:
+            if record.company_id:
+                if not record.x_company_representative:
+                    record.x_company_representative = getattr(record.company_id, 'x_representative', '') or ''
+                if not record.x_company_position:
+                    record.x_company_position = 'Giám đốc'
+            else:
+                if not record.x_company_representative:
+                    record.x_company_representative = ''
+                if not record.x_company_position:
+                    record.x_company_position = 'Giám đốc'
+
+    @api.depends('x_end_date')
+    def _compute_contract_date_default(self):
+        from datetime import timedelta
+        for record in self:
+            if record.x_end_date:
+                record.x_contract_date = record.x_end_date + timedelta(days=1)
+            else:
+                record.x_contract_date = False
+
+    @api.depends('x_contract_date')
+    def _compute_paper_dates(self):
+        for record in self:
+            if record.x_contract_date:
+                record.x_addendum_date = record.x_contract_date
+                record.x_bkls_date = record.x_contract_date
+                record.x_verify_date = record.x_contract_date
+            else:
+                record.x_addendum_date = False
+                record.x_bkls_date = False
+                record.x_verify_date = False
+
+    @api.depends('x_start_date', 'x_end_date')
+    def _compute_exploitation_period_text(self):
+        for record in self:
+            if record.x_start_date and record.x_end_date:
+                start_str = record.x_start_date.strftime('%d/%m/%Y')
+                end_str = record.x_end_date.strftime('%d/%m/%Y')
+                record.x_exploitation_period_text = f"Từ ngày {start_str} đến ngày {end_str}"
+            else:
+                record.x_exploitation_period_text = ""
 
     @api.depends('x_start_date', 'company_id.x_wood_prefix', 'partner_id.name')
     def _compute_addendum_num(self):
@@ -144,7 +389,50 @@ class DlWoodDossier(models.Model):
             
             record.x_addendum_num = f"{date_str}_{prefix}_{initials}"
 
-            record.x_addendum_num = f"{date_str}_{prefix}_{initials}"
+    @api.depends('x_start_date', 'date_received', 'partner_id')
+    def _compute_x_bkls_number(self):
+        for record in self:
+            if not record.partner_id:
+                record.x_bkls_number = False
+                continue
+            
+            if record.x_bkls_number:
+                continue
+
+            # Xác định năm Y
+            date_ref = record.x_start_date or record.date_received or fields.Date.today()
+            year = date_ref.year
+            
+            # Tìm số thứ tự X lớn nhất của các bảng kê cùng chủ rừng trong năm Y
+            domain = [
+                ('partner_id', '=', record.partner_id.id),
+                ('id', '!=', record.id or 0),
+            ]
+            start_of_year = fields.Date.to_date(f"{year}-01-01")
+            end_of_year = fields.Date.to_date(f"{year}-12-31")
+            
+            domain += [
+                '|',
+                '&', ('x_start_date', '>=', start_of_year), ('x_start_date', '<=', end_of_year),
+                '&', ('x_start_date', '=', False), '&', ('date_received', '>=', start_of_year), ('date_received', '<=', end_of_year)
+            ]
+            
+            other_dossiers = self.search(domain, order='create_date asc, id asc')
+            
+            max_x = 0
+            for od in other_dossiers:
+                if od.x_bkls_number:
+                    parts = od.x_bkls_number.split('/')
+                    if len(parts) >= 3:
+                        try:
+                            val = int(parts[0])
+                            if val > max_x:
+                                max_x = val
+                        except ValueError:
+                            pass
+            
+            next_x = max_x + 1
+            record.x_bkls_number = f"{next_x:03d}/{year}/BKLS"
     
     # Thông tin Phương án (PAKT)
     x_pakt_date = fields.Date(string='Ngày lập PAKT')
@@ -154,6 +442,7 @@ class DlWoodDossier(models.Model):
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('exploiting', 'Đang khai thác'),
+        ('using', 'Đang sử dụng'),
         ('summary', 'Tổng Kết'),
         ('confirmed', 'Xác Nhận')
     ], string='Trạng thái', default='draft', tracking=True)
@@ -258,7 +547,7 @@ class DlWoodDossier(models.Model):
         return records
 
     def action_generate_transport_tickets(self):
-        """Thuật toán tự động sinh chuyến xe dựa trên cấu hình vận chuyển (Bucket Distribution)"""
+        """Thuật toán tự động sinh chuyến xe dựa trên cấu hình vận chuyển đa phương tiện (Multi-Vehicle Split Algorithm)"""
         import random
         import math
         
@@ -269,18 +558,28 @@ class DlWoodDossier(models.Model):
             if not dossier.transport_ids:
                 continue
 
-            # Lấy cấu hình xe đầu tiên
-            first_transport = dossier.transport_ids[0]
-            vehicle = first_transport.vehicle_id
-            N = first_transport.vehicle_count
-            if not vehicle or N <= 0 or vehicle.capacity <= 0:
+            # 2. Xây dựng danh sách toàn bộ xe có sẵn trong đội xe (fleet)
+            fleet = []
+            for t in dossier.transport_ids:
+                if not t.vehicle_id or t.vehicle_count <= 0 or t.vehicle_id.capacity <= 0:
+                    continue
+                for _ in range(t.vehicle_count):
+                    fleet.append({
+                        'id': t.vehicle_id.id,
+                        'name': t.vehicle_id.name,
+                        'capacity': t.vehicle_id.capacity,
+                        'fill_rate_min': t.vehicle_id.fill_rate_min if t.vehicle_id.fill_rate_min else 95.0,
+                        'fill_rate_max': t.vehicle_id.fill_rate_max if t.vehicle_id.fill_rate_max else 98.9
+                    })
+                    
+            if not fleet:
                 continue
                 
-            C = vehicle.capacity
-            fr_min = vehicle.fill_rate_min if vehicle.fill_rate_min else 95.0
-            fr_max = vehicle.fill_rate_max if vehicle.fill_rate_max else 98.9
+            # Sắp xếp đội xe giảm dần theo sức chở để ưu tiên xe lớn trước
+            fleet.sort(key=lambda x: x['capacity'], reverse=True)
+            fleet_size = len(fleet)
 
-            # 2. Chuẩn bị dữ liệu
+            # 3. Chuẩn bị dữ liệu gỗ và củi cần vận chuyển
             wood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume} for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'wood' and x.volume > 0)]
             firewood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume} for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'firewood' and x.volume > 0)]
 
@@ -294,74 +593,98 @@ class DlWoodDossier(models.Model):
             if total_volume <= 0:
                 continue
 
-            # 3. Tính toán tổng số xe đơn lẻ cần thiết (K)
-            # Dùng fr_max để tính số xe tối thiểu tuyệt đối cần thiết
-            max_capacity_per_vehicle = C * (fr_max / 100.0)
-            K = math.ceil(total_volume / max_capacity_per_vehicle)
-            if K == 0: K = 1
+            # 4. Xác định danh sách các xe cần chạy (vehicle trips) tuần tự từ đội xe
+            allocated_vehicles = []
+            current_capacity = 0.0
+            fleet_cycle_index = 0
             
-            # 4. Dàn đều khối lượng (Bucket Distribution)
-            avg_v = total_volume / K
-            vehicle_vols = [avg_v] * K
-            
-            # Tạo nhiễu ngẫu nhiên (Random Noise) cho các xe
-            if K > 1:
-                min_v = C * 0.5 # Rút xuống tối đa 50%
-                max_v = max_capacity_per_vehicle
-                for _ in range(K * 5):
-                    i = random.randint(0, K - 1)
-                    j = random.randint(0, K - 1)
-                    if i == j: continue
-                    transfer = random.uniform(0, C * 0.05)
-                    if vehicle_vols[i] - transfer >= min_v and vehicle_vols[j] + transfer <= max_v:
-                        vehicle_vols[i] -= transfer
-                        vehicle_vols[j] += transfer
+            while current_capacity < total_volume:
+                v = fleet[fleet_cycle_index % fleet_size]
+                allocated_vehicles.append(v)
+                # Sức chở tối đa thực tế của xe này sau khi tính lấp đầy max
+                current_capacity += v['capacity'] * (v['fill_rate_max'] / 100.0)
+                fleet_cycle_index += 1
 
-            # 5. Gom xe thành các Chuyến (Tickets)
+            # 5. Gom các xe này thành các Chuyến (Tickets), mỗi chuyến có kích thước tối đa là toàn bộ đội xe (fleet_size)
             trips = []
-            for i in range(0, K, N):
-                chunk = vehicle_vols[i:i+N]
+            for i in range(0, len(allocated_vehicles), fleet_size):
+                chunk = allocated_vehicles[i:i+fleet_size]
+                nominal_cap = sum(x['capacity'] for x in chunk)
                 trips.append({
-                    'capacity': sum(chunk),
+                    'vehicles': chunk,
+                    'nominal_capacity': nominal_cap,
                     'vehicle_count': len(chunk)
                 })
 
+            # 6. Phân bổ khối lượng gỗ thực tế (total_volume) tỷ lệ thuận theo nominal capacity của từng Chuyến
+            total_nominal = sum(trip['nominal_capacity'] for trip in trips)
+            for trip in trips:
+                prop_vol = total_volume * (trip['nominal_capacity'] / total_nominal)
+                trip['target_volume'] = prop_vol
+
+            # Thêm độ lệch ngẫu nhiên nhỏ (+/- 1.5%) cho mỗi chuyến để tăng tính chân thực
+            if len(trips) > 1:
+                variations = [random.uniform(-0.015, 0.015) for _ in range(len(trips))]
+                raw_targets = [trips[i]['target_volume'] * (1 + variations[i]) for i in range(len(trips))]
+                sum_raw = sum(raw_targets)
+                
+                for i, trip in enumerate(trips):
+                    trip['target_volume'] = round((raw_targets[i] / sum_raw) * total_volume)
+                    
+                # Bù trừ sai số làm tròn vào chuyến cuối cùng
+                diff = total_volume - sum(t['target_volume'] for t in trips)
+                trips[-1]['target_volume'] += diff
+            else:
+                trips[0]['target_volume'] = total_volume
+
+            # 7. Phân bổ tuần tự Gỗ/Củi và tạo các chuyến xe
             tickets_vals = []
             trip_counter = 1
+            wood_ratio = total_wood / total_volume if total_volume > 0 else 0.0
 
-            # 6. Phân bổ tuần tự Gỗ/Củi vào từng chuyến
             for trip in trips:
-                actual_capacity = trip['capacity']
+                target_vol = trip['target_volume']
                 v_count = trip['vehicle_count']
-                nominal_cap = v_count * C
-                fill_rate = round((actual_capacity / nominal_cap), 4) if nominal_cap > 0 else 0.0
+                nominal_cap = trip['nominal_capacity']
                 
+                # Format mô tả phương tiện sử dụng
+                vehicle_counts = {}
+                for v in trip['vehicles']:
+                    name = v['name']
+                    vehicle_counts[name] = vehicle_counts.get(name, 0) + 1
+                vehicle_info = ", ".join([f"{qty} x {name}" for name, qty in sorted(vehicle_counts.items())])
+
+                # Tính tỷ lệ lấp đầy thực tế của chuyến
+                fill_rate = round((target_vol / nominal_cap), 4) if nominal_cap > 0 else 0.0
+
                 total_wood_rem = get_total_remaining(wood_lines)
                 total_firewood_rem = get_total_remaining(firewood_lines)
-                
-                # Tính tải trọng Củi & Gỗ
-                if total_wood_rem > 0:
-                    max_f = actual_capacity * 0.20
-                else:
-                    max_f = actual_capacity
-                    
-                f_load = min(total_firewood_rem, max_f)
-                w_load = min(total_wood_rem, actual_capacity - f_load)
-                
-                # Nếu gỗ không đủ để lấp đầy phần còn lại, dồn thêm củi vào!
-                unused = actual_capacity - (f_load + w_load)
-                if unused > 0 and total_firewood_rem - f_load > 0:
-                    extra_f = min(total_firewood_rem - f_load, unused)
-                    f_load += extra_f
 
-                # Dòng ticket line
+                # Chia tỷ lệ Gỗ & Củi cho chuyến dựa trên tỷ lệ chung của hồ sơ
+                w_target = round(target_vol * wood_ratio)
+                f_target = target_vol - w_target
+
+                w_load = min(total_wood_rem, w_target)
+                f_load = min(total_firewood_rem, f_target)
+
+                # Nếu gỗ/củi không đủ do lệch tỷ lệ, dồn thêm phần còn lại để lấp đầy chuyến xe
+                gap = target_vol - (w_load + f_load)
+                if gap > 0:
+                    if total_wood_rem > w_load:
+                        extra_w = min(total_wood_rem - w_load, gap)
+                        w_load += extra_w
+                        gap -= extra_w
+                    if gap > 0 and total_firewood_rem > f_load:
+                        extra_f = min(total_firewood_rem - f_load, gap)
+                        f_load += extra_f
+
                 lines_to_create = []
                 
                 # Phân bổ Gỗ
                 w_needed = w_load
                 for w in wood_lines:
-                    if w_needed <= 0.001: break
-                    if w['remaining'] > 0.001:
+                    if w_needed <= 0: break
+                    if w['remaining'] > 0:
                         take = min(w['remaining'], w_needed)
                         lines_to_create.append({
                             'species_id': w['id'],
@@ -374,8 +697,8 @@ class DlWoodDossier(models.Model):
                 # Phân bổ Củi
                 f_needed = f_load
                 for f in firewood_lines:
-                    if f_needed <= 0.001: break
-                    if f['remaining'] > 0.001:
+                    if f_needed <= 0: break
+                    if f['remaining'] > 0:
                         take = min(f['remaining'], f_needed)
                         lines_to_create.append({
                             'species_id': f['id'],
@@ -390,12 +713,13 @@ class DlWoodDossier(models.Model):
                         'dossier_id': dossier.id,
                         'name': f'Chuyến {trip_counter:02d}',
                         'vehicle_count': v_count,
+                        'x_vehicle_info': vehicle_info,
                         'fill_rate': fill_rate,
                         'ticket_line_ids': [(0, 0, vals) for vals in lines_to_create]
                     })
                     trip_counter += 1
 
-            # Lưu vào database
+            # Lưu vào cơ sở dữ liệu
             if tickets_vals:
                 self.env['dl.wood.dossier.transport.ticket'].create(tickets_vals)
                 
@@ -421,6 +745,29 @@ class DlWoodDossier(models.Model):
         """Tự động điền người đại diện chủ rừng mặc định khi chọn chủ rừng."""
         if self.partner_id:
             self.x_owner_representative = self.partner_id.name
+            
+            # Tự động chọn địa bàn khai thác mặc định
+            locations = self.partner_id.exploitation_location_ids
+            if locations:
+                main_loc = locations.filtered(lambda l: l.is_main)
+                if main_loc:
+                    self.exploitation_location_id = main_loc[0]
+                elif len(locations) == 1:
+                    self.exploitation_location_id = locations[0]
+                else:
+                    self.exploitation_location_id = False
+            else:
+                self.exploitation_location_id = False
+                
+            # Cập nhật diện tích nếu địa bàn được chọn
+            if self.exploitation_location_id:
+                self._onchange_exploitation_location_id()
+
+    @api.onchange('exploitation_location_id')
+    def _onchange_exploitation_location_id(self):
+        """Tự động điền diện tích khi thay đổi địa bàn khai thác"""
+        if self.exploitation_location_id:
+            self.x_area = self.exploitation_location_id.x_area_ha
 
 
     @api.onchange('x_report_version_id')
@@ -461,16 +808,10 @@ class DlWoodDossier(models.Model):
                 self.x_report_version_id = default_version
                 self._onchange_report_version_id()
 
-    @api.depends('partner_id.street', 'partner_id.city', 'partner_id.state_id')
+    @api.depends('partner_id.x_full_address')
     def _compute_partner_address(self):
         for record in self:
-            addr = []
-            if record.partner_id:
-                p = record.partner_id
-                if p.street: addr.append(p.street)
-                if p.city: addr.append(p.city)
-                if p.state_id: addr.append(p.state_id.name)
-            record.partner_address = ", ".join(addr) if addr else ""
+            record.partner_address = record.partner_id.x_full_address or ""
 
     @api.depends('line_ids.volume', 'line_ids.wood_type')
     def _compute_initial_qty(self):
@@ -485,6 +826,9 @@ class DlWoodDossier(models.Model):
 
     def action_exploiting(self):
         self.write({'state': 'exploiting'})
+
+    def action_using(self):
+        self.write({'state': 'using'})
 
     def action_summary(self):
         self.write({'state': 'summary'})
@@ -520,12 +864,15 @@ class DlWoodDossier(models.Model):
             'bang_ke_lam_san': 'bkls',
             
             # Đơn đề nghị xác nhận
-            'ddnx': 'ddnx',
-            'don_de_nghi_xac_nhan': 'ddnx',
+            'ddnx': 'xn_bkls',
+            'don_de_nghi_xac_nhan': 'xn_bkls',
+            'xac_nhan_bkls': 'xn_bkls',
+            'xn_bkls': 'xn_bkls',
             
             # Biên bản xác minh
             'bbxm': 'bbxm',
             'bien_ban_xac_minh': 'bbxm',
+            'bien_ban_xac_minh_ngls': 'bb_xm_ngls',
             
             # Các mẫu khác (nếu tải lên sau này)
             'cnbk': 'cnbk',
@@ -545,10 +892,18 @@ class DlWoodDossier(models.Model):
                          template_key, path)
             return path
         except FileNotFoundError:
-            raise UserError(
-                _("Không tìm thấy file mẫu cho tài liệu '%s' (tên file: %s) trong thư mục static/TEMPLATES/.") 
-                % (template_key, template_filename)
-            )
+            # Dự phòng cho trường hợp gõ sai chính tả TEMPATE thay vì TEMPLATE
+            try:
+                alt_filename = f"TEMPATE_{disk_key.upper()}.docx"
+                path = tools.file_path(f'dl_wood_traceability/static/TEMPLATES/{alt_filename}')
+                _logger.info("[_get_template_source] [BYPASS DB] [ALT] template_key='%s' → lấy trực tiếp từ ổ đĩa: %s",
+                             template_key, path)
+                return path
+            except FileNotFoundError:
+                raise UserError(
+                    _("Không tìm thấy file mẫu cho tài liệu '%s' (tên file: %s hoặc %s) trong thư mục static/TEMPLATES/.") 
+                    % (template_key, template_filename, f"TEMPATE_{disk_key.upper()}.docx")
+                )
 
     def _render_docx(self, template_key):
         """Render file .docx: tìm template → giao DossierDocxRenderer xử lý."""

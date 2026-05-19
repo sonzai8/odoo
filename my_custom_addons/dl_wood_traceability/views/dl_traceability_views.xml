@@ -6,10 +6,11 @@
         <field name="arch" type="xml">
             <list string="Hồ Sơ Gỗ" decoration-danger="qty_available &lt;= 0"
                   decoration-info="state == 'draft'"
-                  decoration-warning="state == 'exploiting'"
-                  decoration-success="state == 'confirmed'">
+                  decoration-warning="state in ('exploiting', 'using')"
+                  decoration-success="state in ('summary', 'confirmed')">
                 <field name="name" decoration-bf="1"/>
                 <field name="x_dossier_name"/>
+                <field name="x_bkls_number" optional="show"/>
                 <field name="partner_id"/>
                 <field name="x_start_date" optional="show"/>
                 <field name="x_end_date" optional="show"/>
@@ -33,8 +34,10 @@
                     <!-- Chuyển tiếp -->
                     <button name="action_exploiting" string="Bắt đầu khai thác" type="object" class="oe_highlight" 
                             invisible="state != 'draft'"/>
-                    <button name="action_summary" string="Tổng kết hồ sơ" type="object" class="oe_highlight" 
+                    <button name="action_using" string="Đưa vào sử dụng" type="object" class="oe_highlight" 
                             invisible="state != 'exploiting'"/>
+                    <button name="action_summary" string="Tổng kết hồ sơ" type="object" class="oe_highlight" 
+                            invisible="state != 'using'"/>
                     <button name="action_confirm" string="Xác nhận hoàn tất" type="object" class="oe_highlight" 
                             invisible="state != 'summary'"/>
                     
@@ -42,11 +45,13 @@
                     <button name="action_draft" string="Quay lại dự thảo" type="object" 
                             invisible="state != 'exploiting'"/>
                     <button name="action_exploiting" string="Quay lại khai thác" type="object" 
+                            invisible="state != 'using'"/>
+                    <button name="action_using" string="Quay lại sử dụng" type="object" 
                             invisible="state != 'summary'"/>
                     <button name="action_summary" string="Hủy xác nhận" type="object" 
                             invisible="state != 'confirmed'"/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,summary,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,using,summary,confirmed"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -54,13 +59,13 @@
                         <h1><field name="x_dossier_name" placeholder="Ví dụ: Lô gỗ rừng trồng hộ gia đình Nguyễn Văn A..."/></h1>
                     </div>
                     
-                    <!-- PHÂN KHU 1: THÔNG TIN HÀNH CHÍNH & CHỦ RỪNG -->
+                    <!-- PHÂN KHU 1: THÔNG TIN HÀNH CHÍNH VÀ CHỦ RỪNG -->
                     <group string="1. Thông Tin Đối Tác &amp; Pháp Lý">
                         <group>
                             <field name="partner_id" placeholder="Chọn chủ rừng..."/>
                             <field name="partner_address" placeholder="Địa chỉ tự động load..."/>
-                            <field name="x_owner_representative" placeholder="Mặc định lấy tên chủ rừng"/>
-                            <field name="x_owner_position" placeholder="Ví dụ: Đại diện hộ gia đình / Giám đốc..."/>
+                            <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
+                            <field name="company_id" readonly="1"/>
                         </group>
                         <group>
                             <field name="name" readonly="1" decoration-bf="1"/>
@@ -69,28 +74,13 @@
                                 <field name="x_report_version_id" options="{'no_create': True}"/>
                                 <button name="action_refresh_documents" type="object" string="Làm mới tệp" icon="fa-refresh" class="btn btn-link py-0"/>
                             </div>
-                            <field name="date_received"/>
-                            <field name="x_contract_date"/>
-                            <field name="x_addendum_num"/>
-                            <field name="company_id" readonly="1"/>
-                        </group>
-                    </group>
-
-                    <!-- PHÂN KHU 2: KẾ HOẠCH & QUY HOẠCH KHAI THÁC -->
-                    <group string="2. Kế Hoạch &amp; Quy Hoạch Khai Thác">
-                        <group string="Quy mô &amp; Phương pháp">
-                            <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
                             <field name="x_mining_method"/>
                             <field name="x_area" placeholder="Diện tích (ha)"/>
                             <field name="x_woodpro_id" readonly="1"/>
                         </group>
-                        <group string="Thời gian Khai thác">
-                            <field name="x_start_date"/>
-                            <field name="x_end_date" help="Tự động tính dựa vào diện tích khai thác"/>
-                        </group>
                     </group>
 
-                    <!-- PHÂN KHU 3: BẢNG CHI TIẾT & TÍNH TOÁN -->
+                    <!-- PHÂN KHU 2: BẢNG CHI TIẾT VÀ TÍNH TOÁN -->
                     <notebook>
                         <page string="Chi tiết gỗ khai thác">
                             <!-- Di chuyển Widget Tổng Hợp Khối Lượng vào đây -->
@@ -157,6 +147,7 @@
                             <field name="ticket_ids" readonly="1">
                                 <list>
                                     <field name="name"/>
+                                    <field name="x_vehicle_info"/>
                                     <field name="vehicle_count"/>
                                     <field name="fill_rate" widget="percentage"/>
                                     <field name="total_volume"/>
@@ -164,6 +155,7 @@
                                 <form>
                                     <group>
                                         <field name="name" readonly="1"/>
+                                        <field name="x_vehicle_info" readonly="1"/>
                                         <field name="vehicle_count" readonly="1"/>
                                         <field name="fill_rate" readonly="1" widget="percentage"/>
                                         <field name="total_volume" readonly="1"/>
@@ -178,6 +170,36 @@
                                 </form>
                             </field>
                         </page>
+                        <page string="Thời gian - Phụ lục">
+                            <group>
+                                <group string="Các Mốc Thời Gian">
+                                    <field name="date_received"/>
+                                    <field name="x_start_date"/>
+                                    <field name="x_end_date" help="Tự động tính dựa vào diện tích khai thác"/>
+                                    <field name="x_contract_date"/>
+                                    <field name="x_addendum_date"/>
+                                    <field name="x_delivery_start_date"/>
+                                    <field name="x_delivery_end_date"/>
+                                    <field name="x_bkls_date"/>
+                                    <field name="x_verify_date"/>
+                                    <field name="x_delivery_explanation" nolabel="1" colspan="2" readonly="1"/>
+                                </group>
+                                <group string="Mã Số &amp; Phụ Lục">
+                                    <field name="x_addendum_num"/>
+                                    <field name="x_bkls_number"/>
+                                </group>
+                            </group>
+                            <group string="Đại diện ký tá">
+                                <group string="Đại diện Chủ rừng (Bên bán)">
+                                    <field name="x_owner_representative" placeholder="Mặc định lấy tên chủ rừng"/>
+                                    <field name="x_owner_position" placeholder="Ví dụ: Đại diện hộ gia đình / Giám đốc..."/>
+                                </group>
+                                <group string="Đại diện Công ty (Bên mua)">
+                                    <field name="x_company_representative" placeholder="Người đại diện công ty..."/>
+                                    <field name="x_company_position" placeholder="Chức vụ..."/>
+                                </group>
+                            </group>
+                        </page>
                         <page string="Lịch Sử Biến Động">
                             <field name="ledger_ids" readonly="1">
                                 <list string="Lịch sử biến động" create="false" edit="false" delete="false" decoration-success="state=='done'" decoration-warning="state=='draft'">
@@ -190,7 +212,7 @@
                             </field>
                         </page>
                         <page string="Theo Dõi Sản Xuất &amp; Tồn Kho">
-                            <!-- 1. BẢNG TỔNG HỢP TỒN KHO & TIÊU HAO -->
+                            <!-- 1. BẢNG TỔNG HỢP TỒN KHO VÀ TIÊU HAO -->
                             <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-2 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
                                 Tổng hợp số liệu Tồn kho &amp; Tiêu hao sản xuất (m³)
                             </div>

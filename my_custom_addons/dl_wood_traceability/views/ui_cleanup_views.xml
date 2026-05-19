@@ -24,13 +24,13 @@
         </field>
     </record>
 
-    <!-- Kế thừa để ẩn tab Bán hàng & Mua hàng -->
+    <!-- Kế thừa để ẩn tab Bán hàng và Mua hàng -->
     <record id="view_partner_form_hide_sales_purchases" model="ir.ui.view">
         <field name="name">res.partner.form.hide.sales.purchases</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <!-- Ẩn lại Tab Bán hàng & Mua hàng -->
+            <!-- Ẩn lại Tab Bán hàng và Mua hàng -->
             <xpath expr="//page[@name='sales_purchases']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>

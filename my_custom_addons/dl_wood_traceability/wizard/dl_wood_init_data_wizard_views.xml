@@ -6,11 +6,12 @@
         <field name="arch" type="xml">
             <form string="Khởi Tạo Dữ Liệu">
                 <p class="oe_grey">
-                    Nhấn vào nút bên dưới để khởi tạo danh sách các loài gỗ mặc định (Keo, Thông, Bạch đàn...) cho công ty hiện tại. 
-                    Hệ thống sẽ chỉ tạo mới những loài chưa tồn tại.
+                    Nhấn vào các nút bên dưới để khởi tạo dữ liệu mẫu (các loài gỗ hoặc danh sách ngân hàng Việt Nam) cho công ty hiện tại. 
+                    Hệ thống sẽ chỉ tạo mới những dữ liệu chưa tồn tại.
                 </p>
                 <footer>
                     <button name="action_init_wood_species" string="Khởi Tạo Danh Mục Gỗ" type="object" class="btn-primary" icon="fa-database"/>
+                    <button name="action_init_vietnam_banks" string="Khởi Tạo Danh Mục Ngân Hàng" type="object" class="btn-info" icon="fa-university"/>
                     <button string="Đóng" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
