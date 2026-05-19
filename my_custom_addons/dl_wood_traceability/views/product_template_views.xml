@@ -26,7 +26,7 @@
         <field name="res_model">product.template</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('is_wood_product', '=', True)]</field>
-        <field name="context">{'default_is_wood_product': True, 'default_x_is_wood_product': True}</field>
+        <field name="context">{'default_is_wood_product': True, 'default_x_is_wood_product': True, 'x_hide_payroll_options': True}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Tạo sản phẩm gỗ đầu tiên của bạn.

@@ -74,7 +74,7 @@
                     <notebook>
                         <page string="Lệnh sản xuất">
                             <field name="production_order_ids" context="{'default_sale_order_id': id}">
-                                <list string="Lệnh sản xuất" editable="bottom">
+                                <list string="Lệnh sản xuất" editable="bottom" delete="0">
                                     <field name="x_select_production_id" readonly="id != False"/>
                                     <field name="name" readonly="1"/>
                                     <field name="product_id" readonly="x_select_production_id != False"/>
@@ -88,6 +88,8 @@
                                            decoration-warning="state == 'in_progress'"
                                            decoration-success="state == 'done'"
                                            decoration-danger="state == 'cancelled'"/>
+                                    <button name="action_unlink_from_sale_order" string="Gỡ liên kết" type="object"
+                                            icon="fa-chain-broken" class="text-danger" title="Gỡ liên kết lệnh sản xuất khỏi đơn hàng"/>
                                 </list>
                             </field>
                         </page>
@@ -172,11 +174,12 @@
                     </div>
                     <group>
                         <group string="Thông tin sản xuất">
-                            <field name="sale_order_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="sale_order_id" readonly="x_select_production_id != False"/>
                             <field name="x_select_production_id" readonly="1" invisible="not x_select_production_id"/>
                             <field name="partner_id" readonly="1"/>
                             <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
-                            <field name="uom_id" readonly="1"/>
+                            <field name="x_product_unit_label" string="Đơn vị tính" readonly="1"/>
+                            <field name="uom_id" invisible="True"/>
                             <field name="company_id" readonly="1"/>
                         </group>
                         <group string="Số lượng &amp; Thời gian">
@@ -188,7 +191,7 @@
                                 <field name="qty_planned" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
                                        style="max-width:120px;"/>
                                 <span style="color:#6c757d; font-weight:500;">
-                                    <field name="uom_id" nolabel="1" readonly="1" style="display:inline;"/>
+                                    <field name="x_product_unit_label" nolabel="1" readonly="1" style="display:inline;"/>
                                 </span>
                                 <span invisible="not x_uom_is_piece or x_qty_planned_m3 == 0"
                                       style="color:#007bff; font-size:0.82rem; font-style:italic;">
@@ -200,7 +203,7 @@
                                 <field name="qty_done" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
                                        style="max-width:120px;"/>
                                 <span style="color:#6c757d; font-weight:500;">
-                                    <field name="uom_id" nolabel="1" readonly="1" style="display:inline;"/>
+                                    <field name="x_product_unit_label" nolabel="1" readonly="1" style="display:inline;"/>
                                 </span>
                                 <span invisible="not x_uom_is_piece or x_qty_done_m3 == 0"
                                       style="color:#28a745; font-size:0.82rem; font-style:italic;">

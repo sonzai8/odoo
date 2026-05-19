@@ -141,7 +141,12 @@ class DlWoodProductionOrder(models.Model):
     qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2), default=1.0)
     x_co_yield = fields.Float(string='Khai CO mặc định', digits=(16, 2), default=1.3, help='Hệ số Khai CO mặc định dùng để điền tự động khi thêm các bộ hồ sơ.')
     uom_id = fields.Many2one(
-        'uom.uom', related='product_id.uom_id', string='Đơn vị tính', readonly=True
+        'uom.uom', related='product_id.uom_id', string='Đơn vị tính Odoo', readonly=True
+    )
+    x_product_unit_label = fields.Char(
+        string='Đơn vị tính',
+        compute='_compute_x_product_unit_label',
+        store=False
     )
     date_planned = fields.Date(string='Ngày dự kiến', default=fields.Date.context_today)
     date_done = fields.Date(string='Ngày hoàn thành')
@@ -222,13 +227,28 @@ class DlWoodProductionOrder(models.Model):
         help='Quy đổi số lượng thực tế sang m³ dựa trên x_volume_m3 của sản phẩm.'
     )
 
+    @api.depends('product_id', 'product_id.uom_id')
+    def _compute_x_product_unit_label(self):
+        for rec in self:
+            label = ''
+            if rec.product_id:
+                x_unit_val = getattr(rec.product_id, 'x_unit', False)
+                if x_unit_val == 'sheet':
+                    label = 'Tấm'
+                elif x_unit_val == 'm3':
+                    label = 'm³'
+                else:
+                    label = rec.product_id.uom_id.name or ''
+            rec.x_product_unit_label = label
+
     def _get_vol_per_unit(self):
         """Helper để lấy thể tích m³ trên mỗi đơn vị (Tấm/m³...) của sản phẩm."""
         self.ensure_one()
         vol_per_unit = self.product_id.x_volume_m3 if self.product_id else 0.0
         if not vol_per_unit and self.product_id:
             uom_name = self.product_id.uom_id.name or ''
-            if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']):
+            x_unit_val = getattr(self.product_id, 'x_unit', '')
+            if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']) or x_unit_val == 'm3':
                 vol_per_unit = 1.0
             else:
                 p = self.product_id
@@ -247,7 +267,8 @@ class DlWoodProductionOrder(models.Model):
         """Tính quy đổi số lượng tấm → m³ và detect đơn vị là Tấm."""
         for rec in self:
             uom_name = (rec.product_id.uom_id.name or '').strip().lower()
-            rec.x_uom_is_piece = 'tấm' in uom_name or 'tam' in uom_name
+            x_unit_val = getattr(rec.product_id, 'x_unit', '')
+            rec.x_uom_is_piece = 'tấm' in uom_name or 'tam' in uom_name or x_unit_val == 'sheet'
 
             vol_per_unit = rec._get_vol_per_unit()
             rec.x_qty_planned_m3 = round(rec.qty_planned * vol_per_unit, 2)
@@ -446,7 +467,10 @@ class DlWoodProductionOrder(models.Model):
     @api.constrains('line_ids', 'state')
     def _check_ratios_total(self):
         for rec in self:
-            if rec.state in ('in_progress', 'done') and rec.line_ids:
+            # Chỉ bắt buộc tổng định mức bằng 100% khi Lệnh sản xuất ở trạng thái Hoàn thành (done).
+            # Cho phép trạng thái nháp (draft) hoặc đang sản xuất (in_progress) được lưu với định mức khác 100%
+            # để người dùng có thể dễ dàng điều chỉnh dữ liệu hoặc quay lại trạng thái trước đó (Rollback).
+            if rec.state == 'done' and rec.line_ids:
                 total_ratio = sum(rec.line_ids.mapped('x_ratio'))
                 if abs(total_ratio - 100.0) > 0.01:
                     raise ValidationError(_('Tổng định mức (%%) tiêu hao nguyên vật liệu của các bộ hồ sơ gỗ phải bằng chính xác 100%% (Hiện tại là: %s%%).') % total_ratio)
@@ -590,10 +614,38 @@ class DlWoodProductionOrder(models.Model):
     def write(self, vals):
         for rec in self:
             if rec.state in ('done', 'cancelled'):
-                allowed_fields = {'note', 'date_done', 'state'}
-                modified_fields = set(vals.keys())
-                if not modified_fields.issubset(allowed_fields):
-                    raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+                allowed_fields = {'note', 'date_done', 'state', 'sale_order_id', 'partner_id', 'x_select_production_id'}
+                for key, val in vals.items():
+                    if key not in allowed_fields:
+                        # Lấy giá trị hiện tại từ database
+                        current_val = rec[key]
+                        
+                        # So sánh chi tiết từng kiểu dữ liệu
+                        # 1. Đối với Many2one
+                        if isinstance(current_val, models.BaseModel):
+                            current_val_id = current_val.id if current_val else False
+                            new_val_id = val
+                            if isinstance(val, (list, tuple)):
+                                new_val_id = val[0] if val else False
+                            elif isinstance(val, models.BaseModel):
+                                new_val_id = val.id if val else False
+                            
+                            if current_val_id != new_val_id:
+                                raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy (Trường thay đổi: %s).') % key)
+                        
+                        # 2. Đối với One2many / Many2many
+                        elif rec._fields[key].type in ('one2many', 'many2many'):
+                            if val:
+                                raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy (Trường thay đổi: %s).') % key)
+                        
+                        # 3. Đối với các kiểu dữ liệu thường (Char, Float, Selection...)
+                        else:
+                            if isinstance(current_val, float) and isinstance(val, (int, float)):
+                                if abs(current_val - float(val)) > 1e-5:
+                                    raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy (Trường thay đổi: %s, Cũ: %s, Mới: %s).') % (key, current_val, val))
+                            else:
+                                if current_val != val:
+                                    raise UserError(_('Không thể chỉnh sửa các thông tin nghiệp vụ của Lệnh sản xuất đã Hoàn thành hoặc Hủy (Trường thay đổi: %s, Cũ: %s, Mới: %s).') % (key, current_val, val))
         return super(DlWoodProductionOrder, self).write(vals)
 
     def unlink(self):
@@ -608,6 +660,11 @@ class DlWoodProductionOrder(models.Model):
             else:
                 records_to_unlink += rec
         return super(DlWoodProductionOrder, records_to_unlink).unlink()
+
+    def action_unlink_from_sale_order(self):
+        for rec in self:
+            rec.write({'sale_order_id': False})
+        return True
 
 
 class DlWoodProductionLine(models.Model):
