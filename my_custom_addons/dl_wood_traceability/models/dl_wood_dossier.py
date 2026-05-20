@@ -629,13 +629,13 @@ class DlWoodDossier(models.Model):
                 sum_raw = sum(raw_targets)
                 
                 for i, trip in enumerate(trips):
-                    trip['target_volume'] = round((raw_targets[i] / sum_raw) * total_volume)
+                    trip['target_volume'] = round((raw_targets[i] / sum_raw) * total_volume, 1)
                     
                 # Bù trừ sai số làm tròn vào chuyến cuối cùng
-                diff = total_volume - sum(t['target_volume'] for t in trips)
-                trips[-1]['target_volume'] += diff
+                diff = round(total_volume - sum(t['target_volume'] for t in trips), 1)
+                trips[-1]['target_volume'] = round(trips[-1]['target_volume'] + diff, 1)
             else:
-                trips[0]['target_volume'] = total_volume
+                trips[0]['target_volume'] = round(total_volume, 1)
 
             # 7. Phân bổ tuần tự Gỗ/Củi và tạo các chuyến xe
             tickets_vals = []
@@ -661,21 +661,21 @@ class DlWoodDossier(models.Model):
                 total_firewood_rem = get_total_remaining(firewood_lines)
 
                 # Chia tỷ lệ Gỗ & Củi cho chuyến dựa trên tỷ lệ chung của hồ sơ
-                w_target = round(target_vol * wood_ratio)
-                f_target = target_vol - w_target
+                w_target = round(target_vol * wood_ratio, 1)
+                f_target = round(target_vol - w_target, 1)
 
-                w_load = min(total_wood_rem, w_target)
-                f_load = min(total_firewood_rem, f_target)
+                w_load = round(min(total_wood_rem, w_target), 1)
+                f_load = round(min(total_firewood_rem, f_target), 1)
 
                 # Nếu gỗ/củi không đủ do lệch tỷ lệ, dồn thêm phần còn lại để lấp đầy chuyến xe
-                gap = target_vol - (w_load + f_load)
+                gap = round(target_vol - (w_load + f_load), 1)
                 if gap > 0:
                     if total_wood_rem > w_load:
-                        extra_w = min(total_wood_rem - w_load, gap)
+                        extra_w = round(min(total_wood_rem - w_load, gap), 1)
                         w_load += extra_w
-                        gap -= extra_w
+                        gap = round(gap - extra_w, 1)
                     if gap > 0 and total_firewood_rem > f_load:
-                        extra_f = min(total_firewood_rem - f_load, gap)
+                        extra_f = round(min(total_firewood_rem - f_load, gap), 1)
                         f_load += extra_f
 
                 lines_to_create = []
@@ -685,28 +685,28 @@ class DlWoodDossier(models.Model):
                 for w in wood_lines:
                     if w_needed <= 0: break
                     if w['remaining'] > 0:
-                        take = min(w['remaining'], w_needed)
+                        take = round(min(w['remaining'], w_needed), 1)
                         lines_to_create.append({
                             'species_id': w['id'],
                             'wood_type': w['wood_type'],
                             'volume': take
                         })
-                        w['remaining'] -= take
-                        w_needed -= take
+                        w['remaining'] = round(w['remaining'] - take, 1)
+                        w_needed = round(w_needed - take, 1)
 
                 # Phân bổ Củi
                 f_needed = f_load
                 for f in firewood_lines:
                     if f_needed <= 0: break
                     if f['remaining'] > 0:
-                        take = min(f['remaining'], f_needed)
+                        take = round(min(f['remaining'], f_needed), 1)
                         lines_to_create.append({
                             'species_id': f['id'],
                             'wood_type': f['wood_type'],
                             'volume': take
                         })
-                        f['remaining'] -= take
-                        f_needed -= take
+                        f['remaining'] = round(f['remaining'] - take, 1)
+                        f_needed = round(f_needed - take, 1)
 
                 if lines_to_create:
                     tickets_vals.append({
@@ -1044,11 +1044,53 @@ class DlWoodDossierLine(models.Model):
     volume = fields.Integer(string='Khối lượng (m³)', required=True)
     price_unit = fields.Integer(string='Đơn giá')
     price_subtotal = fields.Float(string='Thành tiền', compute='_compute_price_subtotal', store=True, digits=(16, 2))
+    
+    x_remaining_qty = fields.Float(string='Tồn Kho Thực Tế (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
+    x_qty_reserved = fields.Float(string='Khối Lượng Giữ Hàng (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
+    x_qty_available = fields.Float(string='Khối Lượng Khả Dụng (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
+    x_qty_consumed = fields.Float(string='Khối Lượng Đã Dùng (m³)', compute='_compute_stock_quantities', store=True, digits=(16, 2))
 
     @api.depends('volume', 'price_unit')
     def _compute_price_subtotal(self):
         for line in self:
             line.price_subtotal = round(line.volume * line.price_unit, 2)
+
+    @api.depends('volume', 'dossier_id.ledger_ids.actual_qty', 'dossier_id.ledger_ids.state', 'dossier_id.ledger_ids.species_id')
+    def _compute_stock_quantities(self):
+        for line in self:
+            if not line.dossier_id:
+                line.x_remaining_qty = line.volume
+                line.x_qty_reserved = 0.0
+                line.x_qty_available = line.volume
+                line.x_qty_consumed = 0.0
+                continue
+
+            # Lọc các dòng sổ cái liên quan đến loài gỗ của dòng này
+            ledgers = line.dossier_id.ledger_ids.filtered(lambda l: l.species_id == line.species_id)
+            done_ledgers = ledgers.filtered(lambda l: l.state == 'done')
+            draft_ledgers = ledgers.filtered(lambda l: l.state == 'draft')
+
+            # Để an toàn cho trường hợp có nhiều dòng cùng loài gỗ,
+            # ta tính tổng thể tích ban đầu của loài gỗ này trong toàn bộ hồ sơ
+            same_species_lines = line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id)
+            total_initial_vol = sum(same_species_lines.mapped('volume'))
+
+            # Tính tổng tồn kho của loài gỗ này
+            species_remaining = total_initial_vol + sum(done_ledgers.mapped('actual_qty'))
+            species_reserved = abs(sum(draft_ledgers.mapped('actual_qty')))
+            
+            # Phân bổ tỷ lệ thuận theo volume của dòng hiện tại so với tổng volume của loài gỗ đó
+            if total_initial_vol > 0:
+                ratio = line.volume / total_initial_vol
+                line.x_remaining_qty = round(species_remaining * ratio, 2)
+                line.x_qty_reserved = round(species_reserved * ratio, 2)
+                line.x_qty_available = round(line.x_remaining_qty - line.x_qty_reserved, 2)
+                line.x_qty_consumed = round(max(0.0, line.volume - line.x_remaining_qty), 2)
+            else:
+                line.x_remaining_qty = 0.0
+                line.x_qty_reserved = 0.0
+                line.x_qty_available = 0.0
+                line.x_qty_consumed = 0.0
 
     @api.onchange('species_id')
     def _onchange_species_id(self):

@@ -579,32 +579,50 @@ class DlWoodProductionOrder(models.Model):
             raise UserError(_('Không hỗ trợ quay lại trạng thái trước từ trạng thái hiện tại.'))
 
     def _action_deduct_materials(self, force=False):
-        """Trừ khối lượng gỗ thực tế từ các hồ sơ gỗ liên quan"""
+        """Trừ khối lượng gỗ thực tế từ các hồ sơ gỗ liên quan theo từng loài gỗ cụ thể"""
+        # Bộ nhớ đệm lưu tồn kho khả dụng lũy tiến trong quá trình lặp để xử lý Edge Case 2
+        avail_cache = {}
+        
         for line in self.line_ids:
-            if not line.dossier_id:
+            if not line.dossier_id or not line.species_id:
                 continue
             
             vol = line.volume_actual
             dossier = line.dossier_id
+            species = line.species_id
             
-            # Khắc phục sai số làm tròn cực kỳ nhỏ (<= 0.05 m³) so với tồn kho thực tế
-            if not force and dossier.remaining_qty < vol:
-                diff = vol - dossier.remaining_qty
+            cache_key = (dossier.id, species.id)
+            if cache_key not in avail_cache:
+                # Tìm tất cả các dòng cùng loài gỗ này trong hồ sơ nguồn
+                same_species_lines = dossier.line_ids.filtered(lambda l: l.species_id == species)
+                if not same_species_lines:
+                    raise ValidationError(_(
+                        'Hồ sơ gỗ "%s" không có loài gỗ "%s"!'
+                    ) % (dossier.name, species.name))
+                # Tổng tồn kho khả dụng của loài gỗ này trong hồ sơ
+                avail_cache[cache_key] = sum(same_species_lines.mapped('x_qty_available'))
+                
+            species_avail = avail_cache[cache_key]
+            
+            # Khắc phục sai số làm tròn cực kỳ nhỏ (<= 0.05 m³) so với tồn kho thực tế của loài gỗ
+            if not force and species_avail < vol:
+                diff = vol - species_avail
                 if diff <= 0.05:
-                    vol = dossier.remaining_qty
+                    vol = species_avail
                     line.volume_actual = vol
                 else:
                     raise ValidationError(_(
-                        'Hồ sơ gỗ "%s" không đủ tồn kho!\n'
-                        'Tồn kho hiện tại: %.2f m³ — Cần trừ: %.2f m³'
-                    ) % (dossier.name, dossier.remaining_qty, vol))
+                        'Loài gỗ "%s" trong Hồ sơ "%s" không đủ tồn kho khả dụng!\n'
+                        'Tồn khả dụng hiện tại: %.2f m³ — Cần trừ: %.2f m³'
+                    ) % (species.name, dossier.name, species_avail, vol))
             
-            # Trừ số lượng tồn kho
-            dossier.remaining_qty -= vol
+            # Khấu trừ lũy tiến lượng tồn khả dụng trong bộ nhớ cache
+            avail_cache[cache_key] -= vol
             
             # Tạo bản ghi vào sổ cái (Ledger) để hiện trong tab Lịch sử biến động
             self.env['dl.dossier.ledger'].create({
                 'dossier_id': dossier.id,
+                'species_id': species.id,
                 'production_id': self.id,
                 'actual_qty': -vol, # Số âm vì là xuất nguyên liệu
                 'state': 'done',
@@ -655,7 +673,7 @@ class DlWoodProductionOrder(models.Model):
         
         records_to_unlink = self.env['dl.wood.production.order']
         for rec in self:
-            if rec.x_select_production_id:
+            if rec.x_select_production_id and rec.sale_order_id:
                 rec.write({'sale_order_id': False})
             else:
                 records_to_unlink += rec
@@ -676,6 +694,13 @@ class DlWoodProductionLine(models.Model):
         'dl.wood.production.order', string='Lệnh sản xuất',
         ondelete='cascade', required=True, index=True
     )
+    x_sale_order_id = fields.Many2one(
+        'dl.wood.sale.order',
+        related='production_order_id.sale_order_id',
+        string='Đơn đặt hàng',
+        store=True,
+        index=True
+    )
     company_id = fields.Many2one(
         'res.company',
         string='Công ty',
@@ -692,7 +717,7 @@ class DlWoodProductionLine(models.Model):
     species_id = fields.Many2one('dl.wood.species', string='Loại gỗ', required=True)
     dossier_id = fields.Many2one(
         'dl.wood.dossier', string='Hồ sơ gỗ nguồn',
-        domain="[('company_id', '=', company_id), ('state', '!=', 'cancelled')]",
+        domain="[('company_id', '=', company_id), ('state', '=', 'using')]",
         help='Hồ sơ gỗ mà nguyên liệu được lấy từ đó để sản xuất.'
     )
     x_available_species_ids = fields.Many2many(

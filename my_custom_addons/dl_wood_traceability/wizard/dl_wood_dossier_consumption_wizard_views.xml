@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View của Wizard -->
+    <record id="view_dl_wood_dossier_consumption_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.consumption.wizard.form</field>
+        <field name="model">dl.wood.dossier.consumption.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Báo cáo Tiêu hao &amp; Khai CO Hồ sơ Gỗ">
+                <sheet>
+                    <div class="alert alert-info text-center" role="alert" style="margin-bottom: 20px;" invisible="file_data != False">
+                        <h4 class="alert-heading fw-bold mb-1">Cấu hình Bộ lọc Báo cáo</h4>
+                        <p class="mb-0">Vui lòng chọn các điều kiện lọc bên dưới để hệ thống tổng hợp chính xác dữ liệu tiêu hao nguyên liệu gỗ.</p>
+                    </div>
+
+                    <div class="alert alert-success text-center" role="alert" style="margin-bottom: 20px;" invisible="file_data == False">
+                        <h4 class="alert-heading fw-bold mb-1">🎉 Báo cáo đã sẵn sàng!</h4>
+                        <p class="mb-0">File báo cáo Excel đã được khởi tạo thành công. Vui lòng bấm vào nút liên kết bên dưới để tải xuống.</p>
+                    </div>
+
+                    <group invisible="file_data != False">
+                        <group string="Thời gian sản xuất">
+                            <field name="date_from" widget="date"/>
+                            <field name="date_to" widget="date"/>
+                        </group>
+                        <group string="Bộ lọc nghiệp vụ">
+                            <field name="production_state" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                    </group>
+
+                    <group string="Lọc theo Bộ hồ sơ gỗ" invisible="file_data != False">
+                        <field name="dossier_ids" widget="many2many_tags" placeholder="Chọn các hồ sơ cần xem... (Để trống để xem tất cả)" options="{'no_create': True}"/>
+                    </group>
+
+                    <group string="Tải file báo cáo" invisible="file_data == False">
+                        <field name="file_name" invisible="1"/>
+                        <field name="file_data" filename="file_name" readonly="1" class="fw-bold text-primary"/>
+                    </group>
+
+                    <footer>
+                        <!-- Khi chưa có file báo cáo -->
+                        <button name="action_export_excel" string="Xuất báo cáo Excel" type="object" class="btn-primary" invisible="file_data != False"/>
+                        <button string="Hủy bỏ" class="btn-secondary" special="cancel" invisible="file_data != False"/>
+
+                        <!-- Khi đã có file báo cáo -->
+                        <button name="action_export_excel" string="Tạo lại báo cáo" type="object" class="btn-secondary" invisible="file_data == False"/>
+                        <button string="Đóng" class="btn-primary" special="cancel" invisible="file_data == False"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action mở Wizard -->
+    <record id="action_dl_wood_dossier_consumption_wizard" model="ir.actions.act_window">
+        <field name="name">Xuất Báo Cáo Tiêu Hao Hồ Sơ Gỗ</field>
+        <field name="res_model">dl.wood.dossier.consumption.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ========================================================================= -->
+    <!-- MENU CẤU TRÚC BÁO CÁO                                                    -->
+    <!-- ========================================================================= -->
+    <menuitem id="menu_dl_wood_reports"
+              name="Báo cáo"
+              parent="menu_dl_wood_traceability_root"
+              sequence="50"/>
+
+    <menuitem id="menu_dl_wood_dossier_consumption_report"
+              name="Báo cáo tiêu hao hồ sơ"
+              parent="menu_dl_wood_reports"
+              action="action_dl_wood_dossier_consumption_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_production_line_report"
+              name="Xem trực tuyến tiêu hao"
+              parent="menu_dl_wood_reports"
+              action="action_dl_wood_production_line_report"
+              sequence="20"/>
+</odoo>
+

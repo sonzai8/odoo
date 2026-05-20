@@ -127,5 +127,22 @@
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
 
+        <record id="dl_wood_production_line_comp_rule" model="ir.rule">
+            <field name="name">Chi tiết tiêu hao đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_production_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_inventory_comp_rule" model="ir.rule">
+            <field name="name">Kiểm kê hồ sơ gỗ đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_dossier_inventory"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_dossier_inventory_line_comp_rule" model="ir.rule">
+            <field name="name">Chi tiết kiểm kê đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_dossier_inventory_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

@@ -20,11 +20,13 @@
         'views/dl_traceability_views.xml',
         'views/dl_wood_transport_views.xml',
         'views/dl_wood_production_views.xml',
+        'views/dl_wood_dossier_inventory_views.xml',
         'views/mrp_production_views.xml',
         'views/stock_picking_views.xml',
         'views/res_config_settings_views.xml',
         'wizard/dl_customer_import_wizard_views.xml',
         'wizard/dl_wood_init_data_wizard_views.xml',
+        'wizard/dl_wood_dossier_consumption_wizard_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

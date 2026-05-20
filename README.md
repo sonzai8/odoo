@@ -59,3 +59,6 @@ pip install -r requirements.txt
 #
 python odoo-bin -c odoo.conf -u dl_salary_kpi -d odoo_db_production --stop-after-init
 python odoo-bin -c odoo.conf --dev=all
+
+python odoo-bin -c odoo.conf -u dl_wood_traceability -d odoo_db --stop-after-init
+python odoo-bin -c odoo.conf --dev=all

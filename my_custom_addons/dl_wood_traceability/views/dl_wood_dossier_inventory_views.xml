@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree/List View -->
+    <record id="view_dl_wood_dossier_inventory_list" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.inventory.list</field>
+        <field name="model">dl.wood.dossier.inventory</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách Kiểm Kê Hồ Sơ Gỗ"
+                  decoration-info="state == 'review'"
+                  decoration-success="state == 'done'"
+                  decoration-danger="state == 'cancel'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="note"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'review'"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'cancel'"
+                       decoration-muted="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_dl_wood_dossier_inventory_search" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.inventory.search</field>
+        <field name="model">dl.wood.dossier.inventory</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Mã hoặc Hồ sơ" filter_domain="['|', ('name', 'ilike', self), ('line_ids.dossier_id.name', 'ilike', self)]"/>
+                <field name="date"/>
+                <filter string="Dự thảo" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Rà soát" name="filter_review" domain="[('state', '=', 'review')]"/>
+                <filter string="Hoàn thành" name="filter_done" domain="[('state', '=', 'done')]"/>
+                <filter string="Đã hủy" name="filter_cancel" domain="[('state', '=', 'cancel')]"/>
+                <group>
+                    <filter string="Ngày kiểm kê" name="group_by_date" context="{'group_by': 'date'}"/>
+                    <filter string="Trạng thái" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Công ty" name="group_by_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View (Simplified 1-Page Layout) -->
+    <record id="view_dl_wood_dossier_inventory_form" model="ir.ui.view">
+        <field name="name">dl.wood.dossier.inventory.form</field>
+        <field name="model">dl.wood.dossier.inventory</field>
+        <field name="arch" type="xml">
+            <form string="Phiếu Kiểm Kê Hồ Sơ Gỗ">
+                <header>
+                    <button name="action_review" type="object" string="Gửi rà soát" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_done" type="object" string="Duyệt hoàn thành" class="oe_highlight" invisible="state != 'review'"/>
+                    <button name="action_cancel" type="object" string="Hủy bỏ (Rollback)" class="btn-danger" confirm="Bạn có chắc chắn muốn hủy bỏ phiếu kiểm kê này không? Tất cả các bút toán sổ cái điều chỉnh sẽ bị xóa và tồn kho gỗ sẽ được khôi phục về trạng thái trước kiểm kê." invisible="state != 'done'"/>
+                    <button name="action_draft" type="object" string="Đưa về dự thảo" invisible="state not in ('review', 'cancel')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,review,done,cancel"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group string="🔍 Thông tin chung">
+                        <field name="date" readonly="state != 'draft'"/>
+                        <field name="company_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="note" placeholder="Nhập lý do điều chỉnh khối lượng hoặc ghi chú khác tại đây..." readonly="state not in ('draft', 'review')" rows="2"/>
+                    </group>
+                    
+                    <separator string="📊 Chi Tiết Điều Chỉnh Kiểm Kê"/>
+                    <field name="line_ids" readonly="state != 'draft'" class="w-100" nolabel="1">
+                        <list editable="bottom" create="true" delete="true">
+                            <field name="state" column_invisible="True"/>
+                            <field name="dossier_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="x_partner_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="allowed_species_ids" column_invisible="True"/>
+                            <field name="species_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="wood_type" readonly="1" decoration-success="wood_type == 'wood'" decoration-warning="wood_type == 'firewood'" widget="badge"/>
+                            <field name="current_volume_species" readonly="1" sum="Tổng tồn phần mềm"/>
+                            <field name="new_volume" sum="Tổng thực tế sau kiểm kê"/>
+                            <field name="adjusted_volume" readonly="1" sum="Tổng điều chỉnh" decoration-danger="adjusted_volume &lt; 0" decoration-success="adjusted_volume &gt; 0"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_dl_wood_dossier_inventory" model="ir.actions.act_window">
+        <field name="name">Kiểm Kê Hồ Sơ Gỗ</field>
+        <field name="res_model">dl.wood.dossier.inventory</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dl_wood_dossier_inventory_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo phiếu kiểm kê hồ sơ gỗ mới
+            </p>
+            <p>
+                Rà soát lượng gỗ thực tế tại xưởng và đối chiếu điều chỉnh kho so với số liệu trên phần mềm.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_dl_wood_dossier_inventory"
+              name="Kiểm Kê Hồ Sơ Gỗ"
+              parent="menu_dl_wood_input_materials"
+              action="action_dl_wood_dossier_inventory"
+              sequence="15"/>
+</odoo>

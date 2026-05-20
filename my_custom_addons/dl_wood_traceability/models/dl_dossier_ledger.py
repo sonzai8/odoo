@@ -61,6 +61,20 @@ class DlDossierLedger(models.Model):
         store=True,
         readonly=True,
     )
+    species_id = fields.Many2one(
+        'dl.wood.species',
+        string='Loài gỗ/củi',
+        ondelete='restrict',
+        index=True,
+        help='Loài gỗ hoặc củi cụ thể bị biến động.'
+    )
+    inventory_line_id = fields.Many2one(
+        'dl.wood.dossier.inventory.line',
+        string='Dòng kiểm kê',
+        ondelete='cascade',
+        index=True,
+        help='Dòng phiếu kiểm kê đã tạo ra giao dịch điều chỉnh này.'
+    )
 
     # -------------------------------------------------------------------------
     # Transaction Data

@@ -27,5 +27,13 @@
             <field name="padding">4</field>
             <field name="company_id" eval="False"/>
         </record>
+        <!-- Sequence cho Kiểm kê hồ sơ gỗ -->
+        <record id="seq_dl_wood_dossier_inventory" model="ir.sequence">
+            <field name="name">Kiểm kê hồ sơ gỗ</field>
+            <field name="code">dl.wood.dossier.inventory</field>
+            <field name="prefix">_KK_%(month)s%(y)s_</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
     </data>
 </odoo>

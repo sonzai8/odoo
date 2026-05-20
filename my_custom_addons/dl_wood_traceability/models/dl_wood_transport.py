@@ -44,7 +44,7 @@ class DlWoodDossierTransportTicket(models.Model):
     x_vehicle_info = fields.Char(string='Phương tiện sử dụng', help='Chi tiết các loại xe sử dụng trong chuyến này')
     
     fill_rate = fields.Float(string='Tỷ lệ lấp đầy', digits=(16, 4))
-    total_volume = fields.Integer(string='Tổng khối lượng (m³)', compute='_compute_total_volume', store=True)
+    total_volume = fields.Float(string='Tổng khối lượng (m³)', compute='_compute_total_volume', store=True, digits=(16, 1))
     
     ticket_line_ids = fields.One2many('dl.wood.dossier.transport.ticket.line', 'ticket_id', string='Chi tiết chuyến xe')
 
@@ -67,4 +67,4 @@ class DlWoodDossierTransportTicketLine(models.Model):
         ('wood', 'Gỗ'),
         ('firewood', 'Củi')
     ], string='Phân loại', required=True)
-    volume = fields.Integer(string='Khối lượng (m³)', required=True)
+    volume = fields.Float(string='Khối lượng (m³)', required=True, digits=(16, 1))
