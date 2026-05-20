@@ -8,8 +8,8 @@
                   decoration-info="state == 'draft'"
                   decoration-warning="state in ('exploiting', 'using')"
                   decoration-success="state in ('summary', 'confirmed')">
-                <field name="name" decoration-bf="1"/>
-                <field name="x_dossier_name"/>
+                <field name="name" decoration-bf="1" class="text-nowrap"/>
+                <field name="x_dossier_name" class="text-nowrap"/>
                 <field name="x_bkls_number" optional="show"/>
                 <field name="partner_id"/>
                 <field name="x_start_date" optional="show"/>

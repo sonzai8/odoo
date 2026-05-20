@@ -377,6 +377,7 @@
                 <field name="x_sale_order_id" optional="show"/>
                 <field name="production_order_id"/>
                 <field name="species_id"/>
+                <field name="x_qty_available" optional="show"/>
                 <field name="x_ratio" widget="badge"/>
                 <field name="x_co_yield"/>
                 <field name="volume_planned" sum="Tổng định mức (m³)"/>

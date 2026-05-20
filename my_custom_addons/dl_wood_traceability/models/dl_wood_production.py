@@ -244,21 +244,37 @@ class DlWoodProductionOrder(models.Model):
     def _get_vol_per_unit(self):
         """Helper để lấy thể tích m³ trên mỗi đơn vị (Tấm/m³...) của sản phẩm."""
         self.ensure_one()
-        vol_per_unit = self.product_id.x_volume_m3 if self.product_id else 0.0
-        if not vol_per_unit and self.product_id:
-            uom_name = self.product_id.uom_id.name or ''
-            x_unit_val = getattr(self.product_id, 'x_unit', '')
-            if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']) or x_unit_val == 'm3':
-                vol_per_unit = 1.0
-            else:
+        if not self.product_id:
+            return 1.0
+
+        x_unit_val = getattr(self.product_id, 'x_unit', '')
+        
+        # 1. Nếu x_unit = m3 thì không cần quy đổi, khối lượng nhập vào chính là khối lượng lệnh sản xuất
+        if x_unit_val == 'm3':
+            return 1.0
+
+        # 2. Nếu x_unit = sheet thì quy đổi từ tấm sang m3
+        if x_unit_val == 'sheet':
+            vol_per_unit = self.product_id.x_volume_m3
+            if not vol_per_unit:
                 p = self.product_id
                 if p.x_length and p.x_width and p.x_thickness:
                     area = (p.x_length * p.x_width) / 1_000_000.0  # mm² → m²
                     vol_per_unit = (area * p.x_thickness) / 1_000.0  # mm → m
+            return vol_per_unit or 1.0
+
+        # 3. Fallback dự phòng nếu x_unit trống hoặc có giá trị khác
+        uom_name = self.product_id.uom_id.name or ''
+        if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']):
+            return 1.0
+
+        vol_per_unit = self.product_id.x_volume_m3
         if not vol_per_unit:
-            # Mặc định là 1.0 để tránh bị nhân với 0 làm mất khối lượng của các sản phẩm có UoM là m³ nhưng chưa khai báo trường x_volume_m3
-            vol_per_unit = 1.0
-        return vol_per_unit
+            p = self.product_id
+            if p.x_length and p.x_width and p.x_thickness:
+                area = (p.x_length * p.x_width) / 1_000_000.0  # mm² → m²
+                vol_per_unit = (area * p.x_thickness) / 1_000.0  # mm → m
+        return vol_per_unit or 1.0
 
     @api.depends('qty_planned', 'qty_done', 'product_id', 'product_id.uom_id',
                  'product_id.x_volume_m3', 'product_id.x_length',
@@ -742,6 +758,11 @@ class DlWoodProductionLine(models.Model):
         store=True,
         digits=(16, 2)
     )
+    x_qty_available = fields.Float(
+        string='Khối lượng khả dụng (m³)',
+        compute='_compute_x_qty_available',
+        digits=(16, 2)
+    )
 
     @api.depends('dossier_id', 'species_id')
     def _compute_x_price_unit(self):
@@ -760,6 +781,15 @@ class DlWoodProductionLine(models.Model):
             # Nếu là Dự thảo (draft), dùng volume_planned, ngược lại dùng volume_actual
             vol = line.volume_planned if order and order.state == 'draft' else line.volume_actual
             line.x_subtotal_cost = round(vol * line.x_price_unit, 2)
+
+    @api.depends('dossier_id', 'species_id', 'dossier_id.line_ids.x_qty_available')
+    def _compute_x_qty_available(self):
+        for line in self:
+            qty = 0.0
+            if line.dossier_id and line.species_id:
+                same_species_lines = line.dossier_id.line_ids.filtered(lambda dl: dl.species_id == line.species_id)
+                qty = sum(same_species_lines.mapped('x_qty_available'))
+            line.x_qty_available = qty
 
     @api.depends('dossier_id')
     def _compute_x_available_species_ids(self):
