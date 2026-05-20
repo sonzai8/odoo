@@ -7,7 +7,8 @@
             <list string="Hồ Sơ Gỗ" decoration-danger="qty_available &lt;= 0"
                   decoration-info="state == 'draft'"
                   decoration-warning="state in ('exploiting', 'using')"
-                  decoration-success="state in ('summary', 'confirmed')">
+                  decoration-success="state in ('summary', 'confirmed')"
+                  class="o_dl_wood_dossier_list">
                 <field name="name" decoration-bf="1" class="text-nowrap"/>
                 <field name="x_dossier_name" class="text-nowrap"/>
                 <field name="x_bkls_number" optional="show"/>
@@ -407,7 +408,7 @@
         <field name="name">dl.wood.species.list</field>
         <field name="model">dl.wood.species</field>
         <field name="arch" type="xml">
-            <list string="Loài gỗ">
+            <list string="Loài gỗ" default_order="wood_type desc, name asc">
                 <field name="name"/>
                 <field name="name_en"/>
                 <field name="code"/>

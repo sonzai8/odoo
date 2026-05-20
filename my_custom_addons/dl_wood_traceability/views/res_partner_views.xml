@@ -107,8 +107,8 @@
     <!-- Menu cha gom Chủ Rừng và Nhà Cung Cấp Gỗ -->
     <menuitem id="menu_dl_wood_partners"
               name="Đối Tác"
-              parent="menu_dl_wood_traceability_root"
-              sequence="20"/>
+              parent="menu_dl_wood_input_materials"
+              sequence="30"/>
 
     <menuitem id="menu_dl_wood_forest_owner"
               name="Chủ Rừng"
@@ -116,7 +116,7 @@
               action="action_dl_wood_forest_owner"
               sequence="10"/>
     <menuitem id="menu_dl_wood_supplier"
-              name="Nhà Cung Cấp Gỗ"
+              name="NCC Ván Bóc"
               parent="menu_dl_wood_partners"
               action="action_dl_wood_supplier"
               sequence="20"/>

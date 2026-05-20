@@ -194,3 +194,16 @@
     background-color: #0d6efd !important;
     border-color: #0d6efd !important;
 }
+
+/* Custom CSS để dãn rộng cột Mã Hồ Sơ Gỗ và Tên Hồ Sơ Gỗ trong danh sách chính */
+.o_dl_wood_dossier_list th[data-name="name"],
+.o_dl_wood_dossier_list td[name="name"] {
+    min-width: 180px !important;
+    width: 180px !important;
+}
+
+.o_dl_wood_dossier_list th[data-name="x_dossier_name"],
+.o_dl_wood_dossier_list td[name="x_dossier_name"] {
+    min-width: 220px !important;
+    width: 220px !important;
+}

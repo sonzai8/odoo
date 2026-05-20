@@ -6,42 +6,74 @@ class DlWoodInitDataWizard(models.TransientModel):
     _description = 'Khởi Tạo Dữ Liệu Gỗ'
 
     def action_init_wood_species(self):
-        """Khởi tạo danh sách loài gỗ mặc định"""
+        """Khởi tạo danh sách loài gỗ và phân loại chi tiết"""
         species_obj = self.env['dl.wood.species']
+        grade_obj = self.env['dl.wood.species.grade']
         
         data = [
-            ('Gỗ keo', 'Acacia wood', 'Acacia mangium', 'wood', 'KEO'),
-            ('Gỗ thông mã vĩ', 'Horsetail pine wood', 'Pinus massoniana', 'wood', 'TMV'),
-            ('Gỗ bạch đàn', 'Eucalyptus wood', 'Eucalyptus', 'wood', 'BD'),
-            ('Gỗ thông', 'Pine wood', 'Pinus', 'wood', 'THONG'),
-            ('Keo lai', 'Hybrid acacia', 'Acacia hybrid', 'wood', 'KL'),
-            ('Củi keo', 'Acacia firewood', 'Acacia mangium', 'firewood', 'CUI_KEO'),
-            ('Củi bạch đàn', 'Eucalyptus firewood', 'Eucalyptus', 'firewood', 'CUI_BD'),
-            ('Gỗ cao su', 'Rubberwood', 'Hevea brasiliensis', 'wood', 'CS'),
-            ('Gỗ keo tròn', 'Acacia logs', 'Acacia mangium', 'wood', 'KEO_TRON'),
-            ('Acacia', 'Acacia', 'Acacia', 'wood', 'ACACIA'),
-            ('Pine Wood', 'Pine wood', 'Pinus', 'wood', 'PINE'),
-            ('Eucalyptus', 'Eucalyptus', 'Eucalyptus', 'wood', 'EUCALYPTUS'),
+            # Tên loài, Tên tiếng Anh, Tên khoa học, wood_type, code, Đường kính Min, Đường kính Max, Chiều dài, Giá (VNĐ), Ghi chú/Tên phân loại
+            ('Gỗ keo', 'Acacia wood', 'Acacia', 'wood', 'KEO', 7, 10, 2.6, 1820000, 'Keo nhỏ'),
+            ('Gỗ keo', 'Acacia wood', 'Acacia', 'wood', 'KEO', 10, 14, 2.6, 2150000, 'Keo trung'),
+            ('Gỗ keo', 'Acacia wood', 'Acacia', 'wood', 'KEO', 14, 17, 2.6, 1700000, 'Keo lớn'),
+            ('Gỗ keo', 'Acacia wood', 'Acacia', 'wood', 'KEO', 6, 22, 2.6, 1900000, 'Keo xô (Dải rộng)'),
+            ('Gỗ keo', 'Acacia wood', 'Acacia', 'wood', 'KEO', 17, 30, 1.3, 2300000, 'Keo to cắt ngắn (1.3m)'),
+            
+            ('Gỗ thông', 'Pine wood', 'Pinus massoniana', 'wood', 'THONG', 8, 14, 2.6, 1800000, 'Thông nhỏ'),
+            ('Gỗ thông', 'Pine wood', 'Pinus massoniana', 'wood', 'THONG', 14, 20, 2.6, 2100000, 'Thông trung'),
+            ('Gỗ thông', 'Pine wood', 'Pinus massoniana', 'wood', 'THONG', 12, 32, 2.6, 1800000, 'Thông xô / Thông lớn'),
+            ('Gỗ thông', 'Pine wood', 'Pinus massoniana', 'wood', 'THONG', 10, 20, 1.3, 1700000, 'Thông cắt ngắn (1.3m)'),
+            
+            ('Gỗ bạch đàn', 'Eucalyptus wood', 'Eucalyptus', 'wood', 'BD', 7, 12, 2.6, 1900000, 'Bạch đàn nhỏ'),
+            ('Gỗ bạch đàn', 'Eucalyptus wood', 'Eucalyptus', 'wood', 'BD', 12, 16, 2.6, 2350000, 'Bạch đàn trung'),
+            ('Gỗ bạch đàn', 'Eucalyptus wood', 'Eucalyptus', 'wood', 'BD', 16, 20, 2.6, 1900000, 'Bạch đàn lớn'),
+            ('Gỗ bạch đàn', 'Eucalyptus wood', 'Eucalyptus', 'wood', 'BD', 6, 18, 2.6, 2100000, 'Bạch đàn xô (Dải rộng)'),
+            
+            ('Gỗ cao su', 'Rubberwood', 'Hevea brasiliensis', 'wood', 'CS', 14, 20, 2.6, 1820000, 'Gỗ cao su'),
+            
+            ('Củi thông', 'Pine firewood', 'Pinus massoniana', 'firewood', 'CUI_THONG', 100, 100, 1.27, 850000, 'Kích thước mặc định'),
+            ('Củi keo', 'Acacia firewood', 'Acacia', 'firewood', 'CUI_KEO', 100, 100, 1.27, 850000, 'Kích thước mặc định'),
+            ('Củi bạch đàn', 'Eucalyptus firewood', 'Eucalyptus', 'firewood', 'CUI_BD', 100, 100, 1.27, 900000, 'Kích thước mặc định'),
+            ('Củi cao su', 'Rubberwood firewood', 'Hevea brasiliensis', 'firewood', 'CUI_CS', 100, 100, 1.27, 850000, 'Kích thước mặc định'),
         ]
         
-        for name, name_en, name_sci, wood_type, code in data:
-            existing = species_obj.search([('name', '=', name), ('company_id', '=', self.env.company.id)], limit=1)
-            if not existing:
-                species_obj.create({
-                    'name': name,
-                    'name_en': name_en,
-                    'name_sci': name_sci,
-                    'wood_type': wood_type,
-                    'code': code,
-                    'company_id': self.env.company.id
-                })
-        
+        for name, name_en, name_sci, wood_type, code, d_min, d_max, height, price, note in data:
+            # 1. Tìm hoặc tạo/cập nhật Loài gỗ
+            species = species_obj.search([('name', '=', name), ('company_id', '=', self.env.company.id)], limit=1)
+            vals = {
+                'name': name,
+                'name_en': name_en,
+                'name_sci': name_sci,
+                'wood_type': wood_type,
+                'code': code,
+                'company_id': self.env.company.id
+            }
+            if species:
+                species.write(vals)
+            else:
+                species = species_obj.create(vals)
+                
+            # 2. Tìm hoặc tạo/cập nhật Phân loại chất lượng loài gỗ
+            grade = grade_obj.search([('species_id', '=', species.id), ('name', '=', note)], limit=1)
+            grade_vals = {
+                'species_id': species.id,
+                'name': note,
+                'diameter_min': d_min,
+                'diameter_max': d_max,
+                'height': height,
+                'default_price': price,
+                'note': note
+            }
+            if grade:
+                grade.write(grade_vals)
+            else:
+                grade_obj.create(grade_vals)
+                
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Thành công'),
-                'message': _('Đã khởi tạo danh mục loài gỗ cho công ty hiện tại.'),
+                'message': _('Đã khởi tạo/cập nhật danh mục loài gỗ và phân loại thành công.'),
                 'sticky': False,
                 'type': 'success',
             }

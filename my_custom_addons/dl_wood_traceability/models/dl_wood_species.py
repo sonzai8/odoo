@@ -5,6 +5,7 @@ class DlWoodSpecies(models.Model):
     _name = 'dl.wood.species'
     _description = 'Loài gỗ'
     _inherit = ['dl.wood.log.mixin']
+    _order = 'wood_type desc, name asc'
 
     name = fields.Char(string='Tên loài', required=True)
     name_en = fields.Char(string='Tên tiếng Anh')
