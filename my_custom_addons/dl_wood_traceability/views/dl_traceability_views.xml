@@ -188,6 +188,7 @@
                                     <field name="x_delivery_explanation" nolabel="1" colspan="2" readonly="1"/>
                                 </group>
                                 <group string="Mã Số &amp; Phụ Lục">
+                                    <field name="x_contract_number"/>
                                     <field name="x_addendum_num"/>
                                     <field name="x_bkls_number"/>
                                 </group>

@@ -135,6 +135,13 @@ class DlWoodDossier(models.Model):
     x_exploitation_period_text = fields.Char(string='Thời gian khai thác (Văn bản)', compute='_compute_exploitation_period_text', store=False)
     x_addendum_num = fields.Char(string='Số phụ lục', compute='_compute_addendum_num', store=True, readonly=False)
     x_bkls_number = fields.Char(string='Mã số Bảng kê lâm sản', compute='_compute_x_bkls_number', store=True, readonly=False)
+    x_contract_number = fields.Char(
+        string='Số hợp đồng',
+        compute='_compute_contract_number',
+        store=True,
+        readonly=False,
+        help='Tự động tính: [Số thứ tự]/[Năm]/HD-[Tiền tố]-[Viết tắt chủ rừng]'
+    )
 
     # Thông tin Hợp đồng
     x_contract_date = fields.Date(
@@ -373,6 +380,42 @@ class DlWoodDossier(models.Model):
                 record.x_exploitation_period_text = f"Từ ngày {start_str} đến ngày {end_str}"
             else:
                 record.x_exploitation_period_text = ""
+
+    @api.depends('x_start_date', 'date_received', 'partner_id', 'company_id.x_wood_prefix')
+    def _compute_contract_number(self):
+        for record in self:
+            if not record.partner_id:
+                record.x_contract_number = False
+                continue
+
+            if record.x_contract_number:
+                continue
+
+            date_ref = record.x_start_date or record.date_received or fields.Date.today()
+            year = date_ref.year
+            
+            prefix = record.company_id.x_wood_prefix or "QTP"
+            
+            # Lấy chữ cái viết tắt của chủ rừng (Không dấu)
+            name_no_accent = no_accent_vietnamese(record.partner_id.name).replace('_', ' ')
+            initials = "".join(word[0] for word in name_no_accent.split() if word).upper()
+            
+            # Đếm số thứ tự hợp đồng trong năm đó của công ty
+            start_date = fields.Datetime.to_datetime(f"{year}-01-01 00:00:00")
+            end_date = fields.Datetime.to_datetime(f"{year}-12-31 23:59:59")
+            
+            domain = [
+                ('company_id', '=', record.company_id.id),
+                ('create_date', '>=', start_date),
+                ('create_date', '<=', end_date),
+            ]
+            if record.id:
+                domain.append(('id', '<', record.id))
+            
+            seq_num = record.env['dl.wood.dossier'].search_count(domain) + 1
+            
+            # Định dạng: [Số thứ tự 3 chữ số]/[Năm]/HD-[Tiền tố]-[Viết tắt]
+            record.x_contract_number = f"{seq_num:03d}/{year}/HD-{prefix}-{initials}"
 
     @api.depends('x_start_date', 'company_id.x_wood_prefix', 'partner_id.name')
     def _compute_addendum_num(self):

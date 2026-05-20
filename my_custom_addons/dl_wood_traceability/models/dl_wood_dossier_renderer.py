@@ -458,6 +458,14 @@ class DossierDocxRenderer:
             'main_quantity_val': main_qty,
             # Bảng hàng hóa động
             'table_rows':       self._build_table_rows(),
+            
+            # Các biến bổ sung theo yêu cầu Hợp đồng và Phụ lục mới
+            'contract_number':  d.x_contract_number or "",
+            'vietnamese_x_contract_date': date_to_vietnamese_text(d.x_contract_date),
+            'forest_owner_address': d.partner_address or "",
+            'vietnamese_x_delivery_start_date': date_to_vietnamese_text(d.x_delivery_start_date),
+            'vietnamese_x_delivery_end_date': date_to_vietnamese_text(d.x_delivery_end_date),
+            'x_addendum_num':   d.x_addendum_num or "",
         }
         return context
 

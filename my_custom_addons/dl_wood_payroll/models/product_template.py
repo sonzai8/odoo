@@ -107,7 +107,7 @@ class ProductTemplate(models.Model):
         'x_is_wood_product',
         'x_material_keo', 'x_material_thong', 'x_material_bach_dan', 'x_material_cao_su',
         'x_thickness', 'x_width', 'x_length',
-        'list_price'
+        'list_price', 'x_unit'
     )
     def _onchange_wood_name_and_code(self):
         for product in self:
@@ -156,7 +156,9 @@ class ProductTemplate(models.Model):
             prefix = getattr(company, 'x_wood_prefix', 'TPEP') or 'TPEP'
             seg1 = f"{prefix}{wood_code}"
             
-            seg2 = f"M{product.x_thickness:.1f}" if product.x_thickness else ""
+            # Tự động thay đổi theo công thức: T = Tấm, M = m3
+            unit_prefix = "M" if product.x_unit == "m3" else "T"
+            seg2 = f"{unit_prefix}{product.x_thickness:.1f}" if product.x_thickness else ""
             
             seg3 = f"{int(product.list_price / 1000)}" if product.list_price else ""
             
