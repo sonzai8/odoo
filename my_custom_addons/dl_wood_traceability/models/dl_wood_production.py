@@ -717,6 +717,21 @@ class DlWoodProductionLine(models.Model):
         store=True,
         index=True
     )
+    x_partner_id = fields.Many2one(
+        'res.partner',
+        related='x_sale_order_id.partner_id',
+        string='Khách hàng (Đầy đủ)',
+        store=True,
+        readonly=True,
+        index=True
+    )
+    x_partner_short_name = fields.Char(
+        string='Khách hàng',
+        related='x_partner_id.x_short_name',
+        store=True,
+        readonly=True,
+        index=True
+    )
     company_id = fields.Many2one(
         'res.company',
         string='Công ty',

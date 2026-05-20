@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <list string="Chủ rừng" create="1" delete="1">
                 <field name="name"/>
+                <field name="x_short_name"/>
                 <field name="phone"/>
                 <field name="x_full_address" string="Địa chỉ đầy đủ"/>
                 <field name="x_woodpro_id" string="ID WoodPro" readonly="1"/>
@@ -33,6 +34,7 @@
                 <attribute name="invisible">x_is_wood_supplier != False</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="after">
+                <field name="x_short_name"/>
                 <field name="x_cccd"/>
                 <field name="x_cccd_date"/>
                 <field name="x_cccd_place"/>

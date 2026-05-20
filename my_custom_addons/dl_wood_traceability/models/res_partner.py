@@ -91,6 +91,64 @@ class ResPartner(models.Model):
                 
             partner.x_full_address = ", ".join(parts) if parts else ""
 
+    x_short_name = fields.Char(
+        string='Tên rút gọn',
+        compute='_compute_x_short_name',
+        store=True,
+        readonly=False
+    )
+
+    @api.depends('name')
+    def _compute_x_short_name(self):
+        import re
+        prefixes = [
+            # 1. Các tiền tố siêu dài (dịch vụ, thương mại, đầu tư, xuất nhập khẩu...)
+            r'^công ty cổ phần đầu tư xây dựng hạ tầng kinh tế\s+',
+            r'^công ty cổ phần sản xuất và xuất nhập khẩu\s+',
+            r'^công ty cổ phần xây dựng và dịch vụ thương mại\s+',
+            r'^công ty cổ phần sản xuất và thương mại\s+',
+            r'^công ty cổ phần thương mại và đầu tư\s+',
+            r'^công ty cổ phần xây dựng và thương mại\s+',
+            r'^công ty cổ phần xây dựng thương mại\s+',
+            r'^công ty cp xây dựng thương mại\s+',
+            r'^công ty cổ phần thương mại và xây dựng\s+',
+            r'^công ty tnhh xuất nhập khẩu\s+',
+            
+            # 2. Các tiền tố dài trung bình đã có sẵn
+            r'^công ty tnhh mtv\s+',
+            r'^công ty tnhh một thành viên\s+',
+            r'^công ty tnhh sx & tm\s+',
+            r'^công ty tnhh sản xuất & thương mại\s+',
+            r'^công ty tnhh tm & sx\s+',
+            r'^công ty tnhh thương mại & sản xuất\s+',
+            r'^công ty tnhh sx\s+',
+            r'^công ty tnhh tm\s+',
+            r'^công ty tnhh thương mại\s+',
+            r'^công ty tnhh\s+',
+            r'^công ty cổ phần\s+',
+            r'^công ty cp\s+',
+            r'^cty tnhh\s+',
+            r'^cty cp\s+',
+            r'^dntn\s+',
+            r'^doanh nghiệp tư nhân\s+',
+        ]
+        for partner in self:
+            if partner.x_short_name:
+                continue
+            name = partner.name or ""
+            short_name = name
+            
+            # Quét và xóa các tiền tố công ty (Không phân biệt chữ hoa thường)
+            for prefix in prefixes:
+                match = re.search(prefix, short_name, re.IGNORECASE)
+                if match:
+                    short_name = re.sub(prefix, '', short_name, flags=re.IGNORECASE)
+                    break
+            
+            # Xóa các khoảng trắng thừa hoặc ký tự gạch nối
+            short_name = short_name.strip(" -_")
+            partner.x_short_name = short_name
+
     exploitation_location_ids = fields.One2many(
         'dl.wood.exploitation.location', 
         'partner_id', 
