@@ -67,6 +67,7 @@
                             <field name="partner_address" placeholder="Địa chỉ tự động load..."/>
                             <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}"/>
                             <field name="company_id" readonly="1"/>
+                            <field name="x_start_date" string="Khai thác từ"/>
                         </group>
                         <group>
                             <field name="name" readonly="1" decoration-bf="1"/>
@@ -130,11 +131,11 @@
                             <div class="row mt-2 mb-3">
                                 <div class="col-md-8">
                                     <div class="alert alert-info mb-0" role="alert">
-                                        <i class="fa fa-info-circle mr-2"></i> Hệ thống sẽ tự động tính toán và chia nhỏ khối lượng thành các chuyến xe dựa vào tổng sức chở.
+                                        <i class="fa fa-info-circle mr-2"></i> Hệ thống sẽ tự động tính toán và chia nhỏ khối lượng thành các phiếu nhập kho dựa vào tổng sức chở.
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-end">
-                                    <button name="action_generate_transport_tickets" type="object" string="Tính toán &amp; Chia chuyến" class="btn btn-primary h-100 w-100" icon="fa-cogs"/>
+                                    <button name="action_generate_transport_tickets" type="object" string="Tính toán &amp; Chia phiếu nhập kho" class="btn btn-primary h-100 w-100" icon="fa-cogs"/>
                                 </div>
                             </div>
                             <separator string="Cấu hình xe vận chuyển"/>
@@ -146,32 +147,54 @@
                                     <field name="company_id" column_invisible="True"/>
                                 </list>
                             </field>
-                            <separator string="Các chuyến xe (Phiếu chia nhỏ)"/>
-                            <field name="ticket_ids" readonly="1">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="x_vehicle_info"/>
-                                    <field name="vehicle_count"/>
-                                    <field name="fill_rate" widget="percentage"/>
-                                    <field name="total_volume" sum="Tổng chuyến xe"/>
-                                </list>
-                                <form>
-                                    <group>
-                                        <field name="name" readonly="1"/>
-                                        <field name="x_vehicle_info" readonly="1"/>
-                                        <field name="vehicle_count" readonly="1"/>
-                                        <field name="fill_rate" readonly="1" widget="percentage"/>
-                                        <field name="total_volume" readonly="1"/>
-                                    </group>
-                                    <field name="ticket_line_ids" readonly="1">
-                                        <list>
-                                            <field name="species_id"/>
-                                            <field name="wood_type"/>
-                                            <field name="volume"/>
-                                        </list>
-                                    </field>
-                                </form>
-                            </field>
+                            <separator string="Danh sách phiếu nhập kho"/>
+                            <field name="ticket_ids">
+                                 <list>
+                                     <field name="name"/>
+                                     <field name="x_date"/>
+                                     <field name="x_vehicle_info"/>
+                                     <field name="vehicle_count"/>
+                                     <field name="fill_rate" widget="percentage"/>
+                                     <field name="total_volume" sum="Tổng phiếu nhập kho"/>
+                                 </list>
+                                 <form>
+                                     <group>
+                                         <group>
+                                             <field name="name" readonly="1"/>
+                                             <field name="x_date"/>
+                                             <field name="x_vehicle_info" readonly="1"/>
+                                             <field name="vehicle_count" readonly="1"/>
+                                         </group>
+                                         <group>
+                                             <field name="fill_rate" readonly="1" widget="percentage"/>
+                                             <field name="total_volume" readonly="1"/>
+                                         </group>
+                                     </group>
+                                     <notebook>
+                                         <page string="Chi tiết phương tiện (Biển số &amp; Tải trọng)">
+                                             <field name="x_vehicle_ids">
+                                                 <list editable="bottom">
+                                                     <field name="name" placeholder="Biển số xe (ví dụ: 29C-123.45)"/>
+                                                     <field name="capacity"/>
+                                                     <field name="species_id"/>
+                                                     <field name="wood_type"/>
+                                                     <field name="volume" sum="Tổng thực chở"/>
+                                                     <field name="note"/>
+                                                 </list>
+                                             </field>
+                                         </page>
+                                         <page string="Tổng hợp lâm sản phiếu nhập kho">
+                                             <field name="ticket_line_ids" readonly="1">
+                                                 <list>
+                                                     <field name="species_id"/>
+                                                     <field name="wood_type"/>
+                                                     <field name="volume"/>
+                                                 </list>
+                                             </field>
+                                         </page>
+                                     </notebook>
+                                 </form>
+                             </field>
                         </page>
                         <page string="Thời gian - Phụ lục">
                             <group>

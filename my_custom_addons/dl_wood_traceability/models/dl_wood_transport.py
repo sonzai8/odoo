@@ -34,12 +34,13 @@ class DlWoodDossierTransport(models.Model):
 
 class DlWoodDossierTransportTicket(models.Model):
     _name = 'dl.wood.dossier.transport.ticket'
-    _description = 'Phiếu vận chuyển (Chuyến xe)'
+    _description = 'Phiếu nhập kho'
     _order = 'name asc'
 
     dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ Sơ Gỗ', ondelete='cascade', required=True)
     company_id = fields.Many2one('res.company', related='dossier_id.company_id', store=True, readonly=True)
-    name = fields.Char(string='Tên chuyến', required=True)
+    name = fields.Char(string='Tên phiếu', required=True)
+    x_date = fields.Date(string='Ngày nhập kho')
     vehicle_count = fields.Integer(string='Số lượng xe', default=1)
     x_vehicle_info = fields.Char(string='Phương tiện sử dụng', help='Chi tiết các loại xe sử dụng trong chuyến này')
     x_vehicle_capacities = fields.Char(string='Tải trọng các xe (m³)', help='Danh sách tải trọng các xe cách nhau bằng dấu phẩy')
@@ -47,7 +48,8 @@ class DlWoodDossierTransportTicket(models.Model):
     fill_rate = fields.Float(string='Tỷ lệ lấp đầy', digits=(16, 4))
     total_volume = fields.Float(string='Tổng khối lượng (m³)', compute='_compute_total_volume', store=True, digits=(16, 1))
     
-    ticket_line_ids = fields.One2many('dl.wood.dossier.transport.ticket.line', 'ticket_id', string='Chi tiết chuyến xe')
+    ticket_line_ids = fields.One2many('dl.wood.dossier.transport.ticket.line', 'ticket_id', string='Chi tiết phiếu nhập kho')
+    x_vehicle_ids = fields.One2many('dl.wood.dossier.transport.ticket.vehicle', 'ticket_id', string='Chi tiết phương tiện')
 
     @api.depends('ticket_line_ids.volume')
     def _compute_total_volume(self):
@@ -69,3 +71,24 @@ class DlWoodDossierTransportTicketLine(models.Model):
         ('firewood', 'Củi')
     ], string='Phân loại', required=True)
     volume = fields.Float(string='Khối lượng (m³)', required=True, digits=(16, 1))
+
+
+class DlWoodDossierTransportTicketVehicle(models.Model):
+    _name = 'dl.wood.dossier.transport.ticket.vehicle'
+    _description = 'Chi tiết phương tiện vận chuyển'
+    _order = 'id asc'
+
+    ticket_id = fields.Many2one('dl.wood.dossier.transport.ticket', string='Phiếu nhập kho', ondelete='cascade', required=True)
+    dossier_id = fields.Many2one('dl.wood.dossier', related='ticket_id.dossier_id', store=True, readonly=True)
+    company_id = fields.Many2one('res.company', related='ticket_id.company_id', store=True, readonly=True)
+    
+    name = fields.Char(string='Biển số xe', default='Chưa có biển số')
+    capacity = fields.Float(string='Tải trọng thiết kế (m³)', required=True)
+    volume = fields.Float(string='Khối lượng chở thực tế (m³)', required=True, digits=(16, 2))
+    species_id = fields.Many2one('dl.wood.species', string='Loài gỗ', required=True)
+    wood_type = fields.Selection([
+        ('wood', 'Gỗ'),
+        ('firewood', 'Củi')
+    ], string='Phân loại', required=True)
+    note = fields.Text(string='Ghi chú')
+

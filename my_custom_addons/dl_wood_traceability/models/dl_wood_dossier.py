@@ -516,7 +516,7 @@ class DlWoodDossier(models.Model):
 
     # Thông tin Vận chuyển
     transport_ids = fields.One2many('dl.wood.dossier.transport', 'dossier_id', string='Cấu hình vận chuyển')
-    ticket_ids = fields.One2many('dl.wood.dossier.transport.ticket', 'dossier_id', string='Các chuyến xe')
+    ticket_ids = fields.One2many('dl.wood.dossier.transport.ticket', 'dossier_id', string='Danh sách phiếu nhập kho')
 
     # -------------------------------------------------------------------------
     # Ledger Relation & Stock Calculation
@@ -595,6 +595,10 @@ class DlWoodDossier(models.Model):
         import math
         
         for dossier in self:
+            import datetime
+            start_date = dossier.x_delivery_start_date or fields.Date.today()
+            end_date = dossier.x_delivery_end_date or fields.Date.today()
+            
             # 1. Xóa tickets cũ
             dossier.ticket_ids.unlink()
 
@@ -741,15 +745,98 @@ class DlWoodDossier(models.Model):
                 elif remaining_target < 0.0 and lines_to_create:
                     lines_to_create[-1]['volume'] = round(max(0.1, lines_to_create[-1]['volume'] + remaining_target), 1)
 
+                # 7.3. Phân bổ hàng hóa chi tiết cho từng xe trong chuyến
+                vehicle_lines = []
+                if lines_to_create and trip['vehicles']:
+                    total_allocated_vol = sum(line['volume'] for line in lines_to_create)
+                    v_targets = []
+                    allocated_so_far = 0.0
+                    for v in trip['vehicles'][:-1]:
+                        v_vol = round(v['capacity'] * fill_rate, 2)
+                        v_targets.append(v_vol)
+                        allocated_so_far += v_vol
+                    # Xe cuối cùng nhận phần còn lại để tránh sai số làm tròn
+                    last_v_vol = round(total_allocated_vol - allocated_so_far, 2)
+                    if last_v_vol < 0.0:
+                        last_v_vol = 0.0
+                    v_targets.append(last_v_vol)
+
+                    cargo_pool = [{'species_id': l['species_id'], 'wood_type': l['wood_type'], 'remaining': l['volume']} for l in lines_to_create]
+
+                    for v_idx, v in enumerate(trip['vehicles']):
+                        v_target = v_targets[v_idx]
+                        v_remaining = v_target
+
+                        # Bốc Gỗ
+                        for item in cargo_pool:
+                            if v_remaining <= 0.0:
+                                break
+                            if item['wood_type'] == 'wood' and item['remaining'] > 0.0:
+                                take = round(min(item['remaining'], v_remaining), 2)
+                                if take > 0.0:
+                                    vehicle_lines.append({
+                                        'name': f"Xe {v_idx + 1:02d}",
+                                        'capacity': v['capacity'],
+                                        'volume': take,
+                                        'species_id': item['species_id'],
+                                        'wood_type': 'wood',
+                                    })
+                                    item['remaining'] = round(item['remaining'] - take, 2)
+                                    v_remaining = round(v_remaining - take, 2)
+
+                        # Bốc Củi
+                        for item in cargo_pool:
+                            if v_remaining <= 0.0:
+                                break
+                            if item['wood_type'] == 'firewood' and item['remaining'] > 0.0:
+                                take = round(min(item['remaining'], v_remaining), 2)
+                                if take > 0.0:
+                                    vehicle_lines.append({
+                                        'name': f"Xe {v_idx + 1:02d}",
+                                        'capacity': v['capacity'],
+                                        'volume': take,
+                                        'species_id': item['species_id'],
+                                        'wood_type': 'firewood',
+                                    })
+                                    item['remaining'] = round(item['remaining'] - take, 2)
+                                    v_remaining = round(v_remaining - take, 2)
+
+                        # Nếu vẫn còn dư tải trọng nhỏ hoặc sai số làm tròn, dồn hàng hóa còn lại vào xe
+                        if v_remaining > 0.0:
+                            for item in cargo_pool:
+                                if item['remaining'] > 0.0:
+                                    vehicle_lines.append({
+                                        'name': f"Xe {v_idx + 1:02d}",
+                                        'capacity': v['capacity'],
+                                        'volume': item['remaining'],
+                                        'species_id': item['species_id'],
+                                        'wood_type': item['wood_type'],
+                                    })
+                                    item['remaining'] = 0.0
+                                    break
+
                 if lines_to_create:
+                    current_date = start_date
+                    if current_date.weekday() == 6:
+                        current_date += datetime.timedelta(days=1)
+                    steps = trip_counter - 1
+                    for _ in range(steps):
+                        current_date += datetime.timedelta(days=1)
+                        while current_date.weekday() == 6:
+                            current_date += datetime.timedelta(days=1)
+                    ticket_date = current_date
+                    if ticket_date > end_date:
+                        ticket_date = end_date
                     tickets_vals.append({
                         'dossier_id': dossier.id,
-                        'name': f'Chuyến {trip_counter:02d}',
+                        'name': f'Phiếu {trip_counter:02d}',
+                        'x_date': ticket_date,
                         'vehicle_count': v_count,
                         'x_vehicle_info': vehicle_info,
                         'x_vehicle_capacities': capacities_str,
                         'fill_rate': fill_rate,
-                        'ticket_line_ids': [(0, 0, vals) for vals in lines_to_create]
+                        'ticket_line_ids': [(0, 0, vals) for vals in lines_to_create],
+                        'x_vehicle_ids': [(0, 0, vals) for vals in vehicle_lines]
                     })
                     trip_counter += 1
 
