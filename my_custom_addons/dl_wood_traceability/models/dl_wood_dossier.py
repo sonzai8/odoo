@@ -680,10 +680,9 @@ class DlWoodDossier(models.Model):
             else:
                 trips[0]['target_volume'] = round(total_volume, 1)
 
-            # 7. Phân bổ tuần tự Gỗ/Củi và tạo các chuyến xe
+            # 7. Phân bổ tuần tự Gỗ trước, Củi sau (Củi chở sau cùng) và tạo các chuyến xe
             tickets_vals = []
             trip_counter = 1
-            wood_ratio = total_wood / total_volume if total_volume > 0 else 0.0
 
             for trip in trips:
                 target_vol = trip['target_volume']
@@ -696,60 +695,51 @@ class DlWoodDossier(models.Model):
                     name = v['name']
                     vehicle_counts[name] = vehicle_counts.get(name, 0) + 1
                 vehicle_info = ", ".join([f"{qty} x {name}" for name, qty in sorted(vehicle_counts.items())])
+                
+                # Lưu tải trọng chi tiết của từng xe
+                capacities_str = ",".join([str(v['capacity']) for v in trip['vehicles']])
 
                 # Tính tỷ lệ lấp đầy thực tế của chuyến
                 fill_rate = round((target_vol / nominal_cap), 4) if nominal_cap > 0 else 0.0
 
-                total_wood_rem = get_total_remaining(wood_lines)
-                total_firewood_rem = get_total_remaining(firewood_lines)
-
-                # Chia tỷ lệ Gỗ & Củi cho chuyến dựa trên tỷ lệ chung của hồ sơ
-                w_target = round(target_vol * wood_ratio, 1)
-                f_target = round(target_vol - w_target, 1)
-
-                w_load = round(min(total_wood_rem, w_target), 1)
-                f_load = round(min(total_firewood_rem, f_target), 1)
-
-                # Nếu gỗ/củi không đủ do lệch tỷ lệ, dồn thêm phần còn lại để lấp đầy chuyến xe
-                gap = round(target_vol - (w_load + f_load), 1)
-                if gap > 0:
-                    if total_wood_rem > w_load:
-                        extra_w = round(min(total_wood_rem - w_load, gap), 1)
-                        w_load += extra_w
-                        gap = round(gap - extra_w, 1)
-                    if gap > 0 and total_firewood_rem > f_load:
-                        extra_f = round(min(total_firewood_rem - f_load, gap), 1)
-                        f_load += extra_f
-
                 lines_to_create = []
-                
-                # Phân bổ Gỗ
-                w_needed = w_load
-                for w in wood_lines:
-                    if w_needed <= 0: break
-                    if w['remaining'] > 0:
-                        take = round(min(w['remaining'], w_needed), 1)
-                        lines_to_create.append({
-                            'species_id': w['id'],
-                            'wood_type': w['wood_type'],
-                            'volume': take
-                        })
-                        w['remaining'] = round(w['remaining'] - take, 1)
-                        w_needed = round(w_needed - take, 1)
+                remaining_target = target_vol
 
-                # Phân bổ Củi
-                f_needed = f_load
+                # 7.1. Bốc xếp GỖ trước
+                for w in wood_lines:
+                    if remaining_target <= 0.0:
+                        break
+                    if w['remaining'] > 0:
+                        take = round(min(w['remaining'], remaining_target), 1)
+                        if take > 0:
+                            lines_to_create.append({
+                                'species_id': w['id'],
+                                'wood_type': w['wood_type'],
+                                'volume': take
+                            })
+                            w['remaining'] = round(w['remaining'] - take, 1)
+                            remaining_target = round(remaining_target - take, 1)
+
+                # 7.2. Bốc xếp CỦI sau cùng
                 for f in firewood_lines:
-                    if f_needed <= 0: break
+                    if remaining_target <= 0.0:
+                        break
                     if f['remaining'] > 0:
-                        take = round(min(f['remaining'], f_needed), 1)
-                        lines_to_create.append({
-                            'species_id': f['id'],
-                            'wood_type': f['wood_type'],
-                            'volume': take
-                        })
-                        f['remaining'] = round(f['remaining'] - take, 1)
-                        f_needed = round(f_needed - take, 1)
+                        take = round(min(f['remaining'], remaining_target), 1)
+                        if take > 0:
+                            lines_to_create.append({
+                                'species_id': f['id'],
+                                'wood_type': f['wood_type'],
+                                'volume': take
+                            })
+                            f['remaining'] = round(f['remaining'] - take, 1)
+                            remaining_target = round(remaining_target - take, 1)
+
+                # Bù trừ sai lệch làm tròn nhỏ vào dòng cuối cùng đã bốc xếp
+                if remaining_target > 0.0 and lines_to_create:
+                    lines_to_create[-1]['volume'] = round(lines_to_create[-1]['volume'] + remaining_target, 1)
+                elif remaining_target < 0.0 and lines_to_create:
+                    lines_to_create[-1]['volume'] = round(max(0.1, lines_to_create[-1]['volume'] + remaining_target), 1)
 
                 if lines_to_create:
                     tickets_vals.append({
@@ -757,6 +747,7 @@ class DlWoodDossier(models.Model):
                         'name': f'Chuyến {trip_counter:02d}',
                         'vehicle_count': v_count,
                         'x_vehicle_info': vehicle_info,
+                        'x_vehicle_capacities': capacities_str,
                         'fill_rate': fill_rate,
                         'ticket_line_ids': [(0, 0, vals) for vals in lines_to_create]
                     })
@@ -906,6 +897,10 @@ class DlWoodDossier(models.Model):
             'ban_ke_lam_san': 'bkls',
             'bang_ke_lam_san': 'bkls',
             
+            # Bảng kê lâm sản chia nhỏ
+            'cn_bkls': 'cn_bkls',
+            'chia_nho_bkls': 'cn_bkls',
+            
             # Đơn đề nghị xác nhận
             'ddnx': 'xn_bkls',
             'don_de_nghi_xac_nhan': 'xn_bkls',
@@ -973,6 +968,7 @@ class DlWoodDossier(models.Model):
     def action_download_ptkt(self): return self._action_download_template('ptkt')
     def action_download_hdsg(self): return self._action_download_template('hdsg')
     def action_download_bkls(self): return self._action_download_template('bkls')
+    def action_download_cn_bkls(self): return self._action_download_template('cn_bkls')
     def action_download_ddnx(self): return self._action_download_template('ddnx')
     def action_download_bbxm(self): return self._action_download_template('bbxm')
     def action_download_cnbk(self): return self._action_download_template('cnbk')

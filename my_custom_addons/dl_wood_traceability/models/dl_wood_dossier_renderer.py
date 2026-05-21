@@ -172,6 +172,8 @@ class DossierDocxRenderer:
         'bkls':                     '_prepare_bkls_context',
         'ban_ke_lam_san':           '_prepare_bkls_context',
         'bang_ke_lam_san':          '_prepare_bkls_context',
+        'cn_bkls':                  '_prepare_bkls_context',
+        'chia_nho_bkls':            '_prepare_bkls_context',
         
         # Đơn đề nghị xác nhận
         'ddnx':                     '_prepare_ddnx_context',
@@ -233,6 +235,9 @@ class DossierDocxRenderer:
         """
         if not DocxTemplate:
             raise ImportError("Thư viện 'docxtpl' chưa được cài đặt trên máy chủ.")
+
+        if template_key == 'cn_bkls':
+            return self._render_cn_bkls(template_source)
 
         context = self.get_context(template_key)
         doc = DocxTemplate(template_source)
@@ -854,3 +859,240 @@ class DossierDocxRenderer:
         
         _logger.info("[Renderer] bien_ban_xac_minh_ngls context: %s", context)
         return context
+
+    def _render_cn_bkls(self, template_source):
+        """
+        Render Bảng kê lâm sản chia nhỏ (cn_bkls):
+        - Với mỗi chuyến xe (ticket), xác định ngày vận chuyển nằm trong khoảng x_start_date và x_end_date.
+        - Với mỗi xe trong chuyến xe đó, lấy tải trọng từ x_vehicle_capacities và nhân với fill_rate.
+        - Phân bổ chi tiết các loài gỗ/củi tuần tự cuốn chiếu cho từng xe.
+        - Render ra các file docx riêng lẻ và ghép chúng lại thành một file docx duy nhất.
+        """
+        import datetime
+        from docx import Document
+        from odoo.exceptions import UserError
+        
+        d = self.dossier
+        tickets = d.ticket_ids.sorted(key=lambda t: t.name)
+        if not tickets:
+            raise UserError(_("Hồ sơ chưa được tạo chuyến xe vận chuyển. Vui lòng bấm 'Sinh chuyến xe' trước khi xuất."))
+
+        company_info = self._get_company_info()
+        owner_info = self._get_owner_info()
+        forest_owner_city = d.partner_id.city or d.partner_id.state_id.name or ""
+        
+        start_date = d.x_start_date or fields.Date.today()
+        end_date = d.x_end_date or fields.Date.today()
+        
+        rendered_docs_bytes = []
+        
+        for trip_idx, ticket in enumerate(tickets):
+            # Tính ngày vận chuyển cho chuyến này: mỗi chuyến cách nhau 1 ngày từ start_date, giới hạn bởi end_date
+            ticket_date = start_date + datetime.timedelta(days=trip_idx)
+            if ticket_date > end_date:
+                ticket_date = end_date
+            
+            vietnamese_ticket_date = date_to_vietnamese_text(ticket_date)
+            
+            # Chuẩn bị danh sách gỗ cần phân bổ của chuyến xe này
+            remaining_lines = []
+            for line in ticket.ticket_line_ids:
+                remaining_lines.append({
+                    'species_id': line.species_id,
+                    'wood_type': line.wood_type,
+                    'volume': line.volume,
+                })
+                
+            # Đọc danh sách xe trong chuyến xe này
+            if ticket.x_vehicle_capacities:
+                capacities = [float(x.strip()) for x in ticket.x_vehicle_capacities.split(',') if x.strip()]
+            else:
+                avg_cap = (ticket.total_volume / ticket.vehicle_count) if ticket.vehicle_count > 0 else 20.0
+                capacities = [avg_cap] * (ticket.vehicle_count or 1)
+                
+            # Duyệt qua từng xe để phân bổ gỗ
+            for v_idx, capacity in enumerate(capacities, 1):
+                # Khối lượng thực chở của xe này = capacity * fill_rate
+                v_target_vol = round(capacity * (ticket.fill_rate or 1.0), 2)
+                if v_target_vol <= 0.0:
+                    continue
+                    
+                v_lines = []
+                remaining_v_vol = v_target_vol
+                
+                # Bốc xếp tuần tự cuốn chiếu gỗ từ remaining_lines lên xe này
+                for line in remaining_lines:
+                    if remaining_v_vol <= 0.0:
+                        break
+                    if line['volume'] > 0:
+                        take = round(min(line['volume'], remaining_v_vol), 1)
+                        if take > 0:
+                            v_lines.append({
+                                'species_id': line['species_id'],
+                                'wood_type': line['wood_type'],
+                                'volume': take
+                            })
+                            line['volume'] = round(line['volume'] - take, 1)
+                            remaining_v_vol = round(remaining_v_vol - take, 1)
+                
+                # Bù trừ sai lệch làm tròn nhỏ
+                if remaining_v_vol > 0.0 and v_lines:
+                    v_lines[-1]['volume'] = round(v_lines[-1]['volume'] + remaining_v_vol, 1)
+                elif remaining_v_vol < 0.0 and v_lines:
+                    v_lines[-1]['volume'] = round(max(0.1, v_lines[-1]['volume'] + remaining_v_vol), 1)
+                    
+                # Tạo table_rows cho xe này
+                table_rows = []
+                total_qty = 0
+                total_vol = 0.0
+                wood_vol = 0.0
+                firewood_vol = 0.0
+                firewood_qty = 0
+                wood_qty = 0
+                
+                dia_min = min(d.line_ids.mapped('diameter_min')) if d.line_ids and any(d.line_ids.mapped('diameter_min')) else 0
+                dia_max = max(d.line_ids.mapped('diameter_max')) if d.line_ids and any(d.line_ids.mapped('diameter_max')) else 0
+                
+                for idx, line in enumerate(v_lines, 1):
+                    species = line['species_id']
+                    val = species.x_species_group or 'common'
+                    group_label = {
+                        'common': 'Thông thường',
+                        'precious': 'Danh mục loài nguy cấp, quý, hiếm',
+                        'cites': 'Phụ lục CITES'
+                    }.get(val, 'Thông thường')
+                    
+                    # Tìm tỉ lệ quy đổi số lượng của loài gỗ/củi này trong dossier lines
+                    dossier_line = d.line_ids.filtered(lambda l: l.species_id == species and l.wood_type == line['wood_type'])
+                    avg_vol_per_unit = 0.1
+                    if dossier_line:
+                        d_vol = sum(dossier_line.mapped('volume'))
+                        d_qty = sum(dossier_line.mapped('quantity'))
+                        if d_qty > 0:
+                            avg_vol_per_unit = d_vol / d_qty
+                    
+                    computed_qty = max(1, int(round(line['volume'] / avg_vol_per_unit))) if avg_vol_per_unit > 0 else 1
+                    
+                    total_vol += line['volume']
+                    total_qty += computed_qty
+                    
+                    if line['wood_type'] == 'wood':
+                        wood_vol += line['volume']
+                        wood_qty += computed_qty
+                    else:
+                        firewood_vol += line['volume']
+                        firewood_qty += computed_qty
+                        
+                    table_rows.append({
+                        'idx':           idx,
+                        'stt':           idx,
+                        'species_name':  species.name or "",
+                        'name_sci':      species.name_sci or "",
+                        'name_en':       species.name_en or "",
+                        'type':          group_label,
+                        'height':        dossier_line[0].height_display if dossier_line else "",
+                        'diameter':      dossier_line[0].diameter_display if dossier_line else "",
+                        'volume':        f"{int(round(line['volume'])):,}".replace(',', '.'),
+                        'quantity':      f"{int(computed_qty):,}".replace(',', '.'),
+                    })
+                    
+                if not table_rows:
+                    continue
+                    
+                main_species = ", ".join(list(set([x['species_name'] for x in table_rows])))
+                
+                groups = []
+                for line in v_lines:
+                    val = line['species_id'].x_species_group or 'common'
+                    label = {
+                        'common': 'Thông thường',
+                        'precious': 'Danh mục loài nguy cấp, quý, hiếm',
+                        'cites': 'Phụ lục CITES'
+                    }.get(val, 'Thông thường')
+                    groups.append(label)
+                main_type = ", ".join(list(set(groups))) if groups else "Thông thường"
+                
+                context = {
+                    'bkls_number':            "",
+                    'bkls_code':              "",
+                    'vietnamese_bkls_date':   vietnamese_ticket_date,
+                    'forest_owner_city':      forest_owner_city,
+
+                    # Bên mua
+                    'company_name':           company_info.get('company_name', ''),
+                    'company_address':        company_info.get('company_address', ''),
+                    'company_tax_number':     company_info.get('company_tax_number', ''),
+                    
+                    # Chủ rừng
+                    'forest_owner_name':      owner_info.get('owner_name', ''),
+                    'forest_owner_address':   owner_info.get('owner_address', ''),
+                    'forset_owner_address':   owner_info.get('owner_address', ''),
+                    'forest_owner_cccd':      owner_info.get('owner_cccd', ''),
+                    'forset_owner_cccd':      owner_info.get('owner_cccd', ''),
+                    
+                    # Địa điểm & Thời gian
+                    'exploitation_address':   d.exploitation_location_id.name or d.partner_address or "",
+                    'exploitation_count_day': 1,
+                    'vietnamese_exploitation_from_date': vietnamese_ticket_date,
+                    'vietnamese_exploitation_to_date':   vietnamese_ticket_date,
+                    
+                    # Đường kính
+                    'diameter_min':           dia_min,
+                    'diameter_max':           dia_max,
+                    'diametter_max':          dia_max,
+                    
+                    # Nhóm loài & Loại lâm sản
+                    'species_name':           main_species,
+                    'species_type':           main_type,
+                    'species_volume':         f"{int(round(wood_vol)):,}".replace(',', '.'),
+                    'firewood_quantity':      f"{int(firewood_qty):,}".replace(',', '.'),
+                    'firewood_volume':        f"{int(round(firewood_vol)):,}".replace(',', '.'),
+                    
+                    # Số lượng và thể tích tổng hợp
+                    'total_quantity':         f"{int(total_qty):,}".replace(',', '.'),
+                    'total_volume':           f"{int(round(total_vol)):,}".replace(',', '.'),
+                    'quantity':               f"{int(total_qty):,}".replace(',', '.'),
+                    
+                    # Đọc số thành chữ
+                    'vietnamese_quantity':    number_to_vietnamese_words(total_qty),
+                    'vietnamese_volume':      number_to_vietnamese_words(total_vol),
+                    'vietnamese_firewood_quantity': number_to_vietnamese_words(firewood_qty),
+                    'vietnamese_firewood_volume':   number_to_vietnamese_words(firewood_vol),
+                    
+                    # Danh sách dòng bảng
+                    'table_rows':             table_rows,
+                }
+                
+                # Render file cho xe này
+                doc = DocxTemplate(template_source)
+                doc.render(context)
+                
+                # Lưu vào bộ nhớ tạm
+                v_io = io.BytesIO()
+                doc.save(v_io)
+                rendered_docs_bytes.append(v_io.getvalue())
+                
+        if not rendered_docs_bytes:
+            raise UserError(_("Không có dữ liệu chuyến xe hợp lệ để xuất bảng kê chia nhỏ."))
+            
+        return self._merge_docx_files(rendered_docs_bytes)
+
+    def _merge_docx_files(self, files_bytes_list):
+        """Ghép các file .docx thành 1 file duy nhất, phân tách bằng page break"""
+        from docx import Document
+        if not files_bytes_list:
+            return b""
+            
+        master_doc = Document(io.BytesIO(files_bytes_list[0]))
+        
+        for file_bytes in files_bytes_list[1:]:
+            master_doc.add_page_break()
+            sub_doc = Document(io.BytesIO(file_bytes))
+            for element in sub_doc.element.body:
+                if element.tag.endswith('sectPr'):
+                    continue
+                master_doc.element.body.append(element)
+                
+        out_io = io.BytesIO()
+        master_doc.save(out_io)
+        return out_io.getvalue()

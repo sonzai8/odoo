@@ -42,6 +42,7 @@ class DlWoodDossierTransportTicket(models.Model):
     name = fields.Char(string='Tên chuyến', required=True)
     vehicle_count = fields.Integer(string='Số lượng xe', default=1)
     x_vehicle_info = fields.Char(string='Phương tiện sử dụng', help='Chi tiết các loại xe sử dụng trong chuyến này')
+    x_vehicle_capacities = fields.Char(string='Tải trọng các xe (m³)', help='Danh sách tải trọng các xe cách nhau bằng dấu phẩy')
     
     fill_rate = fields.Float(string='Tỷ lệ lấp đầy', digits=(16, 4))
     total_volume = fields.Float(string='Tổng khối lượng (m³)', compute='_compute_total_volume', store=True, digits=(16, 1))

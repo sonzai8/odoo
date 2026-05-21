@@ -33,6 +33,14 @@
             <field name="category">exploitation</field>
         </record>
 
+        <record id="template_v2025_cn_bkls" model="dl.wood.report.template.config">
+            <field name="version_id" ref="report_version_v2025"/>
+            <field name="sequence">35</field>
+            <field name="name">3b. Bảng kê lâm sản chia nhỏ (Gộp xe)</field>
+            <field name="template_key">cn_bkls</field>
+            <field name="category">exploitation</field>
+        </record>
+
         <record id="template_v2025_ddnx" model="dl.wood.report.template.config">
             <field name="version_id" ref="report_version_v2025"/>
             <field name="sequence">40</field>
