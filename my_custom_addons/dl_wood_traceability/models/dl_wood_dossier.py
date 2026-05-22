@@ -86,9 +86,12 @@ class DlWoodDossier(models.Model):
     @api.depends('name', 'partner_id.name', 'qty_available')
     def _compute_display_name(self):
         for dossier in self:
-            partner_name = dossier.partner_id.name or 'Không có chủ rừng'
-            qty_avail = dossier.qty_available or 0.0
-            dossier.display_name = f"{dossier.name} - {partner_name} - {qty_avail:.2f} m³"
+            if self.env.context.get('dossier_show_code_only'):
+                dossier.display_name = dossier.name or ""
+            else:
+                partner_name = dossier.partner_id.name or 'Không có chủ rừng'
+                qty_avail = dossier.qty_available or 0.0
+                dossier.display_name = f"{dossier.name} - {partner_name} - {qty_avail:.2f} m³"
 
     @api.model
     def _get_default_name(self):
@@ -385,17 +388,14 @@ class DlWoodDossier(models.Model):
             else:
                 record.x_exploitation_period_text = ""
 
-    @api.depends('x_start_date', 'date_received', 'partner_id', 'company_id.x_wood_prefix')
+    @api.depends('x_contract_date', 'x_start_date', 'date_received', 'partner_id', 'company_id.x_wood_prefix')
     def _compute_contract_number(self):
         for record in self:
             if not record.partner_id:
                 record.x_contract_number = False
                 continue
 
-            if record.x_contract_number:
-                continue
-
-            date_ref = record.x_start_date or record.date_received or fields.Date.today()
+            date_ref = record.x_contract_date or record.x_start_date or record.date_received or fields.Date.today()
             year = date_ref.year
             
             prefix = record.company_id.x_wood_prefix or "QTP"
@@ -408,13 +408,15 @@ class DlWoodDossier(models.Model):
             day_month = date_ref.strftime('%d%m')
             record.x_contract_number = f"{day_month}/{year}/HD-{prefix}-{initials}"
 
-    @api.depends('x_start_date', 'company_id.x_wood_prefix', 'partner_id.name')
+    @api.depends('x_contract_date', 'x_start_date', 'company_id.x_wood_prefix', 'partner_id.name')
     def _compute_addendum_num(self):
         for record in self:
-            if not record.x_start_date or not record.partner_id:
+            if not record.partner_id:
+                record.x_addendum_num = False
                 continue
             
-            date_str = record.x_start_date.strftime('%d/%m/%Y')
+            date_ref = record.x_contract_date or record.x_start_date or record.date_received or fields.Date.today()
+            date_str = date_ref.strftime('%d/%m/%Y')
             prefix = record.company_id.x_wood_prefix or "DL"
             
             # Lấy chữ cái viết tắt của chủ rừng (Không dấu)
@@ -423,7 +425,7 @@ class DlWoodDossier(models.Model):
             
             record.x_addendum_num = f"{date_str}_{prefix}_{initials}"
 
-    @api.depends('x_start_date', 'date_received', 'partner_id')
+    @api.depends('x_contract_date', 'x_start_date', 'date_received', 'partner_id')
     def _compute_x_bkls_number(self):
         for record in self:
             if not record.partner_id:
@@ -434,7 +436,7 @@ class DlWoodDossier(models.Model):
                 continue
 
             # Xác định năm Y
-            date_ref = record.x_start_date or record.date_received or fields.Date.today()
+            date_ref = record.x_contract_date or record.x_start_date or record.date_received or fields.Date.today()
             year = date_ref.year
             
             # Tìm số thứ tự X lớn nhất của các bảng kê cùng chủ rừng trong năm Y
@@ -446,6 +448,8 @@ class DlWoodDossier(models.Model):
             end_of_year = fields.Date.to_date(f"{year}-12-31")
             
             domain += [
+                '|',
+                '&', ('x_contract_date', '>=', start_of_year), ('x_contract_date', '<=', end_of_year),
                 '|',
                 '&', ('x_start_date', '>=', start_of_year), ('x_start_date', '<=', end_of_year),
                 '&', ('x_start_date', '=', False), '&', ('date_received', '>=', start_of_year), ('date_received', '<=', end_of_year)
@@ -992,7 +996,9 @@ class DlWoodDossier(models.Model):
             ], limit=1, order='id desc')
             if default_version:
                 self.x_report_version_id = default_version
-                self._onchange_report_version_id()
+        
+        if self.x_report_version_id and not self.document_ids:
+            self._onchange_report_version_id()
 
     @api.depends('partner_id.x_full_address')
     def _compute_partner_address(self):

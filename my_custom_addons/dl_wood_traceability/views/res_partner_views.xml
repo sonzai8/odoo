@@ -33,23 +33,38 @@
             <xpath expr="//field[@name='parent_id']" position="attributes">
                 <attribute name="invisible">x_is_wood_supplier != False</attribute>
             </xpath>
+            <xpath expr="//field[@name='vat']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='function']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='lang']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='email']/parent::div" position="attributes">
+                <attribute name="invisible">not is_company</attribute>
+            </xpath>
             <xpath expr="//field[@name='vat']" position="after">
-                <field name="x_short_name"/>
+                <field name="x_short_name" invisible="not is_company"/>
                 <field name="x_cccd"/>
                 <field name="x_cccd_date"/>
-                <field name="x_cccd_place"/>
+                <field name="x_cccd_place"/> 
             </xpath>
             <xpath expr="//page[@name='internal_notes']" position="after">
                 <page string="Địa Điểm Khai Thác">
                     <field name="x_is_wood_supplier" invisible="1"/>
-                    <field name="exploitation_location_ids">
-                        <list editable="bottom">
+                    <field name="exploitation_location_ids" options="{'no_open': True}">
+                        <list>
                             <field name="is_main" widget="boolean_favorite" nolabel="1"/>
                             <field name="name"/>
                             <field name="x_area_ha" string="Diện tích (ha)"/>
                             <field name="street"/>
                             <field name="city"/>
                             <field name="state_id"/>
+                            <field name="dossier_ids" widget="many2many_tags" readonly="1" string="Hồ Sơ Gỗ" context="{'dossier_show_code_only': True}"/>
+                            <button name="action_edit_location" type="object" string="Sửa" icon="fa-pencil" class="btn-secondary" title="Sửa địa điểm khai thác"/>
+                            <button name="action_create_dossier" type="object" string="Tạo hồ sơ" icon="fa-plus" class="btn-primary" title="Tạo mới Hồ sơ gỗ từ địa điểm này"/>
                             <field name="note"/>
                         </list>
                     </field>

@@ -41,6 +41,14 @@ class DlWoodDossierInventory(models.Model):
         string='Lý do điều chỉnh ',
         help='Mô tả ngắn gọn lý do chênh lệch hoặc ghi chú kiểm kê.'
     )
+    x_inspector = fields.Char(
+        string='Người kiểm kê',
+        default=lambda self: self.env.company.x_inventory_inspector or ''
+    )
+    x_inspector_position = fields.Char(
+        string='Chức danh người kiểm kê',
+        default=lambda self: self.env.company.x_inventory_inspector_position or ''
+    )
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('review', 'Rà soát'),

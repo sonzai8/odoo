@@ -85,7 +85,10 @@ def number_to_vietnamese_words(num):
         
         res = []
         if hundreds > 0 or show_zero_hundred:
-            res.append(units[hundreds] + " trăm")
+            if hundreds == 0:
+                res.append("không trăm")
+            else:
+                res.append(units[hundreds] + " trăm")
             
         if tens > 0:
             if tens == 1:
@@ -157,7 +160,14 @@ def float_to_vietnamese_words(num):
         integer_words = integer_words[0].lower() + integer_words[1:]
         
     if decimal_part == 0:
-        return integer_words
+        return integer_words[0].upper() + integer_words[1:] if integer_words else ""
+    
+    # Nếu phần thập phân chia hết cho 10 (ví dụ 10, 20, 30... tương ứng .1, .2, .3...)
+    # ta rút gọn về 1 chữ số thập phân để đọc tự nhiên (ví dụ 33.4 đọc là 'ba mươi ba phẩy bốn')
+    if decimal_part % 10 == 0:
+        digit = decimal_part // 10
+        units = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"]
+        dec_words = [units[digit]]
     else:
         tens = decimal_part // 10
         ones = decimal_part % 10
@@ -182,8 +192,30 @@ def float_to_vietnamese_words(num):
             elif ones > 0:
                 dec_words.append(units[ones])
                 
-        decimal_words = " ".join(dec_words)
-        return f"{integer_words} phẩy {decimal_words}"
+    decimal_words = " ".join(dec_words)
+    res = f"{integer_words} phẩy {decimal_words}"
+    return res[0].upper() + res[1:] if res else ""
+
+
+def format_volume_vietnamese(vol):
+    """
+    Định dạng thể tích/khối lượng hiển thị kiểu Việt Nam:
+    - Nếu là số nguyên, không hiển thị phần lẻ (ví dụ: 150).
+    - Nếu lẻ, hiển thị phần lẻ và bỏ các số 0 thừa ở cuối (ví dụ: 33,4 thay vì 33,40).
+    """
+    if vol is None or vol is False:
+        return "0"
+    try:
+        val = float(vol)
+    except (ValueError, TypeError):
+        return "0"
+        
+    if abs(val - round(val)) < 0.001:
+        return f"{int(round(val)):,}".replace(',', '.')
+        
+    s = f"{val:.3f}"
+    s = s.rstrip('0').rstrip('.')
+    return s.replace('.', ',')
 
 
 # =============================================================================
@@ -388,7 +420,10 @@ class DossierDocxRenderer:
         Mỗi phần tử dict tương ứng 1 hàng trong bảng Word.
         """
         rows = []
-        for idx, line in enumerate(self.dossier.line_ids, 1):
+        idx = 1
+        for line in self.dossier.line_ids:
+            if line.wood_type == 'firewood' and (not line.volume_ster or line.volume_ster == 0.0):
+                continue
             if line.wood_type == 'firewood':
                 disp_vol = f"{line.volume_ster:.2f}".replace('.', ',')
                 disp_qty = f"{line.volume_ster:.2f}".replace('.', ',')
@@ -396,7 +431,7 @@ class DossierDocxRenderer:
                 diam_disp = ""
                 unit_disp = "Ster"
             else:
-                disp_vol = f"{int(round(line.volume)):,}".replace(',', '.')
+                disp_vol = format_volume_vietnamese(line.volume)
                 disp_qty = f"{int(line.quantity or 0):,}".replace(',', '.')
                 height_disp = line.height_display or ""
                 diam_disp = line.diameter_display or ""
@@ -419,6 +454,7 @@ class DossierDocxRenderer:
                 'price_subtotal': f"{int(line.price_subtotal):,}".replace(',', '.'),
                 'note':          line.note or "",
             })
+            idx += 1
         return rows
 
     def _build_species_lines(self):
@@ -429,6 +465,8 @@ class DossierDocxRenderer:
         line_ids = self.dossier.line_ids
         species_lines = []
         for l in line_ids:
+            if l.wood_type == 'firewood' and (not l.volume_ster or l.volume_ster == 0.0):
+                continue
             if l.wood_type == 'firewood':
                 label = "Củi"
                 fmt_qty = f"{l.volume_ster:.2f}".replace('.', ',')
@@ -440,9 +478,9 @@ class DossierDocxRenderer:
             else:
                 label = "Gỗ"
                 fmt_qty = f"{int(l.quantity):,}".replace(',', '.')
-                fmt_vol = f"{int(round(l.volume)):,}".replace(',', '.')
+                fmt_vol = format_volume_vietnamese(l.volume)
                 words_qty = number_to_vietnamese_words(l.quantity)
-                words_vol = number_to_vietnamese_words(l.volume)
+                words_vol = float_to_vietnamese_words(l.volume)
                 unit_disp = "m³"
                 vietnamese_unit_disp = "mét khối"
             
@@ -514,9 +552,12 @@ class DossierDocxRenderer:
     def _build_pnk_table_rows(self):
         """Bảng hàng hóa PNK theo toàn bộ hồ sơ (fallback khi không có phiếu)."""
         rows = []
-        for idx, line in enumerate(self.dossier.line_ids, 1):
+        idx = 1
+        for line in self.dossier.line_ids:
             vol_val = line.volume_ster if line.wood_type == 'firewood' else line.volume
-            disp_vol = f"{vol_val:.2f}".replace('.', ',') if line.wood_type == 'firewood' else f"{int(round(vol_val)):,}".replace(',', '.')
+            if not vol_val or vol_val == 0.0:
+                continue
+            disp_vol = f"{vol_val:.2f}".replace('.', ',') if line.wood_type == 'firewood' else format_volume_vietnamese(vol_val)
             rows.append({
                 'idx': idx,
                 'species_name': line.species_id.name or "",
@@ -524,6 +565,7 @@ class DossierDocxRenderer:
                 'price': f"{int(line.price_unit):,}".replace(',', '.'),
                 'subtotal': f"{int(line.price_subtotal):,}".replace(',', '.'),
             })
+            idx += 1
         return rows
 
     def _get_ticket_aggregates(self, ticket):
@@ -560,16 +602,17 @@ class DossierDocxRenderer:
         """Bảng hàng hóa PNK theo chi tiết một phiếu nhập kho (theo ngày/chuyến)."""
         aggregates = self._get_ticket_aggregates(ticket)
         rows = []
-        for idx, ((species_id, wood_type), volume) in enumerate(
-            sorted(aggregates.items()), 1
-        ):
+        idx = 1
+        for (species_id, wood_type), volume in sorted(aggregates.items()):
+            if not volume or volume == 0.0:
+                continue
             species = self.dossier.env['dl.wood.species'].browse(species_id)
             price_unit = self._get_dossier_line_price_unit(species, wood_type)
             subtotal = round(volume * price_unit, 2)
             if wood_type == 'firewood':
                 disp_vol = f"{volume:.2f}".replace('.', ',')
             else:
-                disp_vol = f"{int(round(volume)):,}".replace(',', '.')
+                disp_vol = format_volume_vietnamese(volume)
             rows.append({
                 'idx': idx,
                 'species_name': species.name or "",
@@ -578,6 +621,7 @@ class DossierDocxRenderer:
                 'subtotal': f"{int(subtotal):,}".replace(',', '.'),
                 '_subtotal_raw': subtotal,
             })
+            idx += 1
 
         _logger.info("[PNK] Ticket '%s' -> %d dong hang hoa", ticket.name, len(rows))
         return rows
@@ -586,21 +630,23 @@ class DossierDocxRenderer:
         """Bảng hàng hóa BBBG theo chi tiết một phiếu nhập kho."""
         aggregates = self._get_ticket_aggregates(ticket)
         rows = []
-        for idx, ((species_id, wood_type), volume) in enumerate(
-            sorted(aggregates.items()), 1
-        ):
+        idx = 1
+        for (species_id, wood_type), volume in sorted(aggregates.items()):
+            if not volume or volume == 0.0:
+                continue
             species = self.dossier.env['dl.wood.species'].browse(species_id)
             x_unit = 'm³' if wood_type == 'wood' else 'Ster'
             if wood_type == 'firewood':
                 disp_vol = f"{volume:.2f}".replace('.', ',')
             else:
-                disp_vol = f"{int(round(volume)):,}".replace(',', '.')
+                disp_vol = format_volume_vietnamese(volume)
             rows.append({
                 'idx': idx,
                 'species_name': species.name or "",
                 'x_unit': x_unit,
                 'volume': disp_vol,
             })
+            idx += 1
 
         _logger.info("[BBBG] Ticket '%s' -> %d dong hang hoa", ticket.name, len(rows))
         return rows
@@ -656,15 +702,18 @@ class DossierDocxRenderer:
         )
 
         return {
-            'company_name':           c.name or "",
-            'company_address':        company_address,
-            'company_tax_number':     c.vat or "",
-            'company_representative': rep,
-            'company_ representative': rep,   # dự phòng lỗi gõ phím trong template cũ
-            'representative_position': pos,
-            'representative':         rep,
-            'position':               pos,
-            'companyName':            c.name or "",
+            'company_name':                    c.name or "",
+            'company_address':                 company_address,
+            'company_tax_number':              c.vat or "",
+            'company_representative':          rep,
+            'company_ representative':         rep,   # dự phòng lỗi gõ phím trong template cũ
+            'company_representative_position': pos,
+            'representative_position':         pos,
+            'representative':                  rep,
+            'position':                        pos,
+            'companyName':                     c.name or "",
+            'inventory_clerk':                 getattr(c, 'x_inventory_inspector', '') or "",
+            'inventory_clerk_position':        getattr(c, 'x_inventory_inspector_position', '') or "",
         }
 
     # =========================================================================
@@ -759,6 +808,16 @@ class DossierDocxRenderer:
         c_rep = d.x_company_representative or d.company_id.x_representative or ""
         c_pos = d.x_company_position or getattr(d.company_id, 'x_representative_position', '') or "Giám đốc"
 
+        loc = d.exploitation_location_id
+        if loc:
+            forest_addr = format_vietnamese_address(
+                street=loc.street,
+                city=loc.city,
+                state_name=loc.state_id.name
+            ) or loc.name or ""
+        else:
+            forest_addr = d.partner_address or ""
+
         context = {
             # Thông tin chủ rừng
             'forestOwnerName':        p.name or "",
@@ -770,7 +829,7 @@ class DossierDocxRenderer:
             'forestOwnerPhoneNumber': p.phone or "",
             # Thông tin khai thác
             'miningArea':             d.x_area or 0.0,
-            'forestAddr':             d.exploitation_location_id.name or d.partner_address or "",
+            'forestAddr':             forest_addr,
             'typeMining':             mining_method_map.get(d.x_mining_method, ""),
             'projectedMiningOutput':  ", ".join([
                 f"{l.species_id.name} " + (
@@ -837,7 +896,7 @@ class DossierDocxRenderer:
         # 2. Phân nhóm lâm sản (Gỗ vs Củi)
         line_ids = d.line_ids
         wood_lines = line_ids.filtered(lambda l: l.wood_type == 'wood')
-        firewood_lines = line_ids.filtered(lambda l: l.wood_type == 'firewood')
+        firewood_lines = line_ids.filtered(lambda l: l.wood_type == 'firewood' and l.volume_ster > 0)
         
         main_species = ", ".join(list(set(line_ids.filtered(lambda l: l.species_id).mapped('species_id.name')))) if line_ids else ""
         
@@ -857,7 +916,7 @@ class DossierDocxRenderer:
         dia_min = min(wood_lines.mapped('diameter_min')) if wood_lines and any(wood_lines.mapped('diameter_min')) else 0
         dia_max = max(wood_lines.mapped('diameter_max')) if wood_lines and any(wood_lines.mapped('diameter_max')) else 0
         
-        # Tính toán sản lượng dạng số nguyên
+        # Tính toán sản lượng
         total_vol = sum(wood_lines.mapped('volume'))  # Chỉ tính gỗ (m³)
         total_qty = sum(line_ids.mapped('quantity'))
         
@@ -871,7 +930,10 @@ class DossierDocxRenderer:
         
         # 3. Xây dựng danh sách hàng bảng chi tiết
         bkls_rows = []
-        for idx, line in enumerate(line_ids, 1):
+        idx = 1
+        for line in line_ids:
+            if line.wood_type == 'firewood' and (not line.volume_ster or line.volume_ster == 0.0):
+                continue
             val = line.species_id.x_species_group or 'common'
             group_label = {
                 'common': 'Thông thường',
@@ -886,7 +948,7 @@ class DossierDocxRenderer:
                 height_disp = ""
                 diam_disp = ""
             else:
-                disp_vol = f"{int(round(line.volume)):,}".replace(',', '.')
+                disp_vol = format_volume_vietnamese(line.volume)
                 disp_qty = f"{int(line.quantity or 0):,}".replace(',', '.')
                 height_disp = line.height_display or ""
                 diam_disp = line.diameter_display or ""
@@ -905,6 +967,7 @@ class DossierDocxRenderer:
                 'unit':          'm³' if line.wood_type == 'wood' else 'Ster',
                 'wood_type':     line.wood_type or 'wood',
             })
+            idx += 1
             
         # Mã số và ngày lập bảng kê lâm sản
         bkls_date = d.x_bkls_date or d.x_contract_date or d.x_end_date or fields.Date.today()
@@ -921,6 +984,10 @@ class DossierDocxRenderer:
         fallback_vietnamese_unit = species_lines[0]['vietnamese_unit'] if species_lines else ""
 
         total_volume_str = self._format_total_volume(wood_vol, firewood_ster)
+
+        has_firewood = firewood_ster > 0
+        disp_firewood_ster = f"{firewood_ster:.2f}".replace('.', ',') if has_firewood else ""
+        vietnamese_firewood_qty = number_to_vietnamese_words(int(round(firewood_ster))) if has_firewood else ""
 
         context = {
             # Bảng kê lâm sản
@@ -959,11 +1026,11 @@ class DossierDocxRenderer:
             # Nhóm loài & Loại lâm sản
             'species_name':           main_species,
             'species_type':           main_type,
-            'species_volume':         f"{int(round(wood_vol)):,}".replace(',', '.'),
+            'species_volume':         format_volume_vietnamese(wood_vol),
             # Củi xuất theo Ster
-            'firewood_ster':          f"{firewood_ster:.2f}".replace('.', ','),   # biến mới rõ ràng
-            'firewood_quantity':      f"{firewood_ster:.2f}".replace('.', ','),   # tương thích template cũ
-            'firewood_volume':        f"{firewood_ster:.2f}".replace('.', ','),   # tương thích template cũ
+            'firewood_ster':          disp_firewood_ster,   # biến mới rõ ràng
+            'firewood_quantity':      disp_firewood_ster,   # tương thích template cũ
+            'firewood_volume':        disp_firewood_ster,   # tương thích template cũ
             
             # Số lượng và thể tích tổng hợp dạng số nguyên định dạng (chỉ gỗ)
             'total_quantity':         f"{int(wood_qty):,}".replace(',', '.'),
@@ -972,9 +1039,10 @@ class DossierDocxRenderer:
             
             # Đọc số thành chữ tiếng Việt chuẩn xác
             'vietnamese_quantity':    number_to_vietnamese_words(wood_qty),
-            'vietnamese_volume':      number_to_vietnamese_words(int(round(wood_vol))),
-            'vietnamese_firewood_quantity': number_to_vietnamese_words(int(round(firewood_ster))),
-            'vietnamese_firewood_volume':   number_to_vietnamese_words(int(round(firewood_ster))),
+            'vietnamese_volume':      float_to_vietnamese_words(wood_vol),
+            'vietnamese_firewood_quantity': vietnamese_firewood_qty,
+            'vietnamese_firewood_volume':   vietnamese_firewood_qty,
+            'vietnamese_firewood_ster':     vietnamese_firewood_qty,
             
             # Danh sách dòng bảng
             'table_rows':             bkls_rows,
@@ -1008,7 +1076,7 @@ class DossierDocxRenderer:
         # 3. Phân nhóm lâm sản (Gỗ vs Củi) để tính toán
         line_ids = d.line_ids
         wood_lines = line_ids.filtered(lambda l: l.wood_type == 'wood')
-        firewood_lines = line_ids.filtered(lambda l: l.wood_type == 'firewood')
+        firewood_lines = line_ids.filtered(lambda l: l.wood_type == 'firewood' and l.volume_ster > 0)
         
         species_lines = self._build_species_lines()
         
@@ -1033,6 +1101,10 @@ class DossierDocxRenderer:
         # Fallback variables cho context cha nếu người dùng viết không có tiền tố line.
         fallback_vietnamese_volume_unit = species_lines[0]['vietnamese_volume_unit'] if species_lines else ""
         fallback_vietnamese_unit = species_lines[0]['vietnamese_unit'] if species_lines else ""
+
+        has_firewood = total_firewood_ster > 0
+        disp_firewood_ster = f"{total_firewood_ster:.2f}".replace('.', ',') if has_firewood else ""
+        vietnamese_firewood_ster = number_to_vietnamese_words(int(round(total_firewood_ster))) if has_firewood else ""
         
         context = {
             # Kính gửi
@@ -1054,12 +1126,16 @@ class DossierDocxRenderer:
             'volume':                   total_vol_str,
             'total_quantity':           f"{int(total_wood_qty):,}".replace(',', '.'),
             'total_volume':             total_vol_str,
-            'firewood_ster':            f"{total_firewood_ster:.2f}".replace('.', ','),
+            'firewood_ster':            disp_firewood_ster,
+            'firewood_quantity':        disp_firewood_ster,
+            'firewood_volume':          disp_firewood_ster,
             
             # Đọc số thành chữ tiếng Việt chuẩn xác
             'vietnamese_quantity':      number_to_vietnamese_words(total_wood_qty),
-            'vietnamese_volume':        number_to_vietnamese_words(total_wood_vol),
-            'vietnamese_firewood_ster':  number_to_vietnamese_words(int(round(total_firewood_ster))),
+            'vietnamese_volume':        float_to_vietnamese_words(total_wood_vol),
+            'vietnamese_firewood_ster':  vietnamese_firewood_ster,
+            'vietnamese_firewood_quantity': vietnamese_firewood_ster,
+            'vietnamese_firewood_volume':   vietnamese_firewood_ster,
             
             # Địa chỉ khai thác
             'exploitation_address':     exploitation_address,
@@ -1119,7 +1195,7 @@ class DossierDocxRenderer:
         if is_firewood:
             disp_total_vol = f"{total_vol:.2f}".replace('.', ',')
         else:
-            disp_total_vol = f"{int(round(total_vol)):,}".replace(',', '.')
+            disp_total_vol = format_volume_vietnamese(total_vol)
 
         return {
             **self._get_company_info(),
@@ -1153,9 +1229,9 @@ class DossierDocxRenderer:
 
         has_wood = any(l.wood_type == 'wood' for l in d.line_ids)
         if has_wood:
-            disp_total_vol = f"{int(round(d.initial_wood_qty)):,}".replace(',', '.')
+            disp_total_vol = format_volume_vietnamese(d.initial_wood_qty)
         else:
-            disp_total_vol = f"{d.initial_firewood_qty:.2f}".replace('.', ',')
+            disp_total_vol = f"{d.initial_firewood_qty:.2f}".replace('.', ',') if d.initial_firewood_qty else ""
 
         context = {
             **self._get_company_info(),
@@ -1237,24 +1313,28 @@ class DossierDocxRenderer:
         p = d.partner_id
         
         table_rows = []
-        for idx, line in enumerate(d.line_ids, 1):
-            x_unit = 'm³' if line.wood_type == 'wood' else 'Ster'
+        idx = 1
+        for line in d.line_ids:
             vol_val = line.volume_ster if line.wood_type == 'firewood' else line.volume
-            disp_vol = f"{vol_val:.2f}".replace('.', ',') if line.wood_type == 'firewood' else f"{int(round(vol_val)):,}".replace(',', '.')
+            if not vol_val or vol_val == 0.0:
+                continue
+            x_unit = 'm³' if line.wood_type == 'wood' else 'Ster'
+            disp_vol = f"{vol_val:.2f}".replace('.', ',') if line.wood_type == 'firewood' else format_volume_vietnamese(vol_val)
             table_rows.append({
                 'idx': idx,
                 'species_name': line.species_id.name or "",
                 'x_unit': x_unit,
                 'volume': disp_vol,
             })
+            idx += 1
 
         ticket_x_date = d.x_contract_date or d.x_bkls_date or fields.Date.today()
         
         has_wood = any(l.wood_type == 'wood' for l in d.line_ids)
         if has_wood:
-            disp_total_vol = f"{int(round(d.initial_wood_qty)):,}".replace(',', '.')
+            disp_total_vol = format_volume_vietnamese(d.initial_wood_qty)
         else:
-            disp_total_vol = f"{d.initial_firewood_qty:.2f}".replace('.', ',')
+            disp_total_vol = f"{d.initial_firewood_qty:.2f}".replace('.', ',') if d.initial_firewood_qty else ""
 
         context = {
             **self._get_company_info(),
@@ -1294,7 +1374,7 @@ class DossierDocxRenderer:
         if is_firewood:
             disp_total_vol = f"{total_vol:.2f}".replace('.', ',')
         else:
-            disp_total_vol = f"{int(round(total_vol)):,}".replace(',', '.')
+            disp_total_vol = format_volume_vietnamese(total_vol)
 
         return {
             **self._get_company_info(),
@@ -1374,11 +1454,8 @@ class DossierDocxRenderer:
 
         # 2. Khối lượng và chữ số
         total_vol = d.initial_qty or 0.0
-        total_volume_str = f"{total_vol:,.3f}".replace(',', '_').replace('.', ',').replace('_', '.')
-        if total_vol.is_integer():
-            total_volume_str = f"{int(total_vol):,}".replace(',', '.')
-        
-        vietnamese_total_volume = number_to_vietnamese_words(total_vol)
+        total_volume_str = format_volume_vietnamese(total_vol)
+        vietnamese_total_volume = float_to_vietnamese_words(total_vol)
 
         # 3. Diện tích ha
         x_area = f"{d.x_area:.2f}".replace('.', ',') if d.x_area else "0"
@@ -1451,6 +1528,7 @@ class DossierDocxRenderer:
         
         # Xây dựng table_rows và tính tổng sản lượng
         table_rows = []
+        species_lines = []
         total_qty = 0
         total_vol = 0.0
         wood_vol = 0.0
@@ -1458,10 +1536,14 @@ class DossierDocxRenderer:
         firewood_vol = 0.0
         firewood_qty = 0
         
-        for idx, line in enumerate(v_lines, 1):
+        idx = 1
+        for line in v_lines:
             species = line['species_id']
             wood_type = line['wood_type']
             vol_val = line['volume']
+            
+            if not vol_val or vol_val == 0.0:
+                continue
             
             # Tìm dossier line để lấy quy cách (đường kính, chiều cao, tên khoa học, v.v.)
             dossier_line = d.line_ids.filtered(lambda l: l.species_id == species and l.wood_type == wood_type)[:1]
@@ -1469,6 +1551,8 @@ class DossierDocxRenderer:
             if wood_type == 'firewood':
                 # Củi: dùng volume_ster làm căn cứ hiển thị
                 ster_val = dossier_line.volume_ster if dossier_line else vol_val
+                if not ster_val or ster_val == 0.0:
+                    continue
                 computed_qty = int(round(ster_val)) if ster_val > 0 else 1
                 height_display = ""
                 name_sci = dossier_line.name_sci if dossier_line else ""
@@ -1510,13 +1594,34 @@ class DossierDocxRenderer:
                 disp_height = ""
                 disp_diam = ""
                 unit = 'Ster'
+                vietnamese_unit_disp = "Ster"
+                
+                words_qty = number_to_vietnamese_words(int(round(vol_val)))
+                words_vol = float_to_vietnamese_words(vol_val)
             else:
-                disp_vol = f"{int(round(vol_val)):,}".replace(',', '.')
-                disp_qty = f"{int(computed_qty):,}".replace(',', '.')
+                disp_vol = format_volume_vietnamese(vol_val)
+                disp_qty = f"{int(computed_qty):,}".replace('.', '.')
                 disp_height = height_display
                 disp_diam = dossier_line.diameter_display if dossier_line else ""
                 unit = 'm³'
-
+                vietnamese_unit_disp = "mét khối"
+                
+                words_qty = number_to_vietnamese_words(computed_qty)
+                words_vol = float_to_vietnamese_words(vol_val)
+            
+            if words_qty:
+                words_qty = words_qty[0].upper() + words_qty[1:]
+            if words_vol:
+                words_vol = words_vol[0].upper() + words_vol[1:]
+                
+            if wood_type == 'firewood':
+                vietnamese_volume_unit = f"{words_vol.lower() if words_vol else ''} Ster"
+            else:
+                vietnamese_volume_unit = f"{words_vol.lower() if words_vol else ''} mét khối"
+            if vietnamese_volume_unit:
+                vietnamese_volume_unit = vietnamese_volume_unit.strip()
+                vietnamese_volume_unit = vietnamese_volume_unit[0].upper() + vietnamese_volume_unit[1:]
+                
             table_rows.append({
                 'idx':           idx,
                 'stt':           idx,
@@ -1532,6 +1637,22 @@ class DossierDocxRenderer:
                 'wood_type':     wood_type or 'wood',
             })
             
+            species_lines.append({
+                'wood_type': wood_type or 'wood',
+                'species_label': "Củi" if wood_type == 'firewood' else "Gỗ",
+                'species_name': species.name or "",
+                'quantity': disp_qty,
+                'volume': disp_vol,
+                'species_volume': disp_vol,
+                'vietnamese_quantity': words_qty,
+                'vietnamese_quantity_lower': words_qty.lower() if words_qty else "",
+                'vietnamese_volume': words_vol,
+                'vietnamese_volume_unit': vietnamese_volume_unit,
+                'unit': unit,
+                'vietnamese_unit': vietnamese_unit_disp,
+            })
+            idx += 1
+            
         main_species = ", ".join(list(set([x['species_name'] for x in table_rows])))
         
         # Nhóm loài tổng hợp của các dòng trên xe
@@ -1541,6 +1662,13 @@ class DossierDocxRenderer:
         main_type = ", ".join(list(set(groups))) if groups else "Thông thường"
         
         total_volume_str = self._format_total_volume(wood_vol, firewood_vol)
+
+        has_firewood = firewood_vol > 0
+        disp_firewood_ster = f"{firewood_vol:.2f}".replace('.', ',') if has_firewood else ""
+        vietnamese_firewood_qty = number_to_vietnamese_words(int(round(firewood_vol))) if has_firewood else ""
+
+        fallback_vietnamese_volume_unit = species_lines[0]['vietnamese_volume_unit'] if species_lines else ""
+        fallback_vietnamese_unit = species_lines[0]['vietnamese_unit'] if species_lines else ""
 
         # Tạo context đầy đủ tương tự _prepare_bkls_context nhưng các giá trị theo xe
         context = {
@@ -1585,11 +1713,11 @@ class DossierDocxRenderer:
             # Nhóm loài & Loại lâm sản
             'species_name':           main_species,
             'species_type':           main_type,
-            'species_volume':         f"{int(round(wood_vol)):,}".replace(',', '.'),
+            'species_volume':         format_volume_vietnamese(wood_vol),
             # Củi xuất theo Ster
-            'firewood_ster':          f"{firewood_vol:.2f}".replace('.', ','),
-            'firewood_quantity':      f"{firewood_vol:.2f}".replace('.', ','),   # tương thích template cũ
-            'firewood_volume':        f"{firewood_vol:.2f}".replace('.', ','),   # tương thích template cũ
+            'firewood_ster':          disp_firewood_ster,
+            'firewood_quantity':      disp_firewood_ster,   # tương thích template cũ
+            'firewood_volume':        disp_firewood_ster,   # tương thích template cũ
             
             # Số lượng và thể tích tổng hợp (chỉ gỗ)
             'total_quantity':         f"{int(wood_qty):,}".replace(',', '.'),
@@ -1598,12 +1726,18 @@ class DossierDocxRenderer:
             
             # Đọc số thành chữ tiếng Việt chuẩn xác
             'vietnamese_quantity':    number_to_vietnamese_words(wood_qty),
-            'vietnamese_volume':      number_to_vietnamese_words(int(round(wood_vol))),
-            'vietnamese_firewood_quantity': number_to_vietnamese_words(int(round(firewood_vol))),
-            'vietnamese_firewood_volume':   number_to_vietnamese_words(int(round(firewood_vol))),
+            'vietnamese_volume':      float_to_vietnamese_words(wood_vol),
+            'vietnamese_firewood_quantity': vietnamese_firewood_qty,
+            'vietnamese_firewood_volume':   vietnamese_firewood_qty,
+            'vietnamese_firewood_ster':     vietnamese_firewood_qty,
             
             # Danh sách dòng bảng
             'table_rows':             table_rows,
+            'species_lines':          species_lines,
+
+            # Fallback variables
+            'vietnamese_volume_unit':   fallback_vietnamese_volume_unit,
+            'vietnamese_unit':          fallback_vietnamese_unit,
         }
         return context
 

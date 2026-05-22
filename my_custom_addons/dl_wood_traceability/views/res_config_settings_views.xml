@@ -7,16 +7,16 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app data-string="Truy Xuất Gỗ" string="Truy Xuất Gỗ" name="dl_wood_traceability">
+                <app data-string="Cấu hình chung" string="Cấu hình chung" name="dl_wood_traceability">
                     <block title="Cấu hình sinh mã tự động" name="wood_sequence_config">
-                        <setting id="wood_prefix_setting" string="Tiền tố mã Gỗ" help="Sử dụng để sinh mã Hồ sơ (HS) và Lệnh sản xuất (SX)">
+                        <setting id="wood_prefix_setting" string="Mã công ty" help="Sử dụng để sinh mã Hồ sơ (HS) và Lệnh sản xuất (SX)">
                             <field name="x_wood_prefix"/>
                             <div class="text-muted mt-2">
                                 <strong>Quy tắc sinh mã:</strong>
                                 <ul class="mt-1">
-                                    <li><strong>Hồ sơ gỗ:</strong> [Tiền tố]_HS_xxxx (VD: <span class="text-primary">QTP_HS_0001</span>)</li>
-                                    <li><strong>Lệnh sản xuất:</strong> [Tiền tố]_SX_MMYY_xxxx (VD: <span class="text-primary">QTP_SX_0526_0001</span>)</li>
-                                    <li><strong>Đơn hàng:</strong> [Tiền tố]_DH_MMYY_xxxx (VD: <span class="text-primary">QTP_DH_0526_0001</span>)</li>
+                                    <li><strong>Hồ sơ gỗ:</strong> [Mã công ty]_HS_xxxx (VD: <span class="text-primary">QTP_HS_0001</span>)</li>
+                                    <li><strong>Lệnh sản xuất:</strong> [Mã công ty]_SX_MMYY_xxxx (VD: <span class="text-primary">QTP_SX_0526_0001</span>)</li>
+                                    <li><strong>Đơn hàng:</strong> [Mã công ty]_DH_MMYY_xxxx (VD: <span class="text-primary">QTP_DH_0526_0001</span>)</li>
                                 </ul>
                                 <p class="small italic">(*) MMYY: Tháng năm hiện tại. xxxx: Số tự động tăng riêng cho từng công ty.</p>
                             </div>
@@ -27,6 +27,14 @@
                             <group>
                                 <field name="x_representative" placeholder="Ví dụ: Nguyễn Văn A"/>
                                 <field name="x_representative_position" placeholder="Ví dụ: Giám đốc"/>
+                            </group>
+                        </setting>
+                    </block>
+                    <block title="Đại diện Kiểm kê (Phục vụ Phiếu Kiểm kê)" name="wood_inventory_inspector">
+                        <setting id="wood_inventory_inspector_setting" string="Thông tin người kiểm kê" help="Người thực hiện kiểm kê thực tế tại xưởng (thủ kho, quản đốc...)">
+                            <group>
+                                <field name="x_inventory_inspector" placeholder="Ví dụ: Nguyễn Văn B"/>
+                                <field name="x_inventory_inspector_position" placeholder="Ví dụ: Quản đốc"/>
                             </group>
                         </setting>
                     </block>
@@ -45,7 +53,7 @@
     </record>
 
     <menuitem id="menu_dl_wood_settings"
-              name="Cấu hình mã"
+              name="Cấu hình chung"
               parent="menu_dl_wood_config_root"
               action="action_dl_wood_config_settings"
               sequence="5"/>

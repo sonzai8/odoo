@@ -64,9 +64,17 @@
                     </div>
                     
                     <group string="🔍 Thông tin chung">
-                        <field name="date" readonly="state != 'draft'"/>
-                        <field name="company_id" readonly="1" options="{'no_open': True}"/>
-                        <field name="note" placeholder="Nhập lý do điều chỉnh khối lượng hoặc ghi chú khác tại đây..." readonly="state not in ('draft', 'review')" rows="2"/>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="company_id" readonly="1" options="{'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="x_inspector" readonly="state != 'draft'"/>
+                            <field name="x_inspector_position" readonly="state != 'draft'"/>
+                        </group>
+                        <group colspan="2">
+                            <field name="note" placeholder="Nhập lý do điều chỉnh khối lượng hoặc ghi chú khác tại đây..." readonly="state not in ('draft', 'review')" rows="2"/>
+                        </group>
                     </group>
                     
                     <separator string="📊 Chi Tiết Điều Chỉnh Kiểm Kê"/>

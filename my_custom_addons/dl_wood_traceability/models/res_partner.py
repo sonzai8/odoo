@@ -7,6 +7,13 @@ class ResPartner(models.Model):
     _name = 'res.partner'
     _inherit = ['res.partner', 'dl.wood.log.mixin']
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super(ResPartner, self).default_get(fields_list)
+        if 'lang' in fields_list:
+            res['lang'] = 'vi_VN'
+        return res
+
     dl_contract_ids = fields.One2many(
         'dl.wood.contract.template', 
         'partner_id', 
@@ -84,7 +91,7 @@ class ResPartner(models.Model):
         readonly=False
     )
 
-    @api.depends('name')
+    @api.depends('name', 'is_company')
     def _compute_x_short_name(self):
         import re
         prefixes = [
@@ -119,6 +126,9 @@ class ResPartner(models.Model):
             r'^doanh nghiệp tư nhân\s+',
         ]
         for partner in self:
+            if not partner.is_company:
+                partner.x_short_name = False
+                continue
             if partner.x_short_name:
                 continue
             name = partner.name or ""
