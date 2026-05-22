@@ -30,10 +30,10 @@ class DlWoodInitDataWizard(models.TransientModel):
             
             ('Gỗ cao su', 'Rubberwood', 'Hevea brasiliensis', 'wood', 'CS', 14, 20, 2.6, 1820000, 'Gỗ cao su'),
             
-            ('Củi thông', 'Pine firewood', 'Pinus massoniana', 'firewood', 'CUI_THONG', 100, 100, 1.27, 850000, 'Kích thước mặc định'),
-            ('Củi keo', 'Acacia firewood', 'Acacia', 'firewood', 'CUI_KEO', 100, 100, 1.27, 850000, 'Kích thước mặc định'),
-            ('Củi bạch đàn', 'Eucalyptus firewood', 'Eucalyptus', 'firewood', 'CUI_BD', 100, 100, 1.27, 900000, 'Kích thước mặc định'),
-            ('Củi cao su', 'Rubberwood firewood', 'Hevea brasiliensis', 'firewood', 'CUI_CS', 100, 100, 1.27, 850000, 'Kích thước mặc định'),
+            ('Củi thông', 'Pine firewood', 'Pinus massoniana', 'firewood', 'CUI_THONG', 0, 0, 0.0, 850000, 'Mặc định'),
+            ('Củi keo', 'Acacia firewood', 'Acacia', 'firewood', 'CUI_KEO', 0, 0, 0.0, 850000, 'Mặc định'),
+            ('Củi bạch đàn', 'Eucalyptus firewood', 'Eucalyptus', 'firewood', 'CUI_BD', 0, 0, 0.0, 900000, 'Mặc định'),
+            ('Củi cao su', 'Rubberwood firewood', 'Hevea brasiliensis', 'firewood', 'CUI_CS', 0, 0, 0.0, 850000, 'Mặc định'),
         ]
         
         for name, name_en, name_sci, wood_type, code, d_min, d_max, height, price, note in data:

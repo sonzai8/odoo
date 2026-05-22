@@ -26,6 +26,37 @@ class DlWoodSpecies(models.Model):
     company_id = fields.Many2one('res.company', string='Công ty', default=lambda self: self.env.company)
     
     grade_ids = fields.One2many('dl.wood.species.grade', 'species_id', string='Phân loại')
+    uom_id = fields.Many2one(
+        'uom.uom', 
+        string='Đơn vị tính', 
+        compute='_compute_uom_id', 
+        store=True, 
+        readonly=False,
+        help='Đơn vị tính mặc định: Gỗ là m³, Củi là Ster.'
+    )
+
+    @api.depends('wood_type')
+    def _compute_uom_id(self):
+        for rec in self:
+            if rec.wood_type == 'wood':
+                uom = self.env['uom.uom'].search([('name', 'in', ('m³', 'Mét khối', 'Mét khối M3'))], limit=1)
+                rec.uom_id = uom.id if uom else False
+            elif rec.wood_type == 'firewood':
+                uom = self.env['uom.uom'].search([('name', 'in', ('Ster', 'ster', 'ST', 'Ster/Củi'))], limit=1)
+                if not uom:
+                    # Tìm đơn vị gốc là m3
+                    ref_uom = self.env['uom.uom'].search([('name', 'in', ('m³', 'Mét khối', 'Mét khối M3'))], limit=1)
+                    uom_vals = {
+                        'name': 'Ster',
+                        'relative_factor': 1.0,
+                    }
+                    if ref_uom:
+                        uom_vals['relative_uom_id'] = ref_uom.id
+                    uom = self.env['uom.uom'].create(uom_vals)
+                rec.uom_id = uom.id if uom else False
+            else:
+                rec.uom_id = False
+
 
 
 class DlWoodSpeciesGrade(models.Model):

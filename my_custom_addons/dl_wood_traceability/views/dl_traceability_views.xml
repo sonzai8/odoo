@@ -93,34 +93,36 @@
                                 <div class="flex-fill border-end border-2">
                                     <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Gỗ</div>
                                     <field name="initial_wood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-primary mb-0"/>
-                                </div>
-                                <div class="flex-fill border-end border-2">
-                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Củi</div>
-                                    <field name="initial_firewood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-warning mb-0"/>
+                                    <div class="text-muted" style="font-size: 0.7rem;">m³</div>
                                 </div>
                                 <div class="flex-fill">
-                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Cộng</div>
-                                    <field name="initial_qty" readonly="1" nolabel="1" class="h4 fw-bold text-success mb-0"/>
+                                    <div class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Tổng Củi</div>
+                                    <field name="initial_firewood_qty" readonly="1" nolabel="1" class="h4 fw-bold text-warning mb-0"/>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Ster</div>
                                 </div>
                             </div>
 
                             <field name="line_ids" class="o_wood_dossier_line_list">
                                 <list editable="bottom">
                                     <field name="species_id"/>
+                                    <field name="wood_type" column_invisible="True"/>
                                     <field name="name_en" optional="hide"/>
-                                    <field name="grade_id" string="Phân Loại" options="{'no_create': True, 'no_open': True}" class="o_column_fixed_140"/>
+                                    <field name="grade_id" string="Phân Loại" options="{'no_create': True, 'no_open': True}" invisible="wood_type == 'firewood'" class="o_column_fixed_140"/>
                                     <field name="name_sci" optional="hide"/>
-                                    <field name="volume" sum="Tổng khối lượng" class="o_column_fixed_70"/>
-                                    <field name="x_remaining_qty" sum="Tổng tồn thực tế" readonly="1" class="o_column_fixed_70"/>
-                                    <field name="x_qty_available" sum="Tổng khả dụng" readonly="1" class="o_column_fixed_70"/>
-                                    <field name="quantity" class="o_column_fixed_70"/>
-                                    <field name="diameter_display" class="o_column_fixed_70"/>
-                                    <field name="diameter_min" optional="hide"/>
-                                    <field name="diameter_max" optional="hide"/>
-                                    <field name="height" string="Cao (m)" class="o_column_fixed_70"/>
-                                    <field name="height_display" optional="hide"/>
-                                    <field name="avg_diameter" optional="hide"/>
-                                    <field name="avg_height" optional="hide"/>
+                                    <!-- Cột khối lượng gỗ (m³): ẩn khi là củi -->
+                                    <field name="volume" string="Khối lượng (m³)" sum="Tổng gỗ (m³)" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <!-- Cột khối lượng củi (Ster): ẩn khi là gỗ -->
+                                    <field name="volume_ster" string="Khối lượng (Ster)" sum="Tổng củi (Ster)" invisible="wood_type != 'firewood'" optional="show" class="o_column_fixed_70"/>
+                                    <field name="x_remaining_qty" sum="Tổng tồn thực tế" readonly="1" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <field name="x_qty_available" sum="Tổng khả dụng" readonly="1" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <field name="quantity" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <field name="diameter_display" optional="hide" invisible="wood_type == 'firewood'"/>
+                                    <field name="diameter_min" optional="show" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <field name="diameter_max" optional="show" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <field name="height" string="Cao (m)" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
+                                    <field name="height_display" optional="hide" invisible="wood_type == 'firewood'"/>
+                                    <field name="avg_diameter" optional="hide" invisible="wood_type == 'firewood'"/>
+                                    <field name="avg_height" optional="hide" invisible="wood_type == 'firewood'"/>
                                     <field name="price_unit" class="o_column_fixed_120" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="price_subtotal" sum="Tổng cộng" class="o_column_money" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="note"/>
@@ -276,11 +278,12 @@
                                     <field name="species_id" string="Loài gỗ/củi"/>
                                     <field name="wood_type" widget="badge" decoration-success="wood_type=='wood'" decoration-warning="wood_type=='firewood'"/>
                                     <field name="grade_id" string="Phân loại" optional="show"/>
-                                    <field name="volume" string="KL Ban đầu (m³)" sum="Tổng ban đầu"/>
-                                    <field name="x_qty_consumed" string="Đã dùng (m³)" sum="Tổng đã dùng" decoration-danger="x_qty_consumed &gt; 0"/>
-                                    <field name="x_remaining_qty" string="Tồn thực tế (m³)" sum="Tổng tồn thực tế" decoration-warning="x_remaining_qty &gt; 0"/>
-                                    <field name="x_qty_reserved" string="Giữ hàng (m³)" sum="Tổng giữ hàng" decoration-muted="x_qty_reserved &gt; 0"/>
-                                    <field name="x_qty_available" string="Khả dụng (m³)" sum="Tổng khả dụng" decoration-success="x_qty_available &gt; 0" class="fw-bold"/>
+                                    <field name="volume" string="KL Ban đầu (m³)" sum="Tổng ban đầu" invisible="wood_type == 'firewood'"/>
+                                    <field name="volume_ster" string="KL Ban đầu (Ster)" sum="Tổng củi ban đầu" invisible="wood_type != 'firewood'"/>
+                                    <field name="x_qty_consumed" string="Đã dùng (m³)" sum="Tổng đã dùng" decoration-danger="x_qty_consumed &gt; 0" invisible="wood_type == 'firewood'"/>
+                                    <field name="x_remaining_qty" string="Tồn thực tế (m³)" sum="Tổng tồn thực tế" decoration-warning="x_remaining_qty &gt; 0" invisible="wood_type == 'firewood'"/>
+                                    <field name="x_qty_reserved" string="Giữ hàng (m³)" sum="Tổng giữ hàng" decoration-muted="x_qty_reserved &gt; 0" invisible="wood_type == 'firewood'"/>
+                                    <field name="x_qty_available" string="Khả dụng (m³)" sum="Tổng khả dụng" decoration-success="x_qty_available &gt; 0" class="fw-bold" invisible="wood_type == 'firewood'"/>
                                 </list>
                             </field>
 
@@ -437,6 +440,7 @@
                 <field name="name_en"/>
                 <field name="code"/>
                 <field name="wood_type" widget="badge" decoration-info="wood_type == 'wood'" decoration-warning="wood_type == 'firewood'"/>
+                <field name="uom_id" string="Đơn vị tính"/>
                 <field name="x_species_group"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
@@ -457,6 +461,7 @@
                         <group>
                             <field name="code"/>
                             <field name="wood_type"/>
+                            <field name="uom_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="x_species_group"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>

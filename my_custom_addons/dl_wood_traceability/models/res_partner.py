@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from .address_utils import format_vietnamese_address
 
 class ResPartner(models.Model):
     _name = 'res.partner'
@@ -69,27 +70,12 @@ class ResPartner(models.Model):
     @api.depends('street', 'street2', 'city', 'state_id')
     def _compute_x_full_address(self):
         for partner in self:
-            parts = []
-            if partner.street:
-                parts.append(partner.street)
-            if partner.street2:
-                parts.append(partner.street2)
-                
-            city_str = partner.city or ""
-            if city_str:
-                city_str_cleaned = city_str.strip()
-                if not any(city_str_cleaned.startswith(prefix) for prefix in ['Xã', 'Phường', 'Thị trấn', 'xã', 'phường', 'thị trấn', 'Quận', 'Huyện', 'quận', 'huyện']):
-                    city_str_cleaned = f"Xã {city_str_cleaned}"
-                parts.append(city_str_cleaned)
-                
-            state_str = partner.state_id.name or ""
-            if state_str:
-                state_str_cleaned = state_str.strip()
-                if not any(state_str_cleaned.startswith(prefix) for prefix in ['Tỉnh', 'Thành phố', 'Tp', 'tỉnh', 'thành phố', 'tp', 'TP']):
-                    state_str_cleaned = f"Tỉnh {state_str_cleaned}"
-                parts.append(state_str_cleaned)
-                
-            partner.x_full_address = ", ".join(parts) if parts else ""
+            partner.x_full_address = format_vietnamese_address(
+                street=partner.street,
+                street2=partner.street2,
+                city=partner.city,
+                state_name=partner.state_id.name
+            )
 
     x_short_name = fields.Char(
         string='Tên rút gọn',

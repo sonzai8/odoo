@@ -37,7 +37,7 @@
             <field name="version_id" ref="report_version_v2025"/>
             <field name="sequence">35</field>
             <field name="name">3b. Bảng kê lâm sản chia nhỏ (Gộp xe)</field>
-            <field name="template_key">cn_bkls</field>
+            <field name="template_key">chia_nho_bkls</field>
             <field name="category">exploitation</field>
         </record>
 
@@ -57,4 +57,11 @@
             <field name="category">exploitation</field>
         </record>
     </data>
+
+    <!-- Force update template_key from cn_bkls to chia_nho_bkls during upgrade -->
+    <function model="dl.wood.report.template.config" name="write">
+        <value model="dl.wood.report.template.config" eval="[ref('template_v2025_cn_bkls')]"/>
+        <value eval="{'template_key': 'chia_nho_bkls'}"/>
+    </function>
 </odoo>
+

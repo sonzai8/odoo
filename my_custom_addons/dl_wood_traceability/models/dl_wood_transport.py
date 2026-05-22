@@ -51,10 +51,15 @@ class DlWoodDossierTransportTicket(models.Model):
     ticket_line_ids = fields.One2many('dl.wood.dossier.transport.ticket.line', 'ticket_id', string='Chi tiết phiếu nhập kho')
     x_vehicle_ids = fields.One2many('dl.wood.dossier.transport.ticket.vehicle', 'ticket_id', string='Chi tiết phương tiện')
 
-    @api.depends('ticket_line_ids.volume')
+    @api.depends('ticket_line_ids.volume', 'x_vehicle_ids.volume')
     def _compute_total_volume(self):
         for record in self:
-            record.total_volume = sum(record.ticket_line_ids.mapped('volume'))
+            if record.ticket_line_ids:
+                record.total_volume = sum(record.ticket_line_ids.mapped('volume'))
+            elif record.x_vehicle_ids:
+                record.total_volume = sum(record.x_vehicle_ids.mapped('volume'))
+            else:
+                record.total_volume = 0.0
 
 
 class DlWoodDossierTransportTicketLine(models.Model):
