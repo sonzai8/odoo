@@ -61,26 +61,30 @@
                     </div>
                     
                     <!-- PHÂN KHU 1: THÔNG TIN HÀNH CHÍNH VÀ CHỦ RỪNG -->
-                    <group string="1. Thông Tin Đối Tác &amp; Pháp Lý">
+                    <group string="1. Thông Tin Đối Tác &amp; Pháp Lý" col="3">
+                        <!-- Cột 1: Đối tác -->
                         <group>
-                            <field name="partner_id" placeholder="Chọn chủ rừng..." readonly="state in ('using', 'summary', 'confirmed')"/>
-                            <field name="partner_address" placeholder="Địa chỉ tự động load..."/>
-                            <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}" readonly="state in ('using', 'summary', 'confirmed')"/>
-                            <field name="company_id" readonly="1"/>
-                            <field name="x_start_date" string="Khai thác từ" readonly="state in ('using', 'summary', 'confirmed')"/>
-                            <field name="x_prep_days" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="partner_id" string="Chủ rừng" placeholder="Chọn chủ rừng..." readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="partner_address" string="Địa chỉ" placeholder="Tự động load..."/>
+                            <field name="exploitation_location_id" string="Địa bàn" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="company_id" string="Công ty" readonly="1"/>
                         </group>
+                        <!-- Cột 2: Hồ sơ & biểu mẫu -->
                         <group>
-                            <field name="name" readonly="1" decoration-bf="1"/>
-                            <label for="x_report_version_id" class="fw-bold"/>
+                            <field name="name" string="Mã hồ sơ" readonly="1" decoration-bf="1"/>
+                            <label for="x_report_version_id" string="Biểu mẫu" class="fw-bold"/>
                             <div class="o_row">
-                                <field name="x_report_version_id" options="{'no_create': True}" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                <button name="action_refresh_documents" type="object" string="Làm mới tệp" icon="fa-refresh" class="btn btn-link py-0" invisible="state in ('using', 'summary', 'confirmed')"/>
+                                <field name="x_report_version_id" nolabel="1" options="{'no_create': True}" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                <button name="action_refresh_documents" type="object" string="" icon="fa-refresh" class="btn btn-link py-0" invisible="state in ('using', 'summary', 'confirmed')"/>
                             </div>
-                            <field name="x_mining_method" readonly="state in ('using', 'summary', 'confirmed')"/>
-                            <field name="x_area" placeholder="Diện tích (ha)" readonly="state in ('using', 'summary', 'confirmed')"/>
-
-                            <field name="x_exploitation_capacity" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="x_mining_method" string="Khai thác" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="x_area" string="Diện tích (ha)" placeholder="ha" readonly="state in ('using', 'summary', 'confirmed')"/>
+                        </group>
+                        <!-- Cột 3: Thời gian & năng lực -->
+                        <group>
+                            <field name="x_start_date" string="Từ ngày" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="x_prep_days" string="Chuẩn bị (ngày)" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="x_exploitation_capacity" string="Năng lực (m³/ngày)" readonly="state in ('using', 'summary', 'confirmed')"/>
                             <field name="x_woodpro_id" readonly="1" invisible="1"/>
                         </group>
                     </group>
@@ -205,35 +209,37 @@
                              </field>
                         </page>
                         <page string="Thời gian - Phụ lục">
-                            <group>
+                            <group col="3">
+                                <!-- Cột 1: Thời gian vận hành -->
                                 <group string="Các Mốc Thời Gian">
-                                    <field name="date_received" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_start_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_end_date" help="Tự động tính dựa vào diện tích khai thác" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_contract_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_addendum_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_delivery_start_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_delivery_end_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_bkls_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_verify_date" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_delivery_explanation" nolabel="1" colspan="2" readonly="1"/>
+                                    <field name="date_received" string="Nhận hồ sơ" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_start_date" string="Khai thác từ" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_end_date" string="Khai thác đến" help="Tự động tính dựa vào diện tích khai thác" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_delivery_start_date" string="Vận chuyển từ" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_delivery_end_date" string="Vận chuyển đến" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_bkls_date" string="Ngày BKLS" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_verify_date" string="Ngày xác nhận" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_delivery_explanation" string="Cách vận chuyển" readonly="1" class="text-muted fst-italic"/>
                                 </group>
-                                <group col="1">
-                                    <group string="Mã Số &amp; Phụ Lục">
-                                        <field name="x_contract_number" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                        <field name="x_addendum_num" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                        <field name="x_bkls_number" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    </group>
+
+                                <!-- Cột 2: Văn bản & Chứng từ -->
+                                <group string="Chứng Từ &amp; Số Hiệu">
+                                    <field name="x_contract_number" string="Số hợp đồng" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_contract_date" string="Ngày hợp đồng" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_addendum_num" string="Số phụ lục" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_addendum_date" string="Ngày phụ lục" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_bkls_number" string="Số BKLS" readonly="state in ('using', 'summary', 'confirmed')"/>
                                 </group>
-                            </group>
-                            <group string="Đại diện ký tá">
-                                <group string="Đại diện Chủ rừng (Bên bán)">
-                                    <field name="x_owner_representative" placeholder="Mặc định lấy tên chủ rừng" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_owner_position" placeholder="Ví dụ: Đại diện hộ gia đình / Giám đốc..." readonly="state in ('using', 'summary', 'confirmed')"/>
-                                </group>
-                                <group string="Đại diện Công ty (Bên mua)">
-                                    <field name="x_company_representative" placeholder="Người đại diện công ty..." readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_company_position" placeholder="Chức vụ..." readonly="state in ('using', 'summary', 'confirmed')"/>
+
+                                <!-- Cột 3: Đại diện ký tá -->
+                                <group string="Đại Diện Ký Tá">
+                                    <separator string="Đại diện Chủ rừng (Bán)"/>
+                                    <field name="x_owner_representative" string="Đại diện" placeholder="Mặc định lấy tên chủ rừng" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_owner_position" string="Chức vụ" placeholder="Ví dụ: Đại diện hộ gia đình / Giám đốc..." readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    
+                                    <separator string="Đại diện Công ty (Mua)"/>
+                                    <field name="x_company_representative" string="Đại diện" placeholder="Người đại diện công ty..." readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    <field name="x_company_position" string="Chức vụ" placeholder="Chức vụ..." readonly="state in ('using', 'summary', 'confirmed')"/>
                                 </group>
                             </group>
                         </page>
