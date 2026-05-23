@@ -29,3 +29,13 @@ class ResConfigSettings(models.TransientModel):
         string='Chức danh người kiểm kê',
         readonly=False
     )
+    x_prep_days = fields.Integer(
+        related='company_id.x_prep_days',
+        string='Thời gian chuẩn bị mặc định (ngày)',
+        readonly=False
+    )
+    x_exploitation_capacity = fields.Integer(
+        related='company_id.x_exploitation_capacity',
+        string='Năng lực khai thác mặc định (m³/ngày)',
+        readonly=False
+    )

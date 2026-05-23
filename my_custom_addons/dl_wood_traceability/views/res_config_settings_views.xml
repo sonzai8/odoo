@@ -22,6 +22,14 @@
                             </div>
                         </setting>
                     </block>
+                    <block title="Cấu hình Khai thác &amp; Vận chuyển" name="wood_exploitation_logistics_config">
+                        <setting id="wood_exploitation_logistics_setting" string="Thời gian &amp; Năng lực mặc định" help="Cấu hình thời gian chuẩn bị và năng lực khai thác mặc định của công ty">
+                            <group>
+                                <field name="x_prep_days"/>
+                                <field name="x_exploitation_capacity"/>
+                            </group>
+                        </setting>
+                    </block>
                     <block title="Đại diện Công ty (Phục vụ In Hợp đồng/Tài liệu)" name="wood_company_representative">
                         <setting id="wood_representative_setting" string="Thông tin đại diện" help="Người đại diện ký kết các hợp đồng hồ sơ nguồn gốc gỗ">
                             <group>

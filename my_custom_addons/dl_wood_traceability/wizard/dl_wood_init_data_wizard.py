@@ -128,3 +128,66 @@ class DlWoodInitDataWizard(models.TransientModel):
                 'type': 'success',
             }
         }
+
+    def action_init_report_templates(self):
+        """Khởi tạo cấu hình phiên bản biểu mẫu v2026 cho công ty hiện tại"""
+        version_obj = self.env['dl.wood.report.version']
+        template_obj = self.env['dl.wood.report.template.config']
+        
+        # 1. Tìm hoặc tạo phiên bản biểu mẫu v2026 cho công ty hiện tại
+        version = version_obj.search([
+            ('code', '=', 'v2026'),
+            ('company_id', '=', self.env.company.id)
+        ], limit=1)
+        
+        if not version:
+            version = version_obj.create({
+                'name': 'v2026',
+                'code': 'v2026',
+                'company_id': self.env.company.id,
+                'active': True
+            })
+        else:
+            version.write({'name': 'v2026'})
+        
+        # 2. Khởi tạo danh sách mẫu tài liệu mặc định
+        templates_data = [
+            ('ptkt', 10, 'Phiếu thông tin khai thác', 'exploitation', True),
+            ('hdsg', 20, 'DL Hợp đồng HSG', 'exploitation', True),
+            ('bkls', 30, 'Bảng kê lâm sản TT26', 'exploitation', True),
+            ('ddnx', 40, 'Đơn đề nghị xác nhận bảng kê lâm sản', 'exploitation', True),
+            ('bbxm', 50, 'Biên bản xác minh nguồn gốc lâm sản', 'exploitation', True),
+            ('chia_nho_bkls', 60, 'Chia nhỏ bảng kê', 'exploitation', True),
+            ('pnk', 70, 'Phiếu nhập kho', 'logistics', True),
+            ('bbbg', 80, 'Biên bản bàn giao', 'logistics', True),
+            ('gbn', 90, 'Giấy biên nhận', 'logistics', False),
+        ]
+        
+        for key, seq, name, category, is_enabled in templates_data:
+            existing = template_obj.search([
+                ('version_id', '=', version.id),
+                ('template_key', '=', key)
+            ], limit=1)
+            vals = {
+                'version_id': version.id,
+                'sequence': seq,
+                'name': name,
+                'template_key': key,
+                'category': category,
+                'is_enabled': is_enabled
+            }
+            if existing:
+                existing.write(vals)
+            else:
+                template_obj.create(vals)
+                
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã khởi tạo/cập nhật phiên bản biểu mẫu v2026 thành công.'),
+                'sticky': False,
+                'type': 'success',
+            }
+        }

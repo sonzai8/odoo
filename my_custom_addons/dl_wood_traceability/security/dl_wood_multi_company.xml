@@ -162,5 +162,11 @@
             <field name="model_id" ref="model_dl_vietnam_bank"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
+
+        <record id="dl_wood_report_version_comp_rule" model="ir.rule">
+            <field name="name">Phiên bản biểu mẫu đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_report_version"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

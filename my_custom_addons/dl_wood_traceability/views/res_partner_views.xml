@@ -7,6 +7,7 @@
             <list string="Chủ rừng" create="1" delete="1">
                 <field name="name"/>
                 <field name="x_short_name"/>
+                <field name="x_cccd"/>
                 <field name="phone"/>
                 <field name="x_full_address" string="Địa chỉ đầy đủ"/>
                 <field name="x_woodpro_id" string="ID WoodPro" readonly="1"/>
@@ -51,19 +52,40 @@
             <xpath expr="//field[@name='email']/parent::div" position="attributes">
                 <attribute name="invisible">not is_company</attribute>
             </xpath>
+            <xpath expr="//field[@name='street2']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='zip']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='phone']/parent::div" position="replace">
+                <div class="d-flex align-items-baseline w-md-50">
+                    <div class="d-flex align-items-baseline flex-grow-1 w-50">
+                        <i class="fa fa-fw me-1 fa-phone text-primary" title="Phone"/>
+                        <field name="phone" class="w-100" widget="phone" placeholder="Phone"/>
+                    </div>
+                    <div class="d-flex align-items-baseline flex-grow-1 w-50 ms-3" invisible="x_is_wood_supplier != 'owner'">
+                        <i class="fa fa-fw me-1 fa-calendar text-primary" title="Ngày sinh"/>
+                        <field name="x_birth_date" class="w-100" placeholder="Ngày sinh"/>
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//div[@name='partner_address_country']/parent::div" position="after">
+                <field name="x_prep_days" string="T.gian chuẩn bị" invisible="not x_is_wood_supplier"/>
+            </xpath>
             <xpath expr="//field[@name='vat']" position="after">
                 <field name="x_is_wood_supplier" invisible="1"/>
                 <field name="x_short_name" invisible="not is_company"/>
                 <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
-                <field name="x_birth_date" string="Ngày sinh" invisible="x_is_wood_supplier != 'owner'"/>
-                <field name="x_gender" string="Giới tính" invisible="x_is_wood_supplier != 'owner'"/>
+                <field name="x_gender" invisible="1"/>
                 <field name="x_cccd_date" string="Ngày cấp" invisible="not x_is_wood_supplier"/>
                 <field name="x_cccd_place" string="Nơi cấp" invisible="not x_is_wood_supplier"/>
+                <field name="x_exploitation_capacity" string="N.lực khai thác" invisible="not x_is_wood_supplier"/>
                 <field name="x_identity_code" invisible="1"/>
                 <field name="x_issue_date" invisible="1"/>
             </xpath>
-            <xpath expr="//page[@name='internal_notes']" position="after">
-                <page string="Địa Điểm Khai Thác">
+            <xpath expr="//page[@name='contact_addresses']" position="before">
+                <page string="Địa Điểm Khai Thác" name="exploitation_locations" autofocus="autofocus">
                     <field name="x_is_wood_supplier" invisible="1"/>
                     <field name="exploitation_location_ids" options="{'no_open': True}">
                         <list>
@@ -80,7 +102,7 @@
                         </list>
                     </field>
                 </page>
-                <page string="Thông Tin Thanh Toán">
+                <page string="Thông Tin Thanh Toán" name="payment_info">
                     <group>
                         <group string="Tài khoản Ngân hàng">
                             <field name="x_bank_name_id" options="{'no_open': False, 'no_create': False}"/>
@@ -89,6 +111,9 @@
                         </group>
                     </group>
                 </page>
+            </xpath>
+            <xpath expr="//page[@name='contact_addresses']" position="attributes">
+                <attribute name="invisible">x_is_wood_supplier != False</attribute>
             </xpath>
         </field>
     </record>

@@ -600,53 +600,106 @@ class DossierDocxRenderer:
 
     def _build_pnk_table_rows_from_ticket(self, ticket):
         """Bảng hàng hóa PNK theo chi tiết một phiếu nhập kho (theo ngày/chuyến)."""
-        aggregates = self._get_ticket_aggregates(ticket)
         rows = []
         idx = 1
-        for (species_id, wood_type), volume in sorted(aggregates.items()):
-            if not volume or volume == 0.0:
-                continue
-            species = self.dossier.env['dl.wood.species'].browse(species_id)
-            price_unit = self._get_dossier_line_price_unit(species, wood_type)
-            subtotal = round(volume * price_unit, 2)
-            if wood_type == 'firewood':
-                disp_vol = f"{volume:.2f}".replace('.', ',')
-            else:
-                disp_vol = format_volume_vietnamese(volume)
-            rows.append({
-                'idx': idx,
-                'species_name': species.name or "",
-                'volume': disp_vol,
-                'price': f"{int(price_unit):,}".replace(',', '.'),
-                'subtotal': f"{int(subtotal):,}".replace(',', '.'),
-                '_subtotal_raw': subtotal,
-            })
-            idx += 1
+        if ticket.x_vehicle_ids:
+            # Nếu có chi tiết xe nhỏ, phân rã chi tiết từng chuyến xe
+            for v_line in sorted(ticket.x_vehicle_ids, key=lambda x: (x.wood_type, x.name)):
+                volume = v_line.volume
+                if not volume or volume == 0.0:
+                    continue
+                species = v_line.species_id
+                price_unit = self._get_dossier_line_price_unit(species, v_line.wood_type)
+                subtotal = round(volume * price_unit, 2)
+                
+                # Tên hiển thị dạng: Biển số xe (Tên loài gỗ)
+                species_name = f"{v_line.name} ({species.name})"
+                
+                if v_line.wood_type == 'firewood':
+                    disp_vol = f"{volume:.2f}".replace('.', ',')
+                else:
+                    disp_vol = format_volume_vietnamese(volume)
+                rows.append({
+                    'idx': idx,
+                    'species_name': species_name,
+                    'volume': disp_vol,
+                    'price': f"{int(price_unit):,}".replace(',', '.'),
+                    'subtotal': f"{int(subtotal):,}".replace(',', '.'),
+                    '_subtotal_raw': subtotal,
+                })
+                idx += 1
+        else:
+            # Fallback gộp chung theo loài gỗ như trước đây
+            aggregates = self._get_ticket_aggregates(ticket)
+            for (species_id, wood_type), volume in sorted(aggregates.items()):
+                if not volume or volume == 0.0:
+                    continue
+                species = self.dossier.env['dl.wood.species'].browse(species_id)
+                price_unit = self._get_dossier_line_price_unit(species, wood_type)
+                subtotal = round(volume * price_unit, 2)
+                if wood_type == 'firewood':
+                    disp_vol = f"{volume:.2f}".replace('.', ',')
+                else:
+                    disp_vol = format_volume_vietnamese(volume)
+                rows.append({
+                    'idx': idx,
+                    'species_name': species.name or "",
+                    'volume': disp_vol,
+                    'price': f"{int(price_unit):,}".replace(',', '.'),
+                    'subtotal': f"{int(subtotal):,}".replace(',', '.'),
+                    '_subtotal_raw': subtotal,
+                })
+                idx += 1
 
         _logger.info("[PNK] Ticket '%s' -> %d dong hang hoa", ticket.name, len(rows))
         return rows
 
     def _build_bbbg_table_rows_from_ticket(self, ticket):
         """Bảng hàng hóa BBBG theo chi tiết một phiếu nhập kho."""
-        aggregates = self._get_ticket_aggregates(ticket)
         rows = []
         idx = 1
-        for (species_id, wood_type), volume in sorted(aggregates.items()):
-            if not volume or volume == 0.0:
-                continue
-            species = self.dossier.env['dl.wood.species'].browse(species_id)
-            x_unit = 'm³' if wood_type == 'wood' else 'Ster'
-            if wood_type == 'firewood':
-                disp_vol = f"{volume:.2f}".replace('.', ',')
-            else:
-                disp_vol = format_volume_vietnamese(volume)
-            rows.append({
-                'idx': idx,
-                'species_name': species.name or "",
-                'x_unit': x_unit,
-                'volume': disp_vol,
-            })
-            idx += 1
+        if ticket.x_vehicle_ids:
+            # Nếu có chi tiết xe nhỏ, phân rã chi tiết từng chuyến xe
+            for v_line in sorted(ticket.x_vehicle_ids, key=lambda x: (x.wood_type, x.name)):
+                volume = v_line.volume
+                if not volume or volume == 0.0:
+                    continue
+                species = v_line.species_id
+                x_unit = 'm³' if v_line.wood_type == 'wood' else 'Ster'
+                
+                # Tên hiển thị dạng: Biển số xe (Tên loài gỗ)
+                species_name = f"{v_line.name} ({species.name})"
+                
+                if v_line.wood_type == 'firewood':
+                    disp_vol = f"{volume:.2f}".replace('.', ',')
+                else:
+                    disp_vol = format_volume_vietnamese(volume)
+                rows.append({
+                    'idx': idx,
+                    'species_name': species_name,
+                    'x_unit': x_unit,
+                    'volume': disp_vol,
+                })
+                idx += 1
+        else:
+            # Fallback gộp chung theo loài gỗ như trước đây
+            aggregates = self._get_ticket_aggregates(ticket)
+            for (species_id, wood_type), volume in sorted(aggregates.items()):
+                if not volume or volume == 0.0:
+                    continue
+                species = self.dossier.env['dl.wood.species'].browse(species_id)
+                x_unit = 'm³' if wood_type == 'wood' else 'Ster'
+                if wood_type == 'firewood':
+                    disp_vol = f"{volume:.2f}".replace('.', ',')
+                else:
+                    disp_vol = format_volume_vietnamese(volume)
+                rows.append({
+                    'idx': idx,
+                    'species_name': species.name or "",
+                    'x_unit': x_unit,
+                    'volume': disp_vol,
+                })
+                idx += 1
 
         _logger.info("[BBBG] Ticket '%s' -> %d dong hang hoa", ticket.name, len(rows))
         return rows

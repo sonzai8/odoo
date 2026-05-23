@@ -34,6 +34,34 @@ class ResPartner(models.Model):
     ], string='Loại đối tác gỗ')
     x_is_wood_customer = fields.Boolean(string='Khách hàng mua gỗ', default=False,
                                          help='Đánh dấu đây là khách hàng mua gỗ thành phẩm từ công ty.')
+    def _get_default_prep_days(self):
+        try:
+            self.env.cr.execute("SELECT column_name FROM information_schema.columns WHERE table_name='res_company' AND column_name='x_prep_days'")
+            if self.env.cr.fetchone():
+                return self.env.company.x_prep_days or 6
+        except Exception:
+            pass
+        return 6
+
+    def _get_default_exploitation_capacity(self):
+        try:
+            self.env.cr.execute("SELECT column_name FROM information_schema.columns WHERE table_name='res_company' AND column_name='x_exploitation_capacity'")
+            if self.env.cr.fetchone():
+                return self.env.company.x_exploitation_capacity or 40
+        except Exception:
+            pass
+        return 40
+
+    x_prep_days = fields.Integer(
+        string='Thời gian chuẩn bị (ngày)',
+        default=lambda self: self._get_default_prep_days(),
+        help='Thời gian chuẩn bị riêng của chủ rừng này. Nếu để 0 sẽ tự động lấy từ cấu hình công ty.'
+    )
+    x_exploitation_capacity = fields.Integer(
+        string='Năng lực khai thác (m³/ngày)',
+        default=lambda self: self._get_default_exploitation_capacity(),
+        help='Năng lực khai thác riêng của chủ rừng này. Nếu để 0 sẽ tự động lấy từ cấu hình công ty.'
+    )
 
     # CCCD Info
     x_cccd = fields.Char(string='Số CCCD')

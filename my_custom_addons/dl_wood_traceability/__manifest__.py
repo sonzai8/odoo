@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Đức Lâm - Truy Xuất Nguồn Gốc Gỗ',
+    'name': 'Đức Lâm - Hồ Sơ Gỗ',
     'version': '19.0.2.0.0',
-    'summary': 'Quản lý truy xuất nguồn gốc gỗ, hồ sơ kiểm lâm và trừ lùi song song (Nội bộ và Khai báo CO)',
+    'summary': 'Quản lý hồ sơ gỗ, hồ sơ kiểm lâm và trừ lùi song song (Nội bộ và Khai báo CO)',
     'category': 'Inventory/Warehouse',
     'author': 'Đức Lâm ERP',
     'depends': ['base', 'sale', 'stock', 'product', 'mrp', 'mail'],

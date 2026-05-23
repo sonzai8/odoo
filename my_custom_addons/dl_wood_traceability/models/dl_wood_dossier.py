@@ -109,6 +109,22 @@ class DlWoodDossier(models.Model):
         domain="[('active', '=', True), ('x_is_wood_supplier', '!=', False), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         check_company=True
     )
+    x_prep_days = fields.Integer(
+        string='Thời gian chuẩn bị (ngày)',
+        help='Thời gian chuẩn bị của bộ hồ sơ này. Mặc định lấy từ Chủ rừng.'
+    )
+    x_exploitation_capacity = fields.Integer(
+        string='Năng lực khai thác (m³/ngày)',
+        help='Năng lực khai thác của bộ hồ sơ này. Mặc định lấy từ Chủ rừng.'
+    )
+    x_transport_method = fields.Selection([
+        ('urgent', 'Gấp'),
+        ('normal', 'Bình thường'),
+        ('slow', 'Từ từ')
+    ], string='Cách vận chuyển', default='normal', required=True,
+       help="• Gấp: mỗi xe chạy 2 chuyến/ngày\n"
+            "• Bình thường: mỗi xe 1 chuyến/ngày\n"
+            "• Từ từ: 2 ngày/chuyến/xe")
     partner_address = fields.Char(string='Địa chỉ', compute='_compute_partner_address', store=True, readonly=True)
     
     # Thông tin lâm nghiệp
@@ -204,7 +220,7 @@ class DlWoodDossier(models.Model):
         compute='_compute_delivery_explanation'
     )
 
-    @api.depends('x_end_date', 'initial_wood_qty', 'initial_firewood_qty', 'ticket_ids', 'transport_ids', 'x_delivery_start_date', 'x_delivery_end_date')
+    @api.depends('x_end_date', 'initial_wood_qty', 'initial_firewood_qty', 'ticket_ids', 'transport_ids', 'x_delivery_start_date', 'x_delivery_end_date', 'x_transport_method')
     def _compute_delivery_explanation(self):
         import math
         from datetime import timedelta
@@ -241,16 +257,35 @@ class DlWoodDossier(models.Model):
                 if trips_count == 0:
                     trips_count = 1
 
-            # 3. Đếm số ngày Chủ Nhật bị loại trừ trong khoảng giao hàng
+            # 3. Đếm số ngày Chủ Nhật bị loại trừ trong khoảng giao hàng dựa theo chế độ vận chuyển (x_transport_method)
+            # urgent: 2 chuyến/ngày
+            # normal: 1 chuyến/ngày
+            # slow: 2 ngày mới có 1 chuyến (giao vào các ngày làm việc lẻ)
             sundays = []
             current_date = record.x_delivery_start_date
-            trips_delivered = 1
+            trips_delivered = 0
+            
+            if record.x_transport_method == 'urgent':
+                trips_delivered = min(2, trips_count)
+            elif record.x_transport_method == 'slow':
+                trips_delivered = min(1, trips_count)
+                work_day_index = 1
+            else: # normal
+                trips_delivered = min(1, trips_count)
+
             while trips_delivered < trips_count:
                 current_date += timedelta(days=1)
                 if current_date.weekday() == 6:
                     sundays.append(current_date.strftime('%d/%m/%Y'))
                 else:
-                    trips_delivered += 1
+                    if record.x_transport_method == 'urgent':
+                        trips_delivered += 2
+                    elif record.x_transport_method == 'slow':
+                        work_day_index += 1
+                        if work_day_index % 2 == 1:
+                            trips_delivered += 1
+                    else: # normal
+                        trips_delivered += 1
 
             # 4. Tạo chuỗi giải thích tiếng Việt cực kỳ chi tiết
             end_date_str = record.x_end_date.strftime('%d/%m/%Y')
@@ -267,6 +302,13 @@ class DlWoodDossier(models.Model):
             else:
                 vol_range_str = "rất lớn (&gt; 600 m³/Ster)"
             
+            if record.x_transport_method == 'urgent':
+                freq_str = "tần suất mỗi ngày chở 2 chuyến"
+            elif record.x_transport_method == 'slow':
+                freq_str = "tần suất 2 ngày chở 1 chuyến"
+            else:
+                freq_str = "tần suất mỗi ngày chở 1 chuyến"
+            
             explanation = f"""
             <div class="text-muted alert alert-info mt-2 mb-0 border-0 p-2" style="font-size: 0.85em; background-color: #f0f8ff;" role="status">
                 <i class="fa fa-info-circle text-info mr-1" title="Chi tiết tính toán"></i>
@@ -281,7 +323,7 @@ class DlWoodDossier(models.Model):
             else:
                 explanation += f" Ngày bắt đầu giao hàng thực tế là ngày <strong>{start_date_str}</strong>.<br/>"
 
-            explanation += f"• Tổng cộng có <strong>{trips_count} chuyến xe</strong> vận chuyển (tần suất mỗi ngày chở 1 chuyến).<br/>"
+            explanation += f"• Tổng cộng có <strong>{trips_count} chuyến xe</strong> vận chuyển ({freq_str}).<br/>"
             
             if sundays:
                 sundays_str = ", ".join(sundays)
@@ -294,7 +336,7 @@ class DlWoodDossier(models.Model):
             
             record.x_delivery_explanation = explanation
 
-    @api.depends('x_end_date', 'initial_wood_qty', 'initial_firewood_qty', 'ticket_ids', 'transport_ids')
+    @api.depends('x_end_date', 'initial_wood_qty', 'initial_firewood_qty', 'ticket_ids', 'transport_ids', 'x_transport_method')
     def _compute_delivery_dates(self):
         import math
         from datetime import timedelta
@@ -333,14 +375,33 @@ class DlWoodDossier(models.Model):
                 if trips_count == 0:
                     trips_count = 1
 
-            # 3. Tính ngày kết thúc giao hàng (Mỗi ngày chở 1 chuyến, không tính Chủ Nhật, bắt đầu từ ngày đầu tiên)
+            # 3. Tính ngày kết thúc giao hàng dựa theo chế độ vận chuyển (x_transport_method)
+            # urgent: 2 chuyến/ngày
+            # normal: 1 chuyến/ngày
+            # slow: 2 ngày mới có 1 chuyến
             current_date = start_date
-            trips_delivered = 1
+            trips_delivered = 0
+            
+            if record.x_transport_method == 'urgent':
+                trips_delivered = min(2, trips_count)
+            elif record.x_transport_method == 'slow':
+                trips_delivered = min(1, trips_count)
+                work_day_index = 1
+            else: # normal
+                trips_delivered = min(1, trips_count)
+
             while trips_delivered < trips_count:
                 current_date += timedelta(days=1)
-                if current_date.weekday() != 6: # Khác Chủ Nhật
-                    trips_delivered += 1
-            
+                if current_date.weekday() != 6: # Ngày làm việc (khác Chủ Nhật)
+                    if record.x_transport_method == 'urgent':
+                        trips_delivered += 2
+                    elif record.x_transport_method == 'slow':
+                        work_day_index += 1
+                        if work_day_index % 2 == 1:
+                            trips_delivered += 1
+                    else: # normal
+                        trips_delivered += 1
+                        
             record.x_delivery_end_date = current_date
 
     @api.depends('company_id')
@@ -570,13 +631,36 @@ class DlWoodDossier(models.Model):
             dossier.x_production_ids = accessible_prod_orders
             dossier.x_production_count = len(prod_orders)
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super(DlWoodDossier, self).default_get(fields_list)
+        if 'partner_id' in res and res.get('partner_id'):
+            partner = self.env['res.partner'].browse(res['partner_id'])
+            if partner:
+                company_id = res.get('company_id') or self.env.company.id
+                company = self.env['res.company'].browse(company_id)
+                if 'x_prep_days' in fields_list and not res.get('x_prep_days'):
+                    res['x_prep_days'] = partner.x_prep_days or (company and company.x_prep_days) or 6
+                if 'x_exploitation_capacity' in fields_list and not res.get('x_exploitation_capacity'):
+                    res['x_exploitation_capacity'] = partner.x_exploitation_capacity or (company and company.x_exploitation_capacity) or 40
+        return res
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if 'partner_id' in vals and vals.get('partner_id') and not vals.get('x_owner_representative'):
+            if 'partner_id' in vals and vals.get('partner_id'):
                 partner = self.env['res.partner'].browse(vals['partner_id'])
                 if partner:
-                    vals['x_owner_representative'] = partner.name
+                    if not vals.get('x_owner_representative'):
+                        vals['x_owner_representative'] = partner.name
+                    if not vals.get('x_prep_days'):
+                        company_id = vals.get('company_id') or self.env.company.id
+                        company = self.env['res.company'].browse(company_id)
+                        vals['x_prep_days'] = partner.x_prep_days or (company and company.x_prep_days) or 6
+                    if not vals.get('x_exploitation_capacity'):
+                        company_id = vals.get('company_id') or self.env.company.id
+                        company = self.env['res.company'].browse(company_id)
+                        vals['x_exploitation_capacity'] = partner.x_exploitation_capacity or (company and company.x_exploitation_capacity) or 40
                     
         records = super(DlWoodDossier, self).create(vals_list)
         for record in records:
@@ -586,15 +670,136 @@ class DlWoodDossier(models.Model):
 
     def action_generate_transport_tickets(self):
         """Thuật toán tự động sinh chuyến xe dựa trên cấu hình vận chuyển đa phương tiện (Multi-Vehicle Split Algorithm)
-        Đã nâng cấp: tách biệt xe chở gỗ và xe chở củi hoàn toàn. Giao gỗ trước, củi sau.
+        Đã nâng cấp: tối ưu hóa xếp xe dồn chuyến để tránh trường hợp chuyến cuối lẻ quá ít củi/gỗ.
+        Tách biệt xe chở gỗ và xe chở củi hoàn toàn. Giao gỗ trước, củi sau.
         """
         import random
         import math
         import datetime
-        
+        from odoo.exceptions import UserError
+        from odoo import fields, _
+
+        def find_optimal_vehicles(fleet, total_volume):
+            """Hàm helper tìm danh sách xe tối ưu để chở hết total_volume
+            Sử dụng tỷ lệ lấp đầy tối đa lên tới 100% để dồn chuyến nếu giúp tiết kiệm xe/chuyến.
+            """
+            if total_volume <= 0 or not fleet:
+                return []
+            
+            # 1. Tính số xe cần thiết theo chế độ bình thường (lấp đầy <= 90% hoặc theo fill_rate_max của xe)
+            normal_vehicles = []
+            normal_cap = 0.0
+            idx = 0
+            while normal_cap < total_volume:
+                v = fleet[idx % len(fleet)]
+                normal_vehicles.append(v)
+                fill_rate_normal = (v.get('fill_rate_max', 90.0) or 90.0) / 100.0
+                normal_cap += v['capacity'] * fill_rate_normal
+                idx += 1
+                
+            # 2. Tính số xe tối thiểu theo chế độ tối đa (100% capacity)
+            max_vehicles = []
+            max_cap = 0.0
+            idx = 0
+            while max_cap < total_volume:
+                v = fleet[idx % len(fleet)]
+                max_vehicles.append(v)
+                max_cap += v['capacity'] * 1.0
+                idx += 1
+                
+            # Nếu chế độ tối đa (100%) giúp giảm số xe so với chế độ bình thường
+            if len(max_vehicles) < len(normal_vehicles):
+                return max_vehicles
+            
+            # Nếu số xe bằng nhau, thử dồn chuyến nếu bỏ xe cuối cùng đi mà vẫn đủ sức chứa 100%
+            if len(normal_vehicles) > 1:
+                reduced_vehicles = normal_vehicles[:-1]
+                reduced_capacity = sum(v['capacity'] for v in reduced_vehicles)
+                if reduced_capacity >= total_volume:
+                    return reduced_vehicles
+                    
+            return normal_vehicles
+
+        def allocate_volume_to_vehicles(vehicles, total_volume):
+            """Hàm helper phân bổ đều khối lượng cho danh sách xe đã chọn
+            Có độ biến thiên tải trọng ngẫu nhiên +/- 4% để tạo tính thực tế.
+            Đảm bảo tổng khối lượng khớp chính xác và không xe nào chở quá 100% capacity.
+            """
+            total_capacity = sum(v['capacity'] for v in vehicles)
+            if total_capacity <= 0:
+                return [0.0] * len(vehicles)
+            
+            avg_fill = total_volume / total_capacity
+            
+            # Gán tỷ lệ lấp đầy ngẫu nhiên biến thiên nhẹ quanh avg_fill
+            raw_vols = []
+            for v in vehicles:
+                factor = random.uniform(0.96, 1.04)
+                fill = avg_fill * factor
+                fill = max(0.01, min(1.0, fill))
+                raw_vols.append(v['capacity'] * fill)
+                
+            # Chuẩn hóa để tổng bằng total_volume
+            sum_raw = sum(raw_vols)
+            if sum_raw > 0:
+                v_volumes = [round((vol / sum_raw) * total_volume, 1) for vol in raw_vols]
+            else:
+                v_volumes = [round((v['capacity'] / total_capacity) * total_volume, 1) for v in vehicles]
+                
+            # Khống chế không xe nào vượt quá 100% capacity
+            for _ in range(5):
+                diff = total_volume - sum(v_volumes)
+                if abs(diff) < 0.05:
+                    v_volumes[-1] = round(v_volumes[-1] + diff, 1)
+                    diff = 0
+                    
+                has_overflow = False
+                for idx, v in enumerate(vehicles):
+                    if v_volumes[idx] > v['capacity']:
+                        overflow = v_volumes[idx] - v['capacity']
+                        v_volumes[idx] = v['capacity']
+                        has_overflow = True
+                        available_indices = [i for i, x in enumerate(vehicles) if i != idx and v_volumes[i] < x['capacity']]
+                        if available_indices:
+                            share = overflow / len(available_indices)
+                            for ai in available_indices:
+                                v_volumes[ai] = round(v_volumes[ai] + share, 1)
+                if not has_overflow and abs(diff) < 0.01:
+                    break
+                    
+            # Khớp tuyệt đối tổng total_volume do sai số làm tròn
+            diff = round(total_volume - sum(v_volumes), 1)
+            if diff != 0:
+                for idx, v in enumerate(vehicles):
+                    if v_volumes[idx] + diff <= v['capacity']:
+                        v_volumes[idx] = round(v_volumes[idx] + diff, 1)
+                        diff = 0
+                        break
+                if diff != 0:
+                    v_volumes[-1] = round(v_volumes[-1] + diff, 1)
+            
+            # Hard cap cuối cùng: không xe nào được vượt quá 100% capacity tuyệt đối
+            for idx, v in enumerate(vehicles):
+                if v_volumes[idx] > v['capacity']:
+                    v_volumes[idx] = v['capacity']
+                    
+            return v_volumes
+
+        def calculate_ticket_date(start_date, days_offset):
+            """Hàm helper tính ngày vận chuyển thực tế loại trừ Chủ Nhật"""
+            curr = start_date
+            if curr.weekday() == 6:
+                curr += datetime.timedelta(days=1)
+            for _ in range(days_offset):
+                curr += datetime.timedelta(days=1)
+                while curr.weekday() == 6:
+                    curr += datetime.timedelta(days=1)
+            return curr
+
         for dossier in self:
             if dossier.state in ('using', 'summary', 'confirmed'):
                 raise UserError(_("Không thể thực hiện tính toán chia lại phiếu nhập kho khi Hồ sơ gỗ đang ở trạng thái '%s'.") % dossier.state)
+            
             start_date = dossier.x_delivery_start_date or fields.Date.today()
             end_date = dossier.x_delivery_end_date or fields.Date.today()
             
@@ -614,8 +819,8 @@ class DlWoodDossier(models.Model):
                         'id': t.vehicle_id.id,
                         'name': t.vehicle_id.name,
                         'capacity': t.vehicle_id.capacity,
-                        'fill_rate_min': t.vehicle_id.fill_rate_min if t.vehicle_id.fill_rate_min else 95.0,
-                        'fill_rate_max': t.vehicle_id.fill_rate_max if t.vehicle_id.fill_rate_max else 98.9
+                        'fill_rate_min': t.vehicle_id.fill_rate_min if t.vehicle_id.fill_rate_min else 90.0,
+                        'fill_rate_max': t.vehicle_id.fill_rate_max if t.vehicle_id.fill_rate_max else 95.0
                     })
                     
             if not fleet:
@@ -626,310 +831,234 @@ class DlWoodDossier(models.Model):
             fleet_size = len(fleet)
 
             # 3. Chuẩn bị dữ liệu gỗ và củi cần vận chuyển
-            wood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume} for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'wood' and x.volume > 0)]
-            # CHÚ Ý: Củi dùng volume_ster
-            firewood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume_ster} for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'firewood' and x.volume_ster > 0)]
+            wood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume} 
+                          for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'wood' and x.volume > 0)]
+            firewood_lines = [{'id': l.species_id.id, 'wood_type': l.wood_type, 'remaining': l.volume_ster} 
+                              for l in dossier.line_ids.filtered(lambda x: x.wood_type == 'firewood' and x.volume_ster > 0)]
 
-            def get_total_remaining(lines):
-                return sum(x['remaining'] for x in lines)
-
-            total_wood = get_total_remaining(wood_lines)
-            total_firewood = get_total_remaining(firewood_lines)
+            total_wood = sum(x['remaining'] for x in wood_lines)
+            total_firewood = sum(x['remaining'] for x in firewood_lines)
             
             if total_wood <= 0 and total_firewood <= 0:
                 continue
 
-            # 4. Phân bổ xe riêng biệt cho gỗ và củi
-            # 4.1 Phân bổ xe cho Gỗ
-            allocated_wood_vehicles = []
-            current_wood_capacity = 0.0
-            fleet_cycle_index = 0
-            while current_wood_capacity < total_wood:
-                v = fleet[fleet_cycle_index % fleet_size]
-                allocated_wood_vehicles.append(v)
-                current_wood_capacity += v['capacity'] * (v['fill_rate_max'] / 100.0)
-                fleet_cycle_index += 1
+            # 4. Tìm danh sách xe tối ưu cho gỗ và củi
+            optimal_wood_vehicles = find_optimal_vehicles(fleet, total_wood)
+            optimal_firewood_vehicles = find_optimal_vehicles(fleet, total_firewood)
 
-            # 4.2 Phân bổ xe cho Củi (bắt đầu lại chu kỳ xe)
-            allocated_firewood_vehicles = []
-            current_firewood_capacity = 0.0
-            fleet_cycle_index = 0
-            while current_firewood_capacity < total_firewood:
-                v = fleet[fleet_cycle_index % fleet_size]
-                allocated_firewood_vehicles.append(v)
-                current_firewood_capacity += v['capacity'] * (v['fill_rate_max'] / 100.0)
-                fleet_cycle_index += 1
+            # Phân bổ khối lượng thực tế cho từng xe
+            wood_vols = allocate_volume_to_vehicles(optimal_wood_vehicles, total_wood)
+            for idx, v in enumerate(optimal_wood_vehicles):
+                # Copy dict xe để tránh ghi đè chéo và thêm unique_idx + type để gom chung
+                optimal_wood_vehicles[idx] = dict(v, allocated_volume=wood_vols[idx], unique_idx=idx, type='wood')
 
-            # 5. Gom các xe này thành các Chuyến (Tickets)
-            # 5.1 Chuyến xe gỗ
-            wood_trips = []
-            for i in range(0, len(allocated_wood_vehicles), fleet_size):
-                chunk = allocated_wood_vehicles[i:i+fleet_size]
-                nominal_cap = sum(x['capacity'] for x in chunk)
-                wood_trips.append({
-                    'vehicles': chunk,
-                    'nominal_capacity': nominal_cap,
-                    'vehicle_count': len(chunk),
-                    'type': 'wood'
+            firewood_vols = allocate_volume_to_vehicles(optimal_firewood_vehicles, total_firewood)
+            for idx, v in enumerate(optimal_firewood_vehicles):
+                optimal_firewood_vehicles[idx] = dict(v, allocated_volume=firewood_vols[idx], unique_idx=idx, type='firewood')
+
+            # Gộp chung toàn bộ chuyến gỗ và củi lại thành một danh sách chuyến đi tối ưu chung
+            optimal_all_vehicles = optimal_wood_vehicles + optimal_firewood_vehicles
+
+            # 5. Gom nhóm xe theo ngày dựa trên cách vận chuyển
+            method = dossier.x_transport_method or 'normal'
+            if method == 'urgent':
+                chunk_size = fleet_size * 2
+            else:
+                chunk_size = fleet_size
+
+            trips = []
+            for i in range(0, len(optimal_all_vehicles), chunk_size):
+                chunk = optimal_all_vehicles[i:i + chunk_size]
+                trips.append({
+                    'vehicles': chunk
                 })
 
-            # 5.2 Chuyến xe củi
-            firewood_trips = []
-            for i in range(0, len(allocated_firewood_vehicles), fleet_size):
-                chunk = allocated_firewood_vehicles[i:i+fleet_size]
-                nominal_cap = sum(x['capacity'] for x in chunk)
-                firewood_trips.append({
-                    'vehicles': chunk,
-                    'nominal_capacity': nominal_cap,
-                    'vehicle_count': len(chunk),
-                    'type': 'firewood'
-                })
-
-            # 6. Phân bổ khối lượng thực tế cho từng chuyến
-            # 6.1 Cho gỗ
-            total_wood_nominal = sum(trip['nominal_capacity'] for trip in wood_trips)
-            if wood_trips:
-                for trip in wood_trips:
-                    prop_vol = total_wood * (trip['nominal_capacity'] / total_wood_nominal)
-                    trip['target_volume'] = prop_vol
-                
-                # Thêm độ lệch ngẫu nhiên nhỏ (+/- 1.5%)
-                if len(wood_trips) > 1:
-                    variations = [random.uniform(-0.015, 0.015) for _ in range(len(wood_trips))]
-                    raw_targets = [wood_trips[i]['target_volume'] * (1 + variations[i]) for i in range(len(wood_trips))]
-                    sum_raw = sum(raw_targets)
-                    for i, trip in enumerate(wood_trips):
-                        trip['target_volume'] = round((raw_targets[i] / sum_raw) * total_wood, 1)
-                    diff = round(total_wood - sum(t['target_volume'] for t in wood_trips), 1)
-                    wood_trips[-1]['target_volume'] = round(wood_trips[-1]['target_volume'] + diff, 1)
-                else:
-                    wood_trips[0]['target_volume'] = round(total_wood, 1)
-
-            # 6.2 Cho củi
-            total_firewood_nominal = sum(trip['nominal_capacity'] for trip in firewood_trips)
-            if firewood_trips:
-                for trip in firewood_trips:
-                    prop_vol = total_firewood * (trip['nominal_capacity'] / total_firewood_nominal)
-                    trip['target_volume'] = prop_vol
-                
-                # Thêm độ lệch ngẫu nhiên nhỏ (+/- 1.5%)
-                if len(firewood_trips) > 1:
-                    variations = [random.uniform(-0.015, 0.015) for _ in range(len(firewood_trips))]
-                    raw_targets = [firewood_trips[i]['target_volume'] * (1 + variations[i]) for i in range(len(firewood_trips))]
-                    sum_raw = sum(raw_targets)
-                    for i, trip in enumerate(firewood_trips):
-                        trip['target_volume'] = round((raw_targets[i] / sum_raw) * total_firewood, 1)
-                    diff = round(total_firewood - sum(t['target_volume'] for t in firewood_trips), 1)
-                    firewood_trips[-1]['target_volume'] = round(firewood_trips[-1]['target_volume'] + diff, 1)
-                else:
-                    firewood_trips[0]['target_volume'] = round(total_firewood, 1)
-
-            # Ghép chuyến: Gỗ đi trước, củi đi sau
-            trips = wood_trips + firewood_trips
-
-            # 7. Tạo chi tiết phân bổ cho từng chuyến
             tickets_vals = []
             trip_counter = 1
 
+            # Khởi tạo Pool hàng hóa để rút dần
+            wood_pool = [{'species_id': w['id'], 'remaining': w['remaining']} for w in wood_lines]
+            firewood_pool = [{'species_id': f['id'], 'remaining': f['remaining']} for f in firewood_lines]
+
+            # Bản đồ theo dõi lượng hàng ban đầu và lượng đã phân bổ để bù sai số làm tròn Ticket lines
+            initial_volume_map = {}
+            for l in dossier.line_ids:
+                key = (l.species_id.id, l.wood_type)
+                val = l.volume_ster if l.wood_type == 'firewood' else l.volume
+                if val > 0:
+                    initial_volume_map[key] = initial_volume_map.get(key, 0.0) + val
+
+            ticket_allocated_map = {}
+
             for trip in trips:
-                target_vol = trip['target_volume']
-                v_count = trip['vehicle_count']
-                nominal_cap = trip['nominal_capacity']
-                
-                # Format mô tả phương tiện sử dụng
-                vehicle_counts = {}
-                for v in trip['vehicles']:
-                     name = v['name']
-                     vehicle_counts[name] = vehicle_counts.get(name, 0) + 1
-                vehicle_info = ", ".join([f"{qty} x {name}" for name, qty in sorted(vehicle_counts.items())])
-                
-                # Lưu tải trọng chi tiết của từng xe
-                capacities_str = ",".join([str(v['capacity']) for v in trip['vehicles']])
-
-                # Tính tỷ lệ lấp đầy thực tế của chuyến
-                fill_rate = round((target_vol / nominal_cap), 4) if nominal_cap > 0 else 0.0
-
-                lines_to_create = []
+                vehicles_in_trip = trip['vehicles']
                 vehicle_lines = []
-                
-                if trip['type'] == 'wood':
-                    remaining_target = target_vol
-                    for w in wood_lines:
-                        if remaining_target <= 0.0:
-                            break
-                        if w['remaining'] > 0:
-                            take = round(min(w['remaining'], remaining_target), 1)
-                            if take > 0:
-                                lines_to_create.append({
-                                    'species_id': w['id'],
-                                    'wood_type': 'wood',
-                                    'volume': take
+                ticket_lines_map = {}
+
+                for v in vehicles_in_trip:
+                    v_target = v['allocated_volume']
+                    v_remaining = v_target
+                    v_species_lines = []
+
+                    cargo_pool = wood_pool if v['type'] == 'wood' else firewood_pool
+                    optimal_list = optimal_wood_vehicles if v['type'] == 'wood' else optimal_firewood_vehicles
+                    is_last_vehicle = (v.get('unique_idx') == optimal_list[-1].get('unique_idx'))
+
+                    if is_last_vehicle:
+                        # Kiểm tra: pool còn lại có vừa vào xe này không?
+                        # Nếu pool > capacity → xe này KHÔNG phải xe cuối thực sự
+                        # → xử lý như xe bình thường, giới hạn ở v_target
+                        pool_remaining = sum(item['remaining'] for item in cargo_pool if item['remaining'] > 0.0)
+                        if pool_remaining > v['capacity']:
+                            is_last_vehicle = False  # downgrade về xe bình thường
+
+                    if is_last_vehicle:
+                        # Xe cuối thực sự của loại hàng: lấy nốt toàn bộ hàng còn lại trong Pool
+                        for item in cargo_pool:
+                            if item['remaining'] > 0.0:
+                                v_species_lines.append({
+                                    'species_id': item['species_id'],
+                                    'volume': item['remaining']
                                 })
-                                w['remaining'] = round(w['remaining'] - take, 1)
-                                remaining_target = round(remaining_target - take, 1)
-
-                    if remaining_target > 0.0 and lines_to_create:
-                        lines_to_create[-1]['volume'] = round(lines_to_create[-1]['volume'] + remaining_target, 1)
-                    elif remaining_target < 0.0 and lines_to_create:
-                        lines_to_create[-1]['volume'] = round(max(0.1, lines_to_create[-1]['volume'] + remaining_target), 1)
-
-                    # Phân bổ xe cho gỗ
-                    if lines_to_create and trip['vehicles']:
-                        total_allocated_vol = sum(line['volume'] for line in lines_to_create)
-                        v_targets = []
-                        allocated_so_far = 0.0
-                        for v in trip['vehicles'][:-1]:
-                            v_vol = round(v['capacity'] * fill_rate, 2)
-                            v_targets.append(v_vol)
-                            allocated_so_far += v_vol
-                        v_targets.append(round(total_allocated_vol - allocated_so_far, 2))
-
-                        cargo_pool = [{'species_id': l['species_id'], 'remaining': l['volume']} for l in lines_to_create]
-
-                        for v_idx, v in enumerate(trip['vehicles']):
-                            v_target = v_targets[v_idx]
-                            v_remaining = v_target
-
+                                item['remaining'] = 0.0
+                    else:
+                        # Xe bình thường: Phân bổ hàng theo v_remaining (không vượt capacity)
+                        for item in cargo_pool:
+                            if v_remaining <= 0.0:
+                                break
+                            if item['remaining'] > 0.0:
+                                take = round(min(item['remaining'], v_remaining), 1)
+                                if take > 0.0:
+                                    v_species_lines.append({
+                                        'species_id': item['species_id'],
+                                        'volume': take
+                                    })
+                                    item['remaining'] = round(item['remaining'] - take, 1)
+                                    v_remaining = round(v_remaining - take, 1)
+                        
+                        # Nếu vẫn còn thiếu ít tải trọng do làm tròn, bù thêm từ loài gỗ đầu tiên còn hàng
+                        if v_remaining > 0.0:
                             for item in cargo_pool:
-                                if v_remaining <= 0.0:
-                                    break
                                 if item['remaining'] > 0.0:
-                                    take = round(min(item['remaining'], v_remaining), 2)
+                                    take = round(min(item['remaining'], v_remaining), 1)
                                     if take > 0.0:
-                                        vehicle_lines.append({
-                                            'name': f"Xe {v_idx + 1:02d}",
-                                            'capacity': v['capacity'],
-                                            'volume': take,
-                                            'species_id': item['species_id'],
-                                            'wood_type': 'wood',
-                                        })
-                                        item['remaining'] = round(item['remaining'] - take, 2)
-                                        v_remaining = round(v_remaining - take, 2)
-
-                            if v_remaining > 0.0:
-                                for item in cargo_pool:
-                                    if item['remaining'] > 0.0:
-                                        vehicle_lines.append({
-                                            'name': f"Xe {v_idx + 1:02d}",
-                                            'capacity': v['capacity'],
-                                            'volume': item['remaining'],
-                                            'species_id': item['species_id'],
-                                            'wood_type': 'wood',
-                                        })
-                                        item['remaining'] = 0.0
-                                        break
-                else: # firewood
-                    remaining_target = target_vol
-                    for f in firewood_lines:
-                        if remaining_target <= 0.0:
-                            break
-                        if f['remaining'] > 0:
-                            take = round(min(f['remaining'], remaining_target), 1)
-                            if take > 0:
-                                lines_to_create.append({
-                                    'species_id': f['id'],
-                                    'wood_type': 'firewood',
-                                    'volume': take
-                                })
-                                f['remaining'] = round(f['remaining'] - take, 1)
-                                remaining_target = round(remaining_target - take, 1)
-
-                    if remaining_target > 0.0 and lines_to_create:
-                        lines_to_create[-1]['volume'] = round(lines_to_create[-1]['volume'] + remaining_target, 1)
-                    elif remaining_target < 0.0 and lines_to_create:
-                        lines_to_create[-1]['volume'] = round(max(0.1, lines_to_create[-1]['volume'] + remaining_target), 1)
-
-                    # Phân bổ xe cho củi
-                    if lines_to_create and trip['vehicles']:
-                        total_allocated_vol = sum(line['volume'] for line in lines_to_create)
-                        v_targets = []
-                        allocated_so_far = 0.0
-                        for v in trip['vehicles'][:-1]:
-                            v_vol = round(v['capacity'] * fill_rate, 2)
-                            v_targets.append(v_vol)
-                            allocated_so_far += v_vol
-                        v_targets.append(round(total_allocated_vol - allocated_so_far, 2))
-
-                        cargo_pool = [{'species_id': l['species_id'], 'remaining': l['volume']} for l in lines_to_create]
-
-                        for v_idx, v in enumerate(trip['vehicles']):
-                            v_target = v_targets[v_idx]
-                            v_remaining = v_target
-
-                            for item in cargo_pool:
-                                if v_remaining <= 0.0:
+                                        found = False
+                                        for line in v_species_lines:
+                                            if line['species_id'] == item['species_id']:
+                                                line['volume'] = round(line['volume'] + take, 1)
+                                                found = True
+                                                break
+                                        if not found:
+                                            v_species_lines.append({
+                                                'species_id': item['species_id'],
+                                                'volume': take
+                                            })
+                                        item['remaining'] = round(item['remaining'] - take, 1)
+                                        v_remaining = round(v_remaining - take, 1)
                                     break
-                                if item['remaining'] > 0.0:
-                                    take = round(min(item['remaining'], v_remaining), 2)
-                                    if take > 0.0:
-                                        vehicle_lines.append({
-                                            'name': f"Xe {v_idx + 1:02d}",
-                                            'capacity': v['capacity'],
-                                            'volume': take,
-                                            'species_id': item['species_id'],
-                                            'wood_type': 'firewood',
-                                        })
-                                        item['remaining'] = round(item['remaining'] - take, 2)
-                                        v_remaining = round(v_remaining - take, 2)
 
-                            if v_remaining > 0.0:
-                                for item in cargo_pool:
-                                    if item['remaining'] > 0.0:
-                                        vehicle_lines.append({
-                                            'name': f"Xe {v_idx + 1:02d}",
-                                            'capacity': v['capacity'],
-                                            'volume': item['remaining'],
-                                            'species_id': item['species_id'],
-                                            'wood_type': 'firewood',
-                                        })
-                                        item['remaining'] = 0.0
-                                        break
+                    # Tạo các dòng chi tiết phương tiện của xe này
+                    for line in v_species_lines:
+                        if line['volume'] > 0:
+                            vehicle_lines.append({
+                                'name': v['name'],
+                                'capacity': v['capacity'],
+                                'volume': line['volume'],
+                                'species_id': line['species_id'],
+                                'wood_type': v['type'],
+                            })
+                            key = (line['species_id'], v['type'])
+                            ticket_lines_map[key] = ticket_lines_map.get(key, 0.0) + line['volume']
+
+                # Gom các dòng phương tiện lại theo species_id để tạo dòng ticket_line_ids
+                lines_to_create = []
+                for key, vol_sum in ticket_lines_map.items():
+                    species_id, w_type = key
+                    init_vol = initial_volume_map.get(key, 0.0)
+                    
+                    cargo_pool = wood_pool if w_type == 'wood' else firewood_pool
+                    remaining_in_pool = sum(item['remaining'] for item in cargo_pool if item['species_id'] == species_id)
+                    accumulated = ticket_allocated_map.get(key, 0.0)
+                    
+                    if remaining_in_pool <= 0.01:
+                        # Xe cuối cùng của loài này đã được phân bổ trong chuyến này -> lấy nốt phần còn lại để khớp tuyệt đối
+                        vol_to_assign = round(init_vol - accumulated, 1)
+                        # Bù sai số cho dòng phương tiện cuối cùng chở loài gỗ này
+                        diff = round(vol_to_assign - vol_sum, 1)
+                        if diff != 0:
+                            for vl in reversed(vehicle_lines):
+                                if vl['species_id'] == species_id and vl['wood_type'] == w_type:
+                                    vl['volume'] = round(vl['volume'] + diff, 1)
+                                    break
+                    else:
+                        vol_to_assign = round(vol_sum, 1)
+                        
+                    vol_to_assign = max(0.1, vol_to_assign)
+                    
+                    lines_to_create.append({
+                        'species_id': species_id,
+                        'wood_type': w_type,
+                        'volume': vol_to_assign
+                    })
+                    ticket_allocated_map[key] = accumulated + vol_to_assign
 
                 if lines_to_create:
-                    current_date = start_date
-                    if current_date.weekday() == 6:
-                        current_date += datetime.timedelta(days=1)
-                    steps = trip_counter - 1
-                    for _ in range(steps):
-                        current_date += datetime.timedelta(days=1)
-                        while current_date.weekday() == 6:
-                            current_date += datetime.timedelta(days=1)
-                    ticket_date = current_date
+                    # Tính ngày vận chuyển thực tế dựa trên chế độ vận chuyển x_transport_method
+                    if method == 'slow':
+                        days_offset = (trip_counter - 1) * 2
+                    else:
+                        days_offset = trip_counter - 1
+
+                    ticket_date = calculate_ticket_date(start_date, days_offset)
                     if ticket_date > end_date:
                         ticket_date = end_date
+
+                    date_str = ticket_date.strftime('%d/%m/%Y')
+                    ticket_name = f"Phiếu ngày {date_str}"
+
+                    total_trip_vol = sum(line['volume'] for line in lines_to_create)
+                    nominal_cap = sum(v['capacity'] for v in vehicles_in_trip)
+                    fill_rate = round((total_trip_vol / nominal_cap), 4) if nominal_cap > 0 else 0.0
+
                     tickets_vals.append({
                         'dossier_id': dossier.id,
-                        'name': f'Phiếu {trip_counter:02d}',
+                        'name': ticket_name,
                         'x_date': ticket_date,
-                        'vehicle_count': v_count,
-                        'x_vehicle_info': vehicle_info,
-                        'x_vehicle_capacities': capacities_str,
+                        'vehicle_count': len(vehicles_in_trip),
+                        'x_vehicle_info': ", ".join([v['name'] for v in vehicles_in_trip]),
+                        'x_vehicle_capacities': ", ".join([str(v['capacity']) for v in vehicles_in_trip]),
                         'fill_rate': fill_rate,
                         'ticket_line_ids': [(0, 0, vals) for vals in lines_to_create],
                         'x_vehicle_ids': [(0, 0, vals) for vals in vehicle_lines]
                     })
                     trip_counter += 1
 
-            # Lưu vào cơ sở dữ liệu
             if tickets_vals:
                 self.env['dl.wood.dossier.transport.ticket'].create(tickets_vals)
-                
 
-    @api.onchange('x_start_date', 'line_ids')
+    @api.onchange('x_start_date', 'line_ids', 'x_prep_days', 'x_exploitation_capacity')
     def _onchange_suggest_end_date(self):
-        """Tự động gợi ý ngày kết thúc khai thác dựa trên ngày bắt đầu và tổng khối lượng gỗ."""
+        """Tự động gợi ý ngày kết thúc khai thác dựa trên ngày bắt đầu, năng lực khai thác và thời gian chuẩn bị."""
         if self.x_start_date:
+            import math
+            # Lấy cấu hình 3 cấp (Ưu tiên: Hồ sơ -> Chủ rừng -> Công ty)
+            prep_days = self.x_prep_days or (self.partner_id and self.partner_id.x_prep_days) or (self.company_id and self.company_id.x_prep_days) or 6
+            capacity = self.x_exploitation_capacity or (self.partner_id and self.partner_id.x_exploitation_capacity) or (self.company_id and self.company_id.x_exploitation_capacity) or 40
+
             # Chỉ tính khối lượng GỖ (m³) để ước tính thời gian khai thác.
             # Củi (volume_ster) không tham gia vào ước tính này.
             total_vol = sum(l.volume for l in self.line_ids if l.wood_type == 'wood')
             
-            # Áp dụng công thức hồi quy tuyến tính: y = 0.016 * x + 16.5
-            days_needed = int(round(0.016 * total_vol + 16.5))
+            # Tính số ngày khai thác cần thiết
+            exploitation_days = math.ceil(total_vol / capacity) if capacity > 0 else 1
+            days_needed = prep_days + exploitation_days
+            
             if days_needed < 1:
                 days_needed = 1
                 
             from datetime import timedelta
-            self.x_end_date = self.x_start_date + timedelta(days=days_needed)
+            # inclusive date calculation (ví dụ: ngày 01 đến 08 là mất 8 ngày, tức 01 + 7 ngày)
+            self.x_end_date = self.x_start_date + timedelta(days=max(0, days_needed - 1))
 
 
     @api.onchange('partner_id')
@@ -937,6 +1066,11 @@ class DlWoodDossier(models.Model):
         """Tự động điền người đại diện chủ rừng mặc định khi chọn chủ rừng."""
         if self.partner_id:
             self.x_owner_representative = self.partner_id.name
+            
+            # Kế thừa năng lực khai thác và thời gian chuẩn bị từ Chủ rừng
+            # Nếu chủ rừng chưa cấu hình (bằng 0), fallback về cấu hình mặc định của công ty
+            self.x_prep_days = self.partner_id.x_prep_days or self.company_id.x_prep_days or 6
+            self.x_exploitation_capacity = self.partner_id.x_exploitation_capacity or self.company_id.x_exploitation_capacity or 40
             
             # Tự động chọn địa bàn khai thác mặc định
             locations = self.partner_id.exploitation_location_ids
@@ -957,9 +1091,37 @@ class DlWoodDossier(models.Model):
 
     @api.onchange('exploitation_location_id')
     def _onchange_exploitation_location_id(self):
-        """Tự động điền diện tích khi thay đổi địa bàn khai thác"""
+        """Tự động điền diện tích và danh sách loài gỗ khi thay đổi địa bàn khai thác.
+        
+        - Luôn cập nhật diện tích (x_area) từ địa điểm.
+        - Chỉ tự động điền line_ids nếu chưa có dòng nào (tránh ghi đè dữ liệu đã nhập).
+        - Tự động tìm phân loại (grade) đầu tiên theo logic chuẩn.
+        """
         if self.exploitation_location_id:
             self.x_area = self.exploitation_location_id.x_area_ha
+            
+            # Chỉ điền loài gỗ mặc định khi chưa có chi tiết khai thác
+            if not self.line_ids and self.exploitation_location_id.species_ids:
+                GradeModel = self.env['dl.wood.species.grade']
+                new_lines = []
+                for spec_line in self.exploitation_location_id.species_ids.sorted('sequence'):
+                    species = spec_line.species_id
+                    first_grade = GradeModel.search([('species_id', '=', species.id)], limit=1)
+                    line_vals = {'species_id': species.id}
+                    if species.wood_type == 'firewood':
+                        # Củi: không cần grade, lấy giá từ grade đầu tiên nếu có
+                        if first_grade:
+                            line_vals['price_unit'] = first_grade.default_price
+                    else:
+                        # Gỗ: tự động gán grade đầu tiên + thông số kích thước
+                        if first_grade:
+                            line_vals['grade_id'] = first_grade.id
+                            line_vals['diameter_min'] = first_grade.diameter_min
+                            line_vals['diameter_max'] = first_grade.diameter_max
+                            line_vals['height'] = first_grade.height
+                            line_vals['price_unit'] = first_grade.default_price
+                    new_lines.append((0, 0, line_vals))
+                self.line_ids = new_lines
 
 
     @api.onchange('x_report_version_id')

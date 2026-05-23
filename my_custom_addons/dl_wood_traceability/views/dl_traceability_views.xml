@@ -68,6 +68,7 @@
                             <field name="exploitation_location_id" domain="[('partner_id', '=', partner_id)]" context="{'default_partner_id': partner_id}" readonly="state in ('using', 'summary', 'confirmed')"/>
                             <field name="company_id" readonly="1"/>
                             <field name="x_start_date" string="Khai thác từ" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="x_prep_days" readonly="state in ('using', 'summary', 'confirmed')"/>
                         </group>
                         <group>
                             <field name="name" readonly="1" decoration-bf="1"/>
@@ -78,7 +79,9 @@
                             </div>
                             <field name="x_mining_method" readonly="state in ('using', 'summary', 'confirmed')"/>
                             <field name="x_area" placeholder="Diện tích (ha)" readonly="state in ('using', 'summary', 'confirmed')"/>
-                            <field name="x_woodpro_id" readonly="1"/>
+
+                            <field name="x_exploitation_capacity" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            <field name="x_woodpro_id" readonly="1" invisible="1"/>
                         </group>
                     </group>
 
@@ -140,6 +143,9 @@
                                     <button name="action_generate_transport_tickets" type="object" string="Tính toán &amp; Chia phiếu nhập kho" class="btn btn-primary h-100 w-100" icon="fa-cogs" invisible="state in ('using', 'summary', 'confirmed')"/>
                                 </div>
                             </div>
+                            <group>
+                                <field name="x_transport_method" widget="radio" options="{'horizontal': true}" readonly="state in ('using', 'summary', 'confirmed')"/>
+                            </group>
                             <separator string="Cấu hình xe vận chuyển"/>
                             <field name="transport_ids" nolabel="1" class="w-100" readonly="state in ('using', 'summary', 'confirmed')">
                                 <list editable="bottom">
@@ -163,24 +169,24 @@
                                      <group>
                                          <group>
                                              <field name="name" readonly="1"/>
-                                             <field name="x_date"/>
+                                             <field name="x_date" readonly="1"/>
                                              <field name="x_vehicle_info" readonly="1"/>
                                              <field name="vehicle_count" readonly="1"/>
                                          </group>
                                          <group>
-                                             <field name="fill_rate" readonly="1" widget="percentage"/>
+                                             <field name="fill_rate" widget="percentage" readonly="1"/>
                                              <field name="total_volume" readonly="1"/>
                                          </group>
                                      </group>
                                      <notebook>
                                          <page string="Chi tiết phương tiện (Biển số &amp; Tải trọng)">
                                              <field name="x_vehicle_ids">
-                                                 <list editable="bottom">
+                                                 <list editable="bottom" create="false" delete="false">
                                                      <field name="name" placeholder="Biển số xe (ví dụ: 29C-123.45)"/>
-                                                     <field name="capacity"/>
-                                                     <field name="species_id"/>
-                                                     <field name="wood_type"/>
-                                                     <field name="volume" sum="Tổng thực chở"/>
+                                                     <field name="capacity" readonly="1"/>
+                                                     <field name="species_id" readonly="1"/>
+                                                     <field name="wood_type" readonly="1"/>
+                                                     <field name="volume" sum="Tổng thực chở" readonly="1"/>
                                                      <field name="note"/>
                                                  </list>
                                              </field>
@@ -212,10 +218,12 @@
                                     <field name="x_verify_date" readonly="state in ('using', 'summary', 'confirmed')"/>
                                     <field name="x_delivery_explanation" nolabel="1" colspan="2" readonly="1"/>
                                 </group>
-                                <group string="Mã Số &amp; Phụ Lục">
-                                    <field name="x_contract_number" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_addendum_num" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                    <field name="x_bkls_number" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                <group col="1">
+                                    <group string="Mã Số &amp; Phụ Lục">
+                                        <field name="x_contract_number" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                        <field name="x_addendum_num" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                        <field name="x_bkls_number" readonly="state in ('using', 'summary', 'confirmed')"/>
+                                    </group>
                                 </group>
                             </group>
                             <group string="Đại diện ký tá">
@@ -413,7 +421,7 @@
     </record>
 
     <menuitem id="menu_dl_wood_traceability_root" 
-              name="Trừ Lùi Nguyên Liệu" 
+              name="Hồ Sơ Gỗ" 
               groups="dl_wood_traceability.group_dl_wood_dossier_manager"
               sequence="80"/>
 
@@ -525,7 +533,7 @@
                             <field name="active"/>
                         </group>
                         <group>
-                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
                         </group>
                     </group>
                     <notebook>
@@ -542,6 +550,58 @@
                                     <field name="dl_upload_date" readonly="1" force_save="1"/>
                                 </list>
                             </field>
+                            <div class="mt-3 p-3 bg-light border rounded">
+                                <h5 class="text-primary mb-2"><i class="fa fa-info-circle me-1"></i> Bảng tra cứu Mã kỹ thuật (Template Key) được hỗ trợ:</h5>
+                                <p class="text-muted mb-3 small">
+                                    Hệ thống sử dụng <strong>Mã kỹ thuật</strong> để ánh xạ dữ liệu hồ sơ gỗ vào đúng tệp mẫu Word (.docx) tương ứng. Khi thêm mới biểu mẫu, bạn cần điền chính xác một trong các mã kỹ thuật dưới đây:
+                                </p>
+                                <table class="table table-sm table-hover mb-0" style="max-width: 800px;">
+                                    <thead>
+                                        <tr class="bg-secondary text-white">
+                                            <th style="width: 250px; padding: 6px 12px;">Mã kỹ thuật (Template Key)</th>
+                                            <th style="padding: 6px 12px;">Tên loại tài liệu / Chức năng biểu mẫu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>ptkt</code></td>
+                                            <td style="padding: 6px 12px;">1. Phiếu thông tin khai thác (Thông tin nguồn gốc rừng khai thác)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>hdsg</code></td>
+                                            <td style="padding: 6px 12px;">2. Hợp đồng hồ sơ nguồn gốc (Hợp đồng mua bán gỗ giữa các bên)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>bkls</code></td>
+                                            <td style="padding: 6px 12px;">3. Bảng kê lâm sản (Bảng kê tổng hợp danh sách gỗ khai thác)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>chia_nho_bkls</code></td>
+                                            <td style="padding: 6px 12px;">3b. Bảng kê lâm sản chia nhỏ / Gộp xe (Chia nhỏ bảng kê theo chuyến xe)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>ddnx</code></td>
+                                            <td style="padding: 6px 12px;">4. Đơn đề nghị xác nhận (Đơn gửi kiểm lâm đề nghị xác nhận lâm sản)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>bbxm</code></td>
+                                            <td style="padding: 6px 12px;">5. Biên bản xác minh (Biên bản xác minh nguồn gốc gỗ của kiểm lâm)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>pnk</code> hoặc <code>phieu_nhap_kho</code></td>
+                                            <td style="padding: 6px 12px;">Phiếu nhập kho gỗ (Mẫu in phiếu nhập kho trong hệ thống)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>bbbg</code> hoặc <code>bien_ban_ban_giao</code></td>
+                                            <td style="padding: 6px 12px;">Biên bản bàn giao lâm sản (Chứng từ bàn giao giữa bên bán và bên mua)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 6px 12px;"><code>gbn</code></td>
+                                            <td style="padding: 6px 12px;">Giấy biên nhận (Chứng từ cam kết thanh toán/nợ tiền mua bán lâm sản)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </page>
                     </notebook>
                 </sheet>
@@ -620,5 +680,50 @@
     <menuitem id="menu_dl_wood_config_root" name="Cấu hình" parent="menu_dl_wood_traceability_root" sequence="100"/>
     <menuitem id="menu_dl_wood_report_version" name="Phiên bản biểu mẫu" parent="menu_dl_wood_config_root" action="action_dl_wood_report_version" sequence="10"/>
     <menuitem id="menu_dl_woodpro_config" name="Kết nối WoodPro" parent="menu_dl_wood_config_root" action="action_dl_woodpro_config" sequence="20"/>
+
+    <!-- ===== FORM VIEW: ĐỊA ĐIỂM KHAI THÁC ===== -->
+    <record id="view_dl_wood_exploitation_location_form" model="ir.ui.view">
+        <field name="name">dl.wood.exploitation.location.form</field>
+        <field name="model">dl.wood.exploitation.location</field>
+        <field name="arch" type="xml">
+            <form string="Địa Điểm Khai Thác">
+                <sheet>
+                    <group>
+                        <group string="Thông tin chính">
+                            <field name="partner_id" readonly="1"/>
+                            <field name="name"/>
+                            <field name="x_area_ha"/>
+                            <field name="is_main" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Địa chỉ">
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                        </group>
+                    </group>
+                    <field name="note" placeholder="Ghi chú thêm về địa điểm khai thác..."/>
+                    <notebook>
+                        <page string="Loài gỗ mặc định" name="default_species">
+                            <div class="alert alert-info" role="alert">
+                                <strong>Hướng dẫn:</strong> Cấu hình danh sách loài gỗ thu mua tại địa điểm này.
+                                Khi tạo hồ sơ gỗ mới từ địa điểm này, hệ thống sẽ tự động điền các loài gỗ bên dưới
+                                vào chi tiết khai thác — người dùng chỉ cần nhập khối lượng.
+                            </div>
+                            <field name="species_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="species_id" options="{'no_create': False}"/>
+                                    <field name="wood_type" widget="badge"
+                                           decoration-success="wood_type == 'wood'"
+                                           decoration-warning="wood_type == 'firewood'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
 
 </odoo>

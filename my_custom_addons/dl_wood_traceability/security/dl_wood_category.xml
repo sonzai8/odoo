@@ -2,7 +2,7 @@
 <odoo>
     <record id="module_category_dl_wood_traceability" model="ir.module.category">
         <field name="name">Truy xuất nguồn gốc gỗ</field>
-        <field name="description">Quản lý hồ sơ gỗ và trừ lùi nguyên liệu</field>
+        <field name="description">Quản lý hồ sơ gỗ</field>
         <field name="sequence">20</field>
     </record>
 </odoo>
