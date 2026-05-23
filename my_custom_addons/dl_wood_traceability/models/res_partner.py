@@ -185,6 +185,10 @@ class ResPartner(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer'):
+                if 'company_id' not in vals or not vals['company_id']:
+                    vals['company_id'] = self.env.company.id
         partners = super(ResPartner, self).create(vals_list)
         for partner in partners:
             if partner.x_is_wood_supplier == 'owner' and not partner.exploitation_location_ids:
@@ -195,7 +199,8 @@ class ResPartner(models.Model):
                     'street': partner.street,
                     'city': partner.city,
                     'state_id': partner.state_id.id,
-                    'is_main': True
+                    'is_main': True,
+                    'company_id': partner.company_id.id
                 })
         return partners
 
@@ -210,7 +215,8 @@ class ResPartner(models.Model):
                     'street': partner.street,
                     'city': partner.city,
                     'state_id': partner.state_id.id,
-                    'is_main': True
+                    'is_main': True,
+                    'company_id': partner.company_id.id
                 })
         return res
 

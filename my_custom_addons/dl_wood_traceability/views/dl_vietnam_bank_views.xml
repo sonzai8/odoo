@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View cho dl.vietnam.bank -->
+    <record id="view_dl_vietnam_bank_list" model="ir.ui.view">
+        <field name="name">dl.vietnam.bank.list</field>
+        <field name="model">dl.vietnam.bank</field>
+        <field name="arch" type="xml">
+            <list string="Danh mục ngân hàng" default_order="sequence, name, id" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="short_name"/>
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View cho dl.vietnam.bank -->
+    <record id="view_dl_vietnam_bank_form" model="ir.ui.view">
+        <field name="name">dl.vietnam.bank.form</field>
+        <field name="model">dl.vietnam.bank</field>
+        <field name="arch" type="xml">
+            <form string="Ngân hàng">
+                <sheet>
+                    <widget name="web_ribbon" title="Đã lưu trữ" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="short_name" class="oe_edit_only"/>
+                        <h1>
+                            <field name="short_name" placeholder="Ví dụ: VCB, MB..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View cho dl.vietnam.bank -->
+    <record id="view_dl_vietnam_bank_search" model="ir.ui.view">
+        <field name="name">dl.vietnam.bank.search</field>
+        <field name="model">dl.vietnam.bank</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm ngân hàng">
+                <field name="name" string="Tên/Viết tắt/Mã" filter_domain="['|', '|', ('name', 'ilike', self), ('short_name', 'ilike', self), ('code', 'ilike', self)]"/>
+                <field name="short_name"/>
+                <field name="code"/>
+                <separator/>
+                <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Nhóm theo Công ty" name="group_by_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action cho dl.vietnam.bank -->
+    <record id="action_dl_vietnam_bank" model="ir.actions.act_window">
+        <field name="name">Danh mục ngân hàng</field>
+        <field name="res_model">dl.vietnam.bank</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dl_vietnam_bank_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo mới ngân hàng đầu tiên!
+            </p>
+            <p>
+                Quản lý danh sách các ngân hàng Việt Nam dùng cho thông tin thanh toán của Đối tác/Chủ rừng.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item cho dl.vietnam.bank -->
+    <menuitem id="menu_dl_vietnam_bank"
+              name="Danh mục ngân hàng"
+              parent="dl_wood_traceability.menu_dl_wood_config_root"
+              action="action_dl_vietnam_bank"
+              sequence="30"/>
+</odoo>

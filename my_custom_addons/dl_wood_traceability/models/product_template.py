@@ -56,6 +56,14 @@ class ProductTemplate(models.Model):
         if self.is_wood_product:
             self.tracking = 'lot'
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('is_wood_product'):
+                if 'company_id' not in vals or not vals['company_id']:
+                    vals['company_id'] = self.env.company.id
+        return super(ProductTemplate, self).create(vals_list)
+
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'

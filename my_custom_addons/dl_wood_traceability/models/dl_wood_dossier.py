@@ -593,6 +593,8 @@ class DlWoodDossier(models.Model):
         import datetime
         
         for dossier in self:
+            if dossier.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể thực hiện tính toán chia lại phiếu nhập kho khi Hồ sơ gỗ đang ở trạng thái '%s'.") % dossier.state)
             start_date = dossier.x_delivery_start_date or fields.Date.today()
             end_date = dossier.x_delivery_end_date or fields.Date.today()
             
@@ -1197,6 +1199,36 @@ class DlWoodDossier(models.Model):
         self.ensure_one()
         return self.exploitation_location_id.full_address or self.exploitation_location_id.display_name or self.partner_address or ""
 
+    def write(self, vals):
+        forbidden_fields = {
+            'partner_id', 'exploitation_location_id', 'x_report_version_id',
+            'x_dossier_name', 'x_area', 'x_mining_method',
+            'date_received', 'x_start_date', 'x_end_date', 'x_contract_date',
+            'x_addendum_date', 'x_bkls_date', 'x_verify_date',
+            'x_delivery_start_date', 'x_delivery_end_date',
+            'x_contract_number', 'x_addendum_num', 'x_bkls_number',
+            'x_owner_representative', 'x_owner_position',
+            'x_company_representative', 'x_company_position',
+            'line_ids', 'transport_ids', 'ticket_ids'
+        }
+        for rec in self:
+            if rec.state in ('using', 'summary', 'confirmed'):
+                changed_fields = set(vals.keys())
+                if changed_fields.intersection(forbidden_fields):
+                    raise UserError(_(
+                        "Tuyệt đối không được chỉnh sửa thông tin pháp lý, thông tin khai thác, ngày tháng, "
+                        "số phụ lục hoặc các chi tiết dòng khi Hồ sơ gỗ đang ở trạng thái '%s'."
+                    ) % rec.state)
+        return super(DlWoodDossier, self).write(vals)
+
+    def unlink(self):
+        for rec in self:
+            if rec.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_(
+                    "Tuyệt đối không được xóa Hồ sơ gỗ khi đang ở trạng thái '%s'."
+                ) % rec.state)
+        return super(DlWoodDossier, self).unlink()
+
 
 class DlWoodDossierDocument(models.Model):
     _name = 'dl.wood.dossier.document'
@@ -1409,6 +1441,27 @@ class DlWoodDossierLine(models.Model):
     
     note = fields.Char(string='Ghi chú')
     x_woodpro_id = fields.Char(string='ID WoodPro')
+
+    def write(self, vals):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể chỉnh sửa dòng chi tiết gỗ khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierLine, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('dossier_id'):
+                dossier = self.env['dl.wood.dossier'].browse(vals['dossier_id'])
+                if dossier.state in ('using', 'summary', 'confirmed'):
+                    raise UserError(_("Không thể thêm dòng chi tiết gỗ mới khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % dossier.state)
+        return super(DlWoodDossierLine, self).create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể xóa dòng chi tiết gỗ khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierLine, self).unlink()
 
 
 class DlWoodDossierAttachment(models.Model):

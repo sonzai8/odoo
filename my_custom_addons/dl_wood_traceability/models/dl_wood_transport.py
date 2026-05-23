@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 import random
 
 class DlWoodVehicle(models.Model):
@@ -31,6 +32,27 @@ class DlWoodDossierTransport(models.Model):
         for record in self:
             record.total_nominal_capacity = record.vehicle_count * record.vehicle_id.capacity if record.vehicle_id else 0.0
 
+    def write(self, vals):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể chỉnh sửa cấu hình xe vận chuyển khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransport, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('dossier_id'):
+                dossier = self.env['dl.wood.dossier'].browse(vals['dossier_id'])
+                if dossier.state in ('using', 'summary', 'confirmed'):
+                    raise UserError(_("Không thể thêm cấu hình xe vận chuyển mới khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % dossier.state)
+        return super(DlWoodDossierTransport, self).create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể xóa cấu hình xe vận chuyển khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransport, self).unlink()
+
 
 class DlWoodDossierTransportTicket(models.Model):
     _name = 'dl.wood.dossier.transport.ticket'
@@ -61,6 +83,27 @@ class DlWoodDossierTransportTicket(models.Model):
             else:
                 record.total_volume = 0.0
 
+    def write(self, vals):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể chỉnh sửa phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransportTicket, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('dossier_id'):
+                dossier = self.env['dl.wood.dossier'].browse(vals['dossier_id'])
+                if dossier.state in ('using', 'summary', 'confirmed'):
+                    raise UserError(_("Không thể thêm phiếu nhập kho mới khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % dossier.state)
+        return super(DlWoodDossierTransportTicket, self).create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể xóa phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransportTicket, self).unlink()
+
 
 class DlWoodDossierTransportTicketLine(models.Model):
     _name = 'dl.wood.dossier.transport.ticket.line'
@@ -76,6 +119,27 @@ class DlWoodDossierTransportTicketLine(models.Model):
         ('firewood', 'Củi')
     ], string='Phân loại', required=True)
     volume = fields.Float(string='Khối lượng (m³)', required=True, digits=(16, 1))
+
+    def write(self, vals):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể chỉnh sửa dòng lâm sản trong phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransportTicketLine, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('ticket_id'):
+                ticket = self.env['dl.wood.dossier.transport.ticket'].browse(vals['ticket_id'])
+                if ticket.dossier_id.state in ('using', 'summary', 'confirmed'):
+                    raise UserError(_("Không thể thêm dòng lâm sản mới trong phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % ticket.dossier_id.state)
+        return super(DlWoodDossierTransportTicketLine, self).create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể xóa dòng lâm sản trong phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransportTicketLine, self).unlink()
 
 
 class DlWoodDossierTransportTicketVehicle(models.Model):
@@ -96,4 +160,25 @@ class DlWoodDossierTransportTicketVehicle(models.Model):
         ('firewood', 'Củi')
     ], string='Phân loại', required=True)
     note = fields.Text(string='Ghi chú')
+
+    def write(self, vals):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể chỉnh sửa thông tin xe trong phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransportTicketVehicle, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('ticket_id'):
+                ticket = self.env['dl.wood.dossier.transport.ticket'].browse(vals['ticket_id'])
+                if ticket.dossier_id.state in ('using', 'summary', 'confirmed'):
+                    raise UserError(_("Không thể thêm xe mới trong phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % ticket.dossier_id.state)
+        return super(DlWoodDossierTransportTicketVehicle, self).create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if rec.dossier_id.state in ('using', 'summary', 'confirmed'):
+                raise UserError(_("Không thể xóa xe trong phiếu nhập kho khi Hồ sơ gỗ liên quan đang ở trạng thái '%s'.") % rec.dossier_id.state)
+        return super(DlWoodDossierTransportTicketVehicle, self).unlink()
 

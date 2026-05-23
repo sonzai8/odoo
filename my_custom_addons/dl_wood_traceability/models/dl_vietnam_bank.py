@@ -15,9 +15,10 @@ class DlVietnamBank(models.Model):
     company_id = fields.Many2one('res.company', string='Công ty', default=lambda self: self.env.company)
     active = fields.Boolean(string='Có hiệu lực', default=True)
 
-    _sql_constraints = [
-        ('uniq_short_name', 'unique(short_name, company_id)', 'Tên viết tắt ngân hàng đã tồn tại!')
-    ]
+    _uniq_short_name = models.Constraint(
+        'unique(short_name, company_id)',
+        'Tên viết tắt ngân hàng đã tồn tại!'
+    )
 
     @api.depends('name', 'short_name')
     def _compute_display_name(self):
