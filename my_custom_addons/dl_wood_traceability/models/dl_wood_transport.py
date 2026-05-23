@@ -18,6 +18,7 @@ class DlWoodVehicle(models.Model):
 class DlWoodDossierTransport(models.Model):
     _name = 'dl.wood.dossier.transport'
     _description = 'Cấu hình vận chuyển hồ sơ'
+    _inherit = ['dl.wood.log.mixin']
 
     dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ Sơ Gỗ', ondelete='cascade', required=True)
     company_id = fields.Many2one('res.company', related='dossier_id.company_id', store=True, readonly=True)

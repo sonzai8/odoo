@@ -612,8 +612,8 @@ class DossierDocxRenderer:
                 price_unit = self._get_dossier_line_price_unit(species, v_line.wood_type)
                 subtotal = round(volume * price_unit, 2)
                 
-                # Tên hiển thị dạng: Biển số xe (Tên loài gỗ)
-                species_name = f"{v_line.name} ({species.name})"
+                # Tên hiển thị là tên loài gỗ thu mua
+                species_name = species.name or ""
                 
                 if v_line.wood_type == 'firewood':
                     disp_vol = f"{volume:.2f}".replace('.', ',')
@@ -667,8 +667,8 @@ class DossierDocxRenderer:
                 species = v_line.species_id
                 x_unit = 'm³' if v_line.wood_type == 'wood' else 'Ster'
                 
-                # Tên hiển thị dạng: Biển số xe (Tên loài gỗ)
-                species_name = f"{v_line.name} ({species.name})"
+                # Tên hiển thị là tên loài gỗ thu mua
+                species_name = species.name or ""
                 
                 if v_line.wood_type == 'firewood':
                     disp_vol = f"{volume:.2f}".replace('.', ',')
@@ -1101,6 +1101,7 @@ class DossierDocxRenderer:
             # Danh sách dòng bảng
             'table_rows':             bkls_rows,
             'species_lines':          species_lines,
+            'line':                   species_lines[0] if species_lines else {},
 
             # Fallback variables
             'vietnamese_volume_unit':   fallback_vietnamese_volume_unit,
@@ -1788,6 +1789,7 @@ class DossierDocxRenderer:
             # Danh sách dòng bảng
             'table_rows':             table_rows,
             'species_lines':          species_lines,
+            'line':                   species_lines[0] if species_lines else {},
 
             # Fallback variables
             'vietnamese_volume_unit':   fallback_vietnamese_volume_unit,
@@ -1826,7 +1828,7 @@ class DossierDocxRenderer:
                 if ticket_date > end_date:
                     ticket_date = end_date
             
-            # CƠ CHẾ MỚI: Sử dụng danh sách xe đã lưu x_vehicle_ids nếu có
+            # CƠ CHẾ MỚI: Sử dụng danh sách xe đã lưu x_vehicle_ids nếu có (Gom nhóm theo biển số xe)
             if ticket.x_vehicle_ids:
                 vehicles_grouped = []
                 seen_v_names = {}

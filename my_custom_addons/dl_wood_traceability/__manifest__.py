@@ -13,6 +13,7 @@
         'data/dl_wood_species_data.xml',
         'data/dl_report_version_data.xml',
         'data/ir_sequence_data.xml',
+        'data/dl_wood_log_data.xml',
         'views/res_partner_views.xml',
         'views/product_template_views.xml',
         'views/dl_wood_log_views.xml',

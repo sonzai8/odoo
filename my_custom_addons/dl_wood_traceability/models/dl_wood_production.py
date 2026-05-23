@@ -241,6 +241,14 @@ class DlWoodProductionOrder(models.Model):
                     label = rec.product_id.uom_id.name or ''
             rec.x_product_unit_label = label
 
+    @api.constrains('product_id')
+    def _check_product_id(self):
+        for rec in self:
+            if rec.product_id:
+                is_wood = rec.product_id.is_wood_product or getattr(rec.product_id, 'x_is_wood_product', False)
+                if not is_wood:
+                    raise ValidationError(_("Chỉ được phép chọn sản phẩm sản xuất ngành gỗ cho lệnh sản xuất! Vui lòng chọn sản phẩm khác hoặc tạo mới sản phẩm gỗ từ menu Danh mục sản phẩm gỗ."))
+
     def _get_vol_per_unit(self):
         """Helper để lấy thể tích m³ trên mỗi đơn vị (Tấm/m³...) của sản phẩm."""
         self.ensure_one()
@@ -460,8 +468,13 @@ class DlWoodProductionOrder(models.Model):
                     vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                     vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                     if line.dossier_id:
-                        vol_planned = min(vol_planned, line.dossier_id.remaining_qty)
-                        vol_actual = min(vol_actual, line.dossier_id.remaining_qty)
+                        avail_qty = 0.0
+                        if line.species_id:
+                            avail_qty = sum(line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id).mapped('x_qty_available'))
+                        else:
+                            avail_qty = line.dossier_id.remaining_qty
+                        vol_planned = min(vol_planned, avail_qty)
+                        vol_actual = min(vol_actual, avail_qty)
                     line.volume_planned = vol_planned
                     line.volume_actual = vol_actual
 
@@ -475,8 +488,13 @@ class DlWoodProductionOrder(models.Model):
                     vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                     vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                     if line.dossier_id:
-                        vol_planned = min(vol_planned, line.dossier_id.remaining_qty)
-                        vol_actual = min(vol_actual, line.dossier_id.remaining_qty)
+                        avail_qty = 0.0
+                        if line.species_id:
+                            avail_qty = sum(line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id).mapped('x_qty_available'))
+                        else:
+                            avail_qty = line.dossier_id.remaining_qty
+                        vol_planned = min(vol_planned, avail_qty)
+                        vol_actual = min(vol_actual, avail_qty)
                     line.volume_planned = vol_planned
                     line.volume_actual = vol_actual
 
@@ -542,8 +560,48 @@ class DlWoodProductionOrder(models.Model):
 
 
     def action_start(self):
-        """Bắt đầu sản xuất."""
+        """Bắt đầu sản xuất và kiểm tra tồn kho nguyên liệu kế hoạch."""
         self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_('Vui lòng nhập chi tiết tiêu hao nguyên vật liệu trước khi bắt đầu sản xuất.'))
+        
+        # Kiểm tra tồn kho khả dụng cho các dòng nguyên liệu dựa trên volume_planned
+        avail_cache = {}
+        for line in self.line_ids:
+            if not line.dossier_id or not line.species_id:
+                continue
+            
+            vol_needed = line.volume_planned
+            dossier = line.dossier_id
+            species = line.species_id
+            
+            cache_key = (dossier.id, species.id)
+            if cache_key not in avail_cache:
+                # Tìm các dòng cùng loài gỗ này trong hồ sơ nguồn
+                same_species_lines = dossier.line_ids.filtered(lambda l: l.species_id == species)
+                if not same_species_lines:
+                    raise ValidationError(_(
+                        'Hồ sơ gỗ "%s" không có loài gỗ "%s"!'
+                    ) % (dossier.name, species.name))
+                avail_cache[cache_key] = sum(same_species_lines.mapped('x_qty_available'))
+            
+            species_avail = avail_cache[cache_key]
+            
+            if species_avail < vol_needed:
+                # Khắc phục sai số làm tròn cực kỳ nhỏ (<= 0.05 m³)
+                diff = vol_needed - species_avail
+                if diff <= 0.05:
+                    vol_needed = species_avail
+                    line.volume_planned = vol_needed
+                else:
+                    raise ValidationError(_(
+                        'Không thể bắt đầu sản xuất!\n'
+                        'Loài gỗ "%s" trong Hồ sơ "%s" không đủ tồn kho khả dụng.\n'
+                        'Tồn khả dụng hiện tại: %.2f m³ — Kế hoạch cần dùng: %.2f m³'
+                    ) % (species.name, dossier.name, species_avail, vol_needed))
+            
+            avail_cache[cache_key] -= vol_needed
+            
         self.state = 'in_progress'
 
     def action_done(self):
@@ -815,21 +873,26 @@ class DlWoodProductionLine(models.Model):
             else:
                 line.x_available_species_ids = [(6, 0, [])]
 
-    @api.onchange('dossier_id')
-    def _onchange_dossier_id(self):
+    @api.onchange('dossier_id', 'species_id')
+    def _onchange_dossier_and_species(self):
         if self.dossier_id:
-            species = self.dossier_id.line_ids.mapped('species_id')
-            if len(species) == 1:
-                self.species_id = species[0]
-            else:
-                self.species_id = False
+            species_in_dossier = self.dossier_id.line_ids.mapped('species_id')
+            if not self.species_id and len(species_in_dossier) == 1:
+                self.species_id = species_in_dossier[0]
             
             order = self.production_order_id
             if order:
                 self.x_co_yield = order.x_co_yield
                 vol_per_unit = order._get_vol_per_unit()
                 
-                # Tính định mức tự động thông minh dựa trên khối lượng còn lại của hồ sơ gỗ
+                # Tồn khả dụng của loài gỗ cụ thể trong hồ sơ này
+                avail_qty = 0.0
+                if self.species_id:
+                    avail_qty = sum(self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id).mapped('x_qty_available'))
+                else:
+                    avail_qty = self.dossier_id.remaining_qty
+                
+                # Tính định mức tự động thông minh dựa trên khối lượng còn lại của loài gỗ
                 if order.qty_planned > 0:
                     total_volume_needed = (order.qty_planned * vol_per_unit) * self.x_co_yield
                     if total_volume_needed > 0:
@@ -838,8 +901,7 @@ class DlWoodProductionLine(models.Model):
                         remaining_ratio_needed = max(0.0, 100.0 - other_lines_ratio_sum)
                         
                         raw_volume_needed = total_volume_needed * (remaining_ratio_needed / 100.0)
-                        # Khối lượng khả dụng còn lại của bộ hồ sơ gỗ
-                        dossier_qty_avail = max(0.0, self.dossier_id.qty_available)
+                        dossier_qty_avail = max(0.0, avail_qty)
                         
                         if dossier_qty_avail >= raw_volume_needed:
                             self.x_ratio = round(remaining_ratio_needed, 2)
@@ -850,9 +912,9 @@ class DlWoodProductionLine(models.Model):
                         # Tính toán KL planned/actual của dòng
                         vol_plan = round(((order.qty_planned * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
                         vol_act = round(((order.qty_done * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
-                        if self.dossier_id:
-                            vol_plan = min(vol_plan, self.dossier_id.remaining_qty)
-                            vol_act = min(vol_act, self.dossier_id.remaining_qty)
+                        
+                        vol_plan = min(vol_plan, dossier_qty_avail)
+                        vol_act = min(vol_act, dossier_qty_avail)
                         self.volume_planned = vol_plan
                         self.volume_actual = vol_act
         else:
@@ -867,8 +929,13 @@ class DlWoodProductionLine(models.Model):
                 vol_plan = round(((order.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                 vol_act = round(((order.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                 if line.dossier_id:
-                    vol_plan = min(vol_plan, line.dossier_id.remaining_qty)
-                    vol_act = min(vol_act, line.dossier_id.remaining_qty)
+                    avail_qty = 0.0
+                    if line.species_id:
+                        avail_qty = sum(line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id).mapped('x_qty_available'))
+                    else:
+                        avail_qty = line.dossier_id.remaining_qty
+                    vol_plan = min(vol_plan, avail_qty)
+                    vol_act = min(vol_act, avail_qty)
                 line.volume_planned = vol_plan
                 line.volume_actual = vol_act
 
@@ -876,7 +943,12 @@ class DlWoodProductionLine(models.Model):
     def _onchange_volume_planned(self):
         if self.volume_planned:
             if self.dossier_id:
-                self.volume_planned = min(self.volume_planned, self.dossier_id.remaining_qty)
+                avail_qty = 0.0
+                if self.species_id:
+                    avail_qty = sum(self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id).mapped('x_qty_available'))
+                else:
+                    avail_qty = self.dossier_id.remaining_qty
+                self.volume_planned = min(self.volume_planned, avail_qty)
             self.volume_actual = self.volume_planned
 
     def write(self, vals):

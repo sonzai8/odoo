@@ -9,6 +9,8 @@ class ProductTemplate(models.Model):
         help='Nếu chọn, sản phẩm sẽ bắt buộc quản lý theo Lô (Lot).',
         default=False
     )
+    x_length = fields.Float(default=2440.0)
+    x_width = fields.Float(default=1220.0)
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
     x_production_order_count = fields.Integer(
         string='Số lệnh sản xuất',

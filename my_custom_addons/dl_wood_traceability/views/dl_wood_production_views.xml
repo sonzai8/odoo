@@ -16,7 +16,7 @@
                 <field name="city"/>
                 <field name="state_id"/>
                 <field name="x_customer_code"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="company_id" optional="show"/>
             </list>
         </field>
     </record>
@@ -77,7 +77,7 @@
                                 <list string="Lệnh sản xuất" editable="bottom" delete="0">
                                     <field name="x_select_production_id" readonly="id != False"/>
                                     <field name="name" readonly="1"/>
-                                    <field name="product_id" readonly="x_select_production_id != False"/>
+                                    <field name="product_id" readonly="x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
                                     <field name="qty_planned" readonly="x_select_production_id != False"/>
                                     <field name="qty_done" readonly="x_select_production_id != False"/>
                                     <field name="uom_id" optional="hide"/>
@@ -177,7 +177,7 @@
                             <field name="sale_order_id" readonly="x_select_production_id != False"/>
                             <field name="x_select_production_id" readonly="1" invisible="not x_select_production_id"/>
                             <field name="partner_id" readonly="1"/>
-                            <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                            <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="x_product_unit_label" string="Đơn vị tính" readonly="1"/>
                             <field name="uom_id" invisible="True"/>
                             <field name="company_id" readonly="1"/>
@@ -224,6 +224,7 @@
                                     <field name="x_available_species_ids" column_invisible="True"/>
                                     <field name="species_id"
                                            domain="[('id', 'in', x_available_species_ids)]"/>
+                                    <field name="x_qty_available" readonly="1" string="Tồn khả dụng (m³)"/>
                                     <field name="x_ratio"/>
                                     <field name="x_co_yield"/>
                                     <field name="volume_planned"/>

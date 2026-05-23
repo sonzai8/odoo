@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- 1. Cấu hình log cho Hồ sơ gỗ (dl.wood.dossier) -->
+        <record id="config_log_dl_wood_dossier" model="dl.wood.log.config">
+            <field name="model_id" search="[('model', '=', 'dl.wood.dossier')]" model="ir.model"/>
+            <field name="log_create" eval="True"/>
+            <field name="log_write" eval="True"/>
+            <field name="log_unlink" eval="True"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="field_ids" eval="[
+                (6, 0, [
+                    ref('dl_wood_traceability.field_dl_wood_dossier__partner_id'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__exploitation_location_id'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__date_received'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_start_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_end_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_delivery_start_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_delivery_end_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_bkls_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_verify_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_contract_date'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier__x_addendum_date')
+                ])
+            ]"/>
+        </record>
+
+        <!-- 2. Cấu hình log cho Chi tiết gỗ (dl.wood.dossier.line) -->
+        <record id="config_log_dl_wood_dossier_line" model="dl.wood.log.config">
+            <field name="model_id" search="[('model', '=', 'dl.wood.dossier.line')]" model="ir.model"/>
+            <field name="log_create" eval="True"/>
+            <field name="log_write" eval="True"/>
+            <field name="log_unlink" eval="True"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="field_ids" eval="[
+                (6, 0, [
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__species_id'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__grade_id'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__volume'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__volume_ster'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__diameter_min'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__diameter_max'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_line__height')
+                ])
+            ]"/>
+        </record>
+
+        <!-- 3. Cấu hình log cho Cấu hình xe (dl.wood.dossier.transport) -->
+        <record id="config_log_dl_wood_dossier_transport" model="dl.wood.log.config">
+            <field name="model_id" search="[('model', '=', 'dl.wood.dossier.transport')]" model="ir.model"/>
+            <field name="log_create" eval="True"/>
+            <field name="log_write" eval="True"/>
+            <field name="log_unlink" eval="True"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="field_ids" eval="[
+                (6, 0, [
+                    ref('dl_wood_traceability.field_dl_wood_dossier_transport__vehicle_id'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_transport__vehicle_count'),
+                    ref('dl_wood_traceability.field_dl_wood_dossier_transport__total_nominal_capacity')
+                ])
+            ]"/>
+        </record>
+    </data>
+</odoo>

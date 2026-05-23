@@ -11,6 +11,7 @@
                 <field name="phone"/>
                 <field name="x_full_address" string="Địa chỉ đầy đủ"/>
                 <field name="x_woodpro_id" string="ID WoodPro" readonly="1"/>
+                <field name="company_id" optional="show"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
         </field>
@@ -30,6 +31,7 @@
             <xpath expr="//field[@name='company_id']" position="attributes">
                 <attribute name="readonly">1</attribute>
                 <attribute name="invisible">0</attribute>
+                <attribute name="groups"></attribute>
             </xpath>
             <xpath expr="//field[@name='website']" position="attributes">
                 <attribute name="invisible">x_is_wood_supplier != False</attribute>

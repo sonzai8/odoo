@@ -127,6 +127,39 @@ class DlWoodDossier(models.Model):
             "• Từ từ: 2 ngày/chuyến/xe")
     partner_address = fields.Char(string='Địa chỉ', compute='_compute_partner_address', store=True, readonly=True)
     
+    x_log_ids = fields.One2many('dl.wood.log', compute='_compute_log_ids', string='Lịch sử hoạt động')
+
+    def _compute_log_ids(self):
+        for record in self:
+            if not record.id or not isinstance(record.id, int):
+                record.x_log_ids = self.env['dl.wood.log']
+                continue
+                
+            dossier_model = self.env['ir.model'].sudo().search([('model', '=', 'dl.wood.dossier')], limit=1)
+            line_model = self.env['ir.model'].sudo().search([('model', '=', 'dl.wood.dossier.line')], limit=1)
+            transport_model = self.env['ir.model'].sudo().search([('model', '=', 'dl.wood.dossier.transport')], limit=1)
+            
+            line_ids = [i for i in record.line_ids.ids if isinstance(i, int)]
+            transport_ids = [i for i in record.transport_ids.ids if isinstance(i, int)]
+            
+            domains = [[('model_id', '=', dossier_model.id), ('res_id', '=', record.id)]]
+            if line_ids:
+                domains.append([('model_id', '=', line_model.id), ('res_id', 'in', line_ids)])
+            if transport_ids:
+                domains.append([('model_id', '=', transport_model.id), ('res_id', 'in', transport_ids)])
+            
+            # Gộp các domain con (mỗi domain con mặc định là phép AND, cần nối bằng '&')
+            formatted_domains = []
+            for dom in domains:
+                formatted_domains.append(['&'] + dom)
+            
+            # Kết nối các formatted sub-domains bằng phép OR ('|') ở đầu
+            final_domain = formatted_domains[0]
+            for next_dom in formatted_domains[1:]:
+                final_domain = ['|'] + final_domain + next_dom
+                
+            record.x_log_ids = self.env['dl.wood.log'].sudo().search(final_domain, order='datetime desc')
+    
     # Thông tin lâm nghiệp
     exploitation_location_id = fields.Many2one('dl.wood.exploitation.location', string='Địa bàn khai thác')
     x_mining_address = fields.Char(string='Địa chỉ khai thác (WoodPro)')
@@ -895,7 +928,7 @@ class DlWoodDossier(models.Model):
                 vehicle_lines = []
                 ticket_lines_map = {}
 
-                for v in vehicles_in_trip:
+                for v_idx, v in enumerate(vehicles_in_trip, 1):
                     v_target = v['allocated_volume']
                     v_remaining = v_target
                     v_species_lines = []
@@ -961,7 +994,7 @@ class DlWoodDossier(models.Model):
                     for line in v_species_lines:
                         if line['volume'] > 0:
                             vehicle_lines.append({
-                                'name': v['name'],
+                                'name': f"{v_idx:03d}",
                                 'capacity': v['capacity'],
                                 'volume': line['volume'],
                                 'species_id': line['species_id'],
@@ -1432,6 +1465,7 @@ class DlWoodDossierDocument(models.Model):
 class DlWoodDossierLine(models.Model):
     _name = 'dl.wood.dossier.line'
     _description = 'Chi tiết loài gỗ trong hồ sơ'
+    _inherit = ['dl.wood.log.mixin']
 
     dossier_id = fields.Many2one('dl.wood.dossier', string='Hồ Sơ Gỗ', ondelete='cascade')
     partner_id = fields.Many2one('res.partner', related='dossier_id.partner_id', store=True, index=True)

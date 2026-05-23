@@ -15,6 +15,18 @@ class ResPartner(models.Model):
         res = super(ResPartner, self).default_get(fields_list)
         if 'lang' in fields_list:
             res['lang'] = 'vi_VN'
+        if 'company_id' in fields_list:
+            # Detect if it's a wood partner from values or context
+            is_wood = (
+                res.get('x_is_wood_supplier') or 
+                res.get('x_is_wood_customer') or 
+                self.env.context.get('default_x_is_wood_supplier') or 
+                self.env.context.get('default_x_is_wood_customer') or
+                self.env.context.get('x_is_wood_supplier') or 
+                self.env.context.get('x_is_wood_customer')
+            )
+            if is_wood:
+                res['company_id'] = self.env.company.id
         return res
 
     dl_contract_ids = fields.One2many(
@@ -215,7 +227,7 @@ class ResPartner(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer'):
-                if 'company_id' not in vals or not vals['company_id']:
+                if 'company_id' not in vals or not vals['company_id'] or vals['company_id'] not in self.env.companies.ids:
                     vals['company_id'] = self.env.company.id
         partners = super(ResPartner, self).create(vals_list)
         for partner in partners:
@@ -233,6 +245,18 @@ class ResPartner(models.Model):
         return partners
 
     def write(self, vals):
+        is_wood = any(partner.x_is_wood_supplier or partner.x_is_wood_customer for partner in self) or vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer')
+        if is_wood:
+            if 'company_id' in vals:
+                company_id = vals.get('company_id')
+                if not company_id or company_id not in self.env.companies.ids:
+                    vals['company_id'] = self.env.company.id
+            else:
+                for partner in self:
+                    if not partner.company_id or partner.company_id.id not in self.env.companies.ids:
+                        vals['company_id'] = self.env.company.id
+                        break
+                    
         res = super(ResPartner, self).write(vals)
         for partner in self:
             if partner.x_is_wood_supplier == 'owner' and not partner.exploitation_location_ids:
