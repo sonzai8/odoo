@@ -8,12 +8,12 @@
             <form string="Báo cáo Tiêu hao &amp; Khai CO Hồ sơ Gỗ">
                 <sheet>
                     <div class="alert alert-info text-center" role="alert" style="margin-bottom: 20px;" invisible="file_data != False">
-                        <h4 class="alert-heading fw-bold mb-1">Cấu hình Bộ lọc Báo cáo</h4>
+                        <h4 class="fw-bold mb-1">Cấu hình Bộ lọc Báo cáo</h4>
                         <p class="mb-0">Vui lòng chọn các điều kiện lọc bên dưới để hệ thống tổng hợp chính xác dữ liệu tiêu hao nguyên liệu gỗ.</p>
                     </div>
 
                     <div class="alert alert-success text-center" role="alert" style="margin-bottom: 20px;" invisible="file_data == False">
-                        <h4 class="alert-heading fw-bold mb-1">🎉 Báo cáo đã sẵn sàng!</h4>
+                        <h4 class="fw-bold mb-1">🎉 Báo cáo đã sẵn sàng!</h4>
                         <p class="mb-0">File báo cáo Excel đã được khởi tạo thành công. Vui lòng bấm vào nút liên kết bên dưới để tải xuống.</p>
                     </div>
 

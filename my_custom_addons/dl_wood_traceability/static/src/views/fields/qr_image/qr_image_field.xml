@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="dl_wood_traceability.QrImageField" t-inherit="web.ImageField" t-inherit-mode="primary">
+        <xpath expr="//img" position="attributes">
+            <attribute name="t-on-click">onImageClick</attribute>
+            <attribute name="style" t-inherit-mode="append">; cursor: pointer;</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="dl_wood_traceability.ImagePreviewDialog">
+        <Dialog title="props.title" size="props.size" footer="false" header="true">
+            <div class="text-center p-2">
+                <img t-att-src="props.imageSrc" class="img-fluid rounded shadow-sm" style="max-height: 75vh; object-fit: contain; width: 100%; cursor: pointer;" t-on-click="props.close" />
+            </div>
+        </Dialog>
+    </t>
+
+    <t t-name="dl_wood_traceability.DuplicatePartnerDialog">
+        <Dialog title="props.title" size="'md'">
+            <div class="p-3">
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-warning me-2 fs-4" style="color: #856404;"></i>
+                    <div>
+                        <strong>Chú ý:</strong> Chủ rừng này đã tồn tại trong hệ thống với cùng số CCCD.
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary mb-3">
+                            <i class="fa fa-user me-2"></i>
+                            <t t-esc="props.partner.name"/>
+                        </h5>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <strong>Số CCCD:</strong> <t t-esc="this.cccdNumber"/>
+                            </div>
+                            <div class="col-md-6" t-if="this.phone">
+                                <strong>Số điện thoại:</strong> <t t-esc="this.phone"/>
+                            </div>
+                            <div class="col-12 mt-2" t-if="this.partnerAddress">
+                                <strong>Địa chỉ:</strong> <t t-esc="this.partnerAddress"/>
+                            </div>
+                            <div class="col-12 mt-2" t-if="props.exploitationAddress">
+                                <strong>Địa chỉ khai thác:</strong> <t t-esc="props.exploitationAddress"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onRedirectClick">
+                    <i class="fa fa-arrow-right me-1"></i> Đi tới thông tin chủ rừng
+                </button>
+                <button class="btn btn-secondary" t-on-click="props.close">
+                    Đóng
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

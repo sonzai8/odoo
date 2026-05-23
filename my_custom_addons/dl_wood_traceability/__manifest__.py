@@ -30,6 +30,9 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'dl_wood_traceability/static/src/libs/jsQR.js',
+            'dl_wood_traceability/static/src/views/fields/qr_image/qr_image_field.js',
+            'dl_wood_traceability/static/src/views/fields/qr_image/qr_image_field.xml',
             'dl_wood_traceability/static/src/css/wood_traceability.css',
         ],
     },

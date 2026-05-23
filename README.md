@@ -41,7 +41,6 @@ for details and get in touch with us via email.
 source venv/bin/activate
 
 # Run odoo
-python odoo-bin -c odoo.conf
 python odoo-bin -c odoo.conf --dev=all
 
 # Update module

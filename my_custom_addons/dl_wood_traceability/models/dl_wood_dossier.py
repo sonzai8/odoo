@@ -1189,6 +1189,14 @@ class DlWoodDossier(models.Model):
         
         return f"{prefix}_{clean_name}_{self.name}_{date_str}.docx"
 
+    def _get_exploitation_address(self):
+        """
+        Lấy địa chỉ khai thác đầy đủ của hồ sơ (dossier).
+        Ưu tiên full_address của địa điểm khai thác, sau đó đến display_name, cuối cùng là partner_address.
+        """
+        self.ensure_one()
+        return self.exploitation_location_id.full_address or self.exploitation_location_id.display_name or self.partner_address or ""
+
 
 class DlWoodDossierDocument(models.Model):
     _name = 'dl.wood.dossier.document'

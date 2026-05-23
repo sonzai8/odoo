@@ -783,6 +783,7 @@ class DossierDocxRenderer:
             'vietnamese_x_delivery_end_date':   date_to_vietnamese_text(d.x_delivery_end_date),
             'delivery_count_day': delivery_days,
             'x_addendum_num':   d.x_addendum_num or "",
+            'species_name':     main_species,
         }
         return context
 
@@ -977,7 +978,7 @@ class DossierDocxRenderer:
         species_lines = self._build_species_lines()
         
         # Địa chỉ khai thác đầy đủ
-        exploitation_address = d.exploitation_location_id.full_address or d.exploitation_location_id.display_name or d.partner_address or ""
+        exploitation_address = d._get_exploitation_address()
             
         # Fallback variables cho context cha nếu người dùng viết không có tiền tố line.
         fallback_vietnamese_volume_unit = species_lines[0]['vietnamese_volume_unit'] if species_lines else ""
@@ -1091,7 +1092,7 @@ class DossierDocxRenderer:
         commune_name = d.exploitation_location_id.city or p.city or ""
         
         # Địa chỉ khai thác đầy đủ
-        exploitation_address = d.exploitation_location_id.full_address or d.exploitation_location_id.display_name or d.partner_address or ""
+        exploitation_address = d._get_exploitation_address()
         
         # Lấy Hạt kiểm lâm quản lý (nếu có trường x_ranger_agency hoặc mặc định bỏ trống)
         ranger_agency = getattr(d, 'x_ranger_agency', '') or ""
@@ -1461,7 +1462,7 @@ class DossierDocxRenderer:
         x_area = f"{d.x_area:.2f}".replace('.', ',') if d.x_area else "0"
         
         # 4. Địa chỉ rừng và địa điểm xác minh
-        forest_addr = d.exploitation_location_id.full_address or d.partner_address or ""
+        forest_addr = d._get_exploitation_address()
         vietnamese_forest_address = forest_addr
         
         # 5. Các mốc thời gian dạng chữ Tiếng Việt thông minh
@@ -1692,7 +1693,7 @@ class DossierDocxRenderer:
             'forset_owner_cccd':      owner_info.get('owner_cccd', ''), # dự phòng lỗi chính tả cũ
             
             # Địa điểm & Thời gian
-            'exploitation_address':   d.exploitation_location_id.name or d.partner_address or "",
+            'exploitation_address':   d._get_exploitation_address(),
             'exploitation_count_day': count_days,
             'delivery_count_day':     delivery_days,
             'vietnamese_exploitation_from_date': date_to_vietnamese_text(d.x_start_date),
@@ -1876,8 +1877,8 @@ class DossierDocxRenderer:
     def _sanitize_docx_bytes_for_merge(self, doc_bytes, remove_page_breaks=True):
         """
         Chuẩn hóa từng phiếu trước khi ghép để tránh trang trống:
-        - Bỏ w:sectPr ở cuối body (docxcompose chèn trước sectPr → sinh trang trắng)
-        - Bỏ đoạn văn trống ở cuối
+        - Giữ nguyên w:sectPr ở cuối body (để docx/docxcompose nhận diện đúng section)
+        - Bỏ đoạn văn trống ở cuối trước w:sectPr
         - Bỏ ngắt trang trong nội dung của từng phiếu đơn lẻ nếu remove_page_breaks=True
           (mặc định True khi sanitize trước khi ghép — tránh ngắt trang trong nội dung phiếu)
           (đặt False khi gọi sau khi đã ghép — bảo toàn ngắt trang giữa các phiếu)
@@ -1887,10 +1888,6 @@ class DossierDocxRenderer:
 
         doc = Document(io.BytesIO(doc_bytes))
         body = doc.element.body
-
-        # Luôn xóa sectPr ở cấp body (tránh trang trắng khi docxcompose ghép)
-        for sect_pr in list(body.xpath('w:sectPr')):
-            body.remove(sect_pr)
 
         # Chỉ xóa page break trong nội dung khi xử lý từng phiếu đơn lẻ
         if remove_page_breaks:
@@ -1913,12 +1910,15 @@ class DossierDocxRenderer:
                     if not any((text or '').strip() for text in texts):
                         row.getparent().remove(row)
 
+        # Xóa các đoạn văn trống ở cuối body, bỏ qua w:sectPr ở cuối cùng
         while len(body) > 0:
-            last = body[-1]
+            last_idx = len(body) - 1
+            if body[last_idx].tag.endswith('sectPr'):
+                last_idx -= 1
+            if last_idx < 0:
+                break
+            last = body[last_idx]
             tag = last.tag.split('}')[-1] if '}' in last.tag else last.tag
-            if tag == 'sectPr':
-                body.remove(last)
-                continue
             if tag == 'p' and not self._paragraph_text(last).strip():
                 body.remove(last)
                 continue

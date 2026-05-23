@@ -102,3 +102,5 @@ docxtpl==0.20.2
 python-docx==1.2.0
 docxcompose==1.4.0
 setuptools>=65.0.0
+vietnamadminunits==1.0.4
+

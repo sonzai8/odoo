@@ -20,6 +20,12 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='image_1920']" position="attributes">
+                <attribute name="invisible">x_is_wood_supplier == 'owner'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='image_1920']" position="after">
+                <field name="x_qr_cccd_image" widget="qr_image" options="{'size': [180, 180]}" class="oe_avatar" style="width: 180px; height: 180px; max-width: 180px; max-height: 180px; object-fit: contain;" placeholder="Upload QR CCCD" invisible="x_is_wood_supplier != 'owner'"/>
+            </xpath>
             <xpath expr="//field[@name='company_id']" position="attributes">
                 <attribute name="readonly">1</attribute>
                 <attribute name="invisible">0</attribute>
@@ -46,10 +52,15 @@
                 <attribute name="invisible">not is_company</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="after">
+                <field name="x_is_wood_supplier" invisible="1"/>
                 <field name="x_short_name" invisible="not is_company"/>
-                <field name="x_cccd"/>
-                <field name="x_cccd_date"/>
-                <field name="x_cccd_place"/> 
+                <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
+                <field name="x_birth_date" string="Ngày sinh" invisible="x_is_wood_supplier != 'owner'"/>
+                <field name="x_gender" string="Giới tính" invisible="x_is_wood_supplier != 'owner'"/>
+                <field name="x_cccd_date" string="Ngày cấp" invisible="not x_is_wood_supplier"/>
+                <field name="x_cccd_place" string="Nơi cấp" invisible="not x_is_wood_supplier"/>
+                <field name="x_identity_code" invisible="1"/>
+                <field name="x_issue_date" invisible="1"/>
             </xpath>
             <xpath expr="//page[@name='internal_notes']" position="after">
                 <page string="Địa Điểm Khai Thác">
