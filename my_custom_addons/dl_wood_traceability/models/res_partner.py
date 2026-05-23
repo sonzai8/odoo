@@ -235,7 +235,7 @@ class ResPartner(models.Model):
                 # Tạo địa điểm khai thác mặc định từ địa chỉ của partner
                 self.env['dl.wood.exploitation.location'].create({
                     'partner_id': partner.id,
-                    'name': _('Địa điểm chính (Từ địa chỉ chủ rừng)'),
+                    'name': _('Địa điểm chính'),
                     'street': partner.street,
                     'city': partner.city,
                     'state_id': partner.state_id.id,
@@ -263,7 +263,7 @@ class ResPartner(models.Model):
                 # Tạo địa điểm khai thác mặc định nếu chưa có
                 self.env['dl.wood.exploitation.location'].create({
                     'partner_id': partner.id,
-                    'name': _('Địa điểm chính (Từ địa chỉ chủ rừng)'),
+                    'name': _('Địa điểm chính'),
                     'street': partner.street,
                     'city': partner.city,
                     'state_id': partner.state_id.id,
