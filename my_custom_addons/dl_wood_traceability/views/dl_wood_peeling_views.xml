@@ -158,6 +158,6 @@
               name="Hồ sơ Ván bóc"
               parent="dl_wood_traceability.menu_dl_wood_input_materials"
               action="action_dl_wood_peeling_dossier"
-              sequence="15"/>
+              sequence="12"/>
 
 </odoo>

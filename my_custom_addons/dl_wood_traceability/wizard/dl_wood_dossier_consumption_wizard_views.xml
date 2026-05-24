@@ -66,20 +66,20 @@
               parent="menu_dl_wood_traceability_root"
               sequence="50"/>
 
-    <menuitem id="menu_dl_wood_dossier_consumption_report"
+    <!-- <menuitem id="menu_dl_wood_dossier_consumption_report"
               name="Báo cáo tiêu hao hồ sơ"
               parent="menu_dl_wood_reports"
               action="action_dl_wood_dossier_consumption_wizard"
-              sequence="10"/>
+              sequence="10"/> -->
 
     <menuitem id="menu_dl_wood_production_line_report"
-              name="Xem trực tuyến tiêu hao (Gỗ)"
+              name="Xem tiêu hao (Gỗ)"
               parent="menu_dl_wood_reports"
               action="action_dl_wood_production_line_report"
               sequence="20"/>
 
     <menuitem id="menu_dl_wood_peeling_production_line_report"
-              name="Xem trực tuyến tiêu hao (Ván Bóc)"
+              name="Xem tiêu hao (Ván Bóc)"
               parent="menu_dl_wood_reports"
               action="action_dl_wood_peeling_production_line_report"
               sequence="30"/>
