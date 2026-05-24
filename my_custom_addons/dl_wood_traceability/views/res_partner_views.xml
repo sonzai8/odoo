@@ -22,6 +22,9 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_type']" position="attributes">
+                <attribute name="readonly">x_is_wood_supplier == 'supplier'</attribute>
+            </xpath>
             <xpath expr="//field[@name='image_1920']" position="attributes">
                 <attribute name="invisible">x_is_wood_supplier == 'owner'</attribute>
             </xpath>
@@ -73,21 +76,22 @@
                 </div>
             </xpath>
             <xpath expr="//div[@name='partner_address_country']/parent::div" position="after">
-                <field name="x_prep_days" string="T.gian chuẩn bị" invisible="not x_is_wood_supplier"/>
+                <field name="x_prep_days" string="T.gian chuẩn bị" invisible="x_is_wood_supplier != 'owner'"/>
             </xpath>
             <xpath expr="//field[@name='vat']" position="after">
                 <field name="x_is_wood_supplier" invisible="1"/>
+                <field name="x_is_peeling_supplier" invisible="not is_company"/>
                 <field name="x_short_name" invisible="not is_company"/>
                 <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
                 <field name="x_gender" invisible="1"/>
                 <field name="x_cccd_date" string="Ngày cấp" invisible="not x_is_wood_supplier"/>
                 <field name="x_cccd_place" string="Nơi cấp" invisible="not x_is_wood_supplier"/>
-                <field name="x_exploitation_capacity" string="N.lực khai thác" invisible="not x_is_wood_supplier"/>
+                <field name="x_exploitation_capacity" string="N.lực khai thác" invisible="x_is_wood_supplier != 'owner'"/>
                 <field name="x_identity_code" invisible="1"/>
                 <field name="x_issue_date" invisible="1"/>
             </xpath>
             <xpath expr="//page[@name='contact_addresses']" position="before">
-                <page string="Địa Điểm Khai Thác" name="exploitation_locations" autofocus="autofocus">
+                <page string="Địa Điểm Khai Thác" name="exploitation_locations" autofocus="autofocus" invisible="x_is_wood_supplier != 'owner'">
                     <field name="x_is_wood_supplier" invisible="1"/>
                     <field name="exploitation_location_ids" options="{'no_open': True}">
                         <list>
@@ -116,6 +120,22 @@
             </xpath>
             <xpath expr="//page[@name='contact_addresses']" position="attributes">
                 <attribute name="invisible">x_is_wood_supplier != False</attribute>
+            </xpath>
+            <xpath expr="//page[@name='contact_addresses']" position="before">
+                <page string="Hồ Sơ Ván Bóc" name="peeling_dossiers" autofocus="autofocus" invisible="not x_is_peeling_supplier">
+                    <field name="x_is_peeling_supplier" invisible="1"/>
+                    <button name="action_create_peeling_dossier" type="object" string="Thêm hồ sơ ván bóc" icon="fa-plus" class="btn-primary mb-2" title="Tạo mới hồ sơ ván bóc từ nhà cung cấp này"/>
+                    <field name="x_peeling_dossier_ids" readonly="1">
+                        <list create="0">
+                            <field name="name"/>
+                            <field name="x_dossier_name"/>
+                            <field name="date_received"/>
+                            <field name="qty_initial" sum="Tổng ban đầu"/>
+                            <field name="qty_available" sum="Tổng tồn KD" decoration-success="qty_available &gt; 0" decoration-danger="qty_available == 0"/>
+                            <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'using'" decoration-muted="state == 'done'"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>
@@ -154,7 +174,17 @@
         <field name="res_model">res.partner</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('x_is_wood_supplier', '=', 'supplier')]</field>
-        <field name="context">{'default_x_is_wood_supplier': 'supplier', 'search_default_filter_supplier': 1}</field>
+        <field name="context">{'default_x_is_wood_supplier': 'supplier', 'search_default_filter_supplier': 1, 'default_company_type': 'company', 'default_is_company': True}</field>
+        <field name="view_id" ref="view_dl_forest_owner_list"/>
+        <field name="search_view_id" ref="view_dl_forest_owner_search"/>
+    </record>
+
+    <record id="action_dl_wood_peeling_supplier" model="ir.actions.act_window">
+        <field name="name">Nhà Cung Cấp Ván Bóc</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_is_peeling_supplier', '=', True)]</field>
+        <field name="context">{'default_x_is_peeling_supplier': True, 'default_is_company': True, 'default_company_type': 'company'}</field>
         <field name="view_id" ref="view_dl_forest_owner_list"/>
         <field name="search_view_id" ref="view_dl_forest_owner_search"/>
     </record>
@@ -171,8 +201,13 @@
               action="action_dl_wood_forest_owner"
               sequence="10"/>
     <menuitem id="menu_dl_wood_supplier"
-              name="NCC Ván Bóc"
+              name="NCC Gỗ"
               parent="menu_dl_wood_partners"
               action="action_dl_wood_supplier"
               sequence="20"/>
+    <menuitem id="menu_dl_wood_peeling_supplier"
+              name="NCC Ván Bóc"
+              parent="menu_dl_wood_partners"
+              action="action_dl_wood_peeling_supplier"
+              sequence="30"/>
 </odoo>

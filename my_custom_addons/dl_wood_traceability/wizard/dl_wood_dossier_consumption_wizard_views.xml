@@ -73,9 +73,15 @@
               sequence="10"/>
 
     <menuitem id="menu_dl_wood_production_line_report"
-              name="Xem trực tuyến tiêu hao"
+              name="Xem trực tuyến tiêu hao (Gỗ)"
               parent="menu_dl_wood_reports"
               action="action_dl_wood_production_line_report"
               sequence="20"/>
+
+    <menuitem id="menu_dl_wood_peeling_production_line_report"
+              name="Xem trực tuyến tiêu hao (Ván Bóc)"
+              parent="menu_dl_wood_reports"
+              action="action_dl_wood_peeling_production_line_report"
+              sequence="30"/>
 </odoo>
 

@@ -156,6 +156,10 @@ class DlWoodProductionOrder(models.Model):
         'dl.wood.production.line', 'production_order_id',
         string='Tiêu hao nguyên vật liệu'
     )
+    peeling_line_ids = fields.One2many(
+        'dl.wood.peeling.production.line', 'production_order_id',
+        string='Tiêu hao ván bóc'
+    )
     total_volume_planned = fields.Float(
         string='Tổng KL kế hoạch (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
     )
@@ -298,10 +302,14 @@ class DlWoodProductionOrder(models.Model):
             rec.x_qty_planned_m3 = round(rec.qty_planned * vol_per_unit, 2)
             rec.x_qty_done_m3    = round(rec.qty_done    * vol_per_unit, 2)
 
-    @api.depends('line_ids.x_subtotal_cost', 'line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_price_unit', 'qty_done', 'qty_planned', 'product_id.x_volume_m3', 'product_id.uom_id.name', 'state')
+    @api.depends('line_ids.x_subtotal_cost', 'line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_price_unit', 
+                 'peeling_line_ids.x_subtotal_cost', 'peeling_line_ids.volume_planned', 'peeling_line_ids.volume_actual', 'peeling_line_ids.x_price_unit',
+                 'qty_done', 'qty_planned', 'product_id.x_volume_m3', 'product_id.uom_id.name', 'state')
     def _compute_production_costs(self):
         for rec in self:
-            total_cost = sum(rec.line_ids.mapped('x_subtotal_cost'))
+            total_wood_cost = sum(rec.line_ids.mapped('x_subtotal_cost'))
+            total_peeling_cost = sum(rec.peeling_line_ids.mapped('x_subtotal_cost'))
+            total_cost = total_wood_cost + total_peeling_cost
             rec.x_total_wood_cost = round(total_cost, 2)
 
             qty = rec.qty_done if rec.state in ('in_progress', 'done') else rec.qty_planned
@@ -424,15 +432,17 @@ class DlWoodProductionOrder(models.Model):
                 """
             rec.x_avg_production_price_explanation = explanation_html
 
-    @api.depends('line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_ratio', 'qty_planned', 'qty_done', 'x_co_yield')
+    @api.depends('line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_ratio', 
+                 'peeling_line_ids.volume_planned', 'peeling_line_ids.volume_actual', 'peeling_line_ids.x_ratio',
+                 'qty_planned', 'qty_done', 'x_co_yield')
     def _compute_total_volume(self):
         for rec in self:
-            total_vol_plan = sum(rec.line_ids.mapped('volume_planned'))
-            total_vol_act = sum(rec.line_ids.mapped('volume_actual'))
+            total_vol_plan = sum(rec.line_ids.mapped('volume_planned')) + sum(rec.peeling_line_ids.mapped('volume_planned'))
+            total_vol_act = sum(rec.line_ids.mapped('volume_actual')) + sum(rec.peeling_line_ids.mapped('volume_actual'))
             rec.total_volume_planned = round(total_vol_plan, 2)
             rec.total_volume_actual = round(total_vol_act, 2)
 
-            total_ratio = sum(rec.line_ids.mapped('x_ratio'))
+            total_ratio = sum(rec.line_ids.mapped('x_ratio')) + sum(rec.peeling_line_ids.mapped('x_ratio'))
             rec.x_total_ratio = round(total_ratio, 2)
             
             remaining_ratio = max(0.0, 100.0 - total_ratio)
@@ -469,14 +479,48 @@ class DlWoodProductionOrder(models.Model):
                     vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                     if line.dossier_id:
                         avail_qty = 0.0
-                        if line.species_id:
+                        if line.x_dossier_line_ids:
+                            avail_qty = sum(line.x_dossier_line_ids.mapped('x_qty_available'))
+                        elif line.species_id:
                             avail_qty = sum(line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id).mapped('x_qty_available'))
                         else:
                             avail_qty = line.dossier_id.remaining_qty
+                        
+                        if vol_planned > avail_qty:
+                            total_needed = (rec.qty_planned * vol_per_unit) * line.x_co_yield
+                            if total_needed > 0:
+                                line.x_ratio = round((avail_qty / total_needed) * 100.0, 2)
+                                vol_planned = round(total_needed * (line.x_ratio / 100.0), 2)
+                                vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                        
                         vol_planned = min(vol_planned, avail_qty)
                         vol_actual = min(vol_actual, avail_qty)
                     line.volume_planned = vol_planned
                     line.volume_actual = vol_actual
+
+            for p_line in rec.peeling_line_ids:
+                if p_line.x_ratio:
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                    if p_line.peeling_dossier_id:
+                        avail_qty = 0.0
+                        if p_line.peeling_dossier_line_ids:
+                            avail_qty = sum(p_line.peeling_dossier_line_ids.mapped('qty_available'))
+                        elif p_line.peeling_type_id:
+                            lines = p_line.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == p_line.peeling_type_id)
+                            avail_qty = sum(lines.mapped('qty_available'))
+                        
+                        if vol_planned > avail_qty:
+                            total_needed = (rec.qty_planned * vol_per_unit) * p_line.x_co_yield
+                            if total_needed > 0:
+                                p_line.x_ratio = round((avail_qty / total_needed) * 100.0, 2)
+                                vol_planned = round(total_needed * (p_line.x_ratio / 100.0), 2)
+                                vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                        
+                        vol_planned = min(vol_planned, avail_qty)
+                        vol_actual = min(vol_actual, avail_qty)
+                    p_line.volume_planned = vol_planned
+                    p_line.volume_actual = vol_actual
 
     @api.onchange('x_co_yield')
     def _onchange_x_co_yield(self):
@@ -498,16 +542,31 @@ class DlWoodProductionOrder(models.Model):
                     line.volume_planned = vol_planned
                     line.volume_actual = vol_actual
 
-    @api.constrains('line_ids', 'state')
+            for p_line in rec.peeling_line_ids:
+                p_line.x_co_yield = rec.x_co_yield
+                if p_line.x_ratio:
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                    if p_line.peeling_dossier_id:
+                        avail_qty = 0.0
+                        if p_line.peeling_type_id:
+                            lines = p_line.peeling_dossier_line_ids or p_line.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == p_line.peeling_type_id)
+                            avail_qty = sum(lines.mapped('qty_available'))
+                        vol_planned = min(vol_planned, avail_qty)
+                        vol_actual = min(vol_actual, avail_qty)
+                    p_line.volume_planned = vol_planned
+                    p_line.volume_actual = vol_actual
+
+    @api.constrains('line_ids', 'peeling_line_ids', 'state')
     def _check_ratios_total(self):
         for rec in self:
             # Chỉ bắt buộc tổng định mức bằng 100% khi Lệnh sản xuất ở trạng thái Hoàn thành (done).
             # Cho phép trạng thái nháp (draft) hoặc đang sản xuất (in_progress) được lưu với định mức khác 100%
             # để người dùng có thể dễ dàng điều chỉnh dữ liệu hoặc quay lại trạng thái trước đó (Rollback).
-            if rec.state == 'done' and rec.line_ids:
-                total_ratio = sum(rec.line_ids.mapped('x_ratio'))
+            if rec.state == 'done' and (rec.line_ids or rec.peeling_line_ids):
+                total_ratio = sum(rec.line_ids.mapped('x_ratio')) + sum(rec.peeling_line_ids.mapped('x_ratio'))
                 if abs(total_ratio - 100.0) > 0.01:
-                    raise ValidationError(_('Tổng định mức (%%) tiêu hao nguyên vật liệu của các bộ hồ sơ gỗ phải bằng chính xác 100%% (Hiện tại là: %s%%).') % total_ratio)
+                    raise ValidationError(_('Tổng định mức (%%) tiêu hao nguyên vật liệu của các bộ hồ sơ gỗ/ván bóc phải bằng chính xác 100%% (Hiện tại là: %s%%).') % total_ratio)
 
     @api.onchange('x_select_production_id')
     def _onchange_x_select_production_id(self):
@@ -562,54 +621,82 @@ class DlWoodProductionOrder(models.Model):
     def action_start(self):
         """Bắt đầu sản xuất và kiểm tra tồn kho nguyên liệu kế hoạch."""
         self.ensure_one()
-        if not self.line_ids:
+        if not self.line_ids and not self.peeling_line_ids:
             raise UserError(_('Vui lòng nhập chi tiết tiêu hao nguyên vật liệu trước khi bắt đầu sản xuất.'))
         
         # Kiểm tra tồn kho khả dụng cho các dòng nguyên liệu dựa trên volume_planned
-        avail_cache = {}
+        line_avail_cache = {}
         for line in self.line_ids:
             if not line.dossier_id or not line.species_id:
                 continue
             
             vol_needed = line.volume_planned
-            dossier = line.dossier_id
-            species = line.species_id
+            # Lấy các dòng chi tiết được chọn hoặc tất cả dòng cùng loài gỗ
+            lines_to_use = line.x_dossier_line_ids or line.dossier_id.line_ids.filtered(lambda dl: dl.species_id == line.species_id)
+            if not lines_to_use:
+                raise ValidationError(_(
+                    'Hồ sơ gỗ "%s" không có loài gỗ "%s"!'
+                ) % (line.dossier_id.name, line.species_id.name))
+                
+            # Sắp xếp theo chiều cao (dài) giảm dần, sau đó là ID tăng dần
+            def sort_key(dl):
+                origin_id = dl._origin.id if dl._origin else False
+                val_id = origin_id if isinstance(origin_id, int) else (dl.id if isinstance(dl.id, int) else id(dl.id))
+                return (dl.height, -val_id)
+            sorted_lines = lines_to_use.sorted(key=sort_key, reverse=True)
             
-            cache_key = (dossier.id, species.id)
-            if cache_key not in avail_cache:
-                # Tìm các dòng cùng loài gỗ này trong hồ sơ nguồn
-                same_species_lines = dossier.line_ids.filtered(lambda l: l.species_id == species)
-                if not same_species_lines:
-                    raise ValidationError(_(
-                        'Hồ sơ gỗ "%s" không có loài gỗ "%s"!'
-                    ) % (dossier.name, species.name))
-                avail_cache[cache_key] = sum(same_species_lines.mapped('x_qty_available'))
+            vol_remaining = vol_needed
+            for dossier_line in sorted_lines:
+                if vol_remaining <= 0:
+                    break
+                if dossier_line.id not in line_avail_cache:
+                    line_avail_cache[dossier_line.id] = dossier_line.x_qty_available
+                
+                avail = line_avail_cache[dossier_line.id]
+                if avail <= 0:
+                    continue
+                    
+                if avail >= vol_remaining:
+                    line_avail_cache[dossier_line.id] -= vol_remaining
+                    vol_remaining = 0.0
+                else:
+                    line_avail_cache[dossier_line.id] = 0.0
+                    vol_remaining -= avail
             
-            species_avail = avail_cache[cache_key]
-            
-            if species_avail < vol_needed:
-                # Khắc phục sai số làm tròn cực kỳ nhỏ (<= 0.05 m³)
-                diff = vol_needed - species_avail
+            if vol_remaining > 0:
+                diff = vol_remaining
                 if diff <= 0.05:
-                    vol_needed = species_avail
-                    line.volume_planned = vol_needed
+                    # Chấp nhận sai số làm tròn nhỏ
+                    line.volume_planned = max(0.0, line.volume_planned - diff)
                 else:
                     raise ValidationError(_(
                         'Không thể bắt đầu sản xuất!\n'
-                        'Loài gỗ "%s" trong Hồ sơ "%s" không đủ tồn kho khả dụng.\n'
-                        'Tồn khả dụng hiện tại: %.2f m³ — Kế hoạch cần dùng: %.2f m³'
-                    ) % (species.name, dossier.name, species_avail, vol_needed))
+                        'Các phân loại đã chọn của loài gỗ "%s" trong Hồ sơ "%s" không đủ tồn kho khả dụng.\n'
+                        'Kế hoạch cần dùng: %.2f m³ — Thiếu: %.2f m³'
+                    ) % (line.species_id.name, line.dossier_id.name, line.volume_planned, vol_remaining))
+                    
+        # Kiểm tra tồn kho khả dụng cho Ván bóc
+        for p_line in self.peeling_line_ids:
+            if not p_line.peeling_dossier_id or not p_line.peeling_type_id:
+                continue
+            vol_needed = p_line.volume_planned
+            lines_to_use = p_line.peeling_dossier_line_ids or p_line.peeling_dossier_id.line_ids.filtered(lambda dl: dl.peeling_type_id == p_line.peeling_type_id)
+            if not lines_to_use:
+                raise ValidationError(_('Hồ sơ "%s" không có loại ván bóc "%s"!') % (p_line.peeling_dossier_id.name, p_line.peeling_type_id.name))
             
-            avail_cache[cache_key] -= vol_needed
-            
+            avail_qty = sum(lines_to_use.mapped('qty_available'))
+            if avail_qty < vol_needed - 0.05:
+                raise ValidationError(_('Không đủ tồn kho Ván Bóc!\nLoại: %s\nHồ sơ: %s\nKế hoạch cần dùng: %.2f m³ — Hiện có: %.2f m³') % (p_line.peeling_type_id.name, p_line.peeling_dossier_id.name, vol_needed, avail_qty))
+
         self.state = 'in_progress'
 
     def action_done(self):
         """Hoàn thành lệnh sản xuất và trừ lùi nguyên liệu."""
         self.ensure_one()
-        if not self.line_ids:
+        if not self.line_ids and not self.peeling_line_ids:
             raise UserError(_('Vui lòng nhập chi tiết tiêu hao nguyên vật liệu trước khi hoàn thành.'))
         self._action_deduct_materials()
+        self._action_deduct_peeling_materials()
         self.date_done = fields.Date.today()
         self.state = 'done'
 
@@ -646,6 +733,23 @@ class DlWoodProductionOrder(models.Model):
                 ledgers.unlink()
                 _logger.info(f"Đã xóa {len(ledgers)} dòng biến động sổ cái liên quan.")
                 
+            # Hoàn trả lại số lượng ván bóc đã dùng
+            for p_line in self.peeling_line_ids:
+                if p_line.peeling_dossier_id and p_line.volume_actual:
+                    lines_to_use = p_line.peeling_dossier_line_ids or p_line.peeling_dossier_id.line_ids.filtered(lambda dl: dl.peeling_type_id == p_line.peeling_type_id)
+                    vol_to_refund = p_line.volume_actual
+                    for dossier_line in reversed(lines_to_use):
+                        if vol_to_refund <= 0:
+                            break
+                        used = dossier_line.qty_used
+                        if used >= vol_to_refund:
+                            dossier_line.qty_used -= vol_to_refund
+                            vol_to_refund = 0.0
+                        else:
+                            dossier_line.qty_used = 0.0
+                            vol_to_refund -= used
+                    _logger.info(f"Đã hoàn trả {p_line.volume_actual} m3 ván bóc cho hồ sơ {p_line.peeling_dossier_id.name}")
+
             self.date_done = False
             self.state = 'in_progress'
             _logger.info(f"Lệnh sản xuất {self.name} đã được hoàn trả nguyên vật liệu và chuyển về Đang sản xuất.")
@@ -653,55 +757,109 @@ class DlWoodProductionOrder(models.Model):
             raise UserError(_('Không hỗ trợ quay lại trạng thái trước từ trạng thái hiện tại.'))
 
     def _action_deduct_materials(self, force=False):
-        """Trừ khối lượng gỗ thực tế từ các hồ sơ gỗ liên quan theo từng loài gỗ cụ thể"""
-        # Bộ nhớ đệm lưu tồn kho khả dụng lũy tiến trong quá trình lặp để xử lý Edge Case 2
-        avail_cache = {}
+        """Trừ khối lượng gỗ thực tế từ các hồ sơ gỗ liên quan theo từng dòng chi tiết phân loại cụ thể."""
+        line_avail_cache = {}
         
         for line in self.line_ids:
             if not line.dossier_id or not line.species_id:
                 continue
             
-            vol = line.volume_actual
+            vol_needed = line.volume_actual
             dossier = line.dossier_id
             species = line.species_id
             
-            cache_key = (dossier.id, species.id)
-            if cache_key not in avail_cache:
-                # Tìm tất cả các dòng cùng loài gỗ này trong hồ sơ nguồn
-                same_species_lines = dossier.line_ids.filtered(lambda l: l.species_id == species)
-                if not same_species_lines:
-                    raise ValidationError(_(
-                        'Hồ sơ gỗ "%s" không có loài gỗ "%s"!'
-                    ) % (dossier.name, species.name))
-                # Tổng tồn kho khả dụng của loài gỗ này trong hồ sơ
-                avail_cache[cache_key] = sum(same_species_lines.mapped('x_qty_available'))
+            # Lấy các dòng chi tiết được chọn hoặc tất cả dòng cùng loài gỗ
+            lines_to_use = line.x_dossier_line_ids or dossier.line_ids.filtered(lambda dl: dl.species_id == species)
+            if not lines_to_use:
+                raise ValidationError(_(
+                    'Hồ sơ gỗ "%s" không có loài gỗ "%s"!'
+                ) % (dossier.name, species.name))
                 
-            species_avail = avail_cache[cache_key]
+            # Sắp xếp các dòng: chiều dài giảm dần, sau đó là ID tăng dần
+            def sort_key(dl):
+                origin_id = dl._origin.id if dl._origin else False
+                val_id = origin_id if isinstance(origin_id, int) else (dl.id if isinstance(dl.id, int) else id(dl.id))
+                return (dl.height, -val_id)
+            sorted_lines = lines_to_use.sorted(key=sort_key, reverse=True)
             
-            # Khắc phục sai số làm tròn cực kỳ nhỏ (<= 0.05 m³) so với tồn kho thực tế của loài gỗ
-            if not force and species_avail < vol:
-                diff = vol - species_avail
-                if diff <= 0.05:
-                    vol = species_avail
-                    line.volume_actual = vol
+            vol_remaining = vol_needed
+            allocations = []
+            for dossier_line in sorted_lines:
+                if vol_remaining <= 0:
+                    break
+                if dossier_line.id not in line_avail_cache:
+                    line_avail_cache[dossier_line.id] = dossier_line.x_qty_available
+                
+                avail = line_avail_cache[dossier_line.id]
+                if avail <= 0:
+                    continue
+                    
+                if avail >= vol_remaining:
+                    allocated = vol_remaining
+                    line_avail_cache[dossier_line.id] -= vol_remaining
+                    vol_remaining = 0.0
+                else:
+                    allocated = avail
+                    line_avail_cache[dossier_line.id] = 0.0
+                    vol_remaining -= avail
+                
+                allocations.append((dossier_line, allocated))
+            
+            if not force and vol_remaining > 0:
+                diff = vol_remaining
+                if diff <= 0.05 and allocations:
+                    # Chấp nhận sai số làm tròn nhỏ, cộng vào phần phân bổ cuối cùng
+                    last_line, last_qty = allocations[-1]
+                    allocations[-1] = (last_line, last_qty + diff)
+                    vol_remaining = 0.0
                 else:
                     raise ValidationError(_(
-                        'Loài gỗ "%s" trong Hồ sơ "%s" không đủ tồn kho khả dụng!\n'
-                        'Tồn khả dụng hiện tại: %.2f m³ — Cần trừ: %.2f m³'
-                    ) % (species.name, dossier.name, species_avail, vol))
+                        'Các phân loại đã chọn của loài gỗ "%s" trong Hồ sơ "%s" không đủ tồn kho khả dụng!\n'
+                        'KL yêu cầu: %.2f m³ — Thiếu: %.2f m³'
+                    ) % (species.name, dossier.name, vol_needed, vol_remaining))
             
-            # Khấu trừ lũy tiến lượng tồn khả dụng trong bộ nhớ cache
-            avail_cache[cache_key] -= vol
+            # Tạo các bản ghi vào sổ cái (Ledger) tương ứng cho từng dòng chi tiết được trừ
+            for dossier_line, allocated_qty in allocations:
+                if allocated_qty > 0.0001:
+                    self.env['dl.dossier.ledger'].create({
+                        'dossier_id': dossier.id,
+                        'species_id': species.id,
+                        'dossier_line_id': dossier_line.id,
+                        'production_id': self.id,
+                        'actual_qty': -allocated_qty,  # Số âm vì là xuất nguyên liệu
+                        'state': 'done',
+                        'date': fields.Datetime.now(),
+                    })
+
+    def _action_deduct_peeling_materials(self, force=False):
+        """Trừ khối lượng ván bóc thực tế từ các hồ sơ ván bóc."""
+        for p_line in self.peeling_line_ids:
+            if not p_line.peeling_dossier_id or not p_line.peeling_type_id:
+                continue
             
-            # Tạo bản ghi vào sổ cái (Ledger) để hiện trong tab Lịch sử biến động
-            self.env['dl.dossier.ledger'].create({
-                'dossier_id': dossier.id,
-                'species_id': species.id,
-                'production_id': self.id,
-                'actual_qty': -vol, # Số âm vì là xuất nguyên liệu
-                'state': 'done',
-                'date': fields.Datetime.now(),
-            })
+            vol_needed = p_line.volume_actual
+            lines_to_use = p_line.peeling_dossier_line_ids or p_line.peeling_dossier_id.line_ids.filtered(lambda dl: dl.peeling_type_id == p_line.peeling_type_id)
+            
+            vol_remaining = vol_needed
+            for dossier_line in lines_to_use:
+                if vol_remaining <= 0:
+                    break
+                avail = dossier_line.qty_available
+                if avail <= 0:
+                    continue
+                
+                if avail >= vol_remaining:
+                    dossier_line.qty_used += vol_remaining
+                    vol_remaining = 0.0
+                else:
+                    dossier_line.qty_used += avail
+                    vol_remaining -= avail
+            
+            if not force and vol_remaining > 0.05:
+                raise ValidationError(_(
+                    'Không đủ tồn kho Ván Bóc để trừ lùi!\n'
+                    'Loại: %s\nHồ sơ: %s\nThiếu: %.2f m³'
+                ) % (p_line.peeling_type_id.name, p_line.peeling_dossier_id.name, vol_remaining))
 
     def write(self, vals):
         for rec in self:
@@ -797,6 +955,22 @@ class DlWoodProductionLine(models.Model):
         store=True,
         index=True
     )
+    x_qty_planned = fields.Float(
+        related='production_order_id.qty_planned',
+        string='SL kế hoạch cha',
+        readonly=True
+    )
+    x_qty_done = fields.Float(
+        related='production_order_id.qty_done',
+        string='SL thực tế cha',
+        readonly=True
+    )
+    x_product_id = fields.Many2one(
+        'product.product',
+        related='production_order_id.product_id',
+        string='Sản phẩm cha',
+        readonly=True
+    )
     currency_id = fields.Many2one(
         'res.currency',
         related='company_id.currency_id',
@@ -813,6 +987,17 @@ class DlWoodProductionLine(models.Model):
         'dl.wood.species',
         compute='_compute_x_available_species_ids',
         string='Loài gỗ khả dụng'
+    )
+    x_dossier_line_ids = fields.Many2many(
+        'dl.wood.dossier.line',
+        'dl_wood_production_line_dossier_line_rel',
+        'prod_line_id', 'dossier_line_id',
+        string='Phân loại gỗ chi tiết',
+        domain="[('dossier_id', '=', dossier_id), ('species_id', '=', species_id)]"
+    )
+    x_allocation_info = fields.Text(
+        string='Chi tiết phân bổ tiêu hao',
+        compute='_compute_x_allocation_info'
     )
     x_ratio = fields.Float(string='Định mức %', digits=(16, 2), default=0.0)
     x_co_yield = fields.Float(string='Khai CO', digits=(16, 2), default=1.3, help='Hệ số hao hụt nguyên vật liệu/thành phẩm của bộ hồ sơ này.')
@@ -855,13 +1040,16 @@ class DlWoodProductionLine(models.Model):
             vol = line.volume_planned if order and order.state == 'draft' else line.volume_actual
             line.x_subtotal_cost = round(vol * line.x_price_unit, 2)
 
-    @api.depends('dossier_id', 'species_id', 'dossier_id.line_ids.x_qty_available')
+    @api.depends('dossier_id', 'species_id', 'x_dossier_line_ids', 'x_dossier_line_ids.x_qty_available')
     def _compute_x_qty_available(self):
         for line in self:
             qty = 0.0
             if line.dossier_id and line.species_id:
-                same_species_lines = line.dossier_id.line_ids.filtered(lambda dl: dl.species_id == line.species_id)
-                qty = sum(same_species_lines.mapped('x_qty_available'))
+                if line.x_dossier_line_ids:
+                    qty = sum(line.x_dossier_line_ids.mapped('x_qty_available'))
+                else:
+                    same_species_lines = line.dossier_id.line_ids.filtered(lambda dl: dl.species_id == line.species_id)
+                    qty = sum(same_species_lines.mapped('x_qty_available'))
             line.x_qty_available = qty
 
     @api.depends('dossier_id')
@@ -873,67 +1061,229 @@ class DlWoodProductionLine(models.Model):
             else:
                 line.x_available_species_ids = [(6, 0, [])]
 
+    def _get_allocated_volumes(self):
+        self.ensure_one()
+        res = {}
+        if self.x_dossier_line_ids:
+            lines = self.x_dossier_line_ids
+        elif self.dossier_id and self.species_id:
+            lines = self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id)
+        else:
+            lines = self.env['dl.wood.dossier.line']
+
+        if not lines:
+            return res
+
+        # Nếu lệnh sản xuất đã hoàn thành, đọc trực tiếp số đã trừ từ Sổ cái
+        if self.production_order_id.state == 'done':
+            ledgers = self.env['dl.dossier.ledger'].search([
+                ('production_id', '=', self.production_order_id.id),
+                ('dossier_line_id', 'in', lines.ids)
+            ])
+            for ledger in ledgers:
+                res[ledger.dossier_line_id] = abs(ledger.actual_qty)
+            for l in lines:
+                if l not in res:
+                    res[l] = 0.0
+            return res
+
+        vol_to_allocate = self.volume_planned if self.production_order_id.state == 'draft' else self.volume_actual
+        # Sắp xếp các dòng: chiều dài giảm dần, sau đó là ID tăng dần
+        def sort_key(dl):
+            origin_id = dl._origin.id if dl._origin else False
+            val_id = origin_id if isinstance(origin_id, int) else (dl.id if isinstance(dl.id, int) else id(dl.id))
+            return (dl.height, -val_id)
+        sorted_lines = lines.sorted(key=sort_key, reverse=True)
+
+        remaining_vol = vol_to_allocate
+        for l in sorted_lines:
+            avail = l.x_qty_available
+            if remaining_vol <= 0:
+                res[l] = 0.0
+            elif avail >= remaining_vol:
+                res[l] = remaining_vol
+                remaining_vol = 0.0
+            else:
+                res[l] = avail
+                remaining_vol -= avail
+        return res
+
+    @api.depends('volume_planned', 'volume_actual', 'x_dossier_line_ids', 'dossier_id', 'species_id', 'production_order_id.state')
+    def _compute_x_allocation_info(self):
+        for line in self:
+            if not line.dossier_id or not line.species_id:
+                line.x_allocation_info = ""
+                continue
+
+            allocated = line._get_allocated_volumes()
+            if not allocated:
+                line.x_allocation_info = "Không có phân loại nào khả dụng."
+                continue
+
+            lines_info = []
+            def sort_key(item):
+                dl = item[0]
+                origin_id = dl._origin.id if dl._origin else False
+                val_id = origin_id if isinstance(origin_id, int) else (dl.id if isinstance(dl.id, int) else id(dl.id))
+                return (dl.height, -val_id)
+            sorted_allocated = sorted(allocated.items(), key=sort_key, reverse=True)
+            for dossier_line, vol in sorted_allocated:
+                grade_name = dossier_line.grade_id.name or "Mặc định"
+                dim_str = f"L dài: {dossier_line.height}m" if dossier_line.height else "L dài: N/A"
+                if dossier_line.diameter_min or dossier_line.diameter_max:
+                    dim_str += f", ĐK: {dossier_line.diameter_min}-{dossier_line.diameter_max}cm"
+
+                lines_info.append(
+                    f"• {grade_name} ({dim_str}): Sử dụng {vol:.2f} m³ / Tồn {dossier_line.x_qty_available:.2f} m³"
+                )
+            line.x_allocation_info = "\n".join(lines_info)
+
+    def _get_vol_per_unit(self):
+        self.ensure_one()
+        product = self.x_product_id or self.production_order_id.product_id
+        if not product:
+            return 1.0
+
+        x_unit_val = getattr(product, 'x_unit', '')
+        if x_unit_val == 'm3':
+            return 1.0
+
+        if x_unit_val == 'sheet':
+            vol_per_unit = product.x_volume_m3
+            if not vol_per_unit:
+                p = product
+                if p.x_length and p.x_width and p.x_thickness:
+                    area = (p.x_length * p.x_width) / 1_000_000.0
+                    vol_per_unit = (area * p.x_thickness) / 1_000.0
+            return vol_per_unit or 1.0
+
+        uom_name = product.uom_id.name or ''
+        if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']):
+            return 1.0
+
+        vol_per_unit = product.x_volume_m3
+        if not vol_per_unit:
+            p = product
+            if p.x_length and p.x_width and p.x_thickness:
+                area = (p.x_length * p.x_width) / 1_000_000.0
+                vol_per_unit = (area * p.x_thickness) / 1_000.0
+        return vol_per_unit or 1.0
+
+    def _update_ratio_and_volumes_from_lines(self):
+        for line in self:
+            if not line.dossier_id or not line.species_id:
+                line.x_qty_available = 0.0
+                line.x_ratio = 0.0
+                line.volume_planned = 0.0
+                line.volume_actual = 0.0
+                continue
+
+            # Tính toán tồn khả dụng real-time trực tiếp từ các dòng chi tiết được chọn
+            if line.x_dossier_line_ids:
+                avail_qty = sum(line.x_dossier_line_ids.mapped('x_qty_available'))
+            else:
+                same_species_lines = line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id)
+                avail_qty = sum(same_species_lines.mapped('x_qty_available'))
+
+            line.x_qty_available = avail_qty
+
+            order = line.production_order_id
+            if order:
+                line.x_co_yield = order.x_co_yield
+                vol_per_unit = line._get_vol_per_unit()
+
+                # Lọc bỏ dòng hiện tại ra khỏi danh sách các dòng tiêu hao khác của Lệnh sản xuất
+                def is_same_line(l1, l2):
+                    if l1 == l2:
+                        return True
+                    if l1.id == l2.id:
+                        return True
+                    o1 = l1._origin if getattr(l1, '_origin', None) else l1
+                    o2 = l2._origin if getattr(l2, '_origin', None) else l2
+                    if o1 and o2 and o1.id == o2.id:
+                        return True
+                    return False
+
+                other_lines = order.line_ids.filtered(lambda l: not is_same_line(l, line))
+
+                qty_planned = line.x_qty_planned or order.qty_planned
+                qty_done = line.x_qty_done or order.qty_done
+
+                if qty_planned > 0:
+                    total_volume_needed = (qty_planned * vol_per_unit) * line.x_co_yield
+                    if total_volume_needed > 0:
+                        other_lines_ratio_sum = sum(other_lines.mapped('x_ratio'))
+                        peeling_lines_ratio_sum = sum(order.peeling_line_ids.mapped('x_ratio'))
+                        remaining_ratio_needed = max(0.0, 100.0 - other_lines_ratio_sum - peeling_lines_ratio_sum)
+
+                        raw_volume_needed = total_volume_needed * (remaining_ratio_needed / 100.0)
+                        dossier_qty_avail = max(0.0, avail_qty)
+
+                        if dossier_qty_avail >= raw_volume_needed:
+                            line.x_ratio = round(remaining_ratio_needed, 2)
+                        else:
+                            allocated_ratio = (dossier_qty_avail / total_volume_needed) * 100.0
+                            line.x_ratio = round(allocated_ratio, 2)
+
+                        # Tính toán KL planned/actual của dòng
+                        vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                        vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+
+                        vol_plan = min(vol_plan, dossier_qty_avail)
+                        vol_act = min(vol_act, dossier_qty_avail)
+                        line.volume_planned = vol_plan
+                        line.volume_actual = vol_act
+
     @api.onchange('dossier_id', 'species_id')
     def _onchange_dossier_and_species(self):
         if self.dossier_id:
             species_in_dossier = self.dossier_id.line_ids.mapped('species_id')
             if not self.species_id and len(species_in_dossier) == 1:
                 self.species_id = species_in_dossier[0]
-            
-            order = self.production_order_id
-            if order:
-                self.x_co_yield = order.x_co_yield
-                vol_per_unit = order._get_vol_per_unit()
-                
-                # Tồn khả dụng của loài gỗ cụ thể trong hồ sơ này
-                avail_qty = 0.0
-                if self.species_id:
-                    avail_qty = sum(self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id).mapped('x_qty_available'))
-                else:
-                    avail_qty = self.dossier_id.remaining_qty
-                
-                # Tính định mức tự động thông minh dựa trên khối lượng còn lại của loài gỗ
-                if order.qty_planned > 0:
-                    total_volume_needed = (order.qty_planned * vol_per_unit) * self.x_co_yield
-                    if total_volume_needed > 0:
-                        other_lines = order.line_ids - self
-                        other_lines_ratio_sum = sum(other_lines.mapped('x_ratio'))
-                        remaining_ratio_needed = max(0.0, 100.0 - other_lines_ratio_sum)
-                        
-                        raw_volume_needed = total_volume_needed * (remaining_ratio_needed / 100.0)
-                        dossier_qty_avail = max(0.0, avail_qty)
-                        
-                        if dossier_qty_avail >= raw_volume_needed:
-                            self.x_ratio = round(remaining_ratio_needed, 2)
-                        else:
-                            allocated_ratio = (dossier_qty_avail / total_volume_needed) * 100.0
-                            self.x_ratio = round(allocated_ratio, 2)
-                            
-                        # Tính toán KL planned/actual của dòng
-                        vol_plan = round(((order.qty_planned * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
-                        vol_act = round(((order.qty_done * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
-                        
-                        vol_plan = min(vol_plan, dossier_qty_avail)
-                        vol_act = min(vol_act, dossier_qty_avail)
-                        self.volume_planned = vol_plan
-                        self.volume_actual = vol_act
+
+            if self.species_id:
+                same_species_lines = self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id)
+                self.x_dossier_line_ids = [(6, 0, same_species_lines.ids)]
+            else:
+                self.x_dossier_line_ids = [(6, 0, [])]
+
+            self._update_ratio_and_volumes_from_lines()
         else:
             self.species_id = False
+            self.x_dossier_line_ids = [(6, 0, [])]
+            self.x_qty_available = 0.0
+            self.x_ratio = 0.0
+            self.volume_planned = 0.0
+            self.volume_actual = 0.0
+
+    @api.onchange('x_dossier_line_ids')
+    def _onchange_x_dossier_line_ids(self):
+        if self.x_dossier_line_ids and (self.dossier_id or self.species_id):
+            valid_lines = self.x_dossier_line_ids.filtered(
+                lambda l: (not self.dossier_id or l.dossier_id == self.dossier_id) and 
+                          (not self.species_id or l.species_id == self.species_id)
+            )
+            if len(valid_lines) != len(self.x_dossier_line_ids):
+                self.x_dossier_line_ids = [(6, 0, valid_lines.ids)]
+        
+        self._update_ratio_and_volumes_from_lines()
 
     @api.onchange('x_ratio', 'x_co_yield')
     def _onchange_ratio_and_co(self):
         for line in self:
             if line.x_ratio:
                 order = line.production_order_id
-                vol_per_unit = order._get_vol_per_unit()
-                vol_plan = round(((order.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                vol_act = round(((order.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_per_unit = line._get_vol_per_unit()
+                qty_planned = line.x_qty_planned or order.qty_planned
+                qty_done = line.x_qty_done or order.qty_done
+                vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
                 if line.dossier_id:
-                    avail_qty = 0.0
-                    if line.species_id:
-                        avail_qty = sum(line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id).mapped('x_qty_available'))
+                    if line.x_dossier_line_ids:
+                        avail_qty = sum(line.x_dossier_line_ids.mapped('x_qty_available'))
                     else:
-                        avail_qty = line.dossier_id.remaining_qty
+                        same_species_lines = line.dossier_id.line_ids.filtered(lambda l: l.species_id == line.species_id)
+                        avail_qty = sum(same_species_lines.mapped('x_qty_available'))
                     vol_plan = min(vol_plan, avail_qty)
                     vol_act = min(vol_act, avail_qty)
                 line.volume_planned = vol_plan
@@ -943,11 +1293,11 @@ class DlWoodProductionLine(models.Model):
     def _onchange_volume_planned(self):
         if self.volume_planned:
             if self.dossier_id:
-                avail_qty = 0.0
-                if self.species_id:
-                    avail_qty = sum(self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id).mapped('x_qty_available'))
+                if self.x_dossier_line_ids:
+                    avail_qty = sum(self.x_dossier_line_ids.mapped('x_qty_available'))
                 else:
-                    avail_qty = self.dossier_id.remaining_qty
+                    same_species_lines = self.dossier_id.line_ids.filtered(lambda l: l.species_id == self.species_id)
+                    avail_qty = sum(same_species_lines.mapped('x_qty_available'))
                 self.volume_planned = min(self.volume_planned, avail_qty)
             self.volume_actual = self.volume_planned
 
@@ -971,3 +1321,274 @@ class DlWoodProductionLine(models.Model):
             if line.production_order_id.state in ('done', 'cancelled'):
                 raise UserError(_('Không thể xóa tiêu hao nguyên vật liệu của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
         return super(DlWoodProductionLine, self).unlink()
+
+class DlWoodPeelingProductionLine(models.Model):
+    """Chi tiết tiêu hao Ván Bóc của lệnh sản xuất."""
+    _name = 'dl.wood.peeling.production.line'
+    _description = 'Chi tiết tiêu hao Ván Bóc'
+
+    production_order_id = fields.Many2one(
+        'dl.wood.production.order', string='Lệnh sản xuất',
+        ondelete='cascade', required=True, index=True
+    )
+    company_id = fields.Many2one(
+        'res.company', string='Công ty',
+        related='production_order_id.company_id', store=True
+    )
+    currency_id = fields.Many2one(
+        'res.currency', string='Tiền tệ',
+        related='company_id.currency_id', readonly=True
+    )
+    x_sale_order_id = fields.Many2one(
+        'dl.wood.sale.order',
+        related='production_order_id.sale_order_id',
+        string='Đơn đặt hàng',
+        store=True,
+        index=True
+    )
+    x_partner_id = fields.Many2one(
+        'res.partner',
+        related='x_sale_order_id.partner_id',
+        string='Khách hàng (Đầy đủ)',
+        store=True,
+        readonly=True,
+        index=True
+    )
+    x_partner_short_name = fields.Char(
+        string='Khách hàng',
+        related='x_partner_id.x_short_name',
+        store=True,
+        readonly=True,
+        index=True
+    )
+    x_qty_planned = fields.Float(
+        related='production_order_id.qty_planned',
+        string='SL kế hoạch cha',
+        readonly=True
+    )
+    x_qty_done = fields.Float(
+        related='production_order_id.qty_done',
+        string='SL thực tế cha',
+        readonly=True
+    )
+    x_product_id = fields.Many2one(
+        'product.product',
+        related='production_order_id.product_id',
+        string='Sản phẩm cha',
+        readonly=True
+    )
+    peeling_dossier_id = fields.Many2one(
+        'dl.wood.peeling.dossier', string='Hồ sơ ván bóc',
+        domain="[('company_id', '=', company_id), ('state', '=', 'using')]",
+        required=True
+    )
+    x_available_peeling_type_ids = fields.Many2many(
+        'dl.wood.peeling.type',
+        compute='_compute_x_available_peeling_type_ids',
+        string='Loại ván bóc khả dụng'
+    )
+    peeling_type_id = fields.Many2one(
+        'dl.wood.peeling.type', string='Loại ván bóc',
+        required=True, domain="[('id', 'in', x_available_peeling_type_ids)]"
+    )
+    peeling_dossier_line_ids = fields.Many2many(
+        'dl.wood.peeling.dossier.line',
+        'dl_peeling_prod_line_dossier_line_rel',
+        'prod_line_id', 'dossier_line_id',
+        string='Phân loại chi tiết',
+        domain="[('dossier_id', '=', peeling_dossier_id), ('peeling_type_id', '=', peeling_type_id)]"
+    )
+    x_qty_available = fields.Float(
+        string='Tồn KD (m³)', compute='_compute_x_qty_available'
+    )
+    x_ratio = fields.Float(string='Định mức %', digits=(16, 2), default=0.0)
+    x_co_yield = fields.Float(string='Khai CO', digits=(16, 2), default=1.1)
+    volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
+    volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
+    x_price_unit = fields.Float(string='Đơn giá', compute='_compute_x_price_unit')
+    x_subtotal_cost = fields.Float(string='Thành tiền', compute='_compute_x_subtotal_cost')
+    note = fields.Char(string='Ghi chú')
+
+    @api.depends('peeling_dossier_id')
+    def _compute_x_available_peeling_type_ids(self):
+        for line in self:
+            if line.peeling_dossier_id:
+                type_ids = line.peeling_dossier_id.line_ids.mapped('peeling_type_id').ids
+                line.x_available_peeling_type_ids = [(6, 0, type_ids)]
+            else:
+                line.x_available_peeling_type_ids = [(6, 0, [])]
+
+    @api.depends('peeling_dossier_id', 'peeling_type_id', 'peeling_dossier_line_ids', 'peeling_dossier_line_ids.qty_available')
+    def _compute_x_qty_available(self):
+        for line in self:
+            qty = 0.0
+            if line.peeling_dossier_id and line.peeling_type_id:
+                if line.peeling_dossier_line_ids:
+                    qty = sum(line.peeling_dossier_line_ids.mapped('qty_available'))
+                else:
+                    lines = line.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == line.peeling_type_id)
+                    qty = sum(lines.mapped('qty_available'))
+            line.x_qty_available = qty
+
+    @api.depends('peeling_dossier_id', 'peeling_type_id')
+    def _compute_x_price_unit(self):
+        for line in self:
+            price = 0.0
+            if line.peeling_dossier_id and line.peeling_type_id:
+                dossier_line = line.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == line.peeling_type_id)
+                if dossier_line:
+                    price = dossier_line[0].price_unit
+            line.x_price_unit = price
+
+    @api.depends('volume_actual', 'volume_planned', 'x_price_unit', 'production_order_id.state')
+    def _compute_x_subtotal_cost(self):
+        for line in self:
+            order = line.production_order_id
+            vol = line.volume_planned if order and order.state == 'draft' else line.volume_actual
+            line.x_subtotal_cost = round(vol * line.x_price_unit, 2)
+
+    def _get_vol_per_unit(self):
+        self.ensure_one()
+        product = self.production_order_id.product_id
+        if not product: return 1.0
+        x_unit_val = getattr(product, 'x_unit', '')
+        if x_unit_val == 'm3': return 1.0
+        if x_unit_val == 'sheet':
+            vol_per_unit = product.x_volume_m3
+            if not vol_per_unit and product.x_length and product.x_width and product.x_thickness:
+                area = (product.x_length * product.x_width) / 1_000_000.0
+                vol_per_unit = (area * product.x_thickness) / 1_000.0
+            return vol_per_unit or 1.0
+        uom_name = product.uom_id.name or ''
+        if any(x in uom_name.lower() for x in ['m³', 'm3', 'mét khối', 'met khoi']):
+            return 1.0
+        vol_per_unit = product.x_volume_m3
+        if not vol_per_unit and product.x_length and product.x_width and product.x_thickness:
+            area = (product.x_length * product.x_width) / 1_000_000.0
+            vol_per_unit = (area * product.x_thickness) / 1_000.0
+        return vol_per_unit or 1.0
+
+    def _update_ratio_and_volumes(self):
+        for line in self:
+            if not line.peeling_dossier_id or not line.peeling_type_id:
+                line.x_qty_available = 0.0
+                line.x_ratio = 0.0
+                line.volume_planned = 0.0
+                line.volume_actual = 0.0
+                continue
+                
+            order = line.production_order_id
+            vol_per_unit = line._get_vol_per_unit()
+            qty_planned = order.qty_planned
+            qty_done = order.qty_done
+            
+            if qty_planned > 0:
+                total_volume_needed = (qty_planned * vol_per_unit) * line.x_co_yield
+                if total_volume_needed > 0:
+                    other_lines = order.peeling_line_ids.filtered(lambda l: l.id != line.id and getattr(l, '_origin', l).id != getattr(line, '_origin', line).id)
+                    other_ratio = sum(other_lines.mapped('x_ratio'))
+                    wood_ratio = sum(order.line_ids.mapped('x_ratio'))
+                    remaining_ratio = max(0.0, 100.0 - other_ratio - wood_ratio)
+                    
+                    if line.peeling_dossier_line_ids:
+                        avail_qty = sum(line.peeling_dossier_line_ids.mapped('qty_available'))
+                    else:
+                        lines = line.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == line.peeling_type_id)
+                        avail_qty = sum(lines.mapped('qty_available'))
+                    
+                    raw_volume_needed = total_volume_needed * (remaining_ratio / 100.0)
+                    if avail_qty >= raw_volume_needed:
+                        line.x_ratio = round(remaining_ratio, 2)
+                    else:
+                        allocated_ratio = (avail_qty / total_volume_needed) * 100.0
+                        line.x_ratio = round(allocated_ratio, 2)
+                        
+                    vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    
+                    line.volume_planned = min(vol_plan, avail_qty)
+                    line.volume_actual = min(vol_act, avail_qty)
+
+    @api.onchange('peeling_dossier_id', 'peeling_type_id')
+    def _onchange_dossier_and_type(self):
+        if self.peeling_dossier_id:
+            types_in_dossier = self.peeling_dossier_id.line_ids.mapped('peeling_type_id')
+            if not self.peeling_type_id and len(types_in_dossier) == 1:
+                self.peeling_type_id = types_in_dossier[0]
+
+            if self.peeling_type_id:
+                same_type_lines = self.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == self.peeling_type_id)
+                self.peeling_dossier_line_ids = [(6, 0, same_type_lines.ids)]
+            else:
+                self.peeling_dossier_line_ids = [(6, 0, [])]
+
+            self._update_ratio_and_volumes()
+        else:
+            self.peeling_type_id = False
+            self.peeling_dossier_line_ids = [(6, 0, [])]
+            self.x_qty_available = 0.0
+            self.x_ratio = 0.0
+            self.volume_planned = 0.0
+            self.volume_actual = 0.0
+
+    @api.onchange('peeling_dossier_line_ids')
+    def _onchange_peeling_dossier_line_ids(self):
+        if self.peeling_dossier_line_ids and (self.peeling_dossier_id or self.peeling_type_id):
+            valid_lines = self.peeling_dossier_line_ids.filtered(
+                lambda l: (not self.peeling_dossier_id or l.dossier_id == self.peeling_dossier_id) and 
+                          (not self.peeling_type_id or l.peeling_type_id == self.peeling_type_id)
+            )
+            if len(valid_lines) != len(self.peeling_dossier_line_ids):
+                self.peeling_dossier_line_ids = [(6, 0, valid_lines.ids)]
+        self._update_ratio_and_volumes()
+
+    @api.onchange('x_ratio', 'x_co_yield')
+    def _onchange_ratio_and_co(self):
+        if self.x_ratio:
+            order = self.production_order_id
+            vol_per_unit = self._get_vol_per_unit()
+            qty_planned = order.qty_planned
+            qty_done = order.qty_done
+            vol_plan = round(((qty_planned * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+            vol_act = round(((qty_done * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+            if self.peeling_dossier_id:
+                if self.peeling_dossier_line_ids:
+                    avail_qty = sum(self.peeling_dossier_line_ids.mapped('qty_available'))
+                else:
+                    avail_qty = sum(self.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == self.peeling_type_id).mapped('qty_available'))
+                vol_plan = min(vol_plan, avail_qty)
+                vol_act = min(vol_act, avail_qty)
+            self.volume_planned = vol_plan
+            self.volume_actual = vol_act
+
+    @api.onchange('volume_planned')
+    def _onchange_volume_planned(self):
+        if self.volume_planned:
+            if self.peeling_dossier_id:
+                if self.peeling_dossier_line_ids:
+                    avail_qty = sum(self.peeling_dossier_line_ids.mapped('qty_available'))
+                else:
+                    avail_qty = sum(self.peeling_dossier_id.line_ids.filtered(lambda l: l.peeling_type_id == self.peeling_type_id).mapped('qty_available'))
+                self.volume_planned = min(self.volume_planned, avail_qty)
+            self.volume_actual = self.volume_planned
+
+    def write(self, vals):
+        for line in self:
+            if line.production_order_id.state in ('done', 'cancelled'):
+                raise UserError(_('Không thể chỉnh sửa tiêu hao nguyên vật liệu của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodPeelingProductionLine, self).write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('production_order_id'):
+                order = self.env['dl.wood.production.order'].browse(vals['production_order_id'])
+                if order.state in ('done', 'cancelled'):
+                    raise UserError(_('Không thể thêm tiêu hao nguyên vật liệu cho Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodPeelingProductionLine, self).create(vals_list)
+
+    def unlink(self):
+        for line in self:
+            if line.production_order_id.state in ('done', 'cancelled'):
+                raise UserError(_('Không thể xóa tiêu hao nguyên vật liệu của Lệnh sản xuất đã Hoàn thành hoặc Hủy.'))
+        return super(DlWoodPeelingProductionLine, self).unlink()

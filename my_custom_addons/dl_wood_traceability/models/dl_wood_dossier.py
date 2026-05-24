@@ -1503,7 +1503,27 @@ class DlWoodDossierLine(models.Model):
             qty = line.volume_ster if line.wood_type == 'firewood' else line.volume
             line.price_subtotal = round(qty * line.price_unit, 2)
 
-    @api.depends('volume', 'volume_ster', 'wood_type', 'dossier_id.ledger_ids.actual_qty', 'dossier_id.ledger_ids.state', 'dossier_id.ledger_ids.species_id')
+    @api.depends('species_id', 'grade_id', 'volume', 'x_qty_available', 'diameter_min', 'diameter_max', 'height')
+    def _compute_display_name(self):
+        for line in self:
+            parts = [line.species_id.name or ""]
+            if line.grade_id:
+                parts.append(line.grade_id.name)
+            dims = []
+            if line.diameter_min or line.diameter_max:
+                dims.append(f"ĐK:{line.diameter_min}-{line.diameter_max}cm")
+            if line.height:
+                dims.append(f"Dài:{line.height}m")
+            if dims:
+                parts.append(", ".join(dims))
+            parts.append(f"Tồn:{line.x_qty_available} m³")
+            line.display_name = " - ".join(filter(None, parts))
+
+    @api.depends('volume', 'volume_ster', 'wood_type', 
+                 'dossier_id.ledger_ids.actual_qty', 
+                 'dossier_id.ledger_ids.state', 
+                 'dossier_id.ledger_ids.species_id',
+                 'dossier_id.ledger_ids.dossier_line_id')
     def _compute_stock_quantities(self):
         for line in self:
             # Củi không có tồn kho trong hệ thống
@@ -1523,32 +1543,33 @@ class DlWoodDossierLine(models.Model):
 
             # Lọc các dòng sổ cái liên quan đến loài gỗ của dòng này
             ledgers = line.dossier_id.ledger_ids.filtered(lambda l: l.species_id == line.species_id)
-            done_ledgers = ledgers.filtered(lambda l: l.state == 'done')
-            draft_ledgers = ledgers.filtered(lambda l: l.state == 'draft')
+            
+            # Phân loại ledger: có chỉ định dòng này vs global (không chỉ định dòng nào)
+            precise_ledgers = ledgers.filtered(lambda l: l.dossier_line_id == line)
+            global_ledgers = ledgers.filtered(lambda l: not l.dossier_line_id)
 
-            # Để an toàn cho trường hợp có nhiều dòng cùng loài gỗ,
-            # ta tính tổng thể tích ban đầu của loài gỗ này trong toàn bộ hồ sơ
+            # Tính tổng thể tích ban đầu của loài gỗ này trong toàn bộ hồ sơ để phân bổ
             same_species_lines = line.dossier_id.line_ids.filtered(
                 lambda l: l.species_id == line.species_id and l.wood_type == 'wood'
             )
             total_initial_vol = sum(same_species_lines.mapped('volume'))
 
-            # Tính tổng tồn kho của loài gỗ này
-            species_remaining = total_initial_vol + sum(done_ledgers.mapped('actual_qty'))
-            species_reserved = abs(sum(draft_ledgers.mapped('actual_qty')))
-            
-            # Phân bổ tỷ lệ thuận theo volume của dòng hiện tại so với tổng volume của loài gỗ đó
-            if total_initial_vol > 0:
-                ratio = line.volume / total_initial_vol
-                line.x_remaining_qty = round(species_remaining * ratio, 2)
-                line.x_qty_reserved = round(species_reserved * ratio, 2)
-                line.x_qty_available = round(line.x_remaining_qty - line.x_qty_reserved, 2)
-                line.x_qty_consumed = round(max(0.0, line.volume - line.x_remaining_qty), 2)
-            else:
-                line.x_remaining_qty = 0.0
-                line.x_qty_reserved = 0.0
-                line.x_qty_available = 0.0
-                line.x_qty_consumed = 0.0
+            # Tỉ lệ phân bổ
+            ratio = line.volume / total_initial_vol if total_initial_vol > 0 else 0.0
+
+            # Tính phần trừ thực tế (done)
+            done_precise = sum(precise_ledgers.filtered(lambda l: l.state == 'done').mapped('actual_qty'))
+            done_global = sum(global_ledgers.filtered(lambda l: l.state == 'done').mapped('actual_qty'))
+
+            # Tính phần giữ hàng (draft)
+            draft_precise = sum(precise_ledgers.filtered(lambda l: l.state == 'draft').mapped('actual_qty'))
+            draft_global = sum(global_ledgers.filtered(lambda l: l.state == 'draft').mapped('actual_qty'))
+
+            # Tồn thực tế và giữ hàng
+            line.x_remaining_qty = round(line.volume + done_precise + (done_global * ratio), 2)
+            line.x_qty_reserved = round(abs(draft_precise + (draft_global * ratio)), 2)
+            line.x_qty_available = round(line.x_remaining_qty - line.x_qty_reserved, 2)
+            line.x_qty_consumed = round(max(0.0, line.volume - line.x_remaining_qty), 2)
 
     @api.onchange('species_id')
     def _onchange_species_id(self):

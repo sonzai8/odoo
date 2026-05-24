@@ -11,6 +11,7 @@
                 </p>
                 <footer>
                     <button name="action_init_wood_species" string="Khởi Tạo Danh Mục Gỗ" type="object" class="btn-primary" icon="fa-database"/>
+                    <button name="action_init_peeling_types" string="Khởi Tạo Danh Mục Ván Bóc" type="object" class="btn-warning" icon="fa-layer-group"/>
                     <button name="action_init_vietnam_banks" string="Khởi Tạo Danh Mục Ngân Hàng" type="object" class="btn-info" icon="fa-university"/>
                     <button name="action_init_report_templates" string="Khởi Tạo Biểu Mẫu" type="object" class="btn-success" icon="fa-file-text-o"/>
                     <button string="Đóng" class="btn-secondary" special="cancel"/>
