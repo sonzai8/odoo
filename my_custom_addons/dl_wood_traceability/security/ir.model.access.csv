@@ -32,3 +32,7 @@ access_dl_wood_dossier_inventory_line_user,dl.wood.dossier.inventory.line.user,m
 access_dl_wood_dossier_transport_ticket_vehicle_user,dl.wood.dossier.transport.ticket.vehicle.user,model_dl_wood_dossier_transport_ticket_vehicle,base.group_user,1,1,1,1
 access_dl_wood_exploitation_location_species_user,dl.wood.exploitation.location.species.user,model_dl_wood_exploitation_location_species,base.group_user,1,1,1,1
 access_res_country_ward,res.country.ward,model_res_country_ward,base.group_user,1,1,1,1
+access_dl_wood_peeling_type_user,dl.wood.peeling.type.user,model_dl_wood_peeling_type,base.group_user,1,1,1,1
+access_dl_wood_peeling_dossier_user,dl.wood.peeling.dossier.user,model_dl_wood_peeling_dossier,base.group_user,1,1,1,1
+access_dl_wood_peeling_dossier_line_user,dl.wood.peeling.dossier.line.user,model_dl_wood_peeling_dossier_line,base.group_user,1,1,1,1
+access_dl_wood_peeling_production_line_user,dl.wood.peeling.production.line.user,model_dl_wood_peeling_production_line,base.group_user,1,1,1,1

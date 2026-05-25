@@ -21,3 +21,4 @@ from . import dl_vietnam_bank
 from . import dl_wood_dossier_inventory
 from . import res_country_state
 from . import res_country_ward
+from . import dl_wood_peeling

@@ -68,6 +68,13 @@ class DlDossierLedger(models.Model):
         index=True,
         help='Loài gỗ hoặc củi cụ thể bị biến động.'
     )
+    dossier_line_id = fields.Many2one(
+        'dl.wood.dossier.line',
+        string='Dòng chi tiết hồ sơ',
+        ondelete='restrict',
+        index=True,
+        help='Dòng chi tiết gỗ trong hồ sơ chịu ảnh hưởng trực tiếp bởi giao dịch này.'
+    )
     inventory_line_id = fields.Many2one(
         'dl.wood.dossier.inventory.line',
         string='Dòng kiểm kê',

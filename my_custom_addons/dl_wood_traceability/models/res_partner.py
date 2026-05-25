@@ -45,6 +45,17 @@ class ResPartner(models.Model):
                 
         return res
 
+    def action_create_peeling_dossier(self):
+        """Mở form tạo mới hồ sơ ván bóc cho đối tác này."""
+        self.ensure_one()
+        action = self.env['ir.actions.act_window']._for_xml_id('dl_wood_traceability.action_dl_wood_peeling_dossier')
+        action['views'] = [(self.env.ref('dl_wood_traceability.view_dl_wood_peeling_dossier_form').id, 'form')]
+        action['context'] = {
+            'default_partner_id': self.id,
+            'default_company_id': self.company_id.id or self.env.company.id,
+        }
+        return action
+
     dl_contract_ids = fields.One2many(
         'dl.wood.contract.template', 
         'partner_id', 
@@ -62,6 +73,9 @@ class ResPartner(models.Model):
     ], string='Loại đối tác gỗ')
     x_is_wood_customer = fields.Boolean(string='Khách hàng mua gỗ', default=False,
                                          help='Đánh dấu đây là khách hàng mua gỗ thành phẩm từ công ty.')
+    x_is_peeling_supplier = fields.Boolean(string='Nhà cung cấp ván bóc', default=False,
+                                            help='Đánh dấu đây là nhà cung cấp ván bóc.')
+    x_peeling_dossier_ids = fields.One2many('dl.wood.peeling.dossier', 'partner_id', string='Hồ sơ ván bóc')
     def _get_default_prep_days(self):
         try:
             self.env.cr.execute("SELECT column_name FROM information_schema.columns WHERE table_name='res_company' AND column_name='x_prep_days'")

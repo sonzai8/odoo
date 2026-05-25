@@ -130,6 +130,39 @@ class DlWoodInitDataWizard(models.TransientModel):
             }
         }
 
+    def action_init_peeling_types(self):
+        """Khởi tạo danh sách danh mục ván bóc"""
+        peeling_type_obj = self.env['dl.wood.peeling.type']
+        
+        data = [
+            ('Bạch đàn', 'Eucalyptus', 'Eucalyptus', 'BD'),
+            ('Cao su', 'Rubberwood', 'Hevea brasiliensis', 'CS'),
+            ('Keo', 'Acacia', 'Acacia', 'KEO'),
+            ('Thông', 'Pine', 'Pinus massoniana', 'THONG'),
+        ]
+        
+        for name, name_en, name_sci, code in data:
+            existing = peeling_type_obj.search([('code', '=', code), ('company_id', '=', self.env.company.id)], limit=1)
+            if not existing:
+                peeling_type_obj.create({
+                    'name': name,
+                    'name_en': name_en,
+                    'name_sci': name_sci,
+                    'code': code,
+                    'company_id': self.env.company.id
+                })
+                
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã khởi tạo danh mục Ván bóc thành công.'),
+                'sticky': False,
+                'type': 'success',
+            }
+        }
+
     def action_init_report_templates(self):
         """Khởi tạo cấu hình phiên bản biểu mẫu v2026 cho công ty hiện tại"""
         version_obj = self.env['dl.wood.report.version']
