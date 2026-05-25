@@ -7,7 +7,7 @@
               name="Hồ Sơ Gỗ" 
               web_icon="dl_wood_traceability,static/description/icon.png"
               groups="dl_wood_traceability.group_dl_wood_dossier_manager"
-              sequence="80"/>
+              sequence="30"/>
 
     <!-- ============================================== -->
     <!-- 2. MAIN CATEGORIES (LEVEL 1) -->

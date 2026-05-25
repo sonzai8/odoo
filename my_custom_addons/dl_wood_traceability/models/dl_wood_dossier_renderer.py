@@ -721,6 +721,25 @@ class DossierDocxRenderer:
             'owner_position':        owner_pos,
             'owner_positon':         owner_pos,   # dự phòng lỗi gõ phím trong template cũ
             'owner_pos':             owner_pos,
+            
+            # Các biến Bảng kê lâm sản / Phương án khai thác
+            'forest_owner_name':      p.name or "",
+            'forest_owner_address':   d.partner_address or "",
+            'forset_owner_address':   d.partner_address or "", # dự phòng lỗi chính tả cũ
+            'forest_owner_cccd':      p.x_cccd or "",
+            'forset_owner_cccd':      p.x_cccd or "", # dự phòng lỗi chính tả cũ
+            'forest_owner_cccd_date': date_to_vietnamese_text(p.x_cccd_date),
+            'forest_owner_cccd_place': p.x_cccd_place or "",
+            'forest_owner_phone':     p.phone or "",
+            'forest_owner_email':     p.email or "",
+            
+            'forestOwnerName':        p.name or "",
+            'forestOwnerAddr':        d.partner_address or "",
+            'foestOwnerCccd':         p.x_cccd or "",
+            'cccdDate':               self._format_date(p.x_cccd_date),
+            'cccdPlace':              p.x_cccd_place or "",
+            'forestOwnerPhoneNumber': p.phone or "",
+            
             # Thông tin thanh toán (Ngân hàng)
             'owner_bank_account_number': p.x_bank_account_number or "",
             'owner_bank_account_holder': p.x_bank_account_holder or "",
@@ -733,10 +752,14 @@ class DossierDocxRenderer:
             'forest_owner_bank_acc':     p.x_bank_account_number or "",
             'forest_owner_bank_account': p.x_bank_account_number or "",
             # Dự phòng các biến viết tắt khác để dễ dùng trong template Word
-            'owner_bank_acc':            p.x_bank_account_number or "",
-            'owner_bank_holder':         p.x_bank_account_holder or "",
             'owner_bank':                p.x_bank_name or "",
             'owner_acc':                 p.x_bank_account_number or "",
+            # Thông tin hành chính (Xã, Huyện, Tỉnh)
+            'forest_owner_ward':         p.ward_id.name if getattr(p, 'ward_id', False) else "",
+            'forest_owner_district':     p.city or "",
+            'forest_owner_state':        p.state_id.name if getattr(p, 'state_id', False) else "",
+            'forest_owner_city':         p.city or (p.state_id.name if getattr(p, 'state_id', False) else ""), # backward compatibility
+            'forestCity':                p.city or (p.state_id.name if getattr(p, 'state_id', False) else ""), # backward compatibility
         }
 
     def _get_company_info(self):
@@ -863,27 +886,21 @@ class DossierDocxRenderer:
         c_pos = d.x_company_position or getattr(d.company_id, 'x_representative_position', '') or "Giám đốc"
 
         loc = d.exploitation_location_id
-        if loc:
-            forest_addr = format_vietnamese_address(
-                street=loc.street,
-                city=loc.city,
-                state_name=loc.state_id.name
-            ) or loc.name or ""
-        else:
-            forest_addr = d.partner_address or ""
-
         context = {
             # Thông tin chủ rừng
             'forestOwnerName':        p.name or "",
             'forestOwnerAddr':        d.partner_address or "",
-            'forestCity':             p.city or "",
+            'forestCity':             p.city or (p.state_id.name if getattr(p, 'state_id', False) else ""),
+            'forest_owner_ward':      p.ward_id.name if getattr(p, 'ward_id', False) else "",
+            'forest_owner_district':  p.city or "",
+            'forest_owner_state':     p.state_id.name if getattr(p, 'state_id', False) else "",
             'foestOwnerCccd':         p.x_cccd or "",
             'cccdDate':               self._format_date(p.x_cccd_date),
             'cccdPlace':              p.x_cccd_place or "",
             'forestOwnerPhoneNumber': p.phone or "",
             # Thông tin khai thác
             'miningArea':             d.x_area or 0.0,
-            'forestAddr':             forest_addr,
+            'forestAddr':             d._get_exploitation_address(),
             'typeMining':             mining_method_map.get(d.x_mining_method, ""),
             'projectedMiningOutput':  ", ".join([
                 f"{l.species_id.name} " + (
@@ -909,6 +926,49 @@ class DossierDocxRenderer:
     # -------------------------------------------------------------------------
     # SKELETON METHODS — Bổ sung biến riêng khi có nhu cầu thực tế
     # -------------------------------------------------------------------------
+
+    def _get_base_bkls_context(self, bkls_date):
+        """Khởi tạo các biến dùng chung cho Header của các loại Bảng kê lâm sản."""
+        self.dossier.ensure_one()
+        d = self.dossier
+        p = d.partner_id
+        
+        company_info = self._get_company_info()
+        owner_info = self._get_owner_info()
+        
+        # 1. Tính thời gian vận chuyển/khai thác
+        count_days = 0
+        if d.x_start_date and d.x_end_date:
+            count_days = (d.x_end_date - d.x_start_date).days + 1
+            
+        delivery_days = 0
+        if d.x_delivery_start_date and d.x_delivery_end_date:
+            delivery_days = (d.x_delivery_end_date - d.x_delivery_start_date).days + 1
+            
+        vietnamese_bkls_date = date_to_vietnamese_text(bkls_date)
+        
+        # Địa chỉ khai thác đầy đủ
+        exploitation_address = d._get_exploitation_address()
+        
+        return {
+            **company_info,
+            **owner_info,
+            
+            # Bảng kê lâm sản
+            'bkls_number':            d.x_bkls_number or "",
+            'bkls_code':              d.x_bkls_number or "",
+            'vietnamese_bkls_date':   vietnamese_bkls_date,
+            'vietnamses_bkls_date':   vietnamese_bkls_date, # Dự phòng lỗi chính tả trong template
+            
+            # Địa điểm & Thời gian
+            'exploitation_address':   exploitation_address,
+            'exploitation_count_day': count_days,
+            'delivery_count_day':     delivery_days,
+            'vietnamese_exploitation_from_date': date_to_vietnamese_text(d.x_start_date),
+            'vietnamese_exploitation_to_date':   date_to_vietnamese_text(d.x_end_date),
+            'vietnamese_x_delivery_start_date': date_to_vietnamese_text(d.x_delivery_start_date),
+            'vietnamese_x_delivery_end_date':   date_to_vietnamese_text(d.x_delivery_end_date),
+        }
 
     def _prepare_ptkt_context(self):
         """[SKELETON] Phương tiện khai thác (PTKT). TODO: bổ sung biến riêng."""
@@ -1025,14 +1085,10 @@ class DossierDocxRenderer:
             
         # Mã số và ngày lập bảng kê lâm sản
         bkls_date = d.x_bkls_date or d.x_contract_date or d.x_end_date or fields.Date.today()
-        vietnamese_bkls_date = date_to_vietnamese_text(bkls_date)
-        forest_owner_city = p.city or p.state_id.name or ""
+        base_context = self._get_base_bkls_context(bkls_date)
         
         species_lines = self._build_species_lines()
         
-        # Địa chỉ khai thác đầy đủ
-        exploitation_address = d._get_exploitation_address()
-            
         # Fallback variables cho context cha nếu người dùng viết không có tiền tố line.
         fallback_vietnamese_volume_unit = species_lines[0]['vietnamese_volume_unit'] if species_lines else ""
         fallback_vietnamese_unit = species_lines[0]['vietnamese_unit'] if species_lines else ""
@@ -1044,33 +1100,7 @@ class DossierDocxRenderer:
         vietnamese_firewood_qty = number_to_vietnamese_words(int(round(firewood_ster))) if has_firewood else ""
 
         context = {
-            # Bảng kê lâm sản
-            'bkls_number':            d.x_bkls_number or "",
-            'bkls_code':              d.x_bkls_number or "",
-            'vietnamese_bkls_date':   vietnamese_bkls_date,
-            'vietnamses_bkls_date':   vietnamese_bkls_date, # Dự phòng lỗi chính tả trong template
-            'forest_owner_city':      forest_owner_city,
-
-            # Bên mua
-            'company_name':           company_info.get('company_name', ''),
-            'company_address':        company_info.get('company_address', ''),
-            'company_tax_number':     company_info.get('company_tax_number', ''),
-            
-            # Chủ rừng (Bên bán - có cả phương án dự phòng lỗi chính tả cũ)
-            'forest_owner_name':      owner_info.get('owner_name', ''),
-            'forest_owner_address':   owner_info.get('owner_address', ''),
-            'forset_owner_address':   owner_info.get('owner_address', ''), # dự phòng lỗi chính tả cũ
-            'forest_owner_cccd':      owner_info.get('owner_cccd', ''),
-            'forset_owner_cccd':      owner_info.get('owner_cccd', ''), # dự phòng lỗi chính tả cũ
-            
-            # Địa điểm & Thời gian
-            'exploitation_address':   exploitation_address,
-            'exploitation_count_day': count_days,
-            'delivery_count_day':     delivery_days,
-            'vietnamese_exploitation_from_date': date_to_vietnamese_text(d.x_start_date),
-            'vietnamese_exploitation_to_date':   date_to_vietnamese_text(d.x_end_date),
-            'vietnamese_x_delivery_start_date': date_to_vietnamese_text(d.x_delivery_start_date),
-            'vietnamese_x_delivery_end_date':   date_to_vietnamese_text(d.x_delivery_end_date),
+            **base_context,
             
             # Đường kính cực trị (hỗ trợ cả biến đã sửa và biến lỗi chính tả cũ)
             'diameter_min':           dia_min,
@@ -1205,6 +1235,9 @@ class DossierDocxRenderer:
             
             # Địa danh & Ký tên
             'forest_owner_city':        commune_name,
+            'forest_owner_ward':        p.ward_id.name if getattr(p, 'ward_id', False) else "",
+            'forest_owner_district':    p.city or "",
+            'forest_owner_state':       p.state_id.name if getattr(p, 'state_id', False) else "",
             'commune_name':             commune_name,
             'location_commune':         commune_name,
             'species_lines':            species_lines,
@@ -1561,20 +1594,7 @@ class DossierDocxRenderer:
         d = self.dossier
         p = d.partner_id
         
-        company_info = self._get_company_info()
-        owner_info = self._get_owner_info()
-        
-        # 1. Tính thời gian vận chuyển/khai thác
-        count_days = 0
-        if d.x_start_date and d.x_end_date:
-            count_days = (d.x_end_date - d.x_start_date).days + 1
-            
-        delivery_days = 0
-        if d.x_delivery_start_date and d.x_delivery_end_date:
-            delivery_days = (d.x_delivery_end_date - d.x_delivery_start_date).days + 1
-            
-        vietnamese_ticket_date = date_to_vietnamese_text(ticket_date)
-        forest_owner_city = p.city or p.state_id.name or ""
+        base_context = self._get_base_bkls_context(ticket_date)
         
         # Cực trị đường kính (chỉ tính cho gỗ)
         wood_lines = d.line_ids.filtered(lambda l: l.wood_type == 'wood')
@@ -1727,33 +1747,7 @@ class DossierDocxRenderer:
 
         # Tạo context đầy đủ tương tự _prepare_bkls_context nhưng các giá trị theo xe
         context = {
-            # Bảng kê lâm sản
-            'bkls_number':            d.x_bkls_number or "",
-            'bkls_code':              d.x_bkls_number or "",
-            'vietnamese_bkls_date':   vietnamese_ticket_date,
-            'vietnamses_bkls_date':   vietnamese_ticket_date, # Dự phòng lỗi chính tả trong template
-            'forest_owner_city':      forest_owner_city,
-
-            # Bên mua
-            'company_name':           company_info.get('company_name', ''),
-            'company_address':        company_info.get('company_address', ''),
-            'company_tax_number':     company_info.get('company_tax_number', ''),
-            
-            # Chủ rừng (Bên bán)
-            'forest_owner_name':      owner_info.get('owner_name', ''),
-            'forest_owner_address':   owner_info.get('owner_address', ''),
-            'forset_owner_address':   owner_info.get('owner_address', ''), # dự phòng lỗi chính tả cũ
-            'forest_owner_cccd':      owner_info.get('owner_cccd', ''),
-            'forset_owner_cccd':      owner_info.get('owner_cccd', ''), # dự phòng lỗi chính tả cũ
-            
-            # Địa điểm & Thời gian
-            'exploitation_address':   d._get_exploitation_address(),
-            'exploitation_count_day': count_days,
-            'delivery_count_day':     delivery_days,
-            'vietnamese_exploitation_from_date': date_to_vietnamese_text(d.x_start_date),
-            'vietnamese_exploitation_to_date':   date_to_vietnamese_text(d.x_end_date),
-            'vietnamese_x_delivery_start_date': date_to_vietnamese_text(d.x_delivery_start_date),
-            'vietnamese_x_delivery_end_date':   date_to_vietnamese_text(d.x_delivery_end_date),
+            **base_context,
             
             # Thông tin vận chuyển xe cụ thể
             'license_plate':          v_name,

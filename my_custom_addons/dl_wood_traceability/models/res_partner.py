@@ -145,12 +145,11 @@ class ResPartner(models.Model):
     @api.depends('street', 'street2', 'city', 'state_id', 'ward_id')
     def _compute_x_full_address(self):
         for partner in self:
-            # Ưu tiên lấy Xã/Phường từ ward_id (chuẩn hóa), nếu không có mới lấy từ trường city cũ
-            city_name = partner.ward_id.name if partner.ward_id else partner.city
             partner.x_full_address = format_vietnamese_address(
                 street=partner.street,
                 street2=partner.street2,
-                city=city_name,
+                ward=partner.ward_id.name if partner.ward_id else None,
+                district=partner.city,
                 state_name=partner.state_id.name
             )
 
