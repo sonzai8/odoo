@@ -35,6 +35,9 @@
 
                     <notebook>
                         <page string="Thưởng Doanh Thu" name="revenue_bonus">
+                            <group>
+                                <field name="revenue_job_titles"/>
+                            </group>
                             <field name="revenue_line_ids">
                                 <list editable="bottom">
                                     <field name="min_revenue" widget="monetary" options="{'currency_field': 'currency_id'}"/>

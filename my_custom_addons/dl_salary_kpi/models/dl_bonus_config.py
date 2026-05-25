@@ -16,6 +16,8 @@ class DlBonusPolicy(models.Model):
     document = fields.Binary(string='Tệp đính kèm (Word/Excel)')
     document_name = fields.Char(string='Tên tệp đính kèm')
 
+    revenue_job_titles = fields.Char(string='Chức vụ hưởng Thưởng Doanh Thu', help='Mã chức vụ cách nhau bằng dấu phẩy. VD: CV,KTT,QL,QĐ,TL,PGĐ,GĐ,NV,KT,TK,CN,LX')
+
     revenue_line_ids = fields.One2many('dl.salary.kpi.revenue.bonus', 'policy_id', string='Mốc Thưởng Doanh Thu')
     productivity_line_ids = fields.One2many('dl.salary.kpi.productivity.bonus', 'policy_id', string='Mốc Thưởng Năng Suất')
 
@@ -43,6 +45,10 @@ class DlBonusPolicy(models.Model):
             if rec.revenue_line_ids or rec.productivity_line_ids:
                 raise ValidationError(_("Bạn chỉ có thể khởi tạo mẫu khi danh sách mốc thưởng còn trống!"))
             
+            # Gán mặc định tất cả các chức vụ cho Thưởng Doanh Thu
+            if not rec.revenue_job_titles:
+                rec.revenue_job_titles = 'CV,KTT,QL,QĐ,TL,PGĐ,GĐ,NV,KT,TK,CN,LX'
+
             # Mốc Doanh Thu
             self.env['dl.salary.kpi.revenue.bonus'].create([
                 {'policy_id': rec.id, 'min_revenue': 0, 'max_revenue': 20000000000, 'bonus_amount': 0},
