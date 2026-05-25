@@ -446,19 +446,6 @@
         <field name="search_view_id" ref="view_dl_wood_dossier_line_search"/>
     </record>
 
-    <menuitem id="menu_dl_wood_traceability_root" 
-              name="Hồ Sơ Gỗ" 
-              groups="dl_wood_traceability.group_dl_wood_dossier_manager"
-              sequence="80"/>
-
-    <menuitem id="menu_dl_wood_input_materials"
-              name="Nguyên Liệu Đầu Vào"
-              parent="menu_dl_wood_traceability_root"
-              sequence="10"/>
-
-    <menuitem id="menu_dl_wood_dossier" name="Hồ Sơ Gỗ" parent="menu_dl_wood_input_materials" action="action_dl_wood_dossier" sequence="10"/>
-    <menuitem id="menu_dl_wood_species" name="Loại Gỗ Thu Mua" parent="menu_dl_wood_input_materials" action="action_dl_wood_species" sequence="20"/>
-
     <record id="action_dl_wood_dossier" model="ir.actions.act_window">
         <field name="name">Hồ Sơ Gỗ</field>
         <field name="res_model">dl.wood.dossier</field>
@@ -476,7 +463,7 @@
                 <field name="wood_type" widget="badge" decoration-info="wood_type == 'wood'" decoration-warning="wood_type == 'firewood'"/>
                 <field name="uom_id" string="Đơn vị tính"/>
                 <field name="x_species_group"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="company_id" string="Công ty" optional="show"/>
             </list>
         </field>
     </record>
@@ -703,10 +690,6 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_dl_wood_config_root" name="Cấu hình" parent="menu_dl_wood_traceability_root" sequence="100"/>
-    <menuitem id="menu_dl_wood_report_version" name="Phiên bản biểu mẫu" parent="menu_dl_wood_config_root" action="action_dl_wood_report_version" sequence="10"/>
-    <menuitem id="menu_dl_woodpro_config" name="Kết nối WoodPro" parent="menu_dl_wood_config_root" action="action_dl_woodpro_config" sequence="20"/>
-
     <!-- ===== FORM VIEW: ĐỊA ĐIỂM KHAI THÁC ===== -->
     <record id="view_dl_wood_exploitation_location_form" model="ir.ui.view">
         <field name="name">dl.wood.exploitation.location.form</field>
@@ -723,7 +706,7 @@
                         </group>
                         <group string="Địa chỉ">
                             <field name="street"/>
-                            <field name="city"/>
+                            <field name="ward_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="state_id"/>
                             <field name="country_id"/>
                         </group>

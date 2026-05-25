@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================== -->
+    <!-- 1. ROOT MENU -->
+    <!-- ============================================== -->
+    <menuitem id="menu_dl_wood_traceability_root" 
+              name="Hồ Sơ Gỗ" 
+              web_icon="dl_wood_traceability,static/description/icon.png"
+              groups="dl_wood_traceability.group_dl_wood_dossier_manager"
+              sequence="80"/>
+
+    <!-- ============================================== -->
+    <!-- 2. MAIN CATEGORIES (LEVEL 1) -->
+    <!-- ============================================== -->
+    <menuitem id="menu_dl_wood_input_materials"
+              name="Nguyên Liệu Đầu Vào"
+              parent="menu_dl_wood_traceability_root"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_production"
+              name="Sản xuất"
+              parent="menu_dl_wood_traceability_root"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_wood_log_root"
+              name="Log Module"
+              parent="menu_dl_wood_traceability_root"
+              sequence="90"/>
+
+    <menuitem id="menu_dl_wood_config_root" 
+              name="Cấu hình" 
+              parent="menu_dl_wood_traceability_root" 
+              sequence="100"/>
+
+    <!-- ============================================== -->
+    <!-- 3. SUB-MENUS (LEVEL 2 & 3) -->
+    <!-- ============================================== -->
+
+    <!-- [A] Nguyên Liệu Đầu Vào -->
+    <menuitem id="menu_dl_wood_dossier" 
+              name="Hồ Sơ Gỗ" 
+              parent="menu_dl_wood_input_materials" 
+              action="action_dl_wood_dossier" 
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_dossier_inventory"
+              name="Kiểm Kê Hồ Sơ Gỗ"
+              parent="menu_dl_wood_input_materials"
+              action="action_dl_wood_dossier_inventory"
+              sequence="15"/>
+
+    <menuitem id="menu_dl_wood_species" 
+              name="Loại Gỗ Thu Mua" 
+              parent="menu_dl_wood_input_materials" 
+              action="action_dl_wood_species" 
+              sequence="20"/>
+
+    <menuitem id="menu_dl_wood_partners"
+              name="Đối Tác"
+              parent="menu_dl_wood_input_materials"
+              sequence="30"/>
+
+        <menuitem id="menu_dl_wood_forest_owner"
+                  name="Chủ Rừng"
+                  parent="menu_dl_wood_partners"
+                  action="action_dl_wood_forest_owner"
+                  sequence="10"/>
+
+        <menuitem id="menu_dl_wood_supplier"
+                  name="NCC Ván Bóc"
+                  parent="menu_dl_wood_partners"
+                  action="action_dl_wood_supplier"
+                  sequence="20"/>
+
+    <!-- [B] Sản xuất -->
+    <menuitem id="menu_dl_wood_customer"
+              name="Khách hàng"
+              parent="menu_dl_wood_production"
+              action="action_dl_wood_customer"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_sale_order"
+              name="Đơn đặt hàng"
+              parent="menu_dl_wood_production"
+              action="action_dl_wood_sale_order"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_wood_production_order"
+              name="Lệnh sản xuất"
+              parent="menu_dl_wood_production"
+              action="action_dl_wood_production_order"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_wood_product" 
+              name="Sản phẩm Gỗ" 
+              parent="menu_dl_wood_production" 
+              action="action_dl_wood_product_template" 
+              sequence="55"/>
+
+    <!-- [C] Log Module -->
+    <menuitem id="menu_dl_wood_log_entries"
+              name="Nhật ký hoạt động"
+              parent="menu_dl_wood_log_root"
+              action="action_dl_wood_log"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_log_config"
+              name="Cấu hình Log"
+              parent="menu_dl_wood_log_root"
+              action="action_dl_wood_log_config"
+              sequence="20"/>
+
+    <!-- [D] Cấu hình -->
+    <menuitem id="menu_dl_wood_init_data"
+              name="Khởi Tạo Dữ Liệu"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_wood_init_data_wizard"
+              sequence="2"/>
+
+    <menuitem id="menu_dl_wood_settings"
+              name="Cấu hình chung"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_wood_config_settings"
+              sequence="5"/>
+
+    <menuitem id="menu_dl_wood_report_version" 
+              name="Phiên bản biểu mẫu" 
+              parent="menu_dl_wood_config_root" 
+              action="action_dl_wood_report_version" 
+              sequence="10"/>
+
+    <menuitem id="menu_dl_woodpro_config" 
+              name="Kết nối WoodPro" 
+              parent="menu_dl_wood_config_root" 
+              action="action_dl_woodpro_config" 
+              active="False"
+              sequence="20"/>
+
+    <menuitem id="menu_dl_vietnam_bank"
+              name="Danh mục ngân hàng"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_vietnam_bank"
+              sequence="30"/>
+
+    <menuitem id="menu_dl_wood_wards"
+              name="Xã / Phường (Việt Nam)"
+              parent="menu_dl_wood_config_root"
+              action="action_res_country_ward"
+              sequence="40"/>
+
+    <menuitem id="menu_dl_wood_vehicle"
+              name="Phương tiện vận chuyển"
+              parent="menu_dl_wood_config_root"
+              action="action_dl_wood_vehicle"
+              sequence="50"/>
+
+    <!-- [E] Báo cáo -->
+    <menuitem id="menu_dl_wood_reports"
+              name="Báo cáo"
+              parent="menu_dl_wood_traceability_root"
+              sequence="50"/>
+
+    <menuitem id="menu_dl_wood_dossier_consumption_report"
+              name="Báo cáo tiêu hao hồ sơ"
+              parent="menu_dl_wood_reports"
+              action="action_dl_wood_dossier_consumption_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_dl_wood_production_line_report"
+              name="Xem trực tuyến tiêu hao"
+              parent="menu_dl_wood_reports"
+              action="action_dl_wood_production_line_report"
+              sequence="20"/>
+
+</odoo>

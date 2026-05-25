@@ -50,10 +50,4 @@
             </p>
         </field>
     </record>
-
-    <menuitem id="menu_dl_wood_product" 
-              name="Sản phẩm Gỗ" 
-              parent="menu_dl_wood_production" 
-              action="action_dl_wood_product_template" 
-              sequence="55"/>
 </odoo>

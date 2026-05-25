@@ -24,9 +24,4 @@
     </record>
 
     <!-- Menu -->
-    <menuitem id="menu_dl_wood_vehicle"
-              name="Phương tiện vận chuyển"
-              parent="dl_wood_traceability.menu_dl_wood_config_root"
-              action="action_dl_wood_vehicle"
-              sequence="50"/>
 </odoo>

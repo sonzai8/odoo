@@ -118,9 +118,4 @@
     </record>
 
     <!-- Menu Item -->
-    <menuitem id="menu_dl_wood_dossier_inventory"
-              name="Kiểm Kê Hồ Sơ Gỗ"
-              parent="menu_dl_wood_input_materials"
-              action="action_dl_wood_dossier_inventory"
-              sequence="15"/>
 </odoo>

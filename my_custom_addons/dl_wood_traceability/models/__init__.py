@@ -19,4 +19,5 @@ from . import res_config_settings
 from . import dl_wood_transport
 from . import dl_vietnam_bank
 from . import dl_wood_dossier_inventory
-
+from . import res_country_state
+from . import res_country_ward

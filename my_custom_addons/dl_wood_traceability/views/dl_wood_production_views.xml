@@ -343,28 +343,6 @@
     <!-- ========================= -->
     <!-- MENU CẤU TRÚC             -->
     <!-- ========================= -->
-    <menuitem id="menu_dl_wood_production"
-              name="Sản xuất"
-              parent="menu_dl_wood_traceability_root"
-              sequence="30"/>
-
-    <menuitem id="menu_dl_wood_customer"
-              name="Khách hàng"
-              parent="menu_dl_wood_production"
-              action="action_dl_wood_customer"
-              sequence="10"/>
-
-    <menuitem id="menu_dl_wood_sale_order"
-              name="Đơn đặt hàng"
-              parent="menu_dl_wood_production"
-              action="action_dl_wood_sale_order"
-              sequence="20"/>
-
-    <menuitem id="menu_dl_wood_production_order"
-              name="Lệnh sản xuất"
-              parent="menu_dl_wood_production"
-              action="action_dl_wood_production_order"
-              sequence="30"/>
 
     <!-- ========================================================================= -->
     <!-- BÁO CÁO TRỰC TUYẾN: TIÊU HAO & KHAI CO (dl.wood.production.line)          -->
@@ -434,7 +412,6 @@
             </search>
         </field>
     </record>
-
 
     <record id="action_dl_wood_production_line_report" model="ir.actions.act_window">
         <field name="name">Báo cáo Tiêu hao &amp; Khai CO</field>

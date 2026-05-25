@@ -61,3 +61,5 @@ python odoo-bin -c odoo.conf --dev=all
 
 python odoo-bin -c odoo.conf -u dl_wood_traceability -d odoo_db --stop-after-init
 python odoo-bin -c odoo.conf --dev=all
+
+./venv/bin/python odoo-bin -c odoo.conf -u dl_wood_traceability -d odoo_db_production --stop-after-init

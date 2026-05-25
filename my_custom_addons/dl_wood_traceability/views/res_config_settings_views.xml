@@ -68,10 +68,4 @@
         <field name="target">current</field>
         <field name="context">{'module' : 'dl_wood_traceability'}</field>
     </record>
-
-    <menuitem id="menu_dl_wood_settings"
-              name="Cấu hình chung"
-              parent="menu_dl_wood_config_root"
-              action="action_dl_wood_config_settings"
-              sequence="5"/>
 </odoo>

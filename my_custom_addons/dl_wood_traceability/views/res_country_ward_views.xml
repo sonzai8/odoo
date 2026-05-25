@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_country_ward_tree" model="ir.ui.view">
+        <field name="name">res.country.ward.tree</field>
+        <field name="model">res.country.ward</field>
+        <field name="arch" type="xml">
+            <list string="Xã/Phường" editable="bottom">
+                <field name="name"/>
+                <field name="state_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_res_country_ward_search" model="ir.ui.view">
+        <field name="name">res.country.ward.search</field>
+        <field name="model">res.country.ward</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Xã/Phường">
+                <field name="name" string="Tên Xã/Phường"/>
+                <field name="state_id" string="Tỉnh/Thành phố"/>
+                <separator/>
+                <filter string="Đã lưu trữ" name="archived" domain="[('active', '=', False)]"/>
+                <filter string="Tỉnh/Thành phố" name="group_by_state" context="{'group_by': 'state_id'}"/>
+                <searchpanel>
+                    <field name="state_id" icon="fa-map-marker" select="multi"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_res_country_ward" model="ir.actions.act_window">
+        <field name="name">Xã / Phường (Việt Nam)</field>
+        <field name="res_model">res.country.ward</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_res_country_ward_search"/>
+        <!-- Nhóm mặc định theo tỉnh thành khi mở lên -->
+        <field name="context">{'search_default_group_by_state': 1}</field>
+    </record>
+</odoo>

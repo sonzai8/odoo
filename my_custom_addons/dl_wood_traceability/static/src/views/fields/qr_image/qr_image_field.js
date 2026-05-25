@@ -245,9 +245,12 @@ export class QrImageField extends ImageField {
         }
 
         // Cập nhật các trường trên form thông qua Odoo OWL record update API
-        // Lưu ý: Many2one field (state_id) cần truyền { id, display_name }, không phải số nguyên thô
         const stateValue = (parsedAddress.state_id && parsedAddress.state_name)
             ? { id: parsedAddress.state_id, display_name: parsedAddress.state_name }
+            : false;
+            
+        const wardValue = (parsedAddress.ward_id && parsedAddress.ward_name)
+            ? { id: parsedAddress.ward_id, display_name: parsedAddress.ward_name }
             : false;
 
         const changes = {
@@ -258,6 +261,7 @@ export class QrImageField extends ImageField {
             street: parsedAddress.street || "",
             city: parsedAddress.city || "",
             state_id: stateValue,
+            ward_id: wardValue,
             x_issue_date: deserializeDate(issueDate),
             x_cccd_date: deserializeDate(issueDate),
             x_cccd_place: "Cục Cảnh sát QLHC về TTXH",
