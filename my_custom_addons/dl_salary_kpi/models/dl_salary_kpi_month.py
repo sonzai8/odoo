@@ -90,6 +90,10 @@ class SalaryKpiMonth(models.Model):
         related='active_policy_id.productivity_line_ids', 
         string='Mốc Thưởng Năng Suất'
     )
+    policy_revenue_job_titles = fields.Char(
+        related='active_policy_id.revenue_job_titles',
+        string='Chức vụ hưởng Doanh Thu'
+    )
     
     @api.depends('company_id')
     def _compute_active_policy(self):
@@ -907,22 +911,29 @@ class SalaryKpiMonth(models.Model):
         if active_policy:
             rev_tiers = active_policy.revenue_line_ids.sorted(key=lambda t: t.min_revenue)
             prod_tiers = active_policy.productivity_line_ids
+            rev_job_titles = active_policy.revenue_job_titles or ""
         else:
             rev_tiers = []
             prod_tiers = []
+            rev_job_titles = ""
 
         if not rev_tiers:
             base_rev_formula = "0"
         else:
             lowest_min = rev_tiers[0].min_revenue
-            base_rev_formula = f"IF($G$4<{lowest_min},0,"
-            close_parens = 1
+            if lowest_min > 0:
+                base_rev_formula = f"IF($G$4<{lowest_min},0,"
+                close_parens = 1
+            else:
+                base_rev_formula = ""
+                close_parens = 0
+
             for tier in rev_tiers:
                 if tier.max_revenue:
-                    base_rev_formula += f"IF($G$4<{tier.max_revenue},{tier.bonus_amount},"
+                    base_rev_formula += f"IF($G$4<={tier.max_revenue},{tier.bonus_amount},"
                     close_parens += 1
                 else:
-                    base_rev_formula += f"IF($G$4>={tier.min_revenue},{tier.bonus_amount},0"
+                    base_rev_formula += f"IF($G$4>{tier.min_revenue},{tier.bonus_amount},0"
                     close_parens += 1
                     break
             if rev_tiers[-1].max_revenue:
@@ -1031,7 +1042,19 @@ class SalaryKpiMonth(models.Model):
                 if base_rev_formula == "0":
                     rev_formula = "=0"
                 else:
-                    rev_formula = "=" + base_rev_formula
+                    if rev_job_titles:
+                        titles = [t.strip() for t in rev_job_titles.split(',') if t.strip()]
+                        if titles:
+                            or_conditions = ",".join([f'H{current_row}="{t}"' for t in titles])
+                            if len(titles) > 1:
+                                condition = f"OR({or_conditions})"
+                            else:
+                                condition = f'H{current_row}="{titles[0]}"'
+                            rev_formula = f"=IF({condition},{base_rev_formula},0)"
+                        else:
+                            rev_formula = "=" + base_rev_formula
+                    else:
+                        rev_formula = "=" + base_rev_formula
 
                 if not prod_tier_data:
                     prod_formula = "=0"
