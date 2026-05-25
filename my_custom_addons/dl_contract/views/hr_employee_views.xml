@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mở rộng form view của hr.employee -->
+    <record id="view_employee_form_inherit_dl_contract" model="ir.ui.view">
+        <field name="name">hr.employee.form.dl.contract</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_dl_contracts" 
+                        class="oe_stat_button" 
+                        icon="fa-file-text-o" 
+                        type="object" 
+                        groups="dl_contract.group_contract_user">
+                    <field name="dl_contract_count" widget="statinfo" string="Hợp đồng"/>
+                </button>
+            </div>
+            
+            <xpath expr="//notebook" position="inside">
+                <page string="Hợp đồng Lao động" groups="dl_contract.group_contract_user">
+                    <group>
+                        <field name="dl_contract_state" widget="badge" 
+                               decoration-info="dl_contract_state == 'no_contract'" 
+                               decoration-success="dl_contract_state == 'active'" 
+                               decoration-warning="dl_contract_state == 'expiring_soon'" 
+                               decoration-danger="dl_contract_state == 'expired'"/>
+                        <field name="dl_current_contract_id" readonly="1" invisible="not dl_current_contract_id"/>
+                    </group>
+                    <separator string="Tất cả Hợp đồng"/>
+                    <field name="dl_contract_ids" context="{'default_employee_id': id}">
+                        <list decoration-danger="x_is_expiring_soon or state == 'expired'" decoration-success="state == 'active'">
+                            <field name="name"/>
+                            <field name="contract_type_id"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="state" widget="badge" 
+                                   decoration-info="state == 'draft'" 
+                                   decoration-success="state == 'active'" 
+                                   decoration-warning="state == 'renewed'" 
+                                   decoration-danger="state in ('expired', 'terminated')"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="x_is_expiring_soon" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Mở rộng list view của hr.employee -->
+    <record id="view_employee_tree_inherit_dl_contract" model="ir.ui.view">
+        <field name="name">hr.employee.tree.dl.contract</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <field name="work_email" position="after">
+                <field name="dl_contract_state" widget="badge" optional="show"
+                       decoration-info="dl_contract_state == 'no_contract'" 
+                       decoration-success="dl_contract_state == 'active'" 
+                       decoration-warning="dl_contract_state == 'expiring_soon'" 
+                       decoration-danger="dl_contract_state == 'expired'"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Mở rộng search view của hr.employee -->
+    <record id="view_employee_filter_inherit_dl_contract" model="ir.ui.view">
+        <field name="name">hr.employee.search.dl.contract</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='message_needaction']" position="before">
+                <filter string="Chưa có HĐ" name="no_contract" domain="[('dl_contract_state', '=', 'no_contract')]"/>
+                <filter string="Sắp hết HĐ" name="expiring_soon_contract" domain="[('dl_contract_state', '=', 'expiring_soon')]"/>
+                <filter string="Đang có HĐ" name="active_contract" domain="[('dl_contract_state', 'in', ['active', 'expiring_soon'])]"/>
+                <separator/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

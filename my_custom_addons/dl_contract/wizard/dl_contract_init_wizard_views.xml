@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_contract_init_wizard_form" model="ir.ui.view">
+        <field name="name">dl.contract.init.wizard.form</field>
+        <field name="model">dl.contract.init.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Khởi tạo Dữ liệu Hợp đồng">
+                <group>
+                    <p class="text-muted">
+                        Hành động này sẽ tự động tạo ra 2 "Loại hợp đồng" cơ bản (Có thời hạn và Vô thời hạn) 
+                        cho Công ty hiện tại (nếu chúng chưa tồn tại).
+                        Bạn có thể vào menu Cấu hình để chỉnh sửa lại thông số cho phù hợp.
+                    </p>
+                </group>
+                <footer>
+                    <button name="action_init_data" string="Bắt đầu Khởi tạo" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_contract_init_wizard" model="ir.actions.act_window">
+        <field name="name">Khởi tạo Dữ liệu</field>
+        <field name="res_model">dl.contract.init.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

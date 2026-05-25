@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- dl.salary.history views -->
+    <record id="view_dl_salary_history_tree" model="ir.ui.view">
+        <field name="name">dl.salary.history.tree</field>
+        <field name="model">dl.salary.history</field>
+        <field name="arch" type="xml">
+            <list string="Lịch sử điều chỉnh lương" create="0" edit="0" delete="0">
+                <field name="employee_id"/>
+                <field name="contract_id"/>
+                <field name="effective_date"/>
+                <field name="old_wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="new_wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="difference" widget="monetary" options="{'currency_field': 'currency_id'}" decoration-success="difference &gt; 0" decoration-danger="difference &lt; 0"/>
+                <field name="reason"/>
+                <field name="user_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_salary_history_search" model="ir.ui.view">
+        <field name="name">dl.salary.history.search</field>
+        <field name="model">dl.salary.history</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Lịch sử lương">
+                <field name="employee_id"/>
+                <field name="contract_id"/>
+                <group name="group_by">
+                    <filter string="Nhân viên" name="group_by_employee" domain="[]" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Tháng hiệu lực" name="group_by_month" domain="[]" context="{'group_by': 'effective_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_history" model="ir.actions.act_window">
+        <field name="name">Lịch sử điều chỉnh lương</field>
+        <field name="res_model">dl.salary.history</field>
+        <field name="view_mode">list</field>
+    </record>
+
+</odoo>

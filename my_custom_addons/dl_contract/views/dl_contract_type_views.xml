@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- dl.contract.type views -->
+    <record id="view_dl_contract_type_tree" model="ir.ui.view">
+        <field name="name">dl.contract.type.tree</field>
+        <field name="model">dl.contract.type</field>
+        <field name="arch" type="xml">
+            <list string="Loại hợp đồng">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="duration_type"/>
+                <field name="template_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_contract_type_form" model="ir.ui.view">
+        <field name="name">dl.contract.type.form</field>
+        <field name="model">dl.contract.type</field>
+        <field name="arch" type="xml">
+            <form string="Loại hợp đồng">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Hợp đồng có thời hạn 12 tháng"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="duration_type"/>
+                            <field name="default_duration_months" invisible="duration_type != 'fixed'"/>
+                        </group>
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="default_wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="template_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mô tả">
+                            <field name="description" placeholder="Ghi chú thêm về loại hợp đồng này..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

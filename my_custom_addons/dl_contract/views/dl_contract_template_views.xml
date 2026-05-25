@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- dl.contract.template views -->
+    <record id="view_dl_contract_template_tree" model="ir.ui.view">
+        <field name="name">dl.contract.template.tree</field>
+        <field name="model">dl.contract.template</field>
+        <field name="arch" type="xml">
+            <list string="Template hợp đồng">
+                <field name="name"/>
+                <field name="contract_type_id"/>
+                <field name="template_filename"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_contract_template_form" model="ir.ui.view">
+        <field name="name">dl.contract.template.form</field>
+        <field name="model">dl.contract.template</field>
+        <field name="arch" type="xml">
+            <form string="Template hợp đồng">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Mẫu hợp đồng 2026"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="contract_type_id"/>
+                            <field name="template_filename" invisible="1"/>
+                            <field name="template_file" filename="template_filename"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mô tả &amp; Hướng dẫn">
+                            <field name="description" placeholder="Mô tả về template này..."/>
+                            <div class="mt-4 text-muted">
+                                <b>Danh sách Placeholder hỗ trợ trong file Word (.docx):</b>
+                                <ul>
+                                    <li><code>{{employee_name}}</code>: Tên nhân viên</li>
+                                    <li><code>{{employee_cccd}}</code>: Số CCCD</li>
+                                    <li><code>{{employee_birthday}}</code>: Ngày sinh</li>
+                                    <li><code>{{employee_address}}</code>: Địa chỉ thường trú</li>
+                                    <li><code>{{employee_phone}}</code>: Số điện thoại</li>
+                                    <li><code>{{contract_number}}</code>: Mã hợp đồng</li>
+                                    <li><code>{{date_start}}</code>: Ngày bắt đầu</li>
+                                    <li><code>{{date_end}}</code>: Ngày kết thúc</li>
+                                    <li><code>{{job_title}}</code>: Chức danh</li>
+                                    <li><code>{{department}}</code>: Phòng ban</li>
+                                    <li><code>{{wage}}</code>: Lương cơ bản</li>
+                                    <li><code>{{allowance}}</code>: Phụ cấp</li>
+                                    <li><code>{{total_wage}}</code>: Tổng thu nhập</li>
+                                    <li><code>{{company_name}}</code>: Tên công ty</li>
+                                    <li><code>{{today}}</code>: Ngày hiện tại</li>
+                                </ul>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

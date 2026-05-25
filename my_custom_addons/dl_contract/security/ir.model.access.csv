@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dl_contract_type_user,dl.contract.type.user,model_dl_contract_type,group_contract_user,1,0,0,0
+access_dl_contract_type_manager,dl.contract.type.manager,model_dl_contract_type,group_contract_manager,1,1,1,1
+access_dl_contract_user,dl.contract.user,model_dl_contract,group_contract_user,1,0,0,0
+access_dl_contract_manager,dl.contract.manager,model_dl_contract,group_contract_manager,1,1,1,1
+access_dl_salary_history_user,dl.salary.history.user,model_dl_salary_history,group_contract_user,1,0,0,0
+access_dl_salary_history_manager,dl.salary.history.manager,model_dl_salary_history,group_contract_manager,1,1,1,1
+access_dl_contract_template_user,dl.contract.template.user,model_dl_contract_template,group_contract_user,1,0,0,0
+access_dl_contract_template_manager,dl.contract.template.manager,model_dl_contract_template,group_contract_manager,1,1,1,1
+access_dl_contract_init_wizard,dl.contract.init.wizard.manager,model_dl_contract_init_wizard,group_contract_manager,1,1,1,1
+access_dl_contract_generate_wizard,dl.contract.generate.wizard,model_dl_contract_generate_wizard,group_contract_user,1,1,1,1

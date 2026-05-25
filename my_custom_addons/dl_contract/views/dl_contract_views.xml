@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- dl.contract views -->
+    <record id="view_dl_contract_tree" model="ir.ui.view">
+        <field name="name">dl.contract.tree</field>
+        <field name="model">dl.contract</field>
+        <field name="arch" type="xml">
+            <list string="Hợp đồng lao động" decoration-danger="x_is_expiring_soon or state == 'expired'" decoration-success="state == 'active'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="contract_type_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'draft'" 
+                       decoration-success="state == 'active'" 
+                       decoration-warning="state == 'renewed'" 
+                       decoration-danger="state in ('expired', 'terminated')"/>
+                <field name="x_days_to_expire" invisible="x_days_to_expire == 99999"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="x_is_expiring_soon" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_contract_form" model="ir.ui.view">
+        <field name="name">dl.contract.form</field>
+        <field name="model">dl.contract</field>
+        <field name="arch" type="xml">
+            <form string="Hợp đồng lao động">
+                <header>
+                    <button name="action_confirm" type="object" string="Xác nhận hiệu lực" class="oe_highlight" invisible="state != 'draft'" groups="dl_contract.group_contract_manager"/>
+                    <button name="action_renew" type="object" string="Gia hạn HĐ" class="oe_highlight" invisible="state not in ('active', 'expired')" groups="dl_contract.group_contract_manager"/>
+                    <button name="%(action_dl_contract_generate_wizard)d" type="action" string="Tạo File HĐ từ Template" class="btn-secondary" invisible="state not in ('draft', 'active')" context="{'default_contract_id': id, 'default_template_id': contract_type_id.template_id}"/>
+                    <button name="action_terminate" type="object" string="Chấm dứt HĐ" invisible="state != 'active'" groups="dl_contract.group_contract_manager"/>
+                    <button name="action_expire" type="object" string="Đánh dấu Hết hạn" invisible="state != 'active'" groups="dl_contract.group_contract_manager" confirm="Bạn có chắc hợp đồng này đã hết hạn?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,expired"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <div class="alert alert-warning" role="alert" invisible="not x_is_expiring_soon or state != 'active'">
+                        <i class="fa fa-warning"/> Hợp đồng này sắp hết hạn trong <strong><field name="x_days_to_expire" class="oe_inline"/></strong> ngày tới!
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="job_title"/>
+                            <field name="department_id"/>
+                            <field name="contract_type_id" readonly="state != 'draft'"/>
+                            <field name="previous_contract_id" invisible="not previous_contract_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start" readonly="state != 'draft'"/>
+                            <field name="date_end" readonly="state != 'draft'"/>
+                            <field name="trial_date_end" readonly="state != 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <group string="Thông tin Lương">
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="allowance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </group>
+                        <group>
+                            <field name="total_wage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lịch sử điều chỉnh lương" name="salary_history">
+                            <field name="salary_history_ids" readonly="1">
+                                <list>
+                                    <field name="effective_date"/>
+                                    <field name="old_wage"/>
+                                    <field name="new_wage"/>
+                                    <field name="difference"/>
+                                    <field name="reason"/>
+                                    <field name="user_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="File hợp đồng" name="contract_file">
+                            <group>
+                                <field name="scan_filename" invisible="1"/>
+                                <field name="scan_file" filename="scan_filename" widget="pdf_viewer"/>
+                            </group>
+                        </page>
+                        <page string="Ghi chú" name="note">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dl_contract_search" model="ir.ui.view">
+        <field name="name">dl.contract.search</field>
+        <field name="model">dl.contract</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Hợp đồng">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="contract_type_id"/>
+                <field name="department_id"/>
+                <filter string="Dự thảo" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Đang hiệu lực" name="active" domain="[('state', '=', 'active')]"/>
+                <filter string="Sắp hết hạn (≤30 ngày)" name="expiring_soon" domain="[('state', '=', 'active'), ('date_end', '!=', False), ('date_end', '&lt;=', (context_today() + datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Đã hết hạn" name="expired" domain="[('state', '=', 'expired')]"/>
+                <separator/>
+                <group name="group_by">
+                    <filter string="Nhân viên" name="group_by_employee" domain="[]" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Loại hợp đồng" name="group_by_type" domain="[]" context="{'group_by': 'contract_type_id'}"/>
+                    <filter string="Phòng ban" name="group_by_department" domain="[]" context="{'group_by': 'department_id'}"/>
+                    <filter string="Trạng thái" name="group_by_state" domain="[]" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

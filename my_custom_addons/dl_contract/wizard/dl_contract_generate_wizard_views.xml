@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_contract_generate_wizard_form" model="ir.ui.view">
+        <field name="name">dl.contract.generate.wizard.form</field>
+        <field name="model">dl.contract.generate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tạo File Hợp Đồng">
+                <field name="state" invisible="1"/>
+                <field name="contract_id" invisible="1"/>
+                
+                <div invisible="state != 'choose'">
+                    <group>
+                        <field name="template_id"/>
+                        <field name="company_id" invisible="1"/>
+                    </group>
+                    <p class="text-muted mt-2">
+                        Hệ thống sẽ tải file mẫu <b>.docx</b> và điền tự động các thông tin (Tên, CCCD, Lương...) vào file.
+                    </p>
+                </div>
+
+                <div invisible="state != 'done'">
+                    <div class="alert alert-success" role="alert">
+                        Tạo file thành công! Vui lòng tải xuống bên dưới.
+                    </div>
+                    <group>
+                        <field name="file_name" invisible="1"/>
+                        <field name="file_data" filename="file_name" readonly="1" widget="binary"/>
+                    </group>
+                </div>
+
+                <footer>
+                    <button name="action_generate" string="Tạo File" type="object" class="btn-primary" invisible="state != 'choose'"/>
+                    <button special="cancel" string="Hủy" class="btn-secondary" invisible="state != 'choose'"/>
+                    <button special="cancel" string="Đóng" class="btn-secondary" invisible="state != 'done'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_contract_generate_wizard" model="ir.actions.act_window">
+        <field name="name">Tạo File Hợp Đồng</field>
+        <field name="res_model">dl.contract.generate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
