@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Wizard Import Hồ Sơ Ván Bóc -->
+    <record id="view_dl_wood_peeling_dossier_import_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.dossier.import.wizard.form</field>
+        <field name="model">dl.wood.peeling.dossier.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Hồ Sơ Ván Bóc">
+                <group>
+                    <field name="file" filename="file_name" widget="binary"/>
+                    <field name="file_name" invisible="1"/>
+                </group>
+                <div class="alert alert-info mt8 mb0" role="alert">
+                    <p><strong>Cấu trúc file Excel yêu cầu (Bắt đầu từ dòng 2):</strong></p>
+                    <ul>
+                        <li>Cột A: Tên NCC Ván Bóc (Bắt buộc - phải tồn tại trong hệ thống)</li>
+                        <li>Cột B: Tên Hồ Sơ</li>
+                        <li>Cột C: Tên Chủ Rừng</li>
+                        <li>Cột D: CCCD Chủ Rừng</li>
+                        <li>Cột E: Địa chỉ Chủ Rừng</li>
+                        <li>Cột F: SĐT Chủ Rừng</li>
+                        <li>Cột G: Địa danh khai thác</li>
+                        <li>Cột H: Diện tích (ha)</li>
+                    </ul>
+                </div>
+                <footer>
+                    <button name="action_import" string="Import" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_peeling_dossier_import" model="ir.actions.act_window">
+        <field name="name">Import Hồ Sơ Ván Bóc</field>
+        <field name="res_model">dl.wood.peeling.dossier.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Wizard Import Hoá Đơn Ván Bóc -->
+    <record id="view_dl_wood_peeling_invoice_import_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.invoice.import.wizard.form</field>
+        <field name="model">dl.wood.peeling.invoice.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Hoá Đơn Ván Bóc">
+                <field name="state" invisible="1"/>
+                
+                <!-- TRẠNG THÁI TẢI LÊN -->
+                <group invisible="state != 'upload'">
+                    <field name="dossier_id" invisible="not dossier_id"/>
+                    <field name="template_file" invisible="1"/>
+                    <field name="template_filename" invisible="1"/>
+                    <label for="file" string="Tải file lên"/>
+                    <div class="o_row">
+                        <field name="file" filename="file_name" widget="binary" nolabel="1"/>
+                        <button name="action_download_template" string="Tải Template" type="object" class="btn-info" icon="fa-download"/>
+                    </div>
+                    <field name="file_name" invisible="1"/>
+                </group>
+                <div class="alert alert-info mt8 mb0" role="alert" invisible="state != 'upload'">
+                    <p><strong>Cấu trúc file Excel yêu cầu (Bắt đầu từ dòng 2):</strong></p>
+                    <ul>
+                        <li>Cột A: Mã Hồ Sơ VB (Bắt buộc - VD: PB_HS_0001)</li>
+                        <li>Cột B: Số Hoá Đơn (Bắt buộc - VD: 001/2026)</li>
+                        <li>Cột C: Ngày Hoá Đơn (Bắt buộc - dd/mm/yyyy)</li>
+                        <li>Cột D: Khối Lượng m³ (Bắt buộc)</li>
+                        <li>Cột E: Đơn Giá (Tuỳ chọn)</li>
+                        <li>Cột F: Số Bảng Kê Lâm Sản (Tuỳ chọn)</li>
+                    </ul>
+                </div>
+                
+                <!-- TRẠNG THÁI XEM TRƯỚC -->
+                <div invisible="state != 'preview'">
+                    <field name="error_rows" invisible="1"/>
+                    <field name="total_rows" invisible="1"/>
+                    <div class="alert alert-success" role="alert" invisible="error_rows &gt; 0">
+                        <i class="fa fa-check-circle"/> Dữ liệu hoàn toàn hợp lệ (<field name="total_rows" readonly="1" class="oe_inline"/> dòng). Có thể import!
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="error_rows == 0">
+                        <i class="fa fa-exclamation-triangle"/> Phát hiện <field name="error_rows" readonly="1" class="oe_inline font-weight-bold"/> dòng lỗi trên tổng số <field name="total_rows" readonly="1" class="oe_inline"/> dòng! Vui lòng sửa lại file Excel và tải lên lại.
+                    </div>
+                    
+                    <field name="preview_line_ids">
+                        <list decoration-danger="not is_valid" create="0" edit="0" delete="0">
+                            <field name="row_number"/>
+                            <field name="dossier_name"/>
+                            <field name="invoice_number"/>
+                            <field name="partner_name" optional="show" width="250px"/>
+                            <field name="forest_owner_name" optional="show" width="250px"/>
+                            <field name="invoice_date"/>
+                            <field name="qty_initial"/>
+                            <field name="price_unit" width="150px"/>
+                            <field name="subtotal" width="150px"/>
+                            <field name="bkls_number"/>
+                            <field name="is_valid" widget="boolean_toggle" readonly="1"/>
+                            <field name="error_message" optional="show"/>
+                        </list>
+                    </field>
+                </div>
+                
+                <footer>
+                    <button name="action_preview" string="Xem Trước Dữ Liệu" type="object" class="btn-primary" invisible="state != 'upload'"/>
+                    
+                    <button name="action_import" string="Xác nhận Import" type="object" class="btn-primary" invisible="state != 'preview' or error_rows &gt; 0"/>
+                    <button name="action_back_to_upload" string="Quay lại tải file" type="object" class="btn-secondary" invisible="state != 'preview'"/>
+                    
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_peeling_invoice_import" model="ir.actions.act_window">
+        <field name="name">Import Hoá Đơn Ván Bóc</field>
+        <field name="res_model">dl.wood.peeling.invoice.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

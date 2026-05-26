@@ -29,15 +29,22 @@ class ResPartner(models.Model):
             res.get('x_is_wood_supplier') == 'owner' or 
             self.env.context.get('default_x_is_wood_supplier') == 'owner'
         )
+        
+        is_peeling = (
+            res.get('x_is_peeling_supplier') or
+            self.env.context.get('default_x_is_peeling_supplier')
+        )
 
         if 'company_id' in fields_list and is_wood:
             res['company_id'] = self.env.company.id
             
-        if is_owner:
+        if is_owner or is_peeling:
             if 'country_id' in fields_list:
                 vn_country = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
                 if vn_country:
                     res['country_id'] = vn_country.id
+                    
+        if is_owner:
             if 'company_type' in fields_list:
                 res['company_type'] = 'person'
             if 'is_company' in fields_list:
@@ -75,7 +82,27 @@ class ResPartner(models.Model):
                                          help='Đánh dấu đây là khách hàng mua gỗ thành phẩm từ công ty.')
     x_is_peeling_supplier = fields.Boolean(string='Nhà cung cấp ván bóc', default=False,
                                             help='Đánh dấu đây là nhà cung cấp ván bóc.')
+    x_company_type_label = fields.Char(
+        string='Loại hình doanh nghiệp',
+        help='Loại hình doanh nghiệp của NCC ván bóc (VD: Công ty TNHH, DNTN...)'
+    )
+    x_private_name = fields.Char(
+        string='Tên riêng',
+        help='Tên riêng của công ty (VD: "Nghiêm Chữ" trong "Công ty TNHH Nghiêm Chữ")'
+    )
     x_peeling_dossier_ids = fields.One2many('dl.wood.peeling.dossier', 'partner_id', string='Hồ sơ ván bóc')
+
+    @api.onchange('x_company_type_label', 'x_private_name')
+    def _onchange_peeling_supplier_name(self):
+        """Tự động ghép tên công ty từ loại hình DN + tên riêng cho NCC ván bóc."""
+        for partner in self:
+            if partner.x_is_peeling_supplier and partner.is_company:
+                type_label = (partner.x_company_type_label or '').strip()
+                private = (partner.x_private_name or '').strip()
+                if type_label and private:
+                    partner.name = f"{type_label} {private}"
+                elif private:
+                    partner.name = private
     def _get_default_prep_days(self):
         try:
             self.env.cr.execute("SELECT column_name FROM information_schema.columns WHERE table_name='res_company' AND column_name='x_prep_days'")

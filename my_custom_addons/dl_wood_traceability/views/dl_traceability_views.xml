@@ -75,7 +75,7 @@
                             <label for="x_report_version_id" string="Biểu mẫu" class="fw-bold"/>
                             <div class="o_row">
                                 <field name="x_report_version_id" nolabel="1" options="{'no_create': True}" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                <button name="action_refresh_documents" type="object" string="" icon="fa-refresh" class="btn btn-link py-0" invisible="state in ('using', 'summary', 'confirmed')"/>
+                                <button name="action_refresh_documents" type="object" title="Làm mới" icon="fa-refresh" class="btn btn-link py-0" invisible="state in ('using', 'summary', 'confirmed')"/>
                             </div>
                             <field name="x_mining_method" string="Khai thác" readonly="state in ('using', 'summary', 'confirmed')"/>
                             <field name="x_area" string="Diện tích (ha)" placeholder="ha" readonly="state in ('using', 'summary', 'confirmed')"/>

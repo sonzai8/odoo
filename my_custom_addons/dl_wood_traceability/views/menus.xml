@@ -49,6 +49,18 @@
               action="action_dl_wood_dossier_inventory"
               sequence="15"/>
 
+    <menuitem id="menu_dl_wood_peeling_dossier" 
+              name="Hồ Sơ Ván Bóc" 
+              parent="menu_dl_wood_input_materials" 
+              action="action_dl_wood_peeling_dossier" 
+              sequence="12"/>
+
+    <menuitem id="menu_dl_wood_peeling_invoice" 
+              name="Hoá Đơn Ván Bóc" 
+              parent="menu_dl_wood_input_materials" 
+              action="action_dl_wood_peeling_invoice" 
+              sequence="13"/>
+
     <menuitem id="menu_dl_wood_species" 
               name="Loại Gỗ Thu Mua" 
               parent="menu_dl_wood_input_materials" 
@@ -67,10 +79,16 @@
                   sequence="10"/>
 
         <menuitem id="menu_dl_wood_supplier"
-                  name="NCC Ván Bóc"
+                  name="NCC Gỗ Tươi"
                   parent="menu_dl_wood_partners"
                   action="action_dl_wood_supplier"
                   sequence="20"/>
+
+        <menuitem id="menu_dl_wood_peeling_supplier"
+                  name="NCC Ván Bóc"
+                  parent="menu_dl_wood_partners"
+                  action="action_dl_wood_peeling_supplier"
+                  sequence="30"/>
 
     <!-- [B] Sản xuất -->
     <menuitem id="menu_dl_wood_customer"

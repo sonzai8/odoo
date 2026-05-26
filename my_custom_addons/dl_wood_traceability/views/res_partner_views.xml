@@ -37,13 +37,13 @@
                 <attribute name="groups"></attribute>
             </xpath>
             <xpath expr="//field[@name='website']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier</attribute>
             </xpath>
             <xpath expr="//field[@name='category_id']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier</attribute>
             </xpath>
             <xpath expr="//field[@name='parent_id']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -59,6 +59,16 @@
             </xpath>
             <xpath expr="//field[@name='company_type']" position="attributes">
                 <attribute name="readonly">x_is_wood_supplier == 'owner'</attribute>
+            </xpath>
+            <!-- Ẩn tên mặc định nếu là NCC ván bóc -->
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="invisible">x_is_peeling_supplier</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <div class="d-flex flex-row gap-2" invisible="not x_is_peeling_supplier">
+                    <field name="x_company_type_label" placeholder="Loại hình DN..." required="x_is_peeling_supplier" style="width: 30%;"/>
+                    <field name="x_private_name" placeholder="Tên riêng..." required="x_is_peeling_supplier" style="width: 70%;"/>
+                </div>
             </xpath>
             <xpath expr="//div[hasclass('o_address_format')]" position="replace">
                 <!-- Hiển thị cho chủ rừng: Tỉnh -> Xã -> Địa chỉ chi tiết -->
@@ -101,7 +111,7 @@
             <xpath expr="//field[@name='vat']" position="after">
                 <field name="x_is_wood_supplier" invisible="1"/>
                 <field name="x_is_peeling_supplier" invisible="not is_company"/>
-                <field name="x_short_name" invisible="not is_company"/>
+                <field name="x_short_name" invisible="not is_company or x_is_peeling_supplier"/>
                 <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
                 <field name="x_gender" invisible="1"/>
                 <field name="x_cccd_date" string="Ngày cấp" invisible="not x_is_wood_supplier"/>
@@ -124,6 +134,7 @@
                             <field name="dossier_ids" widget="many2many_tags" readonly="1" string="Hồ Sơ Gỗ" context="{'dossier_show_code_only': True}"/>
                             <button name="action_edit_location" type="object" string="Sửa" icon="fa-pencil" class="btn-secondary" title="Sửa địa điểm khai thác"/>
                             <button name="action_create_dossier" type="object" string="Tạo hồ sơ" icon="fa-plus" class="btn-primary" title="Tạo mới Hồ sơ gỗ từ địa điểm này"/>
+                            <button name="action_create_peeling_dossier_from_location" type="object" string="Thêm HS Ván Bóc" icon="fa-plus-square" class="btn-info" title="Tạo mới Hồ sơ ván bóc từ địa điểm này"/>
                             <field name="note"/>
                         </list>
                     </field>

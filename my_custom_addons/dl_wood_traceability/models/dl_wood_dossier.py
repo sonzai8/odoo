@@ -98,7 +98,7 @@ class DlWoodDossier(models.Model):
         prefix = self.env.company.x_wood_prefix or "XX"
         # Đếm số lượng hồ sơ hiện có của công ty để cộng thêm 1
         count = self.search_count([('company_id', '=', self.env.company.id)])
-        return f"{prefix}_HS_{(count + 1):04d}"
+        return f"{prefix}_HSG_{(count + 1):04d}"
 
     name = fields.Char(string='Mã Hồ Sơ', required=True, copy=False, readonly=True, default=_get_default_name)
     x_dossier_name = fields.Char(string='Tên Hồ Sơ', help='Tên mô tả ngắn gọn cho bộ hồ sơ')

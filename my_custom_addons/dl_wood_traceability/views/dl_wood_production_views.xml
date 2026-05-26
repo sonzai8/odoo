@@ -172,49 +172,57 @@
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
-                    <group>
-                        <group string="Thông tin sản xuất">
-                            <field name="sale_order_id" readonly="x_select_production_id != False"/>
-                            <field name="x_select_production_id" readonly="1" invisible="not x_select_production_id"/>
-                            <field name="partner_id" readonly="1"/>
-                            <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
-                            <field name="x_product_unit_label" string="Đơn vị tính" readonly="1"/>
-                            <field name="uom_id" invisible="True"/>
-                            <field name="company_id" readonly="1"/>
-                        </group>
-                        <group string="Số lượng &amp; Thời gian">
-                            <field name="x_uom_is_piece" invisible="True"/>
-                            <field name="x_qty_planned_m3" invisible="True"/>
-                            <field name="x_qty_done_m3" invisible="True"/>
-                            <label for="qty_planned"/>
-                            <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
-                                <field name="qty_planned" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
-                                       style="max-width:120px;"/>
-                                <span style="color:#6c757d; font-weight:500;">
-                                    <field name="x_product_unit_label" nolabel="1" readonly="1" style="display:inline;"/>
-                                </span>
-                                <span invisible="not x_uom_is_piece or x_qty_planned_m3 == 0"
-                                      style="color:#007bff; font-size:0.82rem; font-style:italic;">
-                                    ≈ <field name="x_qty_planned_m3" nolabel="1" readonly="1" style="display:inline; color:#007bff;"/> m³
-                                </span>
-                            </div>
-                            <label for="qty_done"/>
-                            <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
-                                <field name="qty_done" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
-                                       style="max-width:120px;"/>
-                                <span style="color:#6c757d; font-weight:500;">
-                                    <field name="x_product_unit_label" nolabel="1" readonly="1" style="display:inline;"/>
-                                </span>
-                                <span invisible="not x_uom_is_piece or x_qty_done_m3 == 0"
-                                      style="color:#28a745; font-size:0.82rem; font-style:italic;">
-                                    ≈ <field name="x_qty_done_m3" nolabel="1" readonly="1" style="display:inline; color:#28a745;"/> m³
-                                </span>
-                            </div>
-                            <field name="x_co_yield" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
-                            <field name="date_planned" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
-                            <field name="date_done" readonly="1"/>
-                        </group>
-                    </group>
+                    <div class="d-flex flex-wrap gap-3 align-items-start w-100">
+                        <div class="flex-fill" style="min-width: 320px;">
+                            <group string="Thông tin chung" class="w-100">
+                                <field name="sale_order_id" readonly="x_select_production_id != False"/>
+                                <field name="x_select_production_id" readonly="1" invisible="not x_select_production_id"/>
+                                <field name="partner_id" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                            </group>
+                        </div>
+                        <div class="flex-fill" style="min-width: 320px;">
+                            <group string="Sản phẩm &amp; Hiệu suất" class="w-100">
+                                <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
+                                <field name="x_product_unit_label" string="Đơn vị tính" readonly="1"/>
+                                <field name="x_co_yield" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                                <field name="uom_id" invisible="True"/>
+                            </group>
+                        </div>
+                        <div class="flex-fill" style="min-width: 320px;">
+                            <group string="Số lượng &amp; Thời gian" class="w-100">
+                                <field name="x_uom_is_piece" invisible="True"/>
+                                <field name="x_qty_planned_m3" invisible="True"/>
+                                <field name="x_qty_done_m3" invisible="True"/>
+                                <label for="qty_planned"/>
+                                <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
+                                    <field name="qty_planned" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
+                                           style="max-width:120px;"/>
+                                    <span style="color:#6c757d; font-weight:500;">
+                                        <field name="x_product_unit_label" nolabel="1" readonly="1" style="display:inline;"/>
+                                    </span>
+                                    <span invisible="not x_uom_is_piece or x_qty_planned_m3 == 0"
+                                          style="color:#007bff; font-size:0.82rem; font-style:italic;">
+                                        ≈ <field name="x_qty_planned_m3" nolabel="1" readonly="1" style="display:inline; color:#007bff;"/> m³
+                                    </span>
+                                </div>
+                                <label for="qty_done"/>
+                                <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
+                                    <field name="qty_done" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
+                                           style="max-width:120px;"/>
+                                    <span style="color:#6c757d; font-weight:500;">
+                                        <field name="x_product_unit_label" nolabel="1" readonly="1" style="display:inline;"/>
+                                    </span>
+                                    <span invisible="not x_uom_is_piece or x_qty_done_m3 == 0"
+                                          style="color:#28a745; font-size:0.82rem; font-style:italic;">
+                                        ≈ <field name="x_qty_done_m3" nolabel="1" readonly="1" style="display:inline; color:#28a745;"/> m³
+                                    </span>
+                                </div>
+                                <field name="date_planned" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                                <field name="date_done" readonly="1"/>
+                            </group>
+                        </div>
+                    </div>
                     <notebook>
                         <page string="Tiêu hao Nguyên vật liệu">
                             <field name="line_ids" readonly="state in ('done', 'cancelled')">
@@ -247,10 +255,7 @@
                                 <list string="Ván bóc tiêu hao" editable="bottom">
                                     <field name="peeling_dossier_id"
                                            domain="[('company_id', '=', parent.company_id), ('state', '=', 'using')]"/>
-                                    <field name="x_available_peeling_type_ids" column_invisible="True"/>
-                                    <field name="peeling_type_id"
-                                           domain="[('id', 'in', x_available_peeling_type_ids)]"/>
-                                    <field name="peeling_dossier_line_ids" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
+                                    <field name="peeling_invoice_ids" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                                     <field name="x_qty_available" readonly="1" string="Tồn khả dụng (m³)"/>
                                     <field name="x_ratio"/>
                                     <field name="x_co_yield"/>
@@ -467,7 +472,6 @@
                 <field name="x_sale_order_id" optional="show"/>
                 <field name="x_partner_short_name" optional="show"/>
                 <field name="production_order_id"/>
-                <field name="peeling_type_id"/>
                 <field name="x_qty_available" string="Tồn khả dụng (m³)"/>
                 <field name="x_ratio" widget="badge"/>
                 <field name="x_co_yield"/>
@@ -487,7 +491,6 @@
         <field name="arch" type="xml">
             <pivot string="Báo cáo Tiêu hao Ván bóc" sample="1">
                 <field name="peeling_dossier_id" type="row"/>
-                <field name="peeling_type_id" type="row"/>
                 <field name="production_order_id" type="col"/>
                 <field name="volume_planned" type="measure"/>
                 <field name="volume_actual" type="measure"/>
@@ -505,7 +508,6 @@
                 <field name="x_sale_order_id"/>
                 <field name="x_partner_short_name"/>
                 <field name="production_order_id"/>
-                <field name="peeling_type_id"/>
                 <separator/>
                 <filter string="LSX Dự thảo" name="state_draft" domain="[('production_order_id.state', '=', 'draft')]"/>
                 <filter string="LSX Đang sản xuất" name="state_in_progress" domain="[('production_order_id.state', '=', 'in_progress')]"/>
@@ -517,7 +519,6 @@
                 <filter string="Đơn đặt hàng" name="group_by_sale_order" context="{'group_by':'x_sale_order_id'}"/>
                 <filter string="Khách hàng" name="group_by_partner" context="{'group_by':'x_partner_short_name'}"/>
                 <filter string="Lệnh sản xuất" name="group_by_production" context="{'group_by':'production_order_id'}"/>
-                <filter string="Loại ván bóc" name="group_by_peeling_type" context="{'group_by':'peeling_type_id'}"/>
                 <filter string="Công ty" name="group_by_company" context="{'group_by':'company_id'}" groups="base.group_multi_company"/>
             </search>
         </field>
