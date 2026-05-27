@@ -34,11 +34,17 @@ class ResPartner(models.Model):
             res.get('x_is_peeling_supplier') or
             self.env.context.get('default_x_is_peeling_supplier')
         )
+        
+        is_customer = (
+            res.get('x_is_wood_customer') or 
+            self.env.context.get('default_x_is_wood_customer') or
+            self.env.context.get('x_is_wood_customer')
+        )
 
-        if 'company_id' in fields_list and is_wood:
+        if 'company_id' in fields_list and (is_wood or is_peeling or is_customer):
             res['company_id'] = self.env.company.id
             
-        if is_owner or is_peeling:
+        if is_owner or is_peeling or is_customer:
             if 'country_id' in fields_list:
                 vn_country = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
                 if vn_country:
@@ -92,11 +98,11 @@ class ResPartner(models.Model):
     )
     x_peeling_dossier_ids = fields.One2many('dl.wood.peeling.dossier', 'partner_id', string='Hồ sơ ván bóc')
 
-    @api.onchange('x_company_type_label', 'x_private_name')
-    def _onchange_peeling_supplier_name(self):
-        """Tự động ghép tên công ty từ loại hình DN + tên riêng cho NCC ván bóc."""
+    @api.onchange('x_company_type_label', 'x_private_name', 'x_is_peeling_supplier', 'x_is_wood_customer', 'is_company')
+    def _onchange_split_company_name(self):
+        """Tự động ghép tên công ty từ loại hình DN + tên riêng cho NCC ván bóc và Khách hàng."""
         for partner in self:
-            if partner.x_is_peeling_supplier and partner.is_company:
+            if (partner.x_is_peeling_supplier or partner.x_is_wood_customer) and partner.is_company:
                 type_label = (partner.x_company_type_label or '').strip()
                 private = (partner.x_private_name or '').strip()
                 if type_label and private:
@@ -194,66 +200,7 @@ class ResPartner(models.Model):
                 state_name=partner.state_id.name
             )
 
-    x_short_name = fields.Char(
-        string='Tên rút gọn',
-        compute='_compute_x_short_name',
-        store=True,
-        readonly=False
-    )
 
-    @api.depends('name', 'is_company')
-    def _compute_x_short_name(self):
-        import re
-        prefixes = [
-            # 1. Các tiền tố siêu dài (dịch vụ, thương mại, đầu tư, xuất nhập khẩu...)
-            r'^công ty cổ phần đầu tư xây dựng hạ tầng kinh tế\s+',
-            r'^công ty cổ phần sản xuất và xuất nhập khẩu\s+',
-            r'^công ty cổ phần xây dựng và dịch vụ thương mại\s+',
-            r'^công ty cổ phần sản xuất và thương mại\s+',
-            r'^công ty cổ phần thương mại và đầu tư\s+',
-            r'^công ty cổ phần xây dựng và thương mại\s+',
-            r'^công ty cổ phần xây dựng thương mại\s+',
-            r'^công ty cp xây dựng thương mại\s+',
-            r'^công ty cổ phần thương mại và xây dựng\s+',
-            r'^công ty tnhh xuất nhập khẩu\s+',
-            
-            # 2. Các tiền tố dài trung bình đã có sẵn
-            r'^công ty tnhh mtv\s+',
-            r'^công ty tnhh một thành viên\s+',
-            r'^công ty tnhh sx & tm\s+',
-            r'^công ty tnhh sản xuất & thương mại\s+',
-            r'^công ty tnhh tm & sx\s+',
-            r'^công ty tnhh thương mại & sản xuất\s+',
-            r'^công ty tnhh sx\s+',
-            r'^công ty tnhh tm\s+',
-            r'^công ty tnhh thương mại\s+',
-            r'^công ty tnhh\s+',
-            r'^công ty cổ phần\s+',
-            r'^công ty cp\s+',
-            r'^cty tnhh\s+',
-            r'^cty cp\s+',
-            r'^dntn\s+',
-            r'^doanh nghiệp tư nhân\s+',
-        ]
-        for partner in self:
-            if not partner.is_company:
-                partner.x_short_name = False
-                continue
-            if partner.x_short_name:
-                continue
-            name = partner.name or ""
-            short_name = name
-            
-            # Quét và xóa các tiền tố công ty (Không phân biệt chữ hoa thường)
-            for prefix in prefixes:
-                match = re.search(prefix, short_name, re.IGNORECASE)
-                if match:
-                    short_name = re.sub(prefix, '', short_name, flags=re.IGNORECASE)
-                    break
-            
-            # Xóa các khoảng trắng thừa hoặc ký tự gạch nối
-            short_name = short_name.strip(" -_")
-            partner.x_short_name = short_name
 
     exploitation_location_ids = fields.One2many(
         'dl.wood.exploitation.location', 
@@ -286,7 +233,7 @@ class ResPartner(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer'):
+            if vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer') or vals.get('x_is_peeling_supplier'):
                 if 'company_id' not in vals or not vals['company_id'] or vals['company_id'] not in self.env.companies.ids:
                     vals['company_id'] = self.env.company.id
         partners = super(ResPartner, self).create(vals_list)
@@ -306,7 +253,7 @@ class ResPartner(models.Model):
         return partners
 
     def write(self, vals):
-        is_wood = any(partner.x_is_wood_supplier or partner.x_is_wood_customer for partner in self) or vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer')
+        is_wood = any(partner.x_is_wood_supplier or partner.x_is_wood_customer or partner.x_is_peeling_supplier for partner in self) or vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer') or vals.get('x_is_peeling_supplier')
         if is_wood:
             if 'company_id' in vals:
                 company_id = vals.get('company_id')
@@ -333,6 +280,20 @@ class ResPartner(models.Model):
                     'company_id': partner.company_id.id
                 })
         return res
+
+    @api.constrains('x_cccd', 'x_is_wood_supplier', 'company_id')
+    def _check_unique_cccd_forest_owner(self):
+        for partner in self:
+            if partner.x_is_wood_supplier == 'owner' and partner.x_cccd:
+                domain = [
+                    ('x_cccd', '=', partner.x_cccd),
+                    ('x_is_wood_supplier', '=', 'owner'),
+                    ('id', '!=', partner.id),
+                ]
+                if partner.company_id:
+                    domain.append(('company_id', 'in', (False, partner.company_id.id)))
+                if self.search_count(domain) > 0:
+                    raise ValidationError(_('Số CCCD %s đã tồn tại cho một Chủ rừng khác trong hệ thống!') % partner.x_cccd)
 
     @api.model
     def action_parse_cccd_address(self, raw_address):

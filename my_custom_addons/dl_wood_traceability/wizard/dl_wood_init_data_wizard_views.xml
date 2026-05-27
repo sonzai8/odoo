@@ -6,17 +6,26 @@
         <field name="arch" type="xml">
             <form string="Khởi Tạo Dữ Liệu">
                 <p class="oe_grey">
-                    Nhấn vào các nút bên dưới để khởi tạo dữ liệu mẫu (các loài gỗ hoặc danh sách ngân hàng Việt Nam) cho công ty hiện tại. 
-                    Hệ thống sẽ chỉ tạo mới những dữ liệu chưa tồn tại.
+                    Nhấn vào các nút bên dưới để khởi tạo dữ liệu hệ thống cơ bản.
+                    Hệ thống sẽ chỉ tạo mới những dữ liệu chưa tồn tại (như danh mục, ngân hàng, địa giới).
                 </p>
+                <div class="row mt-3 px-3">
+                    <div class="col-4">
+                        <button name="action_init_wood_species" string="Khởi Tạo Danh Mục Gỗ" type="object" class="btn btn-primary d-block mb-2 w-100 text-start" icon="fa-database"/>
+                        <button name="action_init_peeling_types" string="Khởi Tạo Danh Mục Ván Bóc" type="object" class="btn btn-warning d-block mb-2 w-100 text-start" icon="fa-layer-group"/>
+                        <button name="action_init_peeling_suppliers" string="Khởi Tạo NCC Ván Bóc" type="object" class="btn btn-info d-block mb-2 w-100 text-start" icon="fa-users"/>
+                    </div>
+                    <div class="col-4">
+                        <button name="action_init_vietnam_banks" string="Khởi Tạo Danh Mục Ngân Hàng" type="object" class="btn btn-info d-block mb-2 w-100 text-start" icon="fa-university"/>
+                        <button name="action_init_state_sequence" string="Sắp Xếp Tỉnh/Thành" type="object" class="btn btn-dark d-block mb-2 w-100 text-start" icon="fa-sort-numeric-asc"/>
+                        <button name="action_init_vietnam_wards" string="Khởi Tạo Xã/Phường" type="object" class="btn btn-danger d-block mb-2 w-100 text-start" icon="fa-map-marker"/>
+                    </div>
+                    <div class="col-4">
+                        <button name="action_init_report_templates" string="Khởi Tạo Biểu Mẫu" type="object" class="btn btn-success d-block mb-2 w-100 text-start" icon="fa-file-text-o"/>
+                        <button name="action_init_vehicles" string="Khởi Tạo Xe Vận Chuyển" type="object" class="btn btn-warning d-block mb-2 w-100 text-start" icon="fa-truck"/>
+                    </div>
+                </div>
                 <footer>
-                    <button name="action_init_wood_species" string="Khởi Tạo Danh Mục Gỗ" type="object" class="btn-primary" icon="fa-database"/>
-                    <button name="action_init_peeling_types" string="Khởi Tạo Danh Mục Ván Bóc" type="object" class="btn-warning" icon="fa-layer-group"/>
-                    <button name="action_init_vietnam_banks" string="Khởi Tạo Danh Mục Ngân Hàng" type="object" class="btn-info" icon="fa-university"/>
-                    <button name="action_init_report_templates" string="Khởi Tạo Biểu Mẫu" type="object" class="btn-success" icon="fa-file-text-o"/>
-                    <button name="action_init_vehicles" string="Khởi Tạo Xe Vận Chuyển" type="object" class="btn-warning" icon="fa-truck"/>
-                    <button name="action_init_state_sequence" string="Sắp Xếp Lại Tỉnh/Thành" type="object" class="btn-dark" icon="fa-sort-numeric-asc"/>
-                    <button name="action_init_vietnam_wards" string="Khởi Tạo Danh Mục Xã/Phường" type="object" class="btn-danger" icon="fa-map-marker"/>
                     <button string="Đóng" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

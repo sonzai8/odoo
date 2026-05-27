@@ -137,6 +137,10 @@ class DlWoodPeelingDossier(models.Model):
         'dl.wood.peeling.invoice', 'dossier_id',
         string='Hoá đơn ván bóc'
     )
+    production_line_ids = fields.One2many(
+        'dl.wood.peeling.production.line', 'peeling_dossier_id',
+        string='Lịch sử sử dụng'
+    )
     invoice_count = fields.Integer(
         string='Số hoá đơn',
         compute='_compute_invoice_count'

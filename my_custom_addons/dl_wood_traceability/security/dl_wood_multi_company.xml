@@ -168,5 +168,22 @@
             <field name="model_id" ref="model_dl_wood_report_version"/>
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
+        <record id="dl_wood_peeling_dossier_comp_rule" model="ir.rule">
+            <field name="name">Hồ sơ ván bóc đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_peeling_dossier"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_peeling_invoice_comp_rule" model="ir.rule">
+            <field name="name">Hoá đơn ván bóc đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_peeling_invoice"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_peeling_production_line_comp_rule" model="ir.rule">
+            <field name="name">Chi tiết tiêu hao ván bóc đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_peeling_production_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

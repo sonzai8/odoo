@@ -1,0 +1,800 @@
+[
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH MTV",
+    "ten_rieng": "Xuân Thành Hòa Bình",
+    "dia_chi": {
+      "thon_xom": "Số 59 Đường Cao Lỗ, Khu 11-12",
+      "xa_phuong": "Xã Lạc Thuỷ",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "5400523349"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và Gia Công",
+    "ten_rieng": "Quang Anh",
+    "dia_chi": {
+      "thon_xom": "Thôn Dương Lâm",
+      "xa_phuong": "Xã Nhã Nam",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2400909523"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH SX&TMDVTH",
+    "ten_rieng": "Bảo An",
+    "dia_chi": {
+      "thon_xom": "Trại Ổi",
+      "xa_phuong": "Xã Trường Sơn",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2400965077"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Nghiêm Chữ",
+    "dia_chi": {
+      "thon_xom": "Xóm Lũa",
+      "xa_phuong": "Xã Kha Sơn",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601653515"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Đầu Tư",
+    "ten_rieng": "Hoàng Liên Sơn Wood",
+    "dia_chi": {
+      "thon_xom": "Thôn Cã Trong",
+      "xa_phuong": "Xã Tuấn Sơn",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900908521"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Gỗ Lâm Sản",
+    "ten_rieng": "Hưng Thịnh",
+    "dia_chi": {
+      "thon_xom": "Khu Gò Đa",
+      "xa_phuong": "Xã Hương Cần",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "2601111967"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Hợp Tác Xã",
+    "ten_rieng": "Tùng Quân",
+    "dia_chi": {
+      "thon_xom": "Xóm Sơ",
+      "xa_phuong": "Xã Lạc Sơn",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "5400463410"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và Dịch Vụ Thương Mại",
+    "ten_rieng": "Lâm Thịnh",
+    "dia_chi": {
+      "thon_xom": "Xóm Tân Tiến",
+      "xa_phuong": "Xã Dân Tiến",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601660174"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Thế Kiệt",
+    "dia_chi": {
+      "thon_xom": "Thôn Minh Tân",
+      "xa_phuong": "Xã Yên Lãng",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "2500684288"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Trường Giang Hòa Bình",
+    "dia_chi": {
+      "thon_xom": "Xóm Tân Thành",
+      "xa_phuong": "Xã Nhân Nghĩa",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "5400543514"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Mai Anh HB",
+    "dia_chi": {
+      "thon_xom": "Thôn Đồng Phú",
+      "xa_phuong": "Xã Lạc Thủy",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "5400511128"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Tâm An Phát HT",
+    "dia_chi": {
+      "thon_xom": "Bản Đồng Tân",
+      "xa_phuong": "Xã Đồng Kỳ",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401049246"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Chế Biến Lâm Sản",
+    "ten_rieng": "Long Phát",
+    "dia_chi": {
+      "thon_xom": "Thôn Lay",
+      "xa_phuong": "Xã Thiện Tân",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900936751"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Phúc Lâm Thịnh",
+    "dia_chi": {
+      "thon_xom": "Xóm Bến Trăm",
+      "xa_phuong": "Xã Bố Hạ",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401064332"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và Thương Mại Dịch Vụ",
+    "ten_rieng": "Hùng Cường",
+    "dia_chi": {
+      "thon_xom": "Thôn Thống Nhất",
+      "xa_phuong": "Xã Tây Yên Tử",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2400989751"
+  },
+  {
+    "type": "personal",
+    "ten_rieng": "Bế Văn Thuận",
+    "dia_chi": {
+      "thon_xom": "Thôn Phe",
+      "xa_phuong": "Xã Vân Sơn",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "020083001847"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "S&B Wood",
+    "dia_chi": {
+      "thon_xom": "Xóm Đồng Yên",
+      "xa_phuong": "Xã Xuân Lộc",
+      "tinh_thanh": "Tỉnh Hà Tĩnh"
+    },
+    "ma_so_thue": "3002259701"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Đại Hải Kim Phát",
+    "dia_chi": {
+      "thon_xom": "Thôn De",
+      "xa_phuong": "Xã Tiên Lục",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401052016"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Thương Mại Và Sản Xuất Lâm Sản",
+    "ten_rieng": "Minh Tú",
+    "dia_chi": {
+      "thon_xom": "Thôn Luồng",
+      "xa_phuong": "Xã Đèo Gia",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2400976209"
+  },
+  {
+    "type": "personal",
+    "ten_rieng": "Vy Thanh Quý",
+    "dia_chi": {
+      "thon_xom": "Thôn Lọ",
+      "xa_phuong": "Xã An Lạc",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "024168003457"
+  },
+  {
+    "type": "personal",
+    "ten_rieng": "Châu Văn Chuyến",
+    "dia_chi": {
+      "thon_xom": "Thôn Phe",
+      "xa_phuong": "Xã Vân Sơn",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "024069001623"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "An Phát THB",
+    "dia_chi": {
+      "thon_xom": "Xóm Nà Bờ",
+      "xa_phuong": "Xã Hợp Kim",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "5400542278"
+  },
+  {
+    "type": "personal",
+    "ten_rieng": "Châu Văn Chuyến",
+    "dia_chi": {
+      "thon_xom": "Thôn Phe",
+      "xa_phuong": "Xã Vân Sơn",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "024069001623"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Ly Duy",
+    "dia_chi": {
+      "thon_xom": "Xóm Bến Trăm",
+      "xa_phuong": "Xã Bố Hạ",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401068376"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Chế Biến Lâm Sản",
+    "ten_rieng": "Tân Tiến",
+    "dia_chi": {
+      "thon_xom": "Gia Đình Ông Hồ Bá Tân, Khu Phố Hải Tiến",
+      "xa_phuong": "Xã Như Thanh",
+      "tinh_thanh": "Tỉnh Thanh Hóa"
+    },
+    "ma_so_thue": "2802927032"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Xuất Khẩu",
+    "ten_rieng": "Vietwood",
+    "dia_chi": {
+      "thon_xom": "Khu TĐC Công Viên Quảng Trường",
+      "xa_phuong": "Phường Vĩnh Phúc",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "0110034812"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Quyết Định",
+    "dia_chi": {
+      "thon_xom": "Xóm Mỹ Hoà",
+      "xa_phuong": "Xã Nam Hòa",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601665045"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Lâm Sản",
+    "ten_rieng": "Linh Ngọc",
+    "dia_chi": {
+      "thon_xom": "Thôn 22",
+      "xa_phuong": "Xã Tân Long",
+      "tinh_thanh": "Tỉnh Tuyên Quang"
+    },
+    "ma_so_thue": "5000916539"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Lâm Sản",
+    "ten_rieng": "Tiến Đạt LS",
+    "dia_chi": {
+      "thon_xom": "Thôn Văn Miêu",
+      "xa_phuong": "Xã Tuấn Sơn",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900905231"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Thương Mại Sản Xuất Và Dịch Vụ",
+    "ten_rieng": "Duy Hương",
+    "dia_chi": {
+      "thon_xom": "Nhà Ông Nguyễn Xuân Duy - Thôn Phú Quế",
+      "xa_phuong": "Xã Như Xuân",
+      "tinh_thanh": "Tỉnh Thanh Hóa"
+    },
+    "ma_so_thue": "2803192944"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Chế Biến Lâm Sản",
+    "ten_rieng": "Ngọc Mai",
+    "dia_chi": {
+      "thon_xom": "Khu 10",
+      "xa_phuong": "Xã Đông Thành",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "2601039710"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Dịch Vụ & SX Thương Mại",
+    "ten_rieng": "Ngọc Long",
+    "dia_chi": {
+      "thon_xom": "Bản Mỏ Trạng",
+      "xa_phuong": "Xã Tam Tiến",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2400968053"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Techwood Vina",
+    "dia_chi": {
+      "thon_xom": "Số 50, Ngõ 670 Đường Ngô Gia Tự",
+      "xa_phuong": "Phường Việt Hưng",
+      "tinh_thanh": "Thành Phố Hà Nội"
+    },
+    "ma_so_thue": "0108281243"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Phát Triển Dịch Vụ Và Thương Mại XNK",
+    "ten_rieng": "Sơn Hà",
+    "dia_chi": {
+      "thon_xom": "Thôn Sẩy",
+      "xa_phuong": "Xã Hữu Lũng",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900891772"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Ván Bóc",
+    "ten_rieng": "Duy Khánh",
+    "dia_chi": {
+      "thon_xom": "Thôn La Thành",
+      "xa_phuong": "Xã Tam Tiến",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401063240"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và Thương Mại Gỗ",
+    "ten_rieng": "Lê Dũng",
+    "dia_chi": {
+      "thon_xom": "Thôn Tiến Thịnh",
+      "xa_phuong": "Xã Tam Tiến",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401059195"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty Cổ Phần Chế Biến Lâm Sản",
+    "ten_rieng": "Khánh An",
+    "dia_chi": {
+      "thon_xom": "Thôn Lay",
+      "xa_phuong": "Xã Thiện Tân",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900880925"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và Thương Mại",
+    "ten_rieng": "Heng Xin",
+    "dia_chi": {
+      "thon_xom": "Thôn Bến Lường",
+      "xa_phuong": "Xã Tuấn Sơn",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900915864"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Dịch Vụ Thương Mại",
+    "ten_rieng": "Trọng Tuấn",
+    "dia_chi": {
+      "thon_xom": "Thôn Bo Chợ",
+      "xa_phuong": "Xã Bố Hạ",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401063794"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH SXTM",
+    "ten_rieng": "Thành Long",
+    "dia_chi": {
+      "thon_xom": "Thôn Liên Phương",
+      "xa_phuong": "Xã Thiện Tân",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900938702"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH SXTM",
+    "ten_rieng": "Xuân Hiệu",
+    "dia_chi": {
+      "thon_xom": "Thôn Lay",
+      "xa_phuong": "Xã Thiện Tân",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900938759"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Hùng Nga",
+    "dia_chi": {
+      "thon_xom": "Thôn Đèo Hanh",
+      "xa_phuong": "Xã Trại Cau",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601663471"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Long Quyên",
+    "dia_chi": {
+      "thon_xom": "Xóm Trại Cau",
+      "xa_phuong": "Xã Nam Hòa",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601663746"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Lâm Sản Xây Dựng",
+    "ten_rieng": "Vượng Phát",
+    "dia_chi": {
+      "thon_xom": "Xóm Cã Ngoài",
+      "xa_phuong": "Xã Tuấn Sơn",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900885112"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Hợp Tác Xã Sản Xuất Chế Biến Lâm Sản",
+    "ten_rieng": "Tam Tiến",
+    "dia_chi": {
+      "thon_xom": "Bản Bãi Lát",
+      "xa_phuong": "Xã Tam Tiến",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401005778"
+  },
+  {
+    "type": "personal",
+    "ten_rieng": "Huy Thảo",
+    "dia_chi": {
+      "thon_xom": "Thôn Đại Đồng",
+      "xa_phuong": "Xã An Bình",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "017082005392"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất & Thương Mại",
+    "ten_rieng": "Minh Hiếu NH",
+    "dia_chi": {
+      "thon_xom": "Xóm Đoàn Kết",
+      "xa_phuong": "Xã Nam Hòa",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601653441"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Phi Long Wood",
+    "dia_chi": {
+      "thon_xom": "Bản Quỳnh Lâu",
+      "xa_phuong": "Xã Tam Tiến",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401061525"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Lâm Sản",
+    "ten_rieng": "Quang Dương",
+    "dia_chi": {
+      "thon_xom": "Xóm Bãi Bông",
+      "xa_phuong": "Xã Trại Cau",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601660054"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Thanh Liêm TN",
+    "dia_chi": {
+      "thon_xom": "TDP Cầu Lưu",
+      "xa_phuong": "Xã Trại Cau",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601637545"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH SX Và TM",
+    "ten_rieng": "TTN Woods",
+    "dia_chi": {
+      "thon_xom": "Thôn 6",
+      "xa_phuong": "Xã Trại Cau",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601665327"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Chiến Hà",
+    "dia_chi": {
+      "thon_xom": "Thôn Cao Phong",
+      "xa_phuong": "Xã Trại Cau",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601665888"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Xuất Nhập Khẩu",
+    "ten_rieng": "Tiến Thịnh Wood",
+    "dia_chi": {
+      "thon_xom": "Thôn Quàn",
+      "xa_phuong": "Xã Thượng Hồng",
+      "tinh_thanh": "Thành Phố Hải Phòng"
+    },
+    "ma_so_thue": "2400964651"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Dịch Vụ Tổng Hợp",
+    "ten_rieng": "Linh My Chi Thắng",
+    "dia_chi": {
+      "thon_xom": "Thôn Hòa Bình",
+      "xa_phuong": "Xã Bố Hạ",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2400901612"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Lê Anh Thư Phú Thọ",
+    "dia_chi": {
+      "thon_xom": "Khu 5 Đại Phạm",
+      "xa_phuong": "Xã Đan Thượng",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": "2601150010"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty CP Xây Lắp",
+    "ten_rieng": "188",
+    "dia_chi": {
+      "thon_xom": "Lô 42, 43 - Phân Khu N18 - Khu Đô Thị Mới Phía Tây",
+      "xa_phuong": "Xã Lạng Giang",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401008754"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Ngô Hoàng Phú",
+    "dia_chi": {
+      "thon_xom": "Bản Quỳnh Lâu",
+      "xa_phuong": "Xã Tam Tiến",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401068834"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và XNK",
+    "ten_rieng": "Dũng Linh",
+    "dia_chi": {
+      "thon_xom": "TDP Hoà Bình",
+      "xa_phuong": "Xã Bố Hạ",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401008553"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Và Thương Mại",
+    "ten_rieng": "Hải Hồng",
+    "dia_chi": {
+      "thon_xom": "Bản Nam Cầu",
+      "xa_phuong": "Xã Xuân Lương",
+      "tinh_thanh": "Tỉnh Bắc Ninh"
+    },
+    "ma_so_thue": "2401071555"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Kinh Doanh Và Sản Xuất",
+    "ten_rieng": "Tú Anh",
+    "dia_chi": {
+      "thon_xom": "Thôn Khánh Xuân",
+      "xa_phuong": "Xã Hùng Đức",
+      "tinh_thanh": "Tỉnh Tuyên Quang"
+    },
+    "ma_so_thue": "5000899114"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Đại Tùng Lâm VN",
+    "dia_chi": {
+      "thon_xom": "Thôn Liên Phương",
+      "xa_phuong": "Xã Thiện Tân",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900937681"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty Cổ Phần Sản Xuất Và Thương Mại",
+    "ten_rieng": "Quang Minh 79",
+    "dia_chi": {
+      "thon_xom": "Khu Tân Mỹ 2",
+      "xa_phuong": "Xã Hữu Lũng",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900922692"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Thương Mại",
+    "ten_rieng": "Minh Châu TQ",
+    "dia_chi": {
+      "thon_xom": "Tổ Dân Phố Núi Cẩy",
+      "xa_phuong": "Phường An Tường",
+      "tinh_thanh": "Tỉnh Tuyên Quang"
+    },
+    "ma_so_thue": "5000915292"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Ngọc Minh Wood",
+    "dia_chi": {
+      "thon_xom": "Thôn Phổng",
+      "xa_phuong": "Xã Vân Nham",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900916843"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Quốc Anh YB",
+    "dia_chi": {
+      "thon_xom": "Tổ Dân Phố 1",
+      "xa_phuong": "Xã Thác Bà",
+      "tinh_thanh": "Tỉnh Lào Cai"
+    },
+    "ma_so_thue": "5200944967"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Linh Yến HP",
+    "dia_chi": {
+      "thon_xom": "Khu 5",
+      "xa_phuong": "Xã Hạ Hoà",
+      "tinh_thanh": "Tỉnh Phú Thọ"
+    },
+    "ma_so_thue": null
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Lâm Sản",
+    "ten_rieng": "Thanh Phong",
+    "dia_chi": {
+      "thon_xom": "Thôn Đồng Cướm",
+      "xa_phuong": "Xã Trung Sơn",
+      "tinh_thanh": "Tỉnh Tuyên Quang"
+    },
+    "ma_so_thue": "5000916017"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Phát Triển Dịch Vụ Và Thương Mại",
+    "ten_rieng": "Linh Anh",
+    "dia_chi": {
+      "thon_xom": "Thôn Cã Trong",
+      "xa_phuong": "Xã Tuấn Sơn",
+      "tinh_thanh": "Tỉnh Lạng Sơn"
+    },
+    "ma_so_thue": "4900891684"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất Ván Bóc",
+    "ten_rieng": "Nghệ An",
+    "dia_chi": {
+      "thon_xom": "Xóm Đức Thịnh",
+      "xa_phuong": "Xã Tân Phú",
+      "tinh_thanh": "Tỉnh Nghệ An"
+    },
+    "ma_so_thue": "2902159507"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Doanh Nghiệp Tư Nhân Chế Biến Lâm Sản",
+    "ten_rieng": "Đồng Kha",
+    "dia_chi": {
+      "thon_xom": "Thôn Giàng",
+      "xa_phuong": "Xã Linh Sơn",
+      "tinh_thanh": "Tỉnh Thanh Hóa"
+    },
+    "ma_so_thue": "2802139641"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Sản Xuất",
+    "ten_rieng": "Đại Châu",
+    "dia_chi": {
+      "thon_xom": "Xóm Mìn",
+      "xa_phuong": "Xã Dân Tiến",
+      "tinh_thanh": "Tỉnh Thái Nguyên"
+    },
+    "ma_so_thue": "4601663753"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH",
+    "ten_rieng": "Tuấn Linh Wood",
+    "dia_chi": {
+      "thon_xom": "Thôn An Phú",
+      "xa_phuong": "Xã Tân An",
+      "tinh_thanh": "Tỉnh Tuyên Quang"
+    },
+    "ma_so_thue": "5000911481"
+  },
+  {
+    "type": "company",
+    "linh_vuc_hoat_dong": "Công Ty TNHH Dịch Vụ Và Thương Mại",
+    "ten_rieng": "Tuấn Nhật",
+    "dia_chi": {
+      "thon_xom": "Thôn Lập Thành",
+      "xa_phuong": "Xã Thái Hòa",
+      "tinh_thanh": "Tỉnh Tuyên Quang"
+    },
+    "ma_so_thue": "5000898181"
+  }
+]

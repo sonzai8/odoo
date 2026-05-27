@@ -391,3 +391,101 @@ class DlWoodInitDataWizard(models.TransientModel):
                 'type': 'success',
             }
         }
+
+    def action_init_peeling_suppliers(self):
+        """Khởi tạo danh sách Nhà Cung Cấp Ván Bóc mặc định.
+        Kiểm tra trùng theo mã số thuế (vat). Nếu chưa có thì tạo mới, nếu có rồi thì bỏ qua.
+        """
+        import json
+        import os
+        from odoo.modules import get_module_path
+
+        Partner = self.env['res.partner']
+        country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
+
+        module_path = get_module_path('dl_wood_traceability')
+        if not module_path:
+            raise UserError(_('Không tìm thấy module dl_wood_traceability!'))
+            
+        file_path = os.path.join(module_path, 'data', 'peeling_suppliers.json')
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            raise UserError(_('Không thể đọc file dữ liệu peeling_suppliers.json: %s') % str(e))
+
+        State = self.env['res.country.state']
+        Ward = self.env['res.country.ward']
+        created_count = 0
+        skipped_count = 0
+
+        for item in data:
+            vat = item.get('ma_so_thue')
+            if not vat:
+                skipped_count += 1
+                continue
+
+            # Kiểm tra theo MST và công ty hiện tại
+            existing = Partner.search([
+                ('vat', '=', vat),
+                '|', ('company_id', '=', False), ('company_id', '=', self.env.company.id)
+            ], limit=1)
+            if existing:
+                skipped_count += 1
+                continue
+
+            is_company = item.get('type') == 'company'
+            linh_vuc = (item.get('linh_vuc_hoat_dong') or '').strip()
+            ten_rieng = (item.get('ten_rieng') or '').strip()
+            
+            if is_company and linh_vuc:
+                name = f"{linh_vuc} {ten_rieng}".strip()
+            else:
+                name = ten_rieng
+
+            dia_chi = item.get('dia_chi', {})
+            thon_xom = dia_chi.get('thon_xom')
+            xa_phuong = dia_chi.get('xa_phuong')
+            tinh_thanh = dia_chi.get('tinh_thanh')
+
+            state_id = False
+            if tinh_thanh and country_vn:
+                # Bỏ qua các từ khóa như 'Tỉnh', 'Thành phố' để search chính xác hơn nếu cần, nhưng ilike thường đủ
+                state_record = State.search([('name', 'ilike', tinh_thanh.replace('Tỉnh', '').replace('Thành phố', '').strip()), ('country_id', '=', country_vn.id)], limit=1)
+                if state_record:
+                    state_id = state_record.id
+
+            ward_id = False
+            if xa_phuong and state_id:
+                ward_record = Ward.search([('name', 'ilike', xa_phuong.replace('Xã', '').replace('Phường', '').replace('Thị trấn', '').strip()), ('state_id', '=', state_id)], limit=1)
+                if ward_record:
+                    ward_id = ward_record.id
+
+            # Tạo mới
+            Partner.create({
+                'name': name,
+                'vat': vat,
+                'is_company': is_company,
+                'x_is_peeling_supplier': True,
+                'street': thon_xom,
+                'ward_id': ward_id,
+                'state_id': state_id,
+                'country_id': country_vn.id if country_vn else False,
+                'x_company_type_label': linh_vuc if is_company else False,
+                'x_private_name': ten_rieng if is_company else False,
+                'company_id': self.env.company.id,
+            })
+            created_count += 1
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Hoàn tất!'),
+                'message': _('Đã tạo mới %s NCC Ván Bóc. Bỏ qua %s bản ghi đã tồn tại hoặc không có MST.') % (created_count, skipped_count),
+                'sticky': False,
+                'type': 'success',
+            }
+        }
+
+

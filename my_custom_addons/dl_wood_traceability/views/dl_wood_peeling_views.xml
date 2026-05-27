@@ -180,7 +180,7 @@
                     </div>
 
                     <notebook>
-                        <page string="Hoá Đơn Ván Bóc" name="page_invoices">
+                        <page string="Hoá Đơn &amp; Tồn kho" name="page_invoices">
                             <button name="action_open_import_invoice_wizard" type="object" string="Nhập từ Excel" icon="fa-upload" class="btn-secondary mb-2" invisible="state not in ('draft', 'using')"/>
                             <field name="invoice_ids" readonly="state not in ('draft', 'using')">
                                 <list editable="bottom" decoration-success="state == 'available'" decoration-warning="state == 'partial'" decoration-muted="state == 'depleted'">
@@ -196,6 +196,16 @@
                                            decoration-success="state == 'available'" 
                                            decoration-warning="state == 'partial'" 
                                            decoration-muted="state == 'depleted'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Lịch sử biến động (Sản xuất)" name="page_production_lines">
+                            <field name="production_line_ids" readonly="1">
+                                <list decoration-muted="volume_actual == 0">
+                                    <field name="production_order_id" string="Lệnh sản xuất" widget="many2one"/>
+                                    <field name="peeling_invoice_id" string="Hóa đơn ván bóc"/>
+                                    <field name="volume_actual" string="Khối lượng đã dùng (m³)" sum="Tổng khối lượng"/>
+                                    <field name="x_co_yield" string="Định mức CO"/>
                                 </list>
                             </field>
                         </page>
@@ -245,7 +255,7 @@
         <field name="name">Hồ Sơ Ván Bóc</field>
         <field name="res_model">dl.wood.peeling.dossier</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_filter_using': 1}</field>
+        <field name="context">{}</field>
     </record>
 
 </odoo>

@@ -38,3 +38,4 @@ access_dl_wood_peeling_dossier_import_wizard,dl.wood.peeling.dossier.import.wiza
 access_dl_wood_peeling_invoice_import_wizard,dl.wood.peeling.invoice.import.wizard,model_dl_wood_peeling_invoice_import_wizard,base.group_user,1,1,1,1
 access_dl_wood_peeling_invoice_import_preview_line,dl.wood.peeling.invoice.import.preview.line,model_dl_wood_peeling_invoice_import_preview_line,base.group_user,1,1,1,1
 access_dl_wood_peeling_production_line_user,dl.wood.peeling.production.line.user,model_dl_wood_peeling_production_line,base.group_user,1,1,1,1
+access_dl_wood_sale_order_done_wizard_user,dl.wood.sale.order.done.wizard.user,model_dl_wood_sale_order_done_wizard,base.group_user,1,1,1,1

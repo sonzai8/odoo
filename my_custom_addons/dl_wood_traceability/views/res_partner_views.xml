@@ -6,7 +6,6 @@
         <field name="arch" type="xml">
             <list string="Chủ rừng" create="1" delete="1">
                 <field name="name"/>
-                <field name="x_short_name"/>
                 <field name="x_cccd"/>
                 <field name="phone"/>
                 <field name="x_full_address" string="Địa chỉ đầy đủ"/>
@@ -33,17 +32,17 @@
             </xpath>
             <xpath expr="//field[@name='company_id']" position="attributes">
                 <attribute name="readonly">1</attribute>
-                <attribute name="invisible">0</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
                 <attribute name="groups"></attribute>
             </xpath>
             <xpath expr="//field[@name='website']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
             </xpath>
             <xpath expr="//field[@name='category_id']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
             </xpath>
             <xpath expr="//field[@name='parent_id']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -60,14 +59,17 @@
             <xpath expr="//field[@name='company_type']" position="attributes">
                 <attribute name="readonly">x_is_wood_supplier == 'owner'</attribute>
             </xpath>
-            <!-- Ẩn tên mặc định nếu là NCC ván bóc -->
-            <xpath expr="//field[@name='name']" position="attributes">
-                <attribute name="invisible">x_is_peeling_supplier</attribute>
+            <!-- Ẩn tên mặc định nếu là NCC ván bóc hoặc Khách hàng -->
+            <xpath expr="//field[@name='name'][1]" position="attributes">
+                <attribute name="invisible">x_is_peeling_supplier or x_is_wood_customer or not is_company</attribute>
             </xpath>
-            <xpath expr="//field[@name='name']" position="after">
-                <div class="d-flex flex-row gap-2" invisible="not x_is_peeling_supplier">
-                    <field name="x_company_type_label" placeholder="Loại hình DN..." required="x_is_peeling_supplier" style="width: 30%;"/>
-                    <field name="x_private_name" placeholder="Tên riêng..." required="x_is_peeling_supplier" style="width: 70%;"/>
+            <xpath expr="//field[@name='name'][2]" position="attributes">
+                <attribute name="invisible">x_is_peeling_supplier or is_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name'][2]" position="after">
+                <div class="d-flex flex-row gap-2" invisible="not x_is_peeling_supplier and not (x_is_wood_customer and is_company)">
+                    <field name="x_company_type_label" placeholder="Loại hình DN..." required="x_is_peeling_supplier or (x_is_wood_customer and is_company)" style="width: 67%;"/>
+                    <field name="x_private_name" placeholder="Tên riêng..." required="x_is_peeling_supplier or (x_is_wood_customer and is_company)" style="width: 33%;"/>
                 </div>
             </xpath>
             <xpath expr="//div[hasclass('o_address_format')]" position="replace">
@@ -111,7 +113,6 @@
             <xpath expr="//field[@name='vat']" position="after">
                 <field name="x_is_wood_supplier" invisible="1"/>
                 <field name="x_is_peeling_supplier" invisible="not is_company"/>
-                <field name="x_short_name" invisible="not is_company or x_is_peeling_supplier"/>
                 <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
                 <field name="x_gender" invisible="1"/>
                 <field name="x_cccd_date" string="Ngày cấp" invisible="not x_is_wood_supplier"/>
@@ -187,6 +188,22 @@
                     <field name="x_is_wood_supplier" string="Loại đối tác" select="multi" icon="fa-users"/>
                 </searchpanel>
             </search>
+        </field>
+    </record>
+
+    <!-- Kế thừa danh sách mặc định để tùy chỉnh popup tìm kiếm đối tác -->
+    <record id="view_partner_tree_dl_wood_custom" model="ir.ui.view">
+        <field name="name">res.partner.tree.dl.wood.custom</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+            <xpath expr="//field[@name='complete_name']" position="after">
+                <field name="x_private_name" optional="show"/>
+                <field name="x_company_type_label" optional="hide"/>
+            </xpath>
         </field>
     </record>
 
