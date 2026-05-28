@@ -54,6 +54,13 @@ class DlDossierLedger(models.Model):
         index=True,
         help='Lệnh sản xuất là nguồn gốc gây ra giao dịch này.',
     )
+    peeling_dossier_id = fields.Many2one(
+        'dl.wood.peeling.dossier',
+        string='Hồ sơ ván bóc',
+        ondelete='set null',
+        index=True,
+        help='Hồ sơ ván bóc là nguồn gốc gây ra giao dịch này.',
+    )
     product_id = fields.Many2one(
         'product.product',
         related='dossier_id.product_id',

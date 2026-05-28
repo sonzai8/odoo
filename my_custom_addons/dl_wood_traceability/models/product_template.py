@@ -9,9 +9,37 @@ class ProductTemplate(models.Model):
         help='Nếu chọn, sản phẩm sẽ bắt buộc quản lý theo Lô (Lot).',
         default=False
     )
-    x_length = fields.Float(default=2440.0)
-    x_width = fields.Float(default=1220.0)
+    x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
+    x_length = fields.Float(string='Chiều dài (mm)', digits=(16, 1), default=2440.0)
+    x_width = fields.Float(string='Chiều rộng (mm)', digits=(16, 1), default=1220.0)
+    
+    x_area_m2 = fields.Float(string='Diện tích (m2)', compute='_compute_wood_measurements', store=True)
+    x_volume_m3 = fields.Float(string='Khối lượng (m3)', compute='_compute_wood_measurements', store=True)
+
+    x_required_species_ids = fields.Many2many(
+        'dl.wood.species', string='Loại gỗ bắt buộc',
+        compute='_compute_x_required_species_ids', store=True,
+        help='Tự động suy ra từ Loại ván bóc.'
+    )
+
+    @api.depends('x_required_peeling_type_ids')
+    def _compute_x_required_species_ids(self):
+        for rec in self:
+            rec.x_required_species_ids = rec.x_required_peeling_type_ids.mapped('species_id')
+    x_required_peeling_type_ids = fields.Many2many(
+        'dl.wood.peeling.type',
+        string='Loại Ván bóc',
+        help='Chỉ cần chọn Loại Ván Bóc gốc (Keo, Bạch Đàn...), không cần quan tâm độ dày.'
+    )
+
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+
+    @api.depends('x_length', 'x_width', 'x_thickness')
+    def _compute_wood_measurements(self):
+        for product in self:
+            area = (product.x_length * product.x_width) / 1000000.0
+            product.x_area_m2 = area
+            product.x_volume_m3 = (area * product.x_thickness) / 1000.0
     x_production_order_count = fields.Integer(
         string='Số lệnh sản xuất',
         compute='_compute_x_production_order_count'
@@ -69,6 +97,14 @@ class ProductTemplate(models.Model):
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
+
+    x_thickness = fields.Float(related='product_tmpl_id.x_thickness', readonly=True)
+    x_length = fields.Float(related='product_tmpl_id.x_length', readonly=True)
+    x_width = fields.Float(related='product_tmpl_id.x_width', readonly=True)
+    x_area_m2 = fields.Float(related='product_tmpl_id.x_area_m2', readonly=True)
+    x_volume_m3 = fields.Float(related='product_tmpl_id.x_volume_m3', readonly=True)
+    x_required_species_ids = fields.Many2many(related='product_tmpl_id.x_required_species_ids', readonly=True)
+    x_required_peeling_type_ids = fields.Many2many(related='product_tmpl_id.x_required_peeling_type_ids', readonly=True)
 
     def _compute_display_name(self):
         super()._compute_display_name()

@@ -185,14 +185,23 @@
                             invisible="state in ('done', 'cancelled')"/>
                     <button name="action_draft" string="Đặt lại" type="object"
                             invisible="state not in ('cancelled',)"/>
+                    <span class="flex-grow-1 text-center" style="align-self: center; margin: 0 15px;">
+                        <div class="fw-bold" style="color: #017e84; font-size: 16px;">
+                            Mã SP: <field name="x_product_code" readonly="1"/>
+                        </div>
+                        <div style="font-size: 13px; color: #555; margin-top: 4px;" invisible="not product_id">
+                            <span>Nguyên liệu yêu cầu: </span>
+                            <field name="x_required_peeling_type_ids" widget="many2many_tags" readonly="1"/>
+                        </div>
+                    </span>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,in_progress,done"/>
                 </header>
                 <sheet>
                     <field name="x_select_production_id" invisible="True"/>
-                    <div class="alert alert-info text-center" role="alert" invisible="not x_select_production_id" style="margin-bottom:15px; font-weight:bold;">
+                    <!-- <div class="alert alert-info text-center" role="alert" invisible="not x_select_production_id" style="margin-bottom:15px; font-weight:bold;">
                         ℹ️ Lệnh sản xuất này được liên kết từ lệnh có sẵn. Các thông số sản xuất đã được khóa (chỉ cho xem).
-                    </div>
+                    </div> -->
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
@@ -250,14 +259,15 @@
                             </group>
                         </div>
                     </div>
-                    <field name="x_selected_peeling_invoice_ids" invisible="1"/>
+                    <field name="x_selected_peeling_bkls_line_ids" invisible="1"/>
                     <field name="x_selected_dossier_line_ids" invisible="1"/>
+                    <field name="x_required_species_ids" invisible="1"/>
                     <notebook>
                         <page string="Tiêu hao Nguyên vật liệu">
                             <field name="line_ids" readonly="state in ('done', 'cancelled')" context="{'default_x_co_yield': x_co_yield_wood}">
                                 <list string="NVL tiêu hao" editable="bottom">
                                     <field name="dossier_id"
-                                           domain="[('company_id', '=', parent.company_id), ('state', '=', 'using')]"/>
+                                           domain="[('company_id', '=', parent.company_id), ('state', '=', 'using'), ('species_ids', 'in', parent.x_required_species_ids)]"/>
                                     <field name="x_available_species_ids" column_invisible="True"/>
                                     <field name="x_qty_planned" column_invisible="True"/>
                                     <field name="x_qty_done" column_invisible="True"/>
@@ -281,9 +291,11 @@
                             <div class="o_horizontal_separator mt-4 mb-3 text-uppercase fw-bolder text-primary">Tiêu hao Ván Bóc</div>
                             <field name="peeling_line_ids" readonly="state in ('done', 'cancelled')" context="{'default_x_co_yield': x_co_yield_peeling}">
                                 <list string="Ván bóc tiêu hao" editable="bottom">
-                                    <field name="peeling_dossier_id"
+                                    <field name="peeling_dossier_id" column_invisible="True"
                                            domain="[('company_id', '=', parent.company_id), ('state', '=', 'using')]"/>
-                                    <field name="peeling_invoice_id" domain="[('dossier_id', '=', peeling_dossier_id), ('state', 'in', ['available', 'partial']), ('id', 'not in', parent.x_selected_peeling_invoice_ids)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
+                                    <field name="peeling_invoice_id" domain="[('dossier_id.company_id', '=', parent.company_id), ('dossier_id.state', '=', 'using'), ('state', 'in', ['available', 'partial']), ('species_ids', 'in', parent.x_required_species_ids)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
+                                    <field name="peeling_bkls_id" domain="[('invoice_id', '=', peeling_invoice_id)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
+                                    <field name="peeling_bkls_line_id" domain="[('bkls_id', '=', peeling_bkls_id), ('state', 'in', ['available', 'partial']), ('id', 'not in', parent.x_selected_peeling_bkls_line_ids)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
                                     <field name="x_qty_available" readonly="1" string="Tồn khả dụng (m³)"/>
                                     <field name="x_ratio"/>
                                     <field name="x_co_yield" string="Khai CO"/>

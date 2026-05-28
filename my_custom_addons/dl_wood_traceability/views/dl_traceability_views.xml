@@ -39,6 +39,7 @@
                             invisible="state != 'exploiting'"/>
                     <button name="action_summary" string="Tổng kết hồ sơ" type="object" class="oe_highlight" 
                             invisible="state != 'using'"/>
+                    
                     <button name="action_confirm" string="Xác nhận hoàn tất" type="object" class="oe_highlight" 
                             invisible="state != 'summary'"/>
                     
@@ -55,6 +56,15 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,using,summary,confirmed"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_peeling_dossier" type="object" class="oe_stat_button" icon="fa-th-list" invisible="peeling_dossier_id == False">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Hồ sơ</span>
+                                <span class="o_stat_text">Ván Bóc</span>
+                            </div>
+                        </button>
+                    </div>
+                    <field name="peeling_dossier_id" invisible="1"/>
                     <div class="oe_title">
                         <label for="x_dossier_name"/>
                         <h1><field name="x_dossier_name" placeholder="Ví dụ: Lô gỗ rừng trồng hộ gia đình Nguyễn Văn A..." readonly="state in ('using', 'summary', 'confirmed')"/></h1>
@@ -133,6 +143,7 @@
                                     <field name="price_unit" class="o_column_fixed_120" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="price_subtotal" sum="Tổng cộng" class="o_column_money" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="note"/>
+                                    <button name="action_open_peeling_production" string="Bóc ván" type="object" icon="fa-cut" class="btn-success" invisible="wood_type == 'firewood' or x_qty_available &lt;= 0"/>
                                 </list>
                             </field>
                         </page>
@@ -256,6 +267,7 @@
                                     <field name="species_id"/>
                                     <field name="sale_id" optional="show"/>
                                     <field name="production_id" optional="show"/>
+                                    <field name="peeling_dossier_id" optional="show"/>
                                     <field name="actual_qty"/>
                                     <field name="state" widget="badge" decoration-success="state=='done'" decoration-warning="state=='draft'"/>
                                 </list>

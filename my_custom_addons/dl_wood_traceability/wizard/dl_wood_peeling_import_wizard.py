@@ -58,28 +58,10 @@ class DlWoodPeelingDossierImportWizard(models.TransientModel):
                     continue
 
                 dossier_name = str(row[1]).strip() if len(row) > 1 else ''
-                forest_owner = str(row[2]).strip() if len(row) > 2 else ''
-                
-                # Format CCCD thành chuỗi số
-                cccd = row[3] if len(row) > 3 else ''
-                if isinstance(cccd, float):
-                    cccd = str(int(cccd))
-                else:
-                    cccd = str(cccd).strip()
-                    
-                owner_addr = str(row[4]).strip() if len(row) > 4 else ''
-                
-                # Format SĐT
-                phone = row[5] if len(row) > 5 else ''
-                if isinstance(phone, float):
-                    phone = str(int(phone))
-                else:
-                    phone = str(phone).strip()
-                    
-                expl_addr = str(row[6]).strip() if len(row) > 6 else ''
+                expl_addr = str(row[2]).strip() if len(row) > 2 else ''
                 
                 # Diện tích
-                area_val = row[7] if len(row) > 7 else 0.0
+                area_val = row[3] if len(row) > 3 else 0.0
                 try:
                     area = float(area_val) if area_val else 0.0
                 except ValueError:
@@ -88,10 +70,6 @@ class DlWoodPeelingDossierImportWizard(models.TransientModel):
                 vals = {
                     'partner_id': partner.id,
                     'x_dossier_name': dossier_name,
-                    'x_forest_owner_name': forest_owner,
-                    'x_forest_owner_cccd': cccd,
-                    'x_forest_owner_address': owner_addr,
-                    'x_forest_owner_phone': phone,
                     'x_exploitation_address': expl_addr,
                     'x_exploitation_area': area,
                 }
@@ -126,13 +104,15 @@ class DlWoodPeelingInvoiceImportPreviewLine(models.TransientModel):
     row_number = fields.Integer(string='Dòng')
     dossier_name = fields.Char(string='Mã Hồ Sơ')
     partner_name = fields.Char(string='Nhà Cung Cấp')
-    forest_owner_name = fields.Char(string='Chủ Rừng')
+
     invoice_number = fields.Char(string='Số Hoá Đơn')
     invoice_date = fields.Date(string='Ngày Hoá Đơn')
     qty_initial = fields.Float(string='Khối lượng')
     price_unit = fields.Float(string='Đơn giá')
     subtotal = fields.Float(string='Thành tiền')
+    peeling_type_name = fields.Char(string='Loại ván bóc')
     bkls_number = fields.Char(string='Số BKLS')
+    bkls_date = fields.Date(string='Ngày BKLS')
     error_message = fields.Char(string='Lỗi')
     is_valid = fields.Boolean(string='Hợp lệ', default=True)
 
@@ -171,7 +151,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
         text_format = workbook.add_format({'num_format': '@'})
         date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
         
-        headers = ['Mã Hồ Sơ VB', 'Số Hoá Đơn', 'Ngày Hoá Đơn (dd/mm/yyyy)', 'Khối Lượng (m3)', 'Đơn Giá', 'Số BKLS']
+        headers = ['Mã Hồ Sơ VB', 'Số Hoá Đơn', 'Ngày Hoá Đơn (dd/mm/yyyy)', 'Loại Ván Bóc', 'Số BKLS', 'Ngày BKLS (dd/mm/yyyy)', 'Khối Lượng (m3)', 'Đơn Giá']
         for col, h in enumerate(headers):
             worksheet.write(0, col, h)
             
@@ -179,6 +159,37 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
         worksheet.set_column(1, 1, 15, text_format)
         # Format cột Ngày Hoá Đơn (cột C) thành chuẩn Date của VN
         worksheet.set_column(2, 2, 25, date_format)
+        # Loại ván bóc
+        worksheet.set_column(3, 3, 25)
+        # Số BKLS
+        worksheet.set_column(4, 4, 15, text_format)
+        # Ngày BKLS
+        worksheet.set_column(5, 5, 25, date_format)
+        
+        # --- THÊM DANH MỤC VÁN BÓC (DATA VALIDATION) ---
+        data_sheet = workbook.add_worksheet('Data_Van_Boc')
+        # Lấy toàn bộ Loại ván bóc đang active
+        peeling_types = self.env['dl.wood.peeling.variant'].search([])
+        peeling_names = [p.name for p in peeling_types if p.name]
+        
+        # Ghi vào cột A sheet Data_Van_Boc
+        for r_idx, pname in enumerate(peeling_names):
+            data_sheet.write(r_idx, 0, pname)
+            
+        # Áp dụng Data Validation cho Cột D (index 3) từ dòng 2 đến dòng 1000
+        if peeling_names:
+            max_row = len(peeling_names)
+            worksheet.data_validation(1, 3, 1000, 3, {
+                'validate': 'list',
+                'source': f'=Data_Van_Boc!$A$1:$A${max_row}',
+                'input_title': 'Loại ván bóc',
+                'input_message': 'Vui lòng chọn 1 loại ván bóc từ danh sách có sẵn.',
+                'error_title': 'Không hợp lệ',
+                'error_message': 'Loại ván bóc bạn nhập không tồn tại trong hệ thống. Vui lòng chọn lại!'
+            })
+        # Ẩn sheet Data_Van_Boc đi để tránh người dùng sửa nhầm
+        data_sheet.hide()
+        # ------------------------------------------------
             
         if self.dossier_id:
             worksheet.write(1, 0, self.dossier_id.name)
@@ -240,6 +251,9 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                         if not dossier:
                             error_msgs.append(f"Không tìm thấy Hồ sơ '{dossier_name}'")
                             is_valid = False
+                if dossier and dossier.wood_dossier_id:
+                    error_msgs.append(f"Không được import hoá đơn vào Hồ sơ '{dossier_name}' (Vì được tạo từ Hồ sơ gỗ)")
+                    is_valid = False
 
                 inv_num_raw = row[1] if len(row) > 1 else ''
                 if isinstance(inv_num_raw, float):
@@ -273,7 +287,42 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                 if not inv_date:
                     inv_date = fields.Date.context_today(self)
 
-                qty_val = row[3] if len(row) > 3 else 0.0
+                peeling_type_name = str(row[3]).strip() if len(row) > 3 else ''
+                if not peeling_type_name:
+                    error_msgs.append("Thiếu Loại Ván Bóc")
+                    is_valid = False
+                else:
+                    ptype = self.env['dl.wood.peeling.variant'].search([('name', '=ilike', peeling_type_name)], limit=1)
+                    if not ptype:
+                        error_msgs.append(f"Loại Ván Bóc '{peeling_type_name}' không tồn tại trong hệ thống")
+                        is_valid = False
+
+                bkls_num_raw = row[4] if len(row) > 4 else ''
+                if isinstance(bkls_num_raw, float):
+                    bkls_num = str(int(bkls_num_raw))
+                else:
+                    bkls_num = str(bkls_num_raw).strip()
+
+                bkls_date_val = row[5] if len(row) > 5 else ''
+                bkls_date = False
+                if bkls_date_val:
+                    if isinstance(bkls_date_val, float):
+                        try:
+                            dt_tuple = xlrd.xldate_as_tuple(bkls_date_val, workbook.datemode)
+                            bkls_date = f"{dt_tuple[0]:04d}-{dt_tuple[1]:02d}-{dt_tuple[2]:02d}"
+                        except:
+                            error_msgs.append("Ngày BKLS lỗi định dạng")
+                            is_valid = False
+                    else:
+                        try:
+                            parts = str(bkls_date_val).strip().split('/')
+                            if len(parts) == 3:
+                                bkls_date = f"{parts[2]}-{parts[1]}-{parts[0]}"
+                        except:
+                            error_msgs.append("Ngày BKLS lỗi định dạng")
+                            is_valid = False
+
+                qty_val = row[6] if len(row) > 6 else 0.0
                 try:
                     qty = float(qty_val) if qty_val else 0.0
                 except ValueError:
@@ -285,32 +334,26 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                     error_msgs.append("Khối lượng phải > 0")
                     is_valid = False
 
-                price_val = row[4] if len(row) > 4 else 0.0
+                price_val = row[7] if len(row) > 7 else 0.0
                 try:
                     price = float(price_val) if price_val else 0.0
                 except ValueError:
                     price = 0.0
-                    
-                bkls_num_raw = row[5] if len(row) > 5 else ''
-                if isinstance(bkls_num_raw, float):
-                    bkls_num = str(int(bkls_num_raw))
-                else:
-                    bkls_num = str(bkls_num_raw).strip()
 
                 partner_name = dossier.partner_id.name if dossier and dossier.partner_id else ''
-                forest_owner_name = dossier.x_forest_owner_name if dossier else ''
 
                 preview_vals.append((0, 0, {
                     'row_number': row_idx + 1,
                     'dossier_name': dossier_name,
                     'partner_name': partner_name,
-                    'forest_owner_name': forest_owner_name,
                     'invoice_number': inv_num,
                     'invoice_date': inv_date,
+                    'peeling_type_name': peeling_type_name,
+                    'bkls_number': bkls_num,
+                    'bkls_date': bkls_date,
                     'qty_initial': qty,
                     'price_unit': price,
                     'subtotal': qty * price,
-                    'bkls_number': bkls_num,
                     'error_message': " | ".join(error_msgs) if error_msgs else "",
                     'is_valid': is_valid
                 }))
@@ -369,15 +412,42 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
             if not dossier:
                 continue
 
-            vals = {
-                'dossier_id': dossier.id,
-                'invoice_number': line.invoice_number,
-                'invoice_date': line.invoice_date,
+            ptype = self.env['dl.wood.peeling.variant'].search([('name', '=ilike', line.peeling_type_name)], limit=1)
+            
+            # Tìm hoá đơn xem đã tồn tại chưa
+            invoice = invoice_env.search([
+                ('dossier_id', '=', dossier.id),
+                ('invoice_number', '=', line.invoice_number)
+            ], limit=1)
+            
+            if not invoice:
+                invoice = invoice_env.create({
+                    'dossier_id': dossier.id,
+                    'invoice_number': line.invoice_number,
+                    'invoice_date': line.invoice_date,
+                })
+            
+            # Tìm BKLS xem đã tồn tại chưa
+            bkls = self.env['dl.wood.peeling.bkls'].search([
+                ('invoice_id', '=', invoice.id),
+                ('bkls_number', '=', line.bkls_number)
+            ], limit=1)
+            
+            if not bkls:
+                bkls = self.env['dl.wood.peeling.bkls'].create({
+                    'invoice_id': invoice.id,
+                    'bkls_number': line.bkls_number,
+                    'bkls_date': line.bkls_date,
+                })
+            
+            # Append line
+            self.env['dl.wood.peeling.bkls.line'].create({
+                'bkls_id': bkls.id,
+                'peeling_variant_id': ptype.id if ptype else False,
                 'qty_initial': line.qty_initial,
                 'price_unit': line.price_unit,
-                'bkls_number': line.bkls_number,
-            }
-            invoice_env.create(vals)
+            })
+            
             imported_count += 1
             
         return {

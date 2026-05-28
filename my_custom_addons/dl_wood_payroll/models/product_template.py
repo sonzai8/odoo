@@ -6,14 +6,9 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     x_is_wood_product = fields.Boolean(string='Là sản phẩm ngành gỗ', default=False)
-    is_wood_product = fields.Boolean(string='Là sản phẩm Gỗ', default=False)
     x_is_film_product = fields.Boolean(string='Là sản phẩm Ép Film', default=False, help='Đánh dấu sản phẩm có công đoạn ép phim để cấu hình đơn giá.')
     x_is_support_product = fields.Boolean(string='Là sản phẩm hỗ trợ', default=False, help='Sản phẩm tính lương cho chuyền nhưng không tính vào báo cáo sản lượng chính.')
-    x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
     x_thickness_alias = fields.Char(string='Ký hiệu độ dày', help='Dùng để tra cứu bảng giá Ép Film (ví dụ: 11M, 14D...)')
-    x_length = fields.Float(string='Chiều dài (mm)', digits=(16, 1))
-    x_width = fields.Float(string='Chiều rộng (mm)', digits=(16, 1))
-    
     x_dimension_id = fields.Many2one('product.attribute.value', string='Khổ ván (Kích thước)', 
                                     domain=[('attribute_id.name', 'ilike', 'Kích thước')])
     
@@ -34,17 +29,7 @@ class ProductTemplate(models.Model):
     
     x_structure_summary = fields.Char(string='Tóm tắt cấu trúc', compute='_compute_structure_summary', store=True)
 
-    # Quy đổi đơn vị
-    x_area_m2 = fields.Float(string='Diện tích (m2)', compute='_compute_wood_measurements', store=True)
-    x_volume_m3 = fields.Float(string='Khối lượng (m3)', compute='_compute_wood_measurements', store=True)
-
-    @api.depends('x_length', 'x_width', 'x_thickness')
-    def _compute_wood_measurements(self):
-        for product in self:
-            # Quy đổi từ mm2 sang m2: chia cho 1,000,000.0
-            area = (product.x_length * product.x_width) / 1000000.0
-            product.x_area_m2 = area
-            product.x_volume_m3 = (area * product.x_thickness) / 1000.0
+    # Quy đổi đơn vị (Đã chuyển sang dl_wood_traceability)
 
     @api.depends('x_thickness', 'x_length', 'x_width', 'x_layer_a_count', 'x_layer_b_count', 'x_layer_c_count', 'x_quality')
     def _compute_structure_summary(self):
@@ -98,10 +83,19 @@ class ProductTemplate(models.Model):
         ('inactive', 'Ngừng kinh doanh'),
     ], string='Trạng thái kinh doanh', default='active')
 
-    x_material_keo = fields.Boolean(string='Gỗ keo', default=False)
-    x_material_thong = fields.Boolean(string='Gỗ thông', default=False)
-    x_material_bach_dan = fields.Boolean(string='Gỗ bạch đàn', default=False)
-    x_material_cao_su = fields.Boolean(string='Gỗ cao su', default=False)
+    x_material_keo = fields.Boolean(string='Gỗ keo', compute='_compute_x_materials', store=True)
+    x_material_thong = fields.Boolean(string='Gỗ thông', compute='_compute_x_materials', store=True)
+    x_material_bach_dan = fields.Boolean(string='Gỗ bạch đàn', compute='_compute_x_materials', store=True)
+    x_material_cao_su = fields.Boolean(string='Gỗ cao su', compute='_compute_x_materials', store=True)
+
+    @api.depends('x_required_species_ids', 'x_required_species_ids.code', 'x_required_peeling_type_ids')
+    def _compute_x_materials(self):
+        for product in self:
+            codes = product.x_required_species_ids.mapped('code') if hasattr(product, 'x_required_species_ids') and product.x_required_species_ids else []
+            product.x_material_keo = 'KEO' in codes
+            product.x_material_thong = 'THONG' in codes
+            product.x_material_bach_dan = 'BD' in codes
+            product.x_material_cao_su = 'CS' in codes
 
     @api.onchange(
         'x_is_wood_product',
@@ -116,10 +110,8 @@ class ProductTemplate(models.Model):
             
             # 1. Tự động sinh Tên sản phẩm
             materials = []
-            if product.x_material_keo: materials.append("Gỗ keo")
-            if product.x_material_thong: materials.append("Gỗ thông")
-            if product.x_material_bach_dan: materials.append("Gỗ bạch đàn")
-            if product.x_material_cao_su: materials.append("Gỗ cao su")
+            if product.x_required_species_ids:
+                materials = [s.name.lower() for s in product.x_required_species_ids if s.name]
             materials_str = ", ".join(materials) if materials else ""
             
             thickness_str = f"{product.x_thickness:g}" if product.x_thickness else ""
@@ -144,13 +136,15 @@ class ProductTemplate(models.Model):
                 
             product.name = " ".join(name_parts)
             
-            # 2. Tự động sinh Mã tham chiếu (default_code)
-            wood_codes = []
-            if product.x_material_keo: wood_codes.append("K")
-            if product.x_material_thong: wood_codes.append("TH")
-            if product.x_material_bach_dan: wood_codes.append("BD")
-            if product.x_material_cao_su: wood_codes.append("CS")
-            wood_code = "".join(wood_codes)
+            wood_code = "K"
+            if product.x_required_peeling_type_ids:
+                codes = []
+                for p in product.x_required_peeling_type_ids:
+                    if p.code:
+                        codes.append(p.code.upper())
+                if codes:
+                    codes.sort()
+                    wood_code = "".join(codes)
             
             company = product.company_id or self.env.company
             prefix = getattr(company, 'x_wood_prefix', 'TPEP') or 'TPEP'
@@ -163,7 +157,8 @@ class ProductTemplate(models.Model):
             seg3 = f"{int(product.list_price / 1000)}" if product.list_price else ""
             
             date = product.create_date or fields.Datetime.now()
-            seg4 = date.strftime("%m_%y")
+            local_date = fields.Datetime.context_timestamp(product, date)
+            seg4 = local_date.strftime("%H%M_%d%m%y")
             
             code_parts = [seg1]
             if seg2: code_parts.append(seg2)

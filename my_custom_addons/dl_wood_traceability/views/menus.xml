@@ -91,6 +91,12 @@
               action="action_dl_wood_peeling_dossier"
               sequence="30"/>
 
+    <menuitem id="menu_dl_wood_peeling_type"
+              name="Loại Ván Bóc"
+              parent="menu_dl_wood_peeling_root"
+              action="action_dl_wood_peeling_type"
+              sequence="35"/>
+
     <menuitem id="menu_dl_wood_forest_owner_peeling"
               name="Chủ Rừng"
               parent="menu_dl_wood_peeling_root"

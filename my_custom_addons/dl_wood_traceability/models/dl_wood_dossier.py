@@ -579,8 +579,27 @@ class DlWoodDossier(models.Model):
         ('confirmed', 'Xác Nhận')
     ], string='Trạng thái', default='draft', tracking=True)
 
+    peeling_dossier_id = fields.Many2one(
+        'dl.wood.peeling.dossier',
+        string='Hồ sơ Ván bóc',
+        readonly=True,
+        help='Hồ sơ ván bóc được tạo ra từ việc chế biến hồ sơ gỗ này.'
+    )
+
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+
+    species_ids = fields.Many2many(
+        'dl.wood.species',
+        string='Các loài gỗ chứa trong Hồ sơ',
+        compute='_compute_species_ids',
+        store=True
+    )
+
+    @api.depends('line_ids.species_id')
+    def _compute_species_ids(self):
+        for rec in self:
+            rec.species_ids = rec.line_ids.mapped('species_id')
 
     # Sản phẩm đại diện (để map với product_id của ledger)
     product_id = fields.Many2one('product.product', string='Sản phẩm đại diện', help='Dùng để map với Sổ cái (Ledger)')
@@ -1227,7 +1246,24 @@ class DlWoodDossier(models.Model):
         self.write({'state': 'using'})
 
     def action_summary(self):
-        self.write({'state': 'summary'})
+        self.state = 'summary'
+
+    def action_open_peeling_production(self):
+        """Mở wizard để sản xuất ván bóc."""
+        pass
+        
+    def action_view_peeling_dossier(self):
+        self.ensure_one()
+        if not self.peeling_dossier_id:
+            raise UserError(_('Không tìm thấy Hồ sơ ván bóc nào!'))
+        return {
+            'name': 'Hồ sơ Ván bóc',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.wood.peeling.dossier',
+            'res_id': self.peeling_dossier_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def action_confirm(self):
         for record in self:
@@ -1417,6 +1453,10 @@ class DlWoodDossier(models.Model):
         return super(DlWoodDossier, self).write(vals)
 
     def unlink(self):
+        import traceback
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.error("!!! DL.WOOD.DOSSIER UNLINK TRACEBACK !!!\n" + "".join(traceback.format_stack()))
         for rec in self:
             if rec.state in ('using', 'summary', 'confirmed'):
                 raise UserError(_(
@@ -1656,7 +1696,27 @@ class DlWoodDossierLine(models.Model):
         for line in self:
             line.height_display = f"{line.height:.1f}".replace('.', ',') if line.height else ""
     
-    note = fields.Char(string='Ghi chú')
+    note = fields.Text(string='Ghi chú')
+
+    def action_open_peeling_production(self):
+        """Mở wizard bóc ván cho dòng này."""
+        self.ensure_one()
+        if self.wood_type == 'firewood':
+            raise UserError(_('Củi không thể đem đi bóc ván!'))
+        if self.x_qty_available <= 0:
+            raise UserError(_('Dòng này đã được bóc hoặc sử dụng hết!'))
+        
+        return {
+            'name': 'Bóc Ván',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.wood.peeling.line.production.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_model': 'dl.wood.dossier.line',
+                'active_id': self.id,
+            }
+        }
     x_woodpro_id = fields.Char(string='ID WoodPro')
 
     def write(self, vals):

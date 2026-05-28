@@ -16,11 +16,9 @@
                 <field name="invoice_number"/>
                 <field name="dossier_code"/>
                 <field name="partner_id"/>
-                <field name="forest_owner_name" optional="show"/>
-                <field name="bkls_number" optional="show"/>
+                <field name="x_peeling_variant_names"/>
                 <field name="qty_initial" sum="Tổng ban đầu"/>
                 <field name="qty_available" sum="Tổng tồn khả dụng"/>
-                <field name="price_unit" optional="show"/>
                 <field name="x_subtotal" sum="Tổng giá trị" optional="show"/>
                 <field name="state" widget="badge" 
                        decoration-success="state == 'available'" 
@@ -47,21 +45,70 @@
                     </div>
                     <group>
                         <group>
-                            <field name="dossier_id" options="{'no_create': True}"/>
+                            <field name="dossier_id" options="{'no_create': True}" domain="[('wood_dossier_id', '=', False)]"/>
                             <field name="partner_id"/>
-                            <field name="forest_owner_name"/>
-                            <field name="invoice_date"/>
-                            <field name="bkls_number" placeholder="Ví dụ: 001/2026/BKLS"/>
                         </group>
                         <group>
-                            <field name="qty_initial"/>
-                            <field name="qty_used"/>
-                            <field name="qty_available" class="fw-bold"/>
-                            <field name="price_unit"/>
-                            <field name="x_subtotal"/>
+                            <field name="invoice_date"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Bảng kê lâm sản" name="page_bkls">
+                            <field name="bkls_ids">
+                                <list>
+                                    <field name="bkls_date"/>
+                                    <field name="bkls_number"/>
+                                    <field name="qty_initial" sum="Tổng m³"/>
+                                    <field name="qty_used" sum="Đã dùng"/>
+                                    <field name="qty_available" sum="Tồn"/>
+                                    <field name="x_subtotal" sum="Thành tiền"/>
+                                    <field name="state" widget="badge" 
+                                           decoration-success="state == 'available'" 
+                                           decoration-warning="state == 'partial'" 
+                                           decoration-muted="state == 'depleted'"/>
+                                </list>
+                                <form string="Bảng kê lâm sản">
+                                    <group>
+                                        <group>
+                                            <field name="bkls_number"/>
+                                            <field name="bkls_date"/>
+                                        </group>
+                                        <group>
+                                            <field name="state" widget="badge"
+                                                   decoration-success="state == 'available'" 
+                                                   decoration-warning="state == 'partial'" 
+                                                   decoration-muted="state == 'depleted'"/>
+                                        </group>
+                                    </group>
+                                    <notebook>
+                                        <page string="Chi tiết ván bóc">
+                                            <field name="line_ids">
+                                                <list editable="bottom" decoration-success="state == 'available'" decoration-warning="state == 'partial'" decoration-muted="state == 'depleted'">
+                                                    <field name="peeling_variant_id" options="{'no_create': True}"/>
+                                                    <field name="qty_initial" sum="Tổng Khối lượng"/>
+                                                    <field name="qty_used" readonly="1" sum="Tổng Đã dùng"/>
+                                                    <field name="qty_available" readonly="1" sum="Tổng Tồn"/>
+                                                    <field name="price_unit"/>
+                                                    <field name="x_subtotal" readonly="1" sum="Tổng Thành tiền"/>
+                                                    <field name="state" widget="badge" 
+                                                           decoration-success="state == 'available'" 
+                                                           decoration-warning="state == 'partial'" 
+                                                           decoration-muted="state == 'depleted'"/>
+                                                </list>
+                                            </field>
+                                        </page>
+                                    </notebook>
+                                </form>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right" colspan="2" name="invoice_total">
+                                <field name="qty_initial" widget="monetary" string="Tổng m³ ban đầu"/>
+                                <field name="qty_used" widget="monetary" string="Tổng m³ đã dùng"/>
+                                <field name="qty_available" widget="monetary" string="Tổng m³ khả dụng" class="oe_subtotal_footer_separator text-success"/>
+                                <field name="x_subtotal" widget="monetary" string="Tổng tiền (VNĐ)"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -75,9 +122,6 @@
                 <field name="invoice_number"/>
                 <field name="dossier_id"/>
                 <field name="partner_id"/>
-                <field name="forest_owner_name"/>
-                <field name="bkls_number"/>
-                
                 <filter string="Còn tồn kho" name="filter_available" domain="[('state', 'in', ('available', 'partial'))]"/>
                 <filter string="Đã hết" name="filter_depleted" domain="[('state', '=', 'depleted')]"/>
                 
@@ -109,7 +153,6 @@
                 <field name="name"/>
                 <field name="x_dossier_name"/>
                 <field name="partner_id"/>
-                <field name="x_forest_owner_name"/>
                 <field name="date_received"/>
                 <field name="invoice_count"/>
                 <field name="qty_initial" sum="Tổng KL ban đầu"/>
@@ -153,15 +196,12 @@
                                 <field name="x_dossier_name" readonly="state != 'draft'"/>
                                 <field name="date_received" readonly="state != 'draft'"/>
                                 <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                                <field name="wood_dossier_id" invisible="wood_dossier_id == False"/>
                             </group>
                         </div>
                         <div class="flex-fill" style="width: 30%; min-width: 300px;">
                             <group string="Chủ rừng / Khai thác" class="w-100">
                                 <field name="x_forest_owner_id" options="{'no_create': False}" readonly="state != 'draft'"/>
-                                <field name="x_forest_owner_name" readonly="state != 'draft'"/>
-                                <field name="x_forest_owner_cccd" readonly="state != 'draft'"/>
-                                <field name="x_forest_owner_address" readonly="state != 'draft'"/>
-                                <field name="x_forest_owner_phone" readonly="state != 'draft'"/>
                                 <separator string="Địa điểm khai thác"/>
                                 <field name="x_exploitation_location_id" options="{'no_create': False}" readonly="state != 'draft'"/>
                                 <field name="x_exploitation_address" readonly="state != 'draft'"/>
@@ -180,18 +220,18 @@
                     </div>
 
                     <notebook>
-                        <page string="Hoá Đơn &amp; Tồn kho" name="page_invoices">
-                            <button name="action_open_import_invoice_wizard" type="object" string="Nhập từ Excel" icon="fa-upload" class="btn-secondary mb-2" invisible="state not in ('draft', 'using')"/>
-                            <field name="invoice_ids" readonly="state not in ('draft', 'using')">
-                                <list editable="bottom" decoration-success="state == 'available'" decoration-warning="state == 'partial'" decoration-muted="state == 'depleted'">
+                        <page string="Hoá Đơn" name="page_invoices">
+                            <button name="action_open_import_invoice_wizard" type="object" string="Nhập từ Excel" icon="fa-upload" class="btn-secondary mb-2" invisible="state not in ('draft', 'using') or wood_dossier_id != False"/>
+                            <field name="invoice_ids" readonly="state not in ('draft', 'using') or wood_dossier_id != False" context="{'default_dossier_id': False}">
+                                <list decoration-success="state == 'available'" decoration-warning="state == 'partial'" decoration-muted="state == 'depleted'">
                                     <field name="invoice_date"/>
                                     <field name="invoice_number"/>
-                                    <field name="bkls_number"/>
+                                    <field name="x_bkls_numbers"/>
+                                    <field name="x_wood_species_names"/>
                                     <field name="qty_initial" sum="Tổng Khối lượng"/>
-                                    <field name="qty_used" readonly="1" sum="Tổng Đã dùng"/>
-                                    <field name="qty_available" readonly="1" sum="Tổng Tồn"/>
-                                    <field name="price_unit"/>
-                                    <field name="x_subtotal" readonly="1" sum="Tổng Thành tiền"/>
+                                    <field name="qty_used" sum="Tổng Đã dùng"/>
+                                    <field name="qty_available" sum="Tổng Tồn"/>
+                                    <field name="x_subtotal" sum="Tổng Thành tiền"/>
                                     <field name="state" widget="badge" 
                                            decoration-success="state == 'available'" 
                                            decoration-warning="state == 'partial'" 
@@ -199,11 +239,37 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Lịch sử biến động (Sản xuất)" name="page_production_lines">
+                        <page string="Tồn kho" name="page_inventory">
+                            <group>
+                                <group string="Tồn kho theo Loại Gỗ">
+                                    <field name="inventory_wood_ids" nolabel="1">
+                                        <list>
+                                            <field name="species_id"/>
+                                            <field name="qty_initial" sum="Tổng ban đầu"/>
+                                            <field name="qty_used" sum="Tổng sử dụng"/>
+                                            <field name="qty_available" sum="Tổng khả dụng" decoration-bf="1" decoration-success="qty_available > 0" decoration-danger="qty_available == 0"/>
+                                        </list>
+                                    </field>
+                                </group>
+                                <group string="Tồn kho theo Loại Ván Bóc">
+                                    <field name="inventory_variant_ids" nolabel="1">
+                                        <list>
+                                            <field name="variant_id"/>
+                                            <field name="qty_initial" sum="Tổng ban đầu"/>
+                                            <field name="qty_used" sum="Tổng sử dụng"/>
+                                            <field name="qty_available" sum="Tổng khả dụng" decoration-bf="1" decoration-success="qty_available > 0" decoration-danger="qty_available == 0"/>
+                                        </list>
+                                    </field>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Sử dụng" name="page_production_lines">
                             <field name="production_line_ids" readonly="1">
                                 <list decoration-muted="volume_actual == 0">
                                     <field name="production_order_id" string="Lệnh sản xuất" widget="many2one"/>
-                                    <field name="peeling_invoice_id" string="Hóa đơn ván bóc"/>
+                                    <field name="x_sale_order_id" string="Đơn đặt hàng"/>
+                                    <field name="x_partner_id" string="Khách hàng"/>
+                                    <field name="peeling_bkls_line_id" string="Chi tiết ván bóc"/>
                                     <field name="volume_actual" string="Khối lượng đã dùng (m³)" sum="Tổng khối lượng"/>
                                     <field name="x_co_yield" string="Định mức CO"/>
                                 </list>
@@ -218,8 +284,49 @@
                         <page string="Ghi chú" name="page_notes">
                             <field name="note" placeholder="Ghi chú thêm..."/>
                         </page>
+                        <page string="Tài liệu hồ sơ gỗ" invisible="wood_dossier_id == False">
+                            <field name="wood_dossier_document_ids" mode="kanban" nolabel="1">
+                                <kanban create="0" delete="0" records_draggable="0" class="dl_wood_kanban_compact">
+                                    <field name="id"/>
+                                    <field name="name"/>
+                                    <field name="x_is_selected"/>
+                                    <field name="x_category"/>
+                                    <field name="config_id"/>
+                                    <field name="is_enabled"/>
+                                    <templates>
+                                        <t t-name="card">
+                                            <a type="object" name="action_preview_pdf" t-attf-class="oe_kanban_global_click dl_wood_card_compact d-flex align-items-center #{record.x_is_selected.raw_value ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-light'} #{!record.is_enabled.raw_value ? 'opacity-50' : ''} text-reset text-decoration-none">
+                                                <div class="me-2">
+                                                    <field name="x_is_selected" widget="boolean_toggle" invisible="not is_enabled"/>
+                                                    <i t-if="!record.is_enabled.raw_value" class="fa fa-ban text-danger" title="Không sử dụng"/>
+                                                </div>
+                                                <div class="flex-grow-1 overflow-hidden">
+                                                    <div t-attf-class="h6_name text-truncate mb-0 #{!record.is_enabled.raw_value ? 'text-decoration-line-through text-muted' : ''}"><t t-esc="record.name.value"/></div>
+                                                    <div class="d-flex gap-1 align-items-center">
+                                                        <span t-attf-class="badge rounded-pill badge_compact #{record.x_category.raw_value == 'exploitation' ? 'text-bg-info' : 'text-bg-secondary'}">
+                                                            <t t-esc="record.x_category.value"/>
+                                                        </span>
+                                                        <t t-if="record.is_enabled.raw_value">
+                                                            <span t-if="record.config_id.raw_value" class="text-success text_small_info">
+                                                                <i class="fa fa-check-circle"/> Mẫu riêng
+                                                            </span>
+                                                            <span t-else="" class="text-muted text_small_info">
+                                                                <i class="fa fa-hdd-o"/> Mẫu mặc định
+                                                            </span>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                                <button t-if="record.is_enabled.raw_value" name="action_preview_pdf" type="object" class="btn btn-outline-info btn-sm-circle ms-1" icon="fa-eye" title="Xem trước bản PDF"/>
+                                                <button t-if="record.is_enabled.raw_value" name="action_download" type="object" class="btn btn-outline-primary btn-sm-circle ms-1" icon="fa-download" title="Tải lẻ file này"/>
+                                            </a>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
+                <chatter/>
                 <!-- <div class="oe_chatter">
                     <field name="message_follower_ids"/>
                     <field name="activity_ids"/>
@@ -237,7 +344,7 @@
                 <field name="name"/>
                 <field name="x_dossier_name"/>
                 <field name="partner_id"/>
-                <field name="x_forest_owner_name"/>
+
                 
                 <filter string="Dự thảo" name="filter_draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="Đang dùng" name="filter_using" domain="[('state', '=', 'using')]"/>

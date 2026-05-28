@@ -12,7 +12,7 @@
                 <div class="row mt-3 px-3">
                     <div class="col-4">
                         <button name="action_init_wood_species" string="Khởi Tạo Danh Mục Gỗ" type="object" class="btn btn-primary d-block mb-2 w-100 text-start" icon="fa-database"/>
-                        <button name="action_init_peeling_types" string="Khởi Tạo Danh Mục Ván Bóc" type="object" class="btn btn-warning d-block mb-2 w-100 text-start" icon="fa-layer-group"/>
+                        <button name="action_init_peeling_types" string="K.Tạo Danh Mục Ván Bóc" type="object" class="btn btn-warning d-block mb-2 w-100 text-start" icon="fa-layer-group"/>
                         <button name="action_init_peeling_suppliers" string="Khởi Tạo NCC Ván Bóc" type="object" class="btn btn-info d-block mb-2 w-100 text-start" icon="fa-users"/>
                     </div>
                     <div class="col-4">

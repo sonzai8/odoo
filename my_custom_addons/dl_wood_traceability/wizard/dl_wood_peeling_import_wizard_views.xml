@@ -16,12 +16,8 @@
                     <ul>
                         <li>Cột A: Tên NCC Ván Bóc (Bắt buộc - phải tồn tại trong hệ thống)</li>
                         <li>Cột B: Tên Hồ Sơ</li>
-                        <li>Cột C: Tên Chủ Rừng</li>
-                        <li>Cột D: CCCD Chủ Rừng</li>
-                        <li>Cột E: Địa chỉ Chủ Rừng</li>
-                        <li>Cột F: SĐT Chủ Rừng</li>
-                        <li>Cột G: Địa danh khai thác</li>
-                        <li>Cột H: Diện tích (ha)</li>
+                        <li>Cột C: Địa danh khai thác</li>
+                        <li>Cột D: Diện tích (ha)</li>
                     </ul>
                 </div>
                 <footer>
@@ -65,9 +61,11 @@
                         <li>Cột A: Mã Hồ Sơ VB (Bắt buộc - VD: PB_HS_0001)</li>
                         <li>Cột B: Số Hoá Đơn (Bắt buộc - VD: 001/2026)</li>
                         <li>Cột C: Ngày Hoá Đơn (Bắt buộc - dd/mm/yyyy)</li>
-                        <li>Cột D: Khối Lượng m³ (Bắt buộc)</li>
-                        <li>Cột E: Đơn Giá (Tuỳ chọn)</li>
-                        <li>Cột F: Số Bảng Kê Lâm Sản (Tuỳ chọn)</li>
+                        <li>Cột D: Loại Ván Bóc (Bắt buộc)</li>
+                        <li>Cột E: Số Bảng Kê Lâm Sản (Tuỳ chọn)</li>
+                        <li>Cột F: Ngày BKLS (dd/mm/yyyy)</li>
+                        <li>Cột G: Khối Lượng m³ (Bắt buộc)</li>
+                        <li>Cột H: Đơn Giá (Tuỳ chọn)</li>
                     </ul>
                 </div>
                 
@@ -88,12 +86,14 @@
                             <field name="dossier_name"/>
                             <field name="invoice_number"/>
                             <field name="partner_name" optional="show" width="250px"/>
-                            <field name="forest_owner_name" optional="show" width="250px"/>
+
                             <field name="invoice_date"/>
+                            <field name="peeling_type_name"/>
+                            <field name="bkls_number"/>
+                            <field name="bkls_date"/>
                             <field name="qty_initial"/>
                             <field name="price_unit" width="150px"/>
                             <field name="subtotal" width="150px"/>
-                            <field name="bkls_number"/>
                             <field name="is_valid" widget="boolean_toggle" readonly="1"/>
                             <field name="error_message" optional="show"/>
                         </list>

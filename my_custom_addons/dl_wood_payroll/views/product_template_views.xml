@@ -107,36 +107,19 @@
                             </div>
                         </div>
                     </div>
-                    
                     <!-- 2. Nguyên liệu -->
                     <div class="dl_card mb-3 p-3 border rounded bg-white">
                         <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Nguyên liệu</h5>
-                        <table class="table table-bordered table-sm text-center mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 25%;" class="fw-bold py-2">Gỗ Keo</th>
-                                    <th style="width: 25%;" class="fw-bold py-2">Gỗ Thông</th>
-                                    <th style="width: 25%;" class="fw-bold py-2">Gỗ Bạch Đàn</th>
-                                    <th style="width: 25%;" class="fw-bold py-2">Gỗ Cao Su</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="py-3">
-                                        <field name="x_material_keo" class="d-inline-block" style="transform: scale(1.3); cursor: pointer;"/>
-                                    </td>
-                                    <td class="py-3">
-                                        <field name="x_material_thong" class="d-inline-block" style="transform: scale(1.3); cursor: pointer;"/>
-                                    </td>
-                                    <td class="py-3">
-                                        <field name="x_material_bach_dan" class="d-inline-block" style="transform: scale(1.3); cursor: pointer;"/>
-                                    </td>
-                                    <td class="py-3">
-                                        <field name="x_material_cao_su" class="d-inline-block" style="transform: scale(1.3); cursor: pointer;"/>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <group>
+                            <field name="x_required_species_ids" invisible="1"/>
+                            <field name="x_required_peeling_type_ids" widget="many2many_checkboxes"/>
+                        </group>
+                        <div class="d-none">
+                            <field name="x_material_keo"/>
+                            <field name="x_material_thong"/>
+                            <field name="x_material_bach_dan"/>
+                            <field name="x_material_cao_su"/>
+                        </div>
                     </div>
                     
                     <!-- 3. Kết quả tính toán (Quy đổi) -->

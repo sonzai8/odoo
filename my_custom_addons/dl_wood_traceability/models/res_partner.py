@@ -66,6 +66,8 @@ class ResPartner(models.Model):
         action['context'] = {
             'default_partner_id': self.id,
             'default_company_id': self.company_id.id or self.env.company.id,
+            'active_id': False,
+            'active_ids': [],
         }
         return action
 

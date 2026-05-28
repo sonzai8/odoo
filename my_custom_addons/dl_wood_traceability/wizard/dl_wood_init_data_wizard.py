@@ -131,35 +131,19 @@ class DlWoodInitDataWizard(models.TransientModel):
         }
 
     def action_init_peeling_types(self):
-        """Khởi tạo danh sách danh mục ván bóc"""
-        peeling_type_obj = self.env['dl.wood.peeling.type']
-        
-        data = [
-            ('Bạch đàn', 'Eucalyptus', 'Eucalyptus', 'BD'),
-            ('Cao su', 'Rubberwood', 'Hevea brasiliensis', 'CS'),
-            ('Keo', 'Acacia', 'Acacia', 'KEO'),
-            ('Thông', 'Pine', 'Pinus massoniana', 'THONG'),
-        ]
-        
-        for name, name_en, name_sci, code in data:
-            existing = peeling_type_obj.search([('code', '=', code), ('company_id', '=', self.env.company.id)], limit=1)
-            if not existing:
-                peeling_type_obj.create({
-                    'name': name,
-                    'name_en': name_en,
-                    'name_sci': name_sci,
-                    'code': code,
-                    'company_id': self.env.company.id
-                })
-                
+        """Khởi tạo danh sách danh mục ván bóc từ loài gỗ"""
+        species = self.env['dl.wood.species'].search([])
+        if species:
+            return species.action_init_peeling_types()
+            
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Thành công'),
-                'message': _('Đã khởi tạo danh mục Ván bóc thành công.'),
+                'title': _('Chưa có loài gỗ'),
+                'message': _('Vui lòng khởi tạo Danh mục Gỗ trước.'),
                 'sticky': False,
-                'type': 'success',
+                'type': 'warning',
             }
         }
 

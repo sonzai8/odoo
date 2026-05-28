@@ -39,3 +39,10 @@ access_dl_wood_peeling_invoice_import_wizard,dl.wood.peeling.invoice.import.wiza
 access_dl_wood_peeling_invoice_import_preview_line,dl.wood.peeling.invoice.import.preview.line,model_dl_wood_peeling_invoice_import_preview_line,base.group_user,1,1,1,1
 access_dl_wood_peeling_production_line_user,dl.wood.peeling.production.line.user,model_dl_wood_peeling_production_line,base.group_user,1,1,1,1
 access_dl_wood_sale_order_done_wizard_user,dl.wood.sale.order.done.wizard.user,model_dl_wood_sale_order_done_wizard,base.group_user,1,1,1,1
+access_dl_wood_peeling_type_user,dl.wood.peeling.type.user,model_dl_wood_peeling_type,base.group_user,1,1,1,1
+access_dl_wood_peeling_bkls_user,dl.wood.peeling.bkls.user,model_dl_wood_peeling_bkls,base.group_user,1,1,1,1
+access_dl_wood_peeling_bkls_line_user,dl.wood.peeling.bkls.line.user,model_dl_wood_peeling_bkls_line,base.group_user,1,1,1,1
+access_dl_wood_peeling_variant,dl.wood.peeling.variant,model_dl_wood_peeling_variant,base.group_user,1,1,1,1
+access_dl_wood_peeling_line_production_wizard,dl.wood.peeling.line.production.wizard,model_dl_wood_peeling_line_production_wizard,base.group_user,1,1,1,1
+access_dl_wood_peeling_inventory_wood_summary,dl.wood.peeling.inventory.wood.summary,model_dl_wood_peeling_inventory_wood_summary,base.group_user,1,1,1,1
+access_dl_wood_peeling_inventory_variant_summary,dl.wood.peeling.inventory.variant_summary,model_dl_wood_peeling_inventory_variant_summary,base.group_user,1,1,1,1
