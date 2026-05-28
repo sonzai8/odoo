@@ -198,7 +198,7 @@
     <menuitem id="menu_dl_wood_products_action"
               name="Sản phẩm gỗ"
               parent="menu_dl_product_mgmt_root"
-              action="action_dl_wood_products"
+              action="dl_wood_product_base.action_dl_wood_products"
               sequence="10"/>
 
     <menuitem id="menu_dl_film_brand_action"
@@ -210,7 +210,7 @@
     <menuitem id="menu_dl_product_attribute_action"
               name="Cấu hình Thuộc tính"
               parent="menu_dl_product_mgmt_root"
-              action="action_dl_product_attribute"
+              action="dl_wood_product_base.action_dl_product_attribute"
               sequence="90"/>
 
     <!-- Discipline Group -->

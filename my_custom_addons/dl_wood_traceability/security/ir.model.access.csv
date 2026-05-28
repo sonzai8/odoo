@@ -46,3 +46,5 @@ access_dl_wood_peeling_variant,dl.wood.peeling.variant,model_dl_wood_peeling_var
 access_dl_wood_peeling_line_production_wizard,dl.wood.peeling.line.production.wizard,model_dl_wood_peeling_line_production_wizard,base.group_user,1,1,1,1
 access_dl_wood_peeling_inventory_wood_summary,dl.wood.peeling.inventory.wood.summary,model_dl_wood_peeling_inventory_wood_summary,base.group_user,1,1,1,1
 access_dl_wood_peeling_inventory_variant_summary,dl.wood.peeling.inventory.variant_summary,model_dl_wood_peeling_inventory_variant_summary,base.group_user,1,1,1,1
+access_dl_wood_sale_order_shipment,dl.wood.sale.order.shipment,model_dl_wood_sale_order_shipment,base.group_user,1,1,1,1
+access_dl_wood_sale_order_shipment_line,dl.wood.sale.order.shipment.line,model_dl_wood_sale_order_shipment_line,base.group_user,1,1,1,1

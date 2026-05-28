@@ -59,6 +59,10 @@ class DlWoodSaleOrder(models.Model):
     production_count = fields.Integer(
         string='Số lệnh SX', compute='_compute_production_count'
     )
+    shipment_ids = fields.One2many(
+        'dl.wood.sale.order.shipment', 'sale_order_id',
+        string='Chuyến xe vận chuyển'
+    )
     state = fields.Selection([
         ('draft', 'Dự thảo'),
         ('confirmed', 'Đã xác nhận'),
@@ -170,7 +174,7 @@ class DlWoodProductionOrder(models.Model):
     )
     product_id = fields.Many2one(
         'product.product', string='Sản phẩm sản xuất', required=True,
-        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('is_wood_product', '=', True), ('sale_ok', '=', True), ('active', '=', True)]"
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('x_is_wood_product', '=', True), ('sale_ok', '=', True), ('active', '=', True)]"
     )
     x_invoice_display_name = fields.Char(
         string='Tên hiển thị HĐ',
@@ -184,6 +188,18 @@ class DlWoodProductionOrder(models.Model):
         related='product_id.product_tmpl_id.x_required_peeling_type_ids',
         string='Ván bóc yêu cầu', readonly=True
     )
+    x_domain_species_ids = fields.Many2many(
+        'dl.wood.species', compute='_compute_x_domain_species_ids'
+    )
+
+    @api.depends('x_required_species_ids')
+    def _compute_x_domain_species_ids(self):
+        all_species = self.env['dl.wood.species'].search([])
+        for rec in self:
+            if rec.x_required_species_ids:
+                rec.x_domain_species_ids = rec.x_required_species_ids
+            else:
+                rec.x_domain_species_ids = all_species
     x_product_code = fields.Char(
         related='product_id.default_code',
         string='Mã SP', readonly=True
@@ -347,7 +363,7 @@ class DlWoodProductionOrder(models.Model):
     def _check_product_id(self):
         for rec in self:
             if rec.product_id:
-                is_wood = rec.product_id.is_wood_product or getattr(rec.product_id, 'x_is_wood_product', False)
+                is_wood = rec.product_id.x_is_wood_product or getattr(rec.product_id, 'x_is_wood_product', False)
                 if not is_wood:
                     raise ValidationError(_("Chỉ được phép chọn sản phẩm sản xuất ngành gỗ cho lệnh sản xuất! Vui lòng chọn sản phẩm khác hoặc tạo mới sản phẩm gỗ từ menu Danh mục sản phẩm gỗ."))
 

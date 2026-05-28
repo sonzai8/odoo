@@ -4,18 +4,6 @@ from odoo import models, fields, api, _
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    is_wood_product = fields.Boolean(
-        string='Là sản phẩm Gỗ', 
-        help='Nếu chọn, sản phẩm sẽ bắt buộc quản lý theo Lô (Lot).',
-        default=False
-    )
-    x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
-    x_length = fields.Float(string='Chiều dài (mm)', digits=(16, 1), default=2440.0)
-    x_width = fields.Float(string='Chiều rộng (mm)', digits=(16, 1), default=1220.0)
-    
-    x_area_m2 = fields.Float(string='Diện tích (m2)', compute='_compute_wood_measurements', store=True)
-    x_volume_m3 = fields.Float(string='Khối lượng (m3)', compute='_compute_wood_measurements', store=True)
-
     x_required_species_ids = fields.Many2many(
         'dl.wood.species', string='Loại gỗ bắt buộc',
         compute='_compute_x_required_species_ids', store=True,
@@ -26,20 +14,20 @@ class ProductTemplate(models.Model):
     def _compute_x_required_species_ids(self):
         for rec in self:
             rec.x_required_species_ids = rec.x_required_peeling_type_ids.mapped('species_id')
+            
     x_required_peeling_type_ids = fields.Many2many(
         'dl.wood.peeling.type',
         string='Loại Ván bóc',
         help='Chỉ cần chọn Loại Ván Bóc gốc (Keo, Bạch Đàn...), không cần quan tâm độ dày.'
     )
 
+    @api.onchange('x_required_peeling_type_ids')
+    def _onchange_wood_name_and_code_traceability(self):
+        if hasattr(self, '_onchange_wood_name_and_code'):
+            self._onchange_wood_name_and_code()
+
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
 
-    @api.depends('x_length', 'x_width', 'x_thickness')
-    def _compute_wood_measurements(self):
-        for product in self:
-            area = (product.x_length * product.x_width) / 1000000.0
-            product.x_area_m2 = area
-            product.x_volume_m3 = (area * product.x_thickness) / 1000.0
     x_production_order_count = fields.Integer(
         string='Số lệnh sản xuất',
         compute='_compute_x_production_order_count'
@@ -80,16 +68,16 @@ class ProductTemplate(models.Model):
             }
         }
 
-    @api.onchange('is_wood_product')
-    def _onchange_is_wood_product(self):
+    @api.onchange('x_is_wood_product')
+    def _onchange_x_is_wood_product(self):
         """Tự động thiết lập quản lý theo Lô khi tích chọn là sản phẩm Gỗ"""
-        if self.is_wood_product:
+        if hasattr(self, 'x_is_wood_product') and self.x_is_wood_product:
             self.tracking = 'lot'
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('is_wood_product'):
+            if vals.get('x_is_wood_product'):
                 if 'company_id' not in vals or not vals['company_id']:
                     vals['company_id'] = self.env.company.id
         return super(ProductTemplate, self).create(vals_list)
@@ -98,18 +86,13 @@ class ProductTemplate(models.Model):
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
-    x_thickness = fields.Float(related='product_tmpl_id.x_thickness', readonly=True)
-    x_length = fields.Float(related='product_tmpl_id.x_length', readonly=True)
-    x_width = fields.Float(related='product_tmpl_id.x_width', readonly=True)
-    x_area_m2 = fields.Float(related='product_tmpl_id.x_area_m2', readonly=True)
-    x_volume_m3 = fields.Float(related='product_tmpl_id.x_volume_m3', readonly=True)
     x_required_species_ids = fields.Many2many(related='product_tmpl_id.x_required_species_ids', readonly=True)
     x_required_peeling_type_ids = fields.Many2many(related='product_tmpl_id.x_required_peeling_type_ids', readonly=True)
 
     def _compute_display_name(self):
         super()._compute_display_name()
         for product in self:
-            is_wood = product.product_tmpl_id.is_wood_product or getattr(product, 'x_is_wood_product', False)
+            is_wood = product.product_tmpl_id.x_is_wood_product or getattr(product, 'x_is_wood_product', False)
             if is_wood and product.default_code:
                 code = product.default_code.strip()
                 if code:

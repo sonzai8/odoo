@@ -537,6 +537,22 @@ class DlWoodPeelingBklsLine(models.Model):
         'dl.wood.peeling.variant', string='Biến thể Ván Bóc',
         required=True, ondelete='restrict'
     )
+    peeling_type_id = fields.Many2one(
+        'dl.wood.peeling.type', string='Loại Ván Bóc',
+        related='peeling_variant_id.peeling_type_id', store=True
+    )
+    invoice_id = fields.Many2one(
+        'dl.wood.peeling.invoice', string='Số Hóa Đơn',
+        related='bkls_id.invoice_id', store=True
+    )
+    dossier_id = fields.Many2one(
+        'dl.wood.peeling.dossier', string='Hồ Sơ Ván Bóc',
+        related='bkls_id.invoice_id.dossier_id', store=True
+    )
+    partner_id = fields.Many2one(
+        'res.partner', string='Nhà Cung Cấp',
+        related='bkls_id.invoice_id.partner_id', store=True
+    )
     
     # ── Khối lượng & giá ─────────────────────────────────────────────────────
     qty_initial = fields.Float(

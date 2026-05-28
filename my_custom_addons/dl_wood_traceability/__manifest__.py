@@ -5,7 +5,7 @@
     'summary': 'Quản lý hồ sơ gỗ, hồ sơ kiểm lâm và trừ lùi song song (Nội bộ và Khai báo CO)',
     'category': 'Inventory/Warehouse',
     'author': 'Đức Lâm ERP',
-    'depends': ['base', 'sale', 'stock', 'product', 'mrp', 'mail'],
+    'depends': ['base', 'sale', 'stock', 'product', 'mrp', 'mail', 'dl_wood_product_base'],
     'data': [
         'security/dl_wood_security.xml',
         'security/dl_wood_multi_company.xml',
@@ -34,6 +34,7 @@
         'wizard/dl_customer_import_wizard_views.xml',
         'wizard/dl_wood_init_data_wizard_views.xml',
         'wizard/dl_wood_dossier_consumption_wizard_views.xml',
+        'views/dl_wood_peeling_report_views.xml',
         'views/menus.xml',
     ],
     'assets': {

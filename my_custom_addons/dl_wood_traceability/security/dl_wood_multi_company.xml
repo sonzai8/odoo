@@ -154,7 +154,7 @@
         <record id="dl_wood_product_template_comp_rule" model="ir.rule">
             <field name="name">Sản phẩm gỗ đa công ty (Strict)</field>
             <field name="model_id" ref="product.model_product_template"/>
-            <field name="domain_force">['|', ('is_wood_product', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('x_is_wood_product', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
 
         <record id="dl_vietnam_bank_comp_rule" model="ir.rule">

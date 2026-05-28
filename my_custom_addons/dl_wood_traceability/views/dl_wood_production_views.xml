@@ -96,6 +96,43 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Vận chuyển">
+                            <field name="shipment_ids" context="{'default_sale_order_id': id}">
+                                <list string="Chuyến xe">
+                                    <field name="shipping_date"/>
+                                    <field name="vehicle_id"/>
+                                    <field name="license_plate"/>
+                                    <field name="total_volume"/>
+                                    <button name="action_print_bkls" string="Tải Bảng kê LS" type="object" icon="fa-download" class="btn-primary"/>
+                                    <button name="action_print_receipt" string="Tải Biên nhận" type="object" icon="fa-download" class="btn-secondary"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="shipping_date"/>
+                                            <field name="vehicle_id" options="{'no_create': True}"/>
+                                            <field name="license_plate"/>
+                                        </group>
+                                        <group>
+                                            <field name="total_volume"/>
+                                        </group>
+                                    </group>
+                                    <notebook>
+                                        <page string="Sản phẩm vận chuyển">
+                                            <field name="x_allowed_production_order_ids" invisible="1"/>
+                                            <field name="line_ids">
+                                                <list editable="bottom">
+                                                    <field name="production_order_id" domain="[('id', 'in', parent.x_allowed_production_order_ids)]" options="{'no_create': True}"/>
+                                                    <field name="product_id" force_save="1"/>
+                                                    <field name="produced_qty" readonly="1" force_save="1"/>
+                                                    <field name="qty" sum="Tổng"/>
+                                                </list>
+                                            </field>
+                                        </page>
+                                    </notebook>
+                                </form>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
             </form>
@@ -211,18 +248,19 @@
                                 <field name="sale_order_id" readonly="x_select_production_id != False"/>
                                 <field name="x_select_production_id" readonly="1" invisible="not x_select_production_id"/>
                                 <field name="partner_id" readonly="1"/>
-                                <field name="company_id" readonly="1"/>
+                                <field name="company_id" readonly="1" options="{'no_open': True}"/>
                             </group>
                         </div>
                         <div class="flex-fill" style="min-width: 320px;">
                             <group string="Sản phẩm &amp; Hiệu suất" class="w-100">
                                 <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
                                 <field name="x_invoice_display_name" readonly="state in ('done', 'cancelled') or x_select_production_id != False" placeholder="Tên để in hợp đồng/hóa đơn..."/>
-                                <field name="x_product_unit_label" string="Đơn vị tính" readonly="1"/>
-                                <field name="x_co_yield_wood" string="Khai CO mặc định gỗ" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
+                                <field name="x_product_unit_label" string="Đơn vị tính" readonly="1" invisible="True"/>
+                                <field name="x_co_yield_wood" string="Khai CO mặc định gỗ" readonly="state in ('done', 'cancelled') or x_select_production_id != False" invisible="1"/>
                                 <field name="x_co_yield_peeling" string="Khai CO mặc định ván" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>
                                 <field name="x_co_yield" invisible="True"/>
                                 <field name="uom_id" invisible="True"/>
+                                <field name="x_domain_species_ids" invisible="True"/>
                             </group>
                         </div>
                         <div class="flex-fill" style="min-width: 320px;">
@@ -242,8 +280,8 @@
                                         ≈ <field name="x_qty_planned_m3" nolabel="1" readonly="1" style="display:inline; color:#007bff;"/> m³
                                     </span>
                                 </div>
-                                <label for="qty_done"/>
-                                <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;">
+                                <label for="qty_done" invisible="1"/>
+                                <div class="o_field_widget" style="display:flex; align-items:center; gap:8px;" invisible="1">
                                     <field name="qty_done" nolabel="1" readonly="state in ('done', 'cancelled') or x_select_production_id != False"
                                            style="max-width:120px;"/>
                                     <span style="color:#6c757d; font-weight:500;">
@@ -264,7 +302,7 @@
                     <field name="x_required_species_ids" invisible="1"/>
                     <notebook>
                         <page string="Tiêu hao Nguyên vật liệu">
-                            <field name="line_ids" readonly="state in ('done', 'cancelled')" context="{'default_x_co_yield': x_co_yield_wood}">
+                            <field name="line_ids" readonly="state in ('done', 'cancelled')" context="{'default_x_co_yield': x_co_yield_wood}" invisible="1">
                                 <list string="NVL tiêu hao" editable="bottom">
                                     <field name="dossier_id"
                                            domain="[('company_id', '=', parent.company_id), ('state', '=', 'using'), ('species_ids', 'in', parent.x_required_species_ids)]"/>
@@ -293,7 +331,7 @@
                                 <list string="Ván bóc tiêu hao" editable="bottom">
                                     <field name="peeling_dossier_id" column_invisible="True"
                                            domain="[('company_id', '=', parent.company_id), ('state', '=', 'using')]"/>
-                                    <field name="peeling_invoice_id" domain="[('dossier_id.company_id', '=', parent.company_id), ('dossier_id.state', '=', 'using'), ('state', 'in', ['available', 'partial']), ('species_ids', 'in', parent.x_required_species_ids)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
+                                    <field name="peeling_invoice_id" domain="[('dossier_id.company_id', '=', parent.company_id), ('dossier_id.state', '=', 'using'), ('state', 'in', ['available', 'partial']), ('species_ids', 'in', parent.x_domain_species_ids)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
                                     <field name="peeling_bkls_id" domain="[('invoice_id', '=', peeling_invoice_id)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
                                     <field name="peeling_bkls_line_id" domain="[('bkls_id', '=', peeling_bkls_id), ('state', 'in', ['available', 'partial']), ('id', 'not in', parent.x_selected_peeling_bkls_line_ids)]" options="{'no_create': True, 'no_create_edit': True}" optional="show"/>
                                     <field name="x_qty_available" readonly="1" string="Tồn khả dụng (m³)"/>
@@ -410,7 +448,7 @@
                             </div>
                             
                             <!-- BẢNG GIẢI THÍCH CHI PHÍ SẢN XUẤT TRUNG BÌNH CAO CẤP -->
-                            <div class="card bg-light border-info mt-3" style="border-left: 5px solid #17a2b8; border-radius: 4px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 20px;">
+                            <div class="card bg-light border-info mt-3" style="border-left: 5px solid #17a2b8; border-radius: 4px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 20px;" invisible="1">
                                 <h4 class="card-title text-info mb-3 font-weight-bold" style="display: flex; align-items: center; font-size: 1.1rem; margin-bottom: 12px; color: #00878a;">
                                     <i class="fa fa-calculator" style="font-size: 1.2rem; margin-right: 8px;"></i>
                                     Hiệu Suất Chi Phí Gỗ Nguyên Liệu &amp; Giá Sản Xuất

@@ -14,13 +14,10 @@ class DlWoodPeelingType(models.Model):
     _order = 'sequence asc, name asc'
 
     # ── Display name ──────────────────────────────────────────────────────────
-    @api.depends('name', 'species_id.name')
+    @api.depends('name')
     def _compute_display_name(self):
         for rec in self:
-            if rec.species_id:
-                rec.display_name = f"{rec.name} ({rec.species_id.name})"
-            else:
-                rec.display_name = f"{rec.name or '???'}"
+            rec.display_name = rec.name or '???'
 
     # ── Thông tin cơ bản ──────────────────────────────────────────────────────
     name = fields.Char(

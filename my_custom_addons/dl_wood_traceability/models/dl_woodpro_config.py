@@ -290,7 +290,7 @@ class DlWoodproConfig(models.Model):
                         'name': name,
                         'default_code': code,
                         'x_woodpro_id': wp_id,
-                        'is_wood_product': True,
+                        'x_is_wood_product': True,
                         'x_is_wood_product': True, # Đồng bộ tương thích với dl_wood_payroll
                         'tracking': 'lot',
                         'type': 'consu', 
@@ -651,7 +651,7 @@ class DlWoodproConfig(models.Model):
                                 'name': default_name, 
                                 'type': 'consu', 
                                 'is_storable': True, 
-                                'is_wood_product': True, 
+                                'x_is_wood_product': True, 
                                 'tracking': 'lot',
                                 'company_id': self.company_id.id
                             })
