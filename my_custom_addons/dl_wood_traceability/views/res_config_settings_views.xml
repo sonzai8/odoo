@@ -37,6 +37,20 @@
 
                         <!-- Cột 2: Các đại diện -->
                         <div class="col-lg-6 col-12">
+                            <block title="Tích hợp MISA (Odoo Bridge)" name="misa_bridge_config">
+                                <setting id="misa_product_code_setting" string="Kiểm tra Mã Vật Tư" help="Cấu hình Rule (Regex) để Chrome Extension kiểm tra mã sản phẩm khi người dùng tạo/sửa trên MISA">
+                                    <div class="content-group mt-3 w-100" style="min-width: 100%;">
+                                        <div class="w-100 mb-3">
+                                            <span class="d-block mb-1 fw-bold">Quy tắc Regex (Mỗi luật 1 dòng):</span>
+                                            <field name="x_misa_product_code_regex" class="w-100" widget="text" rows="3" nolabel="1"/>
+                                        </div>
+                                        <div class="w-100 mb-3">
+                                            <span class="d-block mb-1 fw-bold">Câu báo lỗi (Mỗi câu 1 dòng tương ứng):</span>
+                                            <field name="x_misa_product_code_error_msg" class="w-100" widget="text" rows="5" nolabel="1"/>
+                                        </div>
+                                    </div>
+                                </setting>
+                            </block>
                             <block title="Đại diện Công ty (Phục vụ In Hợp đồng/Tài liệu)" name="wood_company_representative">
                                 <setting id="wood_representative_setting" string="Thông tin đại diện" help="Người đại diện ký kết các hợp đồng hồ sơ nguồn gốc gỗ">
                                     <group>

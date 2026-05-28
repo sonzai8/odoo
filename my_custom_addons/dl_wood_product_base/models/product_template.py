@@ -177,6 +177,17 @@ class ProductTemplate(models.Model):
             
             product.default_code = "_".join(code_parts)
 
+    @api.constrains('default_code')
+    def _check_unique_default_code(self):
+        for product in self:
+            if product.default_code:
+                existing = self.env['product.template'].search([
+                    ('default_code', '=', product.default_code),
+                    ('id', '!=', product.id)
+                ], limit=1)
+                if existing:
+                    raise ValidationError(f'Trùng mã! Mã sản phẩm ({product.default_code}) đã tồn tại trên Odoo. Vui lòng thay đổi "Hậu tố" hoặc Thông số để phân biệt.')
+
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 

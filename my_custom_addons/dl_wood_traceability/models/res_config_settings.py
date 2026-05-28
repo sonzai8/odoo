@@ -39,3 +39,13 @@ class ResConfigSettings(models.TransientModel):
         string='Năng lực khai thác mặc định (m³/ngày)',
         readonly=False
     )
+    x_misa_product_code_regex = fields.Char(
+        string='Regex kiểm tra mã Sản phẩm MISA', 
+        config_parameter='misa.product_code_regex', 
+        default='^sonzai'
+    )
+    x_misa_product_code_error_msg = fields.Char(
+        string='Câu báo lỗi khi sai Mã', 
+        config_parameter='misa.product_code_error_msg', 
+        default='Mã sản phẩm bắt buộc phải bắt đầu bằng chữ "sonzai".'
+    )
