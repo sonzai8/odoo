@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_dl_misa_extension_release_tree" model="ir.ui.view">
+        <field name="name">dl.misa.extension.release.tree</field>
+        <field name="model">dl.misa.extension.release</field>
+        <field name="arch" type="xml">
+            <list string="Lịch sử Phiên bản">
+                <field name="name"/>
+                <field name="date_release"/>
+                <field name="filename"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_dl_misa_extension_release_form" model="ir.ui.view">
+        <field name="name">dl.misa.extension.release.form</field>
+        <field name="model">dl.misa.extension.release</field>
+        <field name="arch" type="xml">
+            <form string="Phiên bản Extension">
+                <header>
+                    <button name="action_activate" string="Đặt làm bản Phát hành" type="object" class="oe_highlight" invisible="is_active"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Đang phát hành" bg_color="text-bg-success" invisible="not is_active"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_release"/>
+                        </group>
+                        <group>
+                            <field name="zip_file" filename="filename" widget="binary"/>
+                            <field name="filename" invisible="1"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Ghi chú thay đổi">
+                            <field name="notes" placeholder="Mô tả các thay đổi trong bản cập nhật này..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_dl_misa_extension_release" model="ir.actions.act_window">
+        <field name="name">Phiên bản Odoo Bridge</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">dl.misa.extension.release</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_dl_misa_extension_release" 
+              name="Phiên bản Odoo Bridge" 
+              parent="dl_wood_traceability.menu_dl_wood_config_root" 
+              action="action_dl_misa_extension_release" 
+              sequence="20"/>
+</odoo>

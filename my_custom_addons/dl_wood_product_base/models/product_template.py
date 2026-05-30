@@ -12,10 +12,24 @@ class ProductTemplate(models.Model):
     
     x_quality = fields.Char(string='Hậu tố (Chất lượng)', size=4, help='Hậu tố để gắn vào sau mã và tên sản phẩm (VD: A, B, AB, FULL...)')
 
+    def _default_x_length(self):
+        try:
+            val = self.env['ir.default'].sudo()._get('product.template', 'x_length')
+            return val if val else 2440.0
+        except Exception:
+            return 2440.0
+
+    def _default_x_width(self):
+        try:
+            val = self.env['ir.default'].sudo()._get('product.template', 'x_width')
+            return val if val else 1220.0
+        except Exception:
+            return 1220.0
+
     # Kích thước
     x_thickness = fields.Float(string='Độ dày (mm)', digits=(16, 2))
-    x_length = fields.Float(string='Chiều dài (mm)', digits=(16, 1), default=2440.0)
-    x_width = fields.Float(string='Chiều rộng (mm)', digits=(16, 1), default=1220.0)
+    x_length = fields.Float(string='Chiều dài (mm)', digits=(16, 1), default=_default_x_length)
+    x_width = fields.Float(string='Chiều rộng (mm)', digits=(16, 1), default=_default_x_width)
     x_area_m2 = fields.Float(string='Diện tích (m2)', compute='_compute_wood_measurements', store=True)
     x_volume_m3 = fields.Float(string='Khối lượng (m3)', compute='_compute_wood_measurements', store=True)
 

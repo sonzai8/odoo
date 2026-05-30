@@ -71,6 +71,11 @@
                     <field name="x_company_type_label" placeholder="Loại hình DN..." required="x_is_peeling_supplier or (x_is_wood_customer and is_company)" style="width: 67%;"/>
                     <field name="x_private_name" placeholder="Tên riêng..." required="x_is_peeling_supplier or (x_is_wood_customer and is_company)" style="width: 33%;"/>
                 </div>
+                <div invisible="not x_is_wood_customer or not x_customer_code" class="mt-1 mb-2">
+                    <span class="badge rounded-pill text-bg-info text-white" style="font-size: 0.85rem; padding: 6px 12px; font-weight: 500;">
+                        <i class="fa fa-id-card-o me-1"/> Mã KH MISA: <field name="x_customer_code" readonly="1" class="oe_inline"/>
+                    </span>
+                </div>
             </xpath>
             <xpath expr="//div[hasclass('o_address_format')]" position="replace">
                 <!-- Hiển thị cho chủ rừng: Tỉnh -> Xã -> Địa chỉ chi tiết -->
@@ -111,6 +116,10 @@
                 <field name="x_prep_days" string="T.gian chuẩn bị" invisible="x_is_wood_supplier != 'owner'"/>
             </xpath>
             <xpath expr="//field[@name='vat']" position="after">
+                <field name="x_customer_code" string="Mã khách hàng MISA" invisible="not x_is_wood_customer"/>
+                <field name="x_misa_group_code" string="Nhóm khách hàng MISA" invisible="not x_is_wood_customer"/>
+                <field name="x_misa_contact_name" string="Người liên hệ MISA" invisible="not x_is_wood_customer"/>
+                <field name="x_is_wood_customer" invisible="1"/>
                 <field name="x_is_wood_supplier" invisible="1"/>
                 <field name="x_is_peeling_supplier" invisible="not is_company"/>
                 <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
@@ -235,6 +244,17 @@
         <field name="context">{'default_x_is_peeling_supplier': True, 'default_is_company': True, 'default_company_type': 'company'}</field>
         <field name="view_id" ref="view_dl_forest_owner_list"/>
         <field name="search_view_id" ref="view_dl_forest_owner_search"/>
+    </record>
+
+    <record id="view_res_partner_filter_dl_wood" model="ir.ui.view">
+        <field name="name">res.partner.select.dl.wood</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="x_customer_code" string="Mã khách hàng MISA" filter_domain="[('x_customer_code', 'ilike', self)]"/>
+            </xpath>
+        </field>
     </record>
 
 </odoo>

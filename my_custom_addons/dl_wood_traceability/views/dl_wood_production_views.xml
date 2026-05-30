@@ -69,6 +69,10 @@
                             <field name="date_order"/>
                             <field name="company_id" readonly="1"/>
                         </group>
+                        <group string="Thông tin MISA">
+                            <field name="x_misa_refno_finance" readonly="1" invisible="not x_misa_refid"/>
+                            <field name="x_misa_refid" readonly="1" invisible="not x_misa_refid"/>
+                        </group>
                         <group string="Ghi chú">
                             <field name="note" nolabel="1"/>
                         </group>
@@ -81,7 +85,8 @@
                                     <field name="name" readonly="1"/>
                                     <field name="product_id" readonly="x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
                                     <field name="x_invoice_display_name" readonly="x_select_production_id != False" placeholder="VD: Gỗ ghép thanh 15mm..."/>
-                                    <field name="qty_planned" readonly="x_select_production_id != False"/>
+                                    <field name="x_selling_price" readonly="parent.x_misa_refid != False" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="qty_planned" readonly="x_select_production_id != False or parent.x_misa_refid != False"/>
                                     <field name="qty_done" readonly="x_select_production_id != False"/>
                                     <field name="uom_id" optional="hide"/>
                                     <field name="date_planned" readonly="x_select_production_id != False"/>
@@ -254,7 +259,9 @@
                         <div class="flex-fill" style="min-width: 320px;">
                             <group string="Sản phẩm &amp; Hiệu suất" class="w-100">
                                 <field name="product_id" readonly="state in ('done', 'cancelled') or x_select_production_id != False" options="{'no_create': True, 'no_create_edit': True}"/>
-                                <field name="x_invoice_display_name" readonly="state in ('done', 'cancelled') or x_select_production_id != False" placeholder="Tên để in hợp đồng/hóa đơn..."/>
+                                <field name="x_misa_refid" invisible="1"/>
+                                <field name="x_invoice_display_name" readonly="state in ('done', 'cancelled') or x_select_production_id != False or x_misa_refid != False" placeholder="Tên để in hợp đồng/hóa đơn..."/>
+                                <field name="x_selling_price" readonly="x_misa_refid != False" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="x_product_unit_label" string="Đơn vị tính" readonly="1" invisible="True"/>
                                 <field name="x_co_yield_wood" string="Khai CO mặc định gỗ" readonly="state in ('done', 'cancelled') or x_select_production_id != False" invisible="1"/>
                                 <field name="x_co_yield_peeling" string="Khai CO mặc định ván" readonly="state in ('done', 'cancelled') or x_select_production_id != False"/>

@@ -48,3 +48,4 @@ access_dl_wood_peeling_inventory_wood_summary,dl.wood.peeling.inventory.wood.sum
 access_dl_wood_peeling_inventory_variant_summary,dl.wood.peeling.inventory.variant_summary,model_dl_wood_peeling_inventory_variant_summary,base.group_user,1,1,1,1
 access_dl_wood_sale_order_shipment,dl.wood.sale.order.shipment,model_dl_wood_sale_order_shipment,base.group_user,1,1,1,1
 access_dl_wood_sale_order_shipment_line,dl.wood.sale.order.shipment.line,model_dl_wood_sale_order_shipment_line,base.group_user,1,1,1,1
+access_dl_misa_extension_release,dl.misa.extension.release,model_dl_misa_extension_release,dl_wood_traceability.group_dl_wood_dossier_manager,1,1,1,1

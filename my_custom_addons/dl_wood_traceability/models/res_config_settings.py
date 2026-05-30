@@ -49,3 +49,32 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='misa.product_code_error_msg', 
         default='Mã sản phẩm bắt buộc phải bắt đầu bằng chữ "sonzai".'
     )
+    
+    # --- MISA Extension Config ---
+    default_x_length = fields.Float(
+        string='Chiều dài mặc định (mm)',
+        default_model='product.template',
+        default=2440.0
+    )
+    default_x_width = fields.Float(
+        string='Chiều rộng mặc định (mm)',
+        default_model='product.template',
+        default=1220.0
+    )
+    x_misa_default_product_name = fields.Char(
+        string='Tên Sản phẩm mặc định (MISA)',
+        config_parameter='misa.default_product_name',
+        default='Gỗ dán (ván ép) công nghiệp phủ phim'
+    )
+
+    x_misa_ext_token = fields.Char(
+        related='company_id.x_misa_ext_token',
+        string='Token tải file',
+        readonly=False
+    )
+
+    def set_values(self):
+        import uuid
+        if not self.company_id.x_misa_ext_token:
+            self.company_id.x_misa_ext_token = uuid.uuid4().hex
+        super(ResConfigSettings, self).set_values()

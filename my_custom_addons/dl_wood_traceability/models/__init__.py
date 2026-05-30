@@ -23,3 +23,4 @@ from . import dl_wood_dossier_inventory
 from . import res_country_state
 from . import res_country_ward
 from . import dl_wood_peeling
+from . import dl_misa_extension_release

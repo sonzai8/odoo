@@ -13,6 +13,20 @@
                 </header>
             </xpath>
 
+            <!-- Khoá các trường nếu đồng bộ từ MISA -->
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="readonly">x_is_misa_synced</attribute>
+            </xpath>
+            <xpath expr="//field[@name='default_code']" position="attributes">
+                <attribute name="readonly">x_is_misa_synced</attribute>
+            </xpath>
+            <xpath expr="//field[@name='list_price']" position="attributes">
+                <attribute name="readonly">x_is_misa_synced</attribute>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <field name="x_is_misa_synced" invisible="1"/>
+            </xpath>
+
             <!-- Thêm smart button cho Lệnh sản xuất -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_production_orders" type="object" class="oe_stat_button" icon="fa-wrench" invisible="not x_is_wood_product">

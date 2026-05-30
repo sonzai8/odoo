@@ -81,6 +81,10 @@ class ResPartner(models.Model):
     state_id = fields.Many2one("res.country.state", string='Tỉnh / Thành phố')
     city = fields.Char(string='Xã / Phường')
     x_customer_code = fields.Char(string='Mã khách hàng', index=True, help='Mã khách hàng phải đồng bộ với phần mềm Misa')
+    x_misa_id = fields.Char(string='ID MISA', index=True)
+    x_misa_group_code = fields.Char(string='Nhóm khách hàng MISA', help='Mã/Tên nhóm khách hàng từ MISA')
+    x_misa_contact_name = fields.Char(string='Người liên hệ MISA', help='Tên người liên hệ từ MISA')
+    x_misa_raw_address = fields.Char(string='Địa chỉ thô từ MISA', help='Địa chỉ gốc thô nhận từ MISA dùng để tối ưu hóa cache đồng bộ')
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
     x_is_wood_supplier = fields.Selection([
         ('owner', 'Chủ Rừng'),
@@ -315,12 +319,20 @@ class ResPartner(models.Model):
             street = ""
             
             try:
+                from vietnamadminunits import parse_address, ParseMode
                 
-                # Thư viện này giúp tự động map địa chỉ cũ (có huyện) ra địa chỉ mới
-                admin_unit = convert_address(raw_address)
+                # Bước 1: Thử parse trực tiếp bằng chuẩn mới (FROM_2025) trước
+                admin_unit = parse_address(raw_address, mode=ParseMode.FROM_2025, keep_street=True)
                 province = getattr(admin_unit, 'province', "") or ""
-                short_province = getattr(admin_unit, 'short_province', "") or ""
                 ward = getattr(admin_unit, 'ward', "") or ""
+                
+                # Bước 2: Nếu không bóc tách được Xã/Phường mới, ta mới dùng convert_address để tự động map từ địa chỉ cũ sang
+                if not province or not ward:
+                    admin_unit = convert_address(raw_address)
+                    province = getattr(admin_unit, 'province', "") or ""
+                    ward = getattr(admin_unit, 'ward', "") or ""
+                    
+                short_province = getattr(admin_unit, 'short_province', "") or ""
                 street = getattr(admin_unit, 'street', "") or ""
             except ImportError:
                 _logger.warning("[CCCD] Không tìm thấy thư viện vietnamadminunits, chuyển sang bóc tách thủ công.")
@@ -426,3 +438,12 @@ class ResPartner(models.Model):
                 'state_id': False,
                 'ward_id': False
             }
+
+    @api.model
+    def _name_search(self, name, domain=None, operator='ilike', limit=None, order=None):
+        domain = domain or []
+        if name:
+            # Cho phép tìm kiếm nhanh theo cả name, ref (Mã mặc định) hoặc x_customer_code (Mã MISA)
+            domain = ['|', '|', ('name', operator, name), ('ref', operator, name), ('x_customer_code', operator, name)] + domain
+            return self._search(domain, limit=limit, order=order)
+        return super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)

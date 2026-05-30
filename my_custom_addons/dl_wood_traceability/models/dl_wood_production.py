@@ -51,6 +51,8 @@ class DlWoodSaleOrder(models.Model):
     date_order = fields.Date(string='Ngày đặt hàng', default=fields.Date.context_today)
     x_invoice_code = fields.Char(string='Số hóa đơn', index=True)
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+    x_misa_refid = fields.Char(string="ID Hóa đơn MISA", copy=False, index=True)
+    x_misa_refno_finance = fields.Char(string="Số Hóa đơn MISA", copy=False)
     note = fields.Text(string='Ghi chú')
     production_order_ids = fields.One2many(
         'dl.wood.production.order', 'sale_order_id',
@@ -176,6 +178,8 @@ class DlWoodProductionOrder(models.Model):
         'product.product', string='Sản phẩm sản xuất', required=True,
         domain="['|', ('company_id', '=', False), ('company_id', '=', company_id), ('x_is_wood_product', '=', True), ('sale_ok', '=', True), ('active', '=', True)]"
     )
+    x_selling_price = fields.Float(string='Đơn giá bán', digits=(16, 2), help="Lưu trữ đơn giá bán đồng bộ từ MISA")
+    x_misa_refid = fields.Char(related='sale_order_id.x_misa_refid', string='Mã HĐ MISA', store=True)
     x_invoice_display_name = fields.Char(
         string='Tên hiển thị HĐ',
         help='Tên sản phẩm hiển thị trên hóa đơn bán hàng và hợp đồng. Mặc định là tên sản phẩm, có thể sửa đổi.'
@@ -1021,6 +1025,21 @@ class DlWoodProductionOrder(models.Model):
         self.ensure_one()
         if not self.line_ids and not self.peeling_line_ids:
             raise UserError(_('Vui lòng nhập chi tiết tiêu hao nguyên vật liệu trước khi hoàn thành.'))
+        
+        # Cập nhật số lượng thực tế = số lượng kế hoạch (nếu chưa được cập nhật hợp lệ)
+        if self.qty_planned > 0 and (self.qty_done <= 0 or self.qty_done == 1.0):
+            self.qty_done = self.qty_planned
+
+        # Tính toán lại KL thực tế (volume_actual) theo qty_done mới nhất để trừ lùi cho chính xác
+        vol_per_unit = self._get_vol_per_unit()
+        for line in self.line_ids:
+            if line.x_ratio:
+                line.volume_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+        
+        for p_line in self.peeling_line_ids:
+            if p_line.x_ratio:
+                p_line.volume_actual = round(((self.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+
         self._action_deduct_materials()
         self._action_deduct_peeling_materials()
         self.date_done = fields.Date.today()

@@ -26,7 +26,27 @@ class ProductTemplate(models.Model):
         if hasattr(self, '_onchange_wood_name_and_code'):
             self._onchange_wood_name_and_code()
 
+    def write(self, vals):
+        if self.env.context.get('misa_sync'):
+            return super(ProductTemplate, self).write(vals)
+            
+        # Danh sách các trường không được phép sửa nếu là sản phẩm MISA
+        blocked_fields = {
+            'name', 'default_code', 'list_price', 'standard_price', 'uom_id', 'uom_po_id', 
+            'type', 'categ_id', 'x_is_wood_product', 'x_thickness', 'x_width', 'x_length',
+            'x_required_peeling_type_ids', 'barcode'
+        }
+        
+        if any(f in vals for f in blocked_fields):
+            for rec in self:
+                if rec.x_is_misa_synced:
+                    from odoo.exceptions import UserError
+                    raise UserError("Sản phẩm này được đồng bộ từ MISA. Hệ thống không cho phép sửa đổi các thuộc tính của sản phẩm để đảm bảo tính nhất quán dữ liệu!")
+                    
+        return super(ProductTemplate, self).write(vals)
+
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+    x_is_misa_synced = fields.Boolean(string='Đồng bộ từ MISA', default=False, readonly=True)
 
     x_production_order_count = fields.Integer(
         string='Số lệnh sản xuất',
@@ -103,3 +123,20 @@ class ProductProduct(models.Model):
                         product.display_name = f"[{code}] {name} [{spec}]"
                     else:
                         product.display_name = f"[{code}] {name}"
+
+    def write(self, vals):
+        if self.env.context.get('misa_sync'):
+            return super(ProductProduct, self).write(vals)
+            
+        blocked_fields = {
+            'name', 'default_code', 'list_price', 'standard_price', 'uom_id', 'uom_po_id', 
+            'type', 'categ_id', 'barcode'
+        }
+        
+        if any(f in vals for f in blocked_fields):
+            for rec in self:
+                if getattr(rec.product_tmpl_id, 'x_is_misa_synced', False):
+                    from odoo.exceptions import UserError
+                    raise UserError("Biến thể này thuộc sản phẩm được đồng bộ từ MISA. Hệ thống không cho phép sửa đổi các thuộc tính cốt lõi!")
+                    
+        return super(ProductProduct, self).write(vals)
