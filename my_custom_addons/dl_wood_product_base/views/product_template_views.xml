@@ -126,10 +126,10 @@
             <xpath expr="//field[@name='default_code']" position="replace"/>
             <xpath expr="//field[@name='name']" position="before">
                 <!-- Move to front -->
-                <field name="default_code" string="Tham chiếu nội bộ"/>
+                <field name="default_code" string="Mã SP (Tham chiếu)" class="dl-col-code fw-bold"/>
             </xpath>
             <xpath expr="//field[@name='name']" position="attributes">
-                <attribute name="class">text-truncate</attribute>
+                <attribute name="class">dl-col-name text-truncate</attribute>
             </xpath>
             <xpath expr="//field[@name='name']" position="after">
                 <field name="x_thickness" optional="show" decoration-bf="1"/>

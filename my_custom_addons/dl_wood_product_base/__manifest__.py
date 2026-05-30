@@ -9,6 +9,11 @@
     'data': [
         'views/product_template_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'dl_wood_product_base/static/src/css/style.css',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',
