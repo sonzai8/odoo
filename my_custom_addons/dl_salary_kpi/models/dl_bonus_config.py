@@ -18,6 +18,7 @@ class DlBonusPolicy(models.Model):
 
     revenue_job_titles = fields.Char(string='Chức vụ hưởng Thưởng Doanh Thu', help='Mã chức vụ cách nhau bằng dấu phẩy. VD: CV,KTT,QL,QĐ,TL,PGĐ,GĐ,NV,KT,TK,CN,LX')
 
+    kpi_range_line_ids = fields.One2many('dl.salary.kpi.range.config', 'policy_id', string='Dải điểm KPI')
     revenue_line_ids = fields.One2many('dl.salary.kpi.revenue.bonus', 'policy_id', string='Mốc Thưởng Doanh Thu')
     productivity_line_ids = fields.One2many('dl.salary.kpi.productivity.bonus', 'policy_id', string='Mốc Thưởng Năng Suất')
 
@@ -42,9 +43,16 @@ class DlBonusPolicy(models.Model):
     def action_init_defaults(self):
         """Khởi tạo dữ liệu mẫu cho Quy chế (theo chuẩn Đức Lâm)"""
         for rec in self:
-            if rec.revenue_line_ids or rec.productivity_line_ids:
+            if rec.revenue_line_ids or rec.productivity_line_ids or rec.kpi_range_line_ids:
                 raise ValidationError(_("Bạn chỉ có thể khởi tạo mẫu khi danh sách mốc thưởng còn trống!"))
             
+            # Mốc KPI
+            self.env['dl.salary.kpi.range.config'].create([
+                {'policy_id': rec.id, 'salary_from': 0, 'salary_to': 4500000, 'min_kpi': 50.0, 'max_kpi': 55.0},
+                {'policy_id': rec.id, 'salary_from': 4500000, 'salary_to': 5000000, 'min_kpi': 55.0, 'max_kpi': 60.0},
+                {'policy_id': rec.id, 'salary_from': 5000000, 'salary_to': 0, 'min_kpi': 60.0, 'max_kpi': 70.0},
+            ])
+
             # Gán mặc định tất cả các chức vụ cho Thưởng Doanh Thu
             if not rec.revenue_job_titles:
                 rec.revenue_job_titles = 'CV,KTT,QL,QĐ,TL,PGĐ,GĐ,NV,KT,TK,CN,LX'
@@ -65,6 +73,40 @@ class DlBonusPolicy(models.Model):
                 {'policy_id': rec.id, 'name': 'Nhân viên sản xuất', 'job_titles': 'CN,LX', 'bonus_amount': 1000000},
             ])
 
+
+class DlKpiRangeConfig(models.Model):
+    _name = 'dl.salary.kpi.range.config'
+    _description = 'Cấu hình Dải điểm KPI theo Lương'
+    _order = 'salary_from asc'
+
+    policy_id = fields.Many2one('dl.salary.kpi.bonus.policy', string='Quy chế', required=True, ondelete='cascade')
+    company_id = fields.Many2one('res.company', string='Công ty', related='policy_id.company_id', store=True)
+    currency_id = fields.Many2one('res.currency', string='Tiền tệ', related='policy_id.currency_id')
+    
+    salary_from = fields.Monetary(string='Lương cơ bản từ (VNĐ)', required=True, currency_field='currency_id')
+    salary_to = fields.Monetary(string='Lương cơ bản đến (VNĐ)', currency_field='currency_id', help='Để trống (0) nếu không có giới hạn trên')
+    min_kpi = fields.Float(string='KPI Tối thiểu', required=True)
+    max_kpi = fields.Float(string='KPI Tối đa', required=True)
+
+    @api.constrains('salary_from', 'salary_to', 'min_kpi', 'max_kpi')
+    def _check_valid_range(self):
+        for rec in self:
+            if rec.salary_to and rec.salary_from >= rec.salary_to:
+                raise ValidationError(_("Lương cơ bản đến phải lớn hơn Lương cơ bản từ."))
+            if rec.min_kpi > rec.max_kpi:
+                raise ValidationError(_("Điểm KPI tối đa phải lớn hơn hoặc bằng KPI tối thiểu."))
+
+    def name_get(self):
+        result = []
+        for rec in self:
+            name = f"Từ {rec.salary_from:,.0f} đ"
+            if rec.salary_to:
+                name += f" dưới {rec.salary_to:,.0f} đ"
+            else:
+                name += " trở lên"
+            name += f" (KPI: {rec.min_kpi} - {rec.max_kpi})"
+            result.append((rec.id, name))
+        return result
 
 class DlRevenueBonus(models.Model):
     _name = 'dl.salary.kpi.revenue.bonus'

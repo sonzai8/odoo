@@ -711,6 +711,23 @@ class SalaryKpiLine(models.Model):
                  'ot_day_01', 'ot_day_02', 'ot_day_03', 'ot_day_04', 'ot_day_05', 'ot_day_06', 'ot_day_07', 'ot_day_08', 'ot_day_09', 'ot_day_10',
                  'ot_day_11', 'ot_day_12', 'ot_day_13', 'ot_day_14', 'ot_day_15', 'ot_day_16', 'ot_day_17', 'ot_day_18', 'ot_day_19', 'ot_day_20',
                  'ot_day_21', 'ot_day_22', 'ot_day_23', 'ot_day_24', 'ot_day_25', 'ot_day_26', 'ot_day_27', 'ot_day_28', 'ot_day_29', 'ot_day_30', 'ot_day_31')
+    def _get_kpi_boundaries(self, base_salary, max_allowed=70.0):
+        """Lấy min_kpi, max_kpi dựa theo bảng cấu hình của Quy chế thưởng tháng. Fallback về logic cũ nếu không có cấu hình."""
+        policy = self.month_id.active_policy_id
+        if policy and policy.kpi_range_line_ids:
+            for r in policy.kpi_range_line_ids:
+                if r.salary_from <= base_salary and (r.salary_to == 0 or base_salary < r.salary_to):
+                    # Nếu có cấu hình, ưu tiên sử dụng cấu hình mà không bị chặn bởi max_allowed
+                    return r.min_kpi, r.max_kpi
+        
+        # Fallback (Hardcoded logic)
+        if base_salary < 4500000:
+            return 50.0, min(55.0, float(max_allowed))
+        elif base_salary < 5000000:
+            return 55.0, min(60.0, float(max_allowed))
+        else:
+            return 60.0, min(70.0, float(max_allowed))
+
     def action_generate_kpi_scores(self, max_allowed=70):
         """
         Thuật toán Tự động sinh Điểm KPI dựa trên Lương nội bộ (Ln).
@@ -736,15 +753,7 @@ class SalaryKpiLine(models.Model):
                 continue
             # --- KIỂM SOÁT ĐIỂM TỐI THIỂU & TỐI ĐA THEO LƯƠNG CƠ BẢN ---
             base_salary = rec.dl_tax_base_salary
-            if base_salary < 4500000:
-                emp_max_kpi = min(55.0, float(max_allowed))
-                emp_min_kpi = 50.0
-            elif base_salary < 5000000:
-                emp_max_kpi = min(60.0, float(max_allowed))
-                emp_min_kpi = 55.0
-            else:
-                emp_max_kpi = min(70.0, float(max_allowed))
-                emp_min_kpi = 60.0
+            emp_min_kpi, emp_max_kpi = rec._get_kpi_boundaries(base_salary, max_allowed)
                 
             # Đảm bảo max_allowed không nhỏ hơn 50
             emp_max_kpi = max(50.0, emp_max_kpi)
@@ -1124,9 +1133,7 @@ class SalaryKpiLine(models.Model):
 
                     elif 0 < rec.payroll_cash_amount < 1000000:
                         # TRƯỜNG HỢP 2: Tiền mặt lẻ (< 1M) -> Cần TĂNG công để bù Gap bằng KPI
-                        emp_max_kpi = 70.0
-                        if rec.dl_tax_base_salary < 4500000: emp_max_kpi = 55.0
-                        elif rec.dl_tax_base_salary < 5000000: emp_max_kpi = 60.0
+                        _, emp_max_kpi = rec._get_kpi_boundaries(rec.dl_tax_base_salary, 70.0)
                         
                         max_mk = net_salary_base * (emp_max_kpi - 50.0) / 50.0
                         amount_to_add = mk_gap - max_mk
