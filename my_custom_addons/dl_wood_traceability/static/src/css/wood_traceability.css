@@ -207,3 +207,132 @@
     min-width: 220px !important;
     width: 220px !important;
 }
+
+/* Custom Image Matrix for Dossier Images */
+.dl_dossier_image_matrix .o_attachments {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+    width: 100% !important;
+}
+
+.dl_dossier_image_matrix .o_attachment {
+    flex: 0 0 calc(25% - 15px) !important;
+    max-width: calc(25% - 15px) !important;
+    width: calc(25% - 15px) !important;
+    margin: 0 !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .o_attachment_wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    background-color: #fff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    position: relative !important;
+    width: 100% !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .o_image_box {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1200 / 630 !important;
+    float: none !important;
+    margin-bottom: 8px !important;
+    overflow: hidden !important;
+    display: block !important;
+    margin-right: 0 !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .o_image_box a {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .o_preview_image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    background-color: #f8f9fa !important;
+    border-radius: 4px !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .caption {
+    width: 100% !important;
+    text-align: center !important;
+    margin-left: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    padding: 0 4px !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .caption a {
+    margin-left: 0 !important;
+    font-weight: 500 !important;
+    color: #212529 !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .o_attachment_delete {
+    position: absolute !important;
+    top: 5px !important;
+    right: 5px !important;
+    background: rgba(220, 53, 69, 0.9) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s !important;
+}
+
+.dl_dossier_image_matrix .o_attachment:hover .o_attachment_delete {
+    opacity: 1 !important;
+}
+
+/* Cursor phóng to khi hover vào ảnh */
+.dl_dossier_image_matrix .o_attachment .o_image_box img {
+    cursor: zoom-in !important;
+}
+
+/* Style tên file thành nút Tải về */
+.dl_dossier_image_matrix .o_attachment .caption:not(.small) a {
+    display: inline-block !important;
+    background-color: #f1f3f5 !important;
+    border: 1px solid #dee2e6 !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    margin-top: 5px !important;
+    text-decoration: none !important;
+    transition: all 0.2s !important;
+    width: auto !important;
+    max-width: 90% !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .caption:not(.small) a::before {
+    content: "\f019" !important;
+    font-family: FontAwesome !important;
+    margin-right: 6px !important;
+    color: #0d6efd !important;
+}
+
+.dl_dossier_image_matrix .o_attachment .caption:not(.small) a:hover {
+    background-color: #e9ecef !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+/* Ẩn nút phụ hiển thị đuôi file để tránh trùng lặp */
+.dl_dossier_image_matrix .o_attachment .caption.small {
+    display: none !important;
+}
+
+

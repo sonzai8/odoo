@@ -147,7 +147,10 @@ class ResPartner(models.Model):
     # CCCD Info
     x_cccd = fields.Char(string='Số CCCD')
     x_cccd_date = fields.Date(string='Ngày cấp CCCD')
-    x_cccd_place = fields.Char(string='Nơi cấp CCCD')
+    x_cccd_place = fields.Selection([
+        ('CCS QLHC về TTXH', 'CCS QLHC về TTXH'),
+        ('Bộ Công an', 'Bộ Công an')
+    ], string='Nơi cấp CCCD')
 
     # CCCD QR and Info
     x_qr_cccd_image = fields.Binary("Ảnh QR CCCD")

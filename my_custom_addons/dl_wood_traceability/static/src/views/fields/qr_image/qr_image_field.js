@@ -264,7 +264,7 @@ export class QrImageField extends ImageField {
             ward_id: wardValue,
             x_issue_date: deserializeDate(issueDate),
             x_cccd_date: deserializeDate(issueDate),
-            x_cccd_place: "Cục Cảnh sát QLHC về TTXH",
+            x_cccd_place: "CCS QLHC về TTXH",
         };
         console.log("[CCCD] parsedAddress dùng để ghi vào form:", parsedAddress);
         console.log("[CCCD] stateValue (Many2one format):", stateValue);

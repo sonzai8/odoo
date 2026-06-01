@@ -621,6 +621,15 @@ class DlWoodDossier(models.Model):
 
     # Danh sách 8 tài liệu hệ thống cố định
     document_ids = fields.One2many('dl.wood.dossier.document', 'dossier_id', string='Tài liệu hệ thống')
+    
+    # Ảnh đính kèm bổ sung (Sổ đỏ, CCCD...)
+    dossier_image_ids = fields.Many2many(
+        'ir.attachment',
+        'dl_wood_dossier_image_rel',
+        'dossier_id',
+        'attachment_id',
+        string='Ảnh Đính Kèm'
+    )
 
     # Thông tin Vận chuyển
     transport_ids = fields.One2many('dl.wood.dossier.transport', 'dossier_id', string='Cấu hình vận chuyển')

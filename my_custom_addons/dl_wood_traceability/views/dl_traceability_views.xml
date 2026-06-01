@@ -392,6 +392,14 @@
                                     </templates>
                                 </kanban>
                             </field>
+
+                            <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-4 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                                Ảnh đính kèm bổ sung (Sổ đỏ, CCCD, Mã QR...)
+                            </div>
+                            <div class="text-muted mb-3 small">
+                                <i class="fa fa-info-circle"/> Bạn có thể kéo thả trực tiếp một hoặc nhiều ảnh vào khu vực bên dưới để tải lên.
+                            </div>
+                            <field name="dossier_image_ids" widget="many2many_binary" class="dl_dossier_image_matrix w-100" options="{'accepted_file_extensions': 'image/*'}"/>
                         </page>
                         <page string="Lịch sử hoạt động">
                             <field name="x_log_ids" readonly="1">

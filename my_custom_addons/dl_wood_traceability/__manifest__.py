@@ -44,6 +44,7 @@
             'dl_wood_traceability/static/src/views/fields/qr_image/qr_image_field.js',
             'dl_wood_traceability/static/src/views/fields/qr_image/qr_image_field.xml',
             'dl_wood_traceability/static/src/css/wood_traceability.css',
+            'dl_wood_traceability/static/src/js/dossier_image_preview.js',
         ],
     },
     'installable': True,
