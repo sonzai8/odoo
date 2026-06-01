@@ -259,18 +259,14 @@ class ResPartner(models.Model):
         return partners
 
     def write(self, vals):
-        is_wood = any(partner.x_is_wood_supplier or partner.x_is_wood_customer or partner.x_is_peeling_supplier for partner in self) or vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer') or vals.get('x_is_peeling_supplier')
-        if is_wood:
-            if 'company_id' in vals:
-                company_id = vals.get('company_id')
-                if not company_id or company_id not in self.env.companies.ids:
+        # Không tự ý ghi đè vals['company_id'] cho tất cả partner trong self
+        # Điều này gây lỗi khi module khác (như stock) gọi write() hàng loạt.
+        if vals.get('x_is_wood_supplier') or vals.get('x_is_wood_customer') or vals.get('x_is_peeling_supplier'):
+            if 'company_id' not in vals:
+                # Nếu đang cập nhật thành wood partner mà chưa có công ty, set mặc định
+                if any(not p.company_id for p in self):
                     vals['company_id'] = self.env.company.id
-            else:
-                for partner in self:
-                    if not partner.company_id or partner.company_id.id not in self.env.companies.ids:
-                        vals['company_id'] = self.env.company.id
-                        break
-                    
+        
         res = super(ResPartner, self).write(vals)
         for partner in self:
             if partner.x_is_wood_supplier == 'owner' and not partner.exploitation_location_ids:

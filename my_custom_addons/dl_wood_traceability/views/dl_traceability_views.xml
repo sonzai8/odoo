@@ -130,6 +130,7 @@
                                     <field name="volume" string="Khối lượng (m³)" sum="Tổng gỗ (m³)" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
                                     <!-- Cột khối lượng củi (Ster): ẩn khi là gỗ -->
                                     <field name="volume_ster" string="Khối lượng (Ster)" sum="Tổng củi (Ster)" invisible="wood_type != 'firewood'" optional="show" class="o_column_fixed_70"/>
+                                    <field name="volume_planed" string="KL Dự kiến" sum="Tổng dự kiến" optional="show" class="o_column_fixed_70"/>
                                     <field name="x_remaining_qty" sum="Tổng tồn thực tế" readonly="1" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
                                     <field name="x_qty_available" sum="Tổng khả dụng" readonly="1" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
                                     <field name="quantity" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
@@ -310,8 +311,9 @@
                                     <field name="species_id" string="Loài gỗ/củi"/>
                                     <field name="wood_type" widget="badge" decoration-success="wood_type=='wood'" decoration-warning="wood_type=='firewood'"/>
                                     <field name="grade_id" string="Phân loại" optional="show"/>
-                                    <field name="volume" string="KL Ban đầu (m³)" sum="Tổng ban đầu" invisible="wood_type == 'firewood'"/>
-                                    <field name="volume_ster" string="KL Ban đầu (Ster)" sum="Tổng củi ban đầu" invisible="wood_type != 'firewood'"/>
+                                    <field name="volume" string="Khối lượng (m³)" sum="Tổng gỗ (m³)" invisible="wood_type == 'firewood'"/>
+                                    <field name="volume_planed" string="KL Dự kiến" sum="Tổng dự kiến" optional="show" class="o_column_fixed_70"/>
+                                    <field name="volume_ster" string="Khối lượng (Ster)" sum="Tổng củi (Ster)" invisible="wood_type != 'firewood'" optional="show" class="o_column_fixed_70"/>
                                     <field name="x_qty_consumed" string="Đã dùng (m³)" sum="Tổng đã dùng" decoration-danger="x_qty_consumed &gt; 0" invisible="wood_type == 'firewood'"/>
                                     <field name="x_remaining_qty" string="Tồn thực tế (m³)" sum="Tổng tồn thực tế" decoration-warning="x_remaining_qty &gt; 0" invisible="wood_type == 'firewood'"/>
                                     <field name="x_qty_reserved" string="Giữ hàng (m³)" sum="Tổng giữ hàng" decoration-muted="x_qty_reserved &gt; 0" invisible="wood_type == 'firewood'"/>

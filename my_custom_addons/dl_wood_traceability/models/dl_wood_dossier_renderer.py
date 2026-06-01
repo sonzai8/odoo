@@ -452,6 +452,7 @@ class DossierDocxRenderer:
                 'height':        height_disp,
                 'price_unit':    f"{line.price_unit:,}".replace(',', '.'),
                 'price_subtotal': f"{int(line.price_subtotal):,}".replace(',', '.'),
+                'volume_planed': format_volume_vietnamese(line.volume_planed) if line.wood_type == 'firewood' else f"{int(round(line.volume_planed)):,}".replace(',', '.'),
                 'note':          line.note or "",
             })
             idx += 1
@@ -885,6 +886,33 @@ class DossierDocxRenderer:
         c_rep = d.x_company_representative or d.company_id.x_representative or ""
         c_pos = d.x_company_position or getattr(d.company_id, 'x_representative_position', '') or "Giám đốc"
 
+        # Gộp sản lượng khai thác và dự kiến theo loài gỗ
+        output_groups = {}
+        planed_groups = {}
+        for l in d.line_ids:
+            key = (l.species_id.id, l.species_id.name, l.wood_type)
+            # Khối lượng thực
+            actual_vol = l.volume_ster if l.wood_type == 'firewood' else l.volume
+            output_groups[key] = output_groups.get(key, 0.0) + actual_vol
+            # Khối lượng dự kiến
+            planed_groups[key] = planed_groups.get(key, 0.0) + l.volume_planed
+
+        output_parts = []
+        for (sp_id, sp_name, w_type), vol in output_groups.items():
+            if w_type == 'firewood':
+                vol_str = format_volume_vietnamese(vol) + " Ster"
+            else:
+                vol_str = f"{int(round(vol)):,}".replace(',', '.') + " m³"
+            output_parts.append(f"{sp_name} {vol_str}")
+
+        planed_parts = []
+        for (sp_id, sp_name, w_type), vol in planed_groups.items():
+            if w_type == 'firewood':
+                vol_str = format_volume_vietnamese(vol) + " Ster"
+            else:
+                vol_str = f"{int(round(vol)):,}".replace(',', '.') + " m³"
+            planed_parts.append(f"{sp_name} {vol_str}")
+
         loc = d.exploitation_location_id
         context = {
             # Thông tin chủ rừng
@@ -902,14 +930,8 @@ class DossierDocxRenderer:
             'miningArea':             d.x_area or 0.0,
             'forestAddr':             d._get_exploitation_address(),
             'typeMining':             mining_method_map.get(d.x_mining_method, ""),
-            'projectedMiningOutput':  ", ".join([
-                f"{l.species_id.name} " + (
-                    f"{l.volume_ster:.2f}".replace('.', ',') + " Ster"
-                    if l.wood_type == 'firewood'
-                    else f"{int(round(l.volume)):,}".replace(',', '.') + " m³"
-                )
-                for l in d.line_ids
-            ]) if d.line_ids else "0 m³",
+            'projectedMiningOutput':  ", ".join(output_parts) if output_parts else "0 m³",
+            'projectedMiningOutputPlaned':  ", ".join(planed_parts) if planed_parts else "0 m³",
             # Thời gian khai thác
             'miningFromDate':         date_to_vietnamese_text(d.x_start_date),
             'miningFromdate':         date_to_vietnamese_text(d.x_start_date),  # dự phòng

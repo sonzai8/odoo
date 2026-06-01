@@ -1528,6 +1528,15 @@ class DlWoodDossierLine(models.Model):
         default=0.0,
         help='Chỉ dùng cho Củi (firewood). Đơn vị: Ster. Người dùng nhập thẳng số ster, không cần đường kính/chiều cao.'
     )
+    volume_planed = fields.Float(
+        string='KL Dự kiến',
+        compute='_compute_volume_planed',
+        store=True,
+        readonly=False,
+        digits=(16, 2),
+        help='Khối lượng dự kiến = Khối lượng (Gỗ/Củi) * ngẫu nhiên từ 1.05 đến 1.15'
+    )
+
     price_unit = fields.Integer(string='Đơn giá')
     price_subtotal = fields.Float(string='Thành tiền', compute='_compute_price_subtotal', store=True, digits=(16, 2))
     
@@ -1542,6 +1551,20 @@ class DlWoodDossierLine(models.Model):
         for line in self:
             qty = line.volume_ster if line.wood_type == 'firewood' else line.volume
             line.price_subtotal = round(qty * line.price_unit, 2)
+
+    @api.depends('volume', 'volume_ster', 'wood_type')
+    def _compute_volume_planed(self):
+        import random
+        import math
+        for line in self:
+            actual_vol = line.volume_ster if line.wood_type == 'firewood' else line.volume
+            if actual_vol:
+                # Ngẫu nhiên tăng từ 10% đến 20%
+                ratio = random.uniform(1.1, 1.20)
+                # Làm tròn lên thành số nguyên theo yêu cầu
+                line.volume_planed = math.ceil(actual_vol * ratio)
+            else:
+                line.volume_planed = 0.0
 
     @api.depends('species_id', 'grade_id', 'volume', 'x_qty_available', 'diameter_min', 'diameter_max', 'height')
     def _compute_display_name(self):

@@ -83,6 +83,12 @@
               action="action_dl_salary_kpi_bonus_year"
               sequence="30"/>
 
+    <menuitem id="menu_dl_salary_kpi_init_data"
+              name="Khởi Tạo Dữ Liệu"
+              parent="menu_dl_salary_kpi_config"
+              action="action_dl_salary_kpi_init_data_wizard"
+              sequence="35"/>
+
     <menuitem id="menu_dl_pit_config_settings_action"
               name="Cấu hình Thuế TNCN"
               parent="menu_dl_salary_kpi_config"

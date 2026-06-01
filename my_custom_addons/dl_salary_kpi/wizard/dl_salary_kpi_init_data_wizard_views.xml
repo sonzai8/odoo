@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_salary_kpi_init_data_wizard_form" model="ir.ui.view">
+        <field name="name">dl.salary.kpi.init.data.wizard.form</field>
+        <field name="model">dl.salary.kpi.init.data.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Khởi Tạo Dữ Liệu">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        Nhấn vào các nút bên dưới để khởi tạo danh mục Mã công và Phòng ban thuế chuẩn cho công ty hiện tại nếu chưa có.
+                    </div>
+                    <group>
+                        <button name="action_init_attendance_types" 
+                                string="Khởi tạo Mã Công" 
+                                type="object" 
+                                class="oe_highlight"
+                                icon="fa-cogs"/>
+                        <button name="action_init_tax_departments" 
+                                string="Khởi tạo Phòng Ban" 
+                                type="object" 
+                                class="oe_highlight"
+                                icon="fa-sitemap"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_salary_kpi_init_data_wizard" model="ir.actions.act_window">
+        <field name="name">Khởi Tạo Dữ Liệu</field>
+        <field name="res_model">dl.salary.kpi.init.data.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

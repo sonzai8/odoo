@@ -24,18 +24,7 @@
                                     class="btn-secondary"
                                     confirm="Hệ thống sẽ rà soát toàn bộ nhân viên công ty hiện tại và gán lại phòng ban thuế đúng công ty. Bạn có chắc chắn muốn thực hiện?"/>
                         </setting>
-                        <setting string="Khởi tạo dữ liệu gốc" help="Khởi tạo danh mục Mã công và Phòng ban thuế chuẩn cho công ty hiện tại nếu chưa có.">
-                            <div class="mt16">
-                                <button name="action_init_attendance_types" 
-                                        string="Khởi tạo Mã Công" 
-                                        type="object" 
-                                        class="btn-primary mr-2"/>
-                                <button name="action_init_tax_departments" 
-                                        string="Khởi tạo Phòng Ban" 
-                                        type="object" 
-                                        class="btn-primary"/>
-                            </div>
-                        </setting>
+
                     </block>
                 </app>
             </xpath>
