@@ -273,9 +273,9 @@ class DlWoodDossier(models.Model):
             else:
                 delay = 5
 
-            # Tính ngày bắt đầu thô và kiểm tra xem có trùng Chủ Nhật không
+            # Tính ngày bắt đầu thô và kiểm tra xem có bị dịch chuyển không
             raw_start_date = record.x_end_date + timedelta(days=delay)
-            was_sunday = (raw_start_date.weekday() == 6)
+            was_shifted = (raw_start_date != record.x_delivery_start_date)
 
             # 2. Xác định số chuyến xe
             trips_count = len(record.ticket_ids)
@@ -290,13 +290,17 @@ class DlWoodDossier(models.Model):
                 if trips_count == 0:
                     trips_count = 1
 
-            # 3. Đếm số ngày Chủ Nhật bị loại trừ trong khoảng giao hàng dựa theo chế độ vận chuyển (x_transport_method)
-            # urgent: 2 chuyến/ngày
-            # normal: 1 chuyến/ngày
-            # slow: 2 ngày mới có 1 chuyến (giao vào các ngày làm việc lẻ)
+            # 3. Đếm số ngày nghỉ (Chủ Nhật hoặc Ngày lễ) bị loại trừ
             sundays = []
+            holidays_skipped = []
             current_date = record.x_delivery_start_date
             trips_delivered = 0
+            
+            holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(
+                start_date=record.x_delivery_start_date,
+                end_date=record.x_delivery_start_date + timedelta(days=365),
+                company_id=record.company_id.id
+            )
             
             if record.x_transport_method == 'urgent':
                 trips_delivered = min(2, trips_count)
@@ -308,8 +312,12 @@ class DlWoodDossier(models.Model):
 
             while trips_delivered < trips_count:
                 current_date += timedelta(days=1)
-                if current_date.weekday() == 6:
-                    sundays.append(current_date.strftime('%d/%m/%Y'))
+                is_holiday = current_date in holiday_dates
+                if current_date.weekday() == 6 or is_holiday:
+                    if current_date.weekday() == 6:
+                        sundays.append(current_date.strftime('%d/%m/%Y'))
+                    if is_holiday:
+                        holidays_skipped.append(current_date.strftime('%d/%m/%Y'))
                 else:
                     if record.x_transport_method == 'urgent':
                         trips_delivered += 2
@@ -350,19 +358,23 @@ class DlWoodDossier(models.Model):
                 • Do tổng khối lượng lâm sản là <strong>{volume:,.2f} m³/Ster</strong> (Gỗ: {record.initial_wood_qty:,.2f} m³, Củi: {record.initial_firewood_qty:,.2f} Ster) thuộc khoảng {vol_range_str}, hệ thống tự động áp dụng thời gian trễ là <strong>{delay} ngày</strong>.
             """
             
-            if was_sunday:
+            if was_shifted:
                 raw_start_str = raw_start_date.strftime('%d/%m/%Y')
-                explanation += f" Ngày bắt đầu dự tính là <em>{raw_start_str} (Chủ Nhật)</em> nên tự động lùi 1 ngày sang Thứ Hai ngày <strong>{start_date_str}</strong>.<br/>"
+                explanation += f" Ngày bắt đầu dự tính là <em>{raw_start_str}</em> nhưng trùng vào ngày nghỉ (Chủ Nhật hoặc Lễ) nên tự động lùi sang ngày làm việc tiếp theo: <strong>{start_date_str}</strong>.<br/>"
             else:
                 explanation += f" Ngày bắt đầu giao hàng thực tế là ngày <strong>{start_date_str}</strong>.<br/>"
 
             explanation += f"• Tổng cộng có <strong>{trips_count} chuyến xe</strong> vận chuyển ({freq_str}).<br/>"
             
-            if sundays:
-                sundays_str = ", ".join(sundays)
-                explanation += f"• Hệ thống tự động phát hiện và <strong>loại trừ {len(sundays)} ngày Chủ Nhật</strong> ({sundays_str}) nghỉ làm việc.<br/>"
+            if sundays or holidays_skipped:
+                skipped_msgs = []
+                if sundays:
+                    skipped_msgs.append(f"<strong>{len(sundays)} ngày Chủ Nhật</strong> ({', '.join(sundays)})")
+                if holidays_skipped:
+                    skipped_msgs.append(f"<strong>{len(holidays_skipped)} ngày nghỉ lễ</strong> ({', '.join(holidays_skipped)})")
+                explanation += f"• Hệ thống tự động phát hiện và loại trừ {' và '.join(skipped_msgs)} nghỉ làm việc.<br/>"
             else:
-                explanation += "• Lịch trình giao hàng liên tục không trải qua ngày Chủ Nhật nào.<br/>"
+                explanation += "• Lịch trình giao hàng liên tục không trải qua ngày nghỉ nào.<br/>"
 
             explanation += f"• Vì vậy, ngày kết thúc giao hàng chính xác là <strong>{delivery_end_str}</strong>."
             explanation += "</div>"
@@ -391,8 +403,18 @@ class DlWoodDossier(models.Model):
                 delay = 5
                 
             start_date = record.x_end_date + timedelta(days=delay)
-            if start_date.weekday() == 6:  # Nếu là Chủ Nhật
-                start_date += timedelta(days=1)  # Chuyển sang thứ 2
+            
+            # Lấy danh sách ngày lễ trong 30 ngày tới
+            holiday_dates_for_start = self.env['dl.public.holiday'].get_holiday_dates(
+                start_date=start_date,
+                end_date=start_date + timedelta(days=30),
+                company_id=record.company_id.id
+            )
+            
+            # Bỏ qua Chủ Nhật VÀ các Ngày nghỉ lễ
+            while start_date.weekday() == 6 or start_date in holiday_dates_for_start:
+                start_date += timedelta(days=1)
+                
             record.x_delivery_start_date = start_date
 
             # 2. Tính số chuyến (số tickets hoặc ước lượng)
@@ -415,6 +437,13 @@ class DlWoodDossier(models.Model):
             current_date = start_date
             trips_delivered = 0
             
+            # Lấy danh sách ngày lễ từ ngày bắt đầu đến 1 năm sau
+            holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(
+                start_date=start_date,
+                end_date=start_date + timedelta(days=365),
+                company_id=record.company_id.id
+            )
+            
             if record.x_transport_method == 'urgent':
                 trips_delivered = min(2, trips_count)
             elif record.x_transport_method == 'slow':
@@ -425,7 +454,8 @@ class DlWoodDossier(models.Model):
 
             while trips_delivered < trips_count:
                 current_date += timedelta(days=1)
-                if current_date.weekday() != 6: # Ngày làm việc (khác Chủ Nhật)
+                # Bỏ qua ngày Chủ Nhật VÀ các Ngày nghỉ lễ
+                if current_date.weekday() != 6 and current_date not in holiday_dates:
                     if record.x_transport_method == 'urgent':
                         trips_delivered += 2
                     elif record.x_transport_method == 'slow':
@@ -451,12 +481,25 @@ class DlWoodDossier(models.Model):
                 if not record.x_company_position:
                     record.x_company_position = 'Giám đốc'
 
-    @api.depends('x_end_date')
+    @api.depends('x_end_date', 'company_id')
     def _compute_contract_date_default(self):
         from datetime import timedelta
         for record in self:
             if record.x_end_date:
-                record.x_contract_date = record.x_end_date + timedelta(days=1)
+                contract_date = record.x_end_date + timedelta(days=1)
+                
+                # Lấy ngày lễ trong 30 ngày tới
+                holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(
+                    start_date=contract_date,
+                    end_date=contract_date + timedelta(days=30),
+                    company_id=record.company_id.id
+                )
+                
+                # Bỏ qua Chủ Nhật và Ngày lễ
+                while contract_date.weekday() == 6 or contract_date in holiday_dates:
+                    contract_date += timedelta(days=1)
+                    
+                record.x_contract_date = contract_date
             else:
                 record.x_contract_date = False
 
