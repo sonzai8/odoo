@@ -488,6 +488,26 @@
                             </field>
                         </page>
 
+                        <page string="8 - Truy thu BHYT" name="health_insurance_arrear">
+                            <group invisible="state != 'draft'" col="4">
+                                <field name="x_copy_insurance_month_id" options="{'no_create': True}" placeholder="Chọn bảng lương cũ để copy danh sách..."/>
+                                <button name="action_copy_health_insurance_arrears_list" string="Copy Danh sách" type="object" class="btn-primary" icon="fa-copy" confirm="Hệ thống sẽ xoá danh sách hiện tại và thay thế bằng danh sách từ bảng lương đã chọn. Bạn có chắc chắn không?"/>
+                            </group>
+                            <field name="health_insurance_arrear_ids" nolabel="1" readonly="state == 'confirmed'">
+                                <list editable="bottom">
+                                    <field name="employee_id" options="{'no_create': True}"/>
+                                    <field name="identification_id" width="120px"/>
+                                    <field name="dl_tax_id" width="110px"/>
+                                    <field name="dl_tax_department_id" width="130px"/>
+                                    <field name="dl_tax_position" width="120px"/>
+                                    <field name="dl_tax_base_salary" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="arrear_type"/>
+                                    <field name="note"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+
                         <page string="Chi tiết các khoản trừ" name="internal_payroll" invisible="1">
                              <group>
                                  <field name="line_ids" nolabel="1">

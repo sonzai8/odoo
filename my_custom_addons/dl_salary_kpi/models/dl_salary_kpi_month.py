@@ -108,7 +108,12 @@ class SalaryKpiMonth(models.Model):
 
     insurance_stop_ids = fields.One2many('dl.salary.kpi.insurance.stop', 'month_id', string='Danh sách cắt bảo hiểm')
     x_copy_insurance_month_id = fields.Many2one('dl.salary.kpi.month', string='Copy từ bảng lương')
+    
     x_insurance_stop_count = fields.Integer(string='Số lượng cắt bảo hiểm', compute='_compute_insurance_stop_count')
+
+    # Truy thu BHYT (Tab 8)
+    health_insurance_arrear_ids = fields.One2many('dl.salary.kpi.health.insurance.arrears', 'month_id', string='Danh sách truy thu BHYT')
+    x_health_insurance_arrear_count = fields.Integer(string='Số lượng truy thu BHYT', compute='_compute_health_insurance_arrear_count')
 
     # Logic khởi tạo tự động đã được chuyển sang nút bấm thủ công trong Cấu hình để đảm bảo an toàn.
     x_is_recalculated = fields.Boolean(string='Đã tính toán lại toàn bộ', default=False)
@@ -124,6 +129,11 @@ class SalaryKpiMonth(models.Model):
     def _compute_insurance_stop_count(self):
         for rec in self:
             rec.x_insurance_stop_count = len(rec.insurance_stop_ids)
+
+    @api.depends('health_insurance_arrear_ids')
+    def _compute_health_insurance_arrear_count(self):
+        for rec in self:
+            rec.x_health_insurance_arrear_count = len(rec.health_insurance_arrear_ids)
 
     @api.depends('name', 'insurance_stop_ids')
     def _compute_display_name(self):
@@ -567,6 +577,45 @@ class SalaryKpiMonth(models.Model):
             'params': {
                 'title': _('Thành công'),
                 'message': _('Đã copy %s nhân viên từ %s') % (len(new_lines), source_month.name),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_copy_health_insurance_arrears_list(self):
+        """Copy danh sách truy thu BHYT từ bảng lương khác"""
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_("Bạn chỉ có thể copy danh sách ở trạng thái Dự thảo!"))
+        
+        if not self.x_copy_insurance_month_id:
+            raise UserError(_("Vui lòng chọn bảng lương nguồn để copy!"))
+            
+        source_month = self.x_copy_insurance_month_id
+        if not source_month.health_insurance_arrear_ids:
+            raise UserError(_("Bảng lương nguồn không có danh sách truy thu BHYT!"))
+
+        # Xóa danh sách cũ
+        self.health_insurance_arrear_ids.unlink()
+        
+        # Copy danh sách mới
+        new_lines = []
+        for line in source_month.health_insurance_arrear_ids:
+            new_lines.append((0, 0, {
+                'employee_id': line.employee_id.id,
+                'arrear_type': line.arrear_type,
+                'note': line.note,
+            }))
+            
+        if new_lines:
+            self.write({'health_insurance_arrear_ids': new_lines})
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã copy %s nhân viên truy thu BHYT từ %s') % (len(new_lines), source_month.name),
                 'type': 'success',
                 'sticky': False,
             }
@@ -1088,6 +1137,11 @@ class SalaryKpiMonth(models.Model):
                 if insurance_stopped:
                     self._safe_write(ws, current_row, 116, 0)
                 
+                # BHYT Arrears (Cột ES = 149)
+                arrears_record = self.health_insurance_arrear_ids.filtered(lambda r: r.employee_id.id == line.employee_id.id)
+                arrear_type_val = int(arrears_record[0].arrear_type) if arrears_record else 0
+                self._safe_write(ws, current_row, 149, arrear_type_val)
+                
                 self._safe_write(ws, current_row, 143, line.payroll_internal_salary or 0)
                 self._safe_write(ws, current_row, 144, line.payroll_bank_transfer_amount_rounded or 0)
                 self._safe_write(ws, current_row, 145, line.payroll_cash_amount_rounded or 0)
@@ -1300,3 +1354,25 @@ class InsuranceStop(models.Model):
     dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản', readonly=True)
     
     note = fields.Text(string='Ghi chú (Lý do cắt)')
+
+class HealthInsuranceArrears(models.Model):
+    _name = 'dl.salary.kpi.health.insurance.arrears'
+    _description = 'Danh sách truy thu BHYT'
+
+    month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng lương', ondelete='cascade')
+    currency_id = fields.Many2one(related='month_id.currency_id', string='Tiền tệ', readonly=True)
+    employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
+    
+    arrear_type = fields.Selection([
+        ('1', 'Chi phí doanh nghiệp'),
+        ('2', 'Chi phí người lao động')
+    ], string='Loại truy thu', default='1', required=True)
+
+    # Thông tin liên quan (readonly)
+    identification_id = fields.Char(related='employee_id.identification_id', string='Số CCCD', readonly=True)
+    dl_tax_id = fields.Char(related='employee_id.dl_tax_id', string='Mã số thuế', readonly=True)
+    dl_tax_department_id = fields.Many2one(related='employee_id.dl_tax_department_id', string='Phòng ban', readonly=True)
+    dl_tax_position = fields.Char(related='employee_id.dl_tax_position', string='Chức vụ', readonly=True)
+    dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản', readonly=True)
+    
+    note = fields.Text(string='Ghi chú')

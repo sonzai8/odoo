@@ -32,6 +32,8 @@ access_dl_salary_kpi_quick_fix_wizard_manager,dl.salary.kpi.quick.fix.wizard.man
 access_dl_salary_kpi_lnb_wizard_manager,dl.salary.kpi.lnb.wizard.manager,model_dl_salary_kpi_lnb_wizard,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
 access_dl_salary_kpi_init_data_wizard_manager,dl.salary.kpi.init.data.wizard.manager,model_dl_salary_kpi_init_data_wizard,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
 access_dl_salary_kpi_insurance_stop,dl.salary.kpi.insurance.stop,model_dl_salary_kpi_insurance_stop,base.group_user,1,1,1,1
+access_dl_salary_kpi_health_insurance_arrears_user,dl.salary.kpi.health.insurance.arrears.user,model_dl_salary_kpi_health_insurance_arrears,base.group_user,1,0,0,0
+access_dl_salary_kpi_health_insurance_arrears_manager,dl.salary.kpi.health.insurance.arrears.manager,model_dl_salary_kpi_health_insurance_arrears,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
 access_dl_revenue_bonus_manager,dl.salary.kpi.revenue.bonus.manager,model_dl_salary_kpi_revenue_bonus,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
 access_dl_revenue_bonus_user,dl.salary.kpi.revenue.bonus.user,model_dl_salary_kpi_revenue_bonus,base.group_user,1,0,0,0
 access_dl_productivity_bonus_manager,dl.salary.kpi.productivity.bonus.manager,model_dl_salary_kpi_productivity_bonus,dl_wood_payroll.group_dl_wood_manager,1,1,1,1
