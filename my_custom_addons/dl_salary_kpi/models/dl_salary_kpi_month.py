@@ -114,6 +114,10 @@ class SalaryKpiMonth(models.Model):
     # Truy thu BHYT (Tab 8)
     health_insurance_arrear_ids = fields.One2many('dl.salary.kpi.health.insurance.arrears', 'month_id', string='Danh sách truy thu BHYT')
     x_health_insurance_arrear_count = fields.Integer(string='Số lượng truy thu BHYT', compute='_compute_health_insurance_arrear_count')
+    
+    # Tài liệu đính kèm
+    document_ids = fields.Many2many('ir.attachment', 'dl_salary_kpi_month_doc_rel', 'month_id', 'attachment_id', string='Tài liệu đính kèm')
+    document_history_ids = fields.One2many('dl.salary.kpi.document.history', 'month_id', string='Lịch sử tài liệu')
 
     # Logic khởi tạo tự động đã được chuyển sang nút bấm thủ công trong Cấu hình để đảm bảo an toàn.
     x_is_recalculated = fields.Boolean(string='Đã tính toán lại toàn bộ', default=False)
@@ -402,6 +406,43 @@ class SalaryKpiMonth(models.Model):
         for rec in records:
             rec._auto_load_employees()
         return records
+
+    def write(self, vals):
+        if 'employee_ids' in vals:
+            self._update_employee_list(vals['employee_ids'])
+        
+        # Xử lý copy tài liệu vào lịch sử
+        if 'document_ids' in vals:
+            for record in self:
+                # Tìm các file mới thêm vào
+                # command (6, 0, ids), (4, id), etc.
+                # Cách dễ nhất: thực hiện write xong rồi xem những thằng nào có trong document_ids mà chưa có trong lịch sử để thêm vào
+                pass # Sẽ xử lý sau khi super().write gọi
+
+        res = super().write(vals)
+        
+        if 'document_ids' in vals:
+            for record in self:
+                # Đồng bộ history: lấy những attachment đang có trong document_ids
+                # Nếu file chưa được copy vào history, ta sẽ tạo bản copy.
+                # Lấy danh sách tên file đã có trong history để tránh lặp (có thể so sánh checksum hoặc id)
+                existing_histories = self.env['dl.salary.kpi.document.history'].search([('month_id', '=', record.id)])
+                existing_att_ids = existing_histories.mapped('attachment_id').ids
+                
+                new_histories = []
+                for att in record.document_ids:
+                    if att.id not in existing_att_ids:
+                        new_histories.append({
+                            'month_id': record.id,
+                            'name': att.name,
+                            'file_name': att.name,
+                            'file': att.datas,
+                            'attachment_id': att.id
+                        })
+                
+                if new_histories:
+                    self.env['dl.salary.kpi.document.history'].sudo().create(new_histories)
+        return res
 
     def _auto_load_employees(self):
         """Logic lấy toàn bộ nhân viên active (chưa nghỉ việc trước tháng này) và chấm công mặc định N (T2-T7)"""

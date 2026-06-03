@@ -508,6 +508,22 @@
                             </field>
                         </page>
 
+                        <page string="9 - Tài liệu" name="documents">
+                            <group string="Tài liệu đính kèm (Kéo thả)">
+                                <field name="document_ids" widget="many2many_binary" nolabel="1"/>
+                            </group>
+                            <separator string="Lịch sử lưu trữ (Backup tự động)"/>
+                            <field name="document_history_ids" nolabel="1" readonly="1">
+                                <list string="Lịch sử lưu trữ" create="false" edit="false" delete="false">
+                                    <field name="upload_date"/>
+                                    <field name="upload_user_id" widget="many2one_avatar_user"/>
+                                    <field name="name"/>
+                                    <field name="file_name" invisible="1"/>
+                                    <field name="file" filename="file_name" widget="binary" string="Tải về"/>
+                                    <button name="action_preview_pdf" type="object" icon="fa-eye" title="Xem trước PDF" invisible="file_name == False"/>
+                                </list>
+                            </field>
+                        </page>
                         <page string="Chi tiết các khoản trừ" name="internal_payroll" invisible="1">
                              <group>
                                  <field name="line_ids" nolabel="1">
