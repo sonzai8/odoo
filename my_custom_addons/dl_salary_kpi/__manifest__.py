@@ -31,8 +31,11 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'dl_salary_kpi/static/src/css/web_overrides.css',
             'dl_salary_kpi/static/src/css/matrix.css',
             'dl_salary_kpi/static/src/css/full_width_matrix.css',
+            'dl_salary_kpi/static/src/libs/jsQR.js',
+            'dl_salary_kpi/static/src/js/qr_employee_field.js',
         ],
     },
     'installable': True,

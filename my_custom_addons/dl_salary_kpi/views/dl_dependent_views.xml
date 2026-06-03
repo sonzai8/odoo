@@ -5,7 +5,7 @@
         <field name="name">dl.dependent.list</field>
         <field name="model">dl.dependent</field>
         <field name="arch" type="xml">
-            <list limit="20" string="Người phụ thuộc">
+            <list limit="20" string="Người phụ thuộc" editable="bottom">
                 <header>
                     <button name="%(action_dl_dependent_import)d" string="Nhập từ Excel" type="action" class="btn-primary"/>
                     <button name="action_export_excel" string="Xuất Excel" type="object" class="btn-secondary"/>
