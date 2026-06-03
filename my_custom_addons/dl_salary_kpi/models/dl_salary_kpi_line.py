@@ -560,6 +560,27 @@ class SalaryKpiLine(models.Model):
 
     payroll_anomaly_suggestion = fields.Html(string='Gợi ý xử lý', compute='_compute_payroll_internal', store=True)
     payroll_income_explanation = fields.Html(string='Diễn giải thu nhập', compute='_compute_payroll_internal', store=True)
+
+    # Truy thu BHYT
+    x_is_in_health_insurance_arrear = fields.Boolean(compute='_compute_health_insurance_arrears_msg')
+    x_health_insurance_arrears_msg = fields.Char(string='Ghi chú truy thu BHYT', compute='_compute_health_insurance_arrears_msg')
+
+    @api.depends('employee_id', 'month_id.health_insurance_arrear_ids', 'month_id.health_insurance_arrear_ids.arrear_type', 'payroll_total_insurance_deduction')
+    def _compute_health_insurance_arrears_msg(self):
+        for rec in self:
+            if not rec.month_id or not rec.employee_id:
+                rec.x_is_in_health_insurance_arrear = False
+                rec.x_health_insurance_arrears_msg = False
+                continue
+            arrears_record = rec.month_id.health_insurance_arrear_ids.filtered(lambda r: r.employee_id.id == rec.employee_id.id)
+            if arrears_record:
+                rec.x_is_in_health_insurance_arrear = True
+                arrear_type = arrears_record[0].arrear_type
+                type_str = dict(arrears_record[0]._fields['arrear_type'].selection).get(arrear_type, '')
+                rec.x_health_insurance_arrears_msg = f"Nhân viên này nằm trong danh sách truy thu bảo hiểm (Loại: {type_str}). Nên các khoản tiền cần phải đóng là: {rec.payroll_total_insurance_deduction:,.0f} đ."
+            else:
+                rec.x_is_in_health_insurance_arrear = False
+                rec.x_health_insurance_arrears_msg = False
     payroll_calc_detail_html = fields.Html(string='Chi tiết tính toán KPI & Tiền mặt', compute='_compute_payroll_calc_detail')
 
     @api.depends('payroll_net_salary_base', 'payroll_kpi_amount', 'payroll_cash_amount', 'payroll_internal_salary', 'payroll_annual_bonus')

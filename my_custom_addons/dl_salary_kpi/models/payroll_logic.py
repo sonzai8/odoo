@@ -225,6 +225,10 @@ def calculate_deductions(rec, total_actual_income, meal_allowance):
         bhxh = 0.0
         bhyt = 0.0
         bhtn = 0.0
+    elif arrears_record:
+        bhxh = 0.0
+        bhyt = bhyt_for_arrear
+        bhtn = 0.0
     else:
         bhxh = bhxh_for_tax
         bhyt = bhyt_for_arrear

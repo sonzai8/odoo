@@ -800,6 +800,8 @@
                         <page string="15 - Chi tiết Khấu trừ và Thuế" name="deduction_pit_details">
                             <group>
                                 <group string="Các khoản khấu trừ bảo hiểm">
+                                    <field name="x_is_in_health_insurance_arrear" invisible="1"/>
+                                    <field name="x_health_insurance_arrears_msg" nolabel="1" colspan="2" invisible="not x_is_in_health_insurance_arrear" decoration-warning="1" decoration-bf="1" class="text-warning text-center"/>
                                     <field name="payroll_deduction_bhxh" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="payroll_deduction_bhyt" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="payroll_deduction_bhtn" widget="monetary" options="{'currency_field': 'currency_id'}"/>
