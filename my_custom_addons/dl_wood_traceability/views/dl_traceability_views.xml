@@ -39,6 +39,7 @@
                             invisible="state != 'exploiting'"/>
                     <button name="action_summary" string="Tổng kết hồ sơ" type="object" class="oe_highlight" 
                             invisible="state != 'using'"/>
+                    
                     <button name="action_confirm" string="Xác nhận hoàn tất" type="object" class="oe_highlight" 
                             invisible="state != 'summary'"/>
                     
@@ -55,6 +56,15 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,exploiting,using,summary,confirmed"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_peeling_dossier" type="object" class="oe_stat_button" icon="fa-th-list" invisible="peeling_dossier_id == False">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Hồ sơ</span>
+                                <span class="o_stat_text">Ván Bóc</span>
+                            </div>
+                        </button>
+                    </div>
+                    <field name="peeling_dossier_id" invisible="1"/>
                     <div class="oe_title">
                         <label for="x_dossier_name"/>
                         <h1><field name="x_dossier_name" placeholder="Ví dụ: Lô gỗ rừng trồng hộ gia đình Nguyễn Văn A..." readonly="state in ('using', 'summary', 'confirmed')"/></h1>
@@ -75,7 +85,7 @@
                             <label for="x_report_version_id" string="Biểu mẫu" class="fw-bold"/>
                             <div class="o_row">
                                 <field name="x_report_version_id" nolabel="1" options="{'no_create': True}" readonly="state in ('using', 'summary', 'confirmed')"/>
-                                <button name="action_refresh_documents" type="object" string="" icon="fa-refresh" class="btn btn-link py-0" invisible="state in ('using', 'summary', 'confirmed')"/>
+                                <button name="action_refresh_documents" type="object" title="Làm mới" icon="fa-refresh" class="btn btn-link py-0" invisible="state in ('using', 'summary', 'confirmed')"/>
                             </div>
                             <field name="x_mining_method" string="Khai thác" readonly="state in ('using', 'summary', 'confirmed')"/>
                             <field name="x_area" string="Diện tích (ha)" placeholder="ha" readonly="state in ('using', 'summary', 'confirmed')"/>
@@ -120,6 +130,7 @@
                                     <field name="volume" string="Khối lượng (m³)" sum="Tổng gỗ (m³)" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
                                     <!-- Cột khối lượng củi (Ster): ẩn khi là gỗ -->
                                     <field name="volume_ster" string="Khối lượng (Ster)" sum="Tổng củi (Ster)" invisible="wood_type != 'firewood'" optional="show" class="o_column_fixed_70"/>
+                                    <field name="volume_planed" string="KL Dự kiến" sum="Tổng dự kiến" optional="show" class="o_column_fixed_70"/>
                                     <field name="x_remaining_qty" sum="Tổng tồn thực tế" readonly="1" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
                                     <field name="x_qty_available" sum="Tổng khả dụng" readonly="1" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
                                     <field name="quantity" invisible="wood_type == 'firewood'" class="o_column_fixed_70"/>
@@ -133,6 +144,7 @@
                                     <field name="price_unit" class="o_column_fixed_120" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="price_subtotal" sum="Tổng cộng" class="o_column_money" decoration-bf="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="note"/>
+                                    <button name="action_open_peeling_production" string="Bóc ván" type="object" icon="fa-cut" class="btn-success" invisible="wood_type == 'firewood' or x_qty_available &lt;= 0"/>
                                 </list>
                             </field>
                         </page>
@@ -256,6 +268,7 @@
                                     <field name="species_id"/>
                                     <field name="sale_id" optional="show"/>
                                     <field name="production_id" optional="show"/>
+                                    <field name="peeling_dossier_id" optional="show"/>
                                     <field name="actual_qty"/>
                                     <field name="state" widget="badge" decoration-success="state=='done'" decoration-warning="state=='draft'"/>
                                 </list>
@@ -298,8 +311,9 @@
                                     <field name="species_id" string="Loài gỗ/củi"/>
                                     <field name="wood_type" widget="badge" decoration-success="wood_type=='wood'" decoration-warning="wood_type=='firewood'"/>
                                     <field name="grade_id" string="Phân loại" optional="show"/>
-                                    <field name="volume" string="KL Ban đầu (m³)" sum="Tổng ban đầu" invisible="wood_type == 'firewood'"/>
-                                    <field name="volume_ster" string="KL Ban đầu (Ster)" sum="Tổng củi ban đầu" invisible="wood_type != 'firewood'"/>
+                                    <field name="volume" string="Khối lượng (m³)" sum="Tổng gỗ (m³)" invisible="wood_type == 'firewood'"/>
+                                    <field name="volume_planed" string="KL Dự kiến" sum="Tổng dự kiến" optional="show" class="o_column_fixed_70"/>
+                                    <field name="volume_ster" string="Khối lượng (Ster)" sum="Tổng củi (Ster)" invisible="wood_type != 'firewood'" optional="show" class="o_column_fixed_70"/>
                                     <field name="x_qty_consumed" string="Đã dùng (m³)" sum="Tổng đã dùng" decoration-danger="x_qty_consumed &gt; 0" invisible="wood_type == 'firewood'"/>
                                     <field name="x_remaining_qty" string="Tồn thực tế (m³)" sum="Tổng tồn thực tế" decoration-warning="x_remaining_qty &gt; 0" invisible="wood_type == 'firewood'"/>
                                     <field name="x_qty_reserved" string="Giữ hàng (m³)" sum="Tổng giữ hàng" decoration-muted="x_qty_reserved &gt; 0" invisible="wood_type == 'firewood'"/>
@@ -378,6 +392,14 @@
                                     </templates>
                                 </kanban>
                             </field>
+
+                            <div class="o_horizontal_separator text-uppercase fw-bold text-primary mt-4 mb-2 border-bottom pb-1" style="font-size: 0.85rem;">
+                                Ảnh đính kèm bổ sung (Sổ đỏ, CCCD, Mã QR...)
+                            </div>
+                            <div class="text-muted mb-3 small">
+                                <i class="fa fa-info-circle"/> Bạn có thể kéo thả trực tiếp một hoặc nhiều ảnh vào khu vực bên dưới để tải lên.
+                            </div>
+                            <field name="dossier_image_ids" widget="many2many_binary" class="dl_dossier_image_matrix w-100" options="{'accepted_file_extensions': 'image/*'}"/>
                         </page>
                         <page string="Lịch sử hoạt động">
                             <field name="x_log_ids" readonly="1">
@@ -446,19 +468,6 @@
         <field name="search_view_id" ref="view_dl_wood_dossier_line_search"/>
     </record>
 
-    <menuitem id="menu_dl_wood_traceability_root" 
-              name="Hồ Sơ Gỗ" 
-              groups="dl_wood_traceability.group_dl_wood_dossier_manager"
-              sequence="80"/>
-
-    <menuitem id="menu_dl_wood_input_materials"
-              name="Nguyên Liệu Đầu Vào"
-              parent="menu_dl_wood_traceability_root"
-              sequence="10"/>
-
-    <menuitem id="menu_dl_wood_dossier" name="Hồ Sơ Gỗ" parent="menu_dl_wood_input_materials" action="action_dl_wood_dossier" sequence="10"/>
-    <menuitem id="menu_dl_wood_species" name="Loại Gỗ Thu Mua" parent="menu_dl_wood_input_materials" action="action_dl_wood_species" sequence="20"/>
-
     <record id="action_dl_wood_dossier" model="ir.actions.act_window">
         <field name="name">Hồ Sơ Gỗ</field>
         <field name="res_model">dl.wood.dossier</field>
@@ -476,7 +485,7 @@
                 <field name="wood_type" widget="badge" decoration-info="wood_type == 'wood'" decoration-warning="wood_type == 'firewood'"/>
                 <field name="uom_id" string="Đơn vị tính"/>
                 <field name="x_species_group"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="company_id" string="Công ty" optional="show"/>
             </list>
         </field>
     </record>
@@ -703,10 +712,6 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_dl_wood_config_root" name="Cấu hình" parent="menu_dl_wood_traceability_root" sequence="100"/>
-    <menuitem id="menu_dl_wood_report_version" name="Phiên bản biểu mẫu" parent="menu_dl_wood_config_root" action="action_dl_wood_report_version" sequence="10"/>
-    <menuitem id="menu_dl_woodpro_config" name="Kết nối WoodPro" parent="menu_dl_wood_config_root" action="action_dl_woodpro_config" sequence="20"/>
-
     <!-- ===== FORM VIEW: ĐỊA ĐIỂM KHAI THÁC ===== -->
     <record id="view_dl_wood_exploitation_location_form" model="ir.ui.view">
         <field name="name">dl.wood.exploitation.location.form</field>
@@ -723,7 +728,7 @@
                         </group>
                         <group string="Địa chỉ">
                             <field name="street"/>
-                            <field name="city"/>
+                            <field name="ward_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="state_id"/>
                             <field name="country_id"/>
                         </group>

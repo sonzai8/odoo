@@ -35,6 +35,9 @@
 
                     <notebook>
                         <page string="Thưởng Doanh Thu" name="revenue_bonus">
+                            <group>
+                                <field name="revenue_job_titles"/>
+                            </group>
                             <field name="revenue_line_ids">
                                 <list editable="bottom">
                                     <field name="min_revenue" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -50,6 +53,17 @@
                                     <field name="name"/>
                                     <field name="job_titles"/>
                                     <field name="bonus_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Dải điểm KPI" name="kpi_range">
+                            <field name="kpi_range_line_ids">
+                                <list editable="bottom">
+                                    <field name="salary_from" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="salary_to" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="min_kpi"/>
+                                    <field name="max_kpi"/>
                                     <field name="currency_id" column_invisible="True"/>
                                 </list>
                             </field>

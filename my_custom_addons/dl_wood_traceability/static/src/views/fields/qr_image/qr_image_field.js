@@ -245,9 +245,12 @@ export class QrImageField extends ImageField {
         }
 
         // Cập nhật các trường trên form thông qua Odoo OWL record update API
-        // Lưu ý: Many2one field (state_id) cần truyền { id, display_name }, không phải số nguyên thô
         const stateValue = (parsedAddress.state_id && parsedAddress.state_name)
             ? { id: parsedAddress.state_id, display_name: parsedAddress.state_name }
+            : false;
+            
+        const wardValue = (parsedAddress.ward_id && parsedAddress.ward_name)
+            ? { id: parsedAddress.ward_id, display_name: parsedAddress.ward_name }
             : false;
 
         const changes = {
@@ -258,9 +261,10 @@ export class QrImageField extends ImageField {
             street: parsedAddress.street || "",
             city: parsedAddress.city || "",
             state_id: stateValue,
+            ward_id: wardValue,
             x_issue_date: deserializeDate(issueDate),
             x_cccd_date: deserializeDate(issueDate),
-            x_cccd_place: "Cục Cảnh sát QLHC về TTXH",
+            x_cccd_place: "CCS QLHC về TTXH",
         };
         console.log("[CCCD] parsedAddress dùng để ghi vào form:", parsedAddress);
         console.log("[CCCD] stateValue (Many2one format):", stateValue);
@@ -270,25 +274,7 @@ export class QrImageField extends ImageField {
             changes.x_gender = gender;
         }
 
-        try {
-            console.log("[CCCD] Bắt đầu gọi record.update...");
-            this.props.record.update(changes);
-            console.log("[CCCD] record.update gọi thành công!");
-            
-            // Hiển thị thông báo thành công
-            this.notification.add(
-                _t("Đã quét và điền thông tin CCCD thành công cho: ") + name,
-                { type: "success", title: _t("Thành công") }
-            );
-        } catch (updateErr) {
-            console.error("[CCCD] Lỗi khi update record:", updateErr);
-            this.notification.add(
-                _t("Lỗi khi điền thông tin lên form: ") + updateErr.message,
-                { type: "danger", title: _t("Lỗi điền thông tin") }
-            );
-        }
-
-        // Kiểm tra trùng lặp CCCD trong cơ sở dữ liệu (Hỗ trợ tìm trên cả x_cccd và x_identity_code)
+        // Kiểm tra trùng lặp CCCD trong cơ sở dữ liệu trước khi điền form
         try {
             const domain = [
                 "|",
@@ -296,6 +282,8 @@ export class QrImageField extends ImageField {
                 ["x_identity_code", "=", identityCode],
                 ["id", "!=", this.props.record.resId || 0]
             ];
+            // Đối với Chủ rừng, có thể cần thêm điều kiện x_is_wood_supplier = 'owner'
+            // nhưng để an toàn, quét trùng trên toàn partner
             console.log("[CCCD] Kiểm tra trùng lặp CCCD với domain:", domain);
             const duplicates = await this.orm.searchRead(
                 "res.partner",
@@ -304,16 +292,10 @@ export class QrImageField extends ImageField {
             );
             console.log("[CCCD] Kết quả kiểm tra trùng lặp:", duplicates);
             
-            // Thông báo hiển thị số lượng trùng lặp để debug
-            this.notification.add(
-                _t("Đang kiểm tra dữ liệu trùng. Tìm thấy ") + duplicates.length + _t(" chủ rừng trùng khớp trong hệ thống."),
-                { type: "info", title: _t("Kiểm tra trùng lặp") }
-            );
-
             if (duplicates.length > 0) {
                 const duplicatePartner = duplicates[0];
                 this.notification.add(
-                    _t("Phát hiện trùng lặp! Đang hiển thị thông tin cảnh báo..."),
+                    _t("Phát hiện CCCD đã tồn tại! Hệ thống sẽ không điền dữ liệu để tránh tạo trùng."),
                     { type: "warning", title: _t("Cảnh báo trùng lặp") }
                 );
 
@@ -325,7 +307,6 @@ export class QrImageField extends ImageField {
                         [["partner_id", "=", duplicatePartner.id]],
                         ["name", "full_address", "is_main"]
                     );
-                    console.log("[CCCD] Địa điểm khai thác tìm thấy:", locations);
                     if (locations.length > 0) {
                         let mainLoc = locations.find(loc => loc.is_main) || locations[0];
                         exploitationAddress = mainLoc.name;
@@ -351,17 +332,29 @@ export class QrImageField extends ImageField {
                         });
                     }
                 });
-            } else {
-                this.notification.add(
-                    _t("Kiểm tra trùng lặp: Không tìm thấy chủ rừng nào trùng CCCD này."),
-                    { type: "success", title: _t("Kiểm tra trùng lặp") }
-                );
+                
+                // Trả về ngay, không update thông tin vào form để ngăn user lưu trùng
+                return;
             }
         } catch (dbErr) {
             console.error("[CCCD] Lỗi khi kiểm tra trùng lặp CCCD trong DB:", dbErr);
+        }
+
+        try {
+            console.log("[CCCD] Bắt đầu gọi record.update...");
+            this.props.record.update(changes);
+            console.log("[CCCD] record.update gọi thành công!");
+            
+            // Hiển thị thông báo thành công
             this.notification.add(
-                _t("Không thể kiểm tra trùng lặp CCCD do lỗi DB: ") + dbErr.message,
-                { type: "warning", title: _t("Cảnh báo") }
+                _t("Đã quét và điền thông tin CCCD thành công cho: ") + name,
+                { type: "success", title: _t("Thành công") }
+            );
+        } catch (updateErr) {
+            console.error("[CCCD] Lỗi khi update record:", updateErr);
+            this.notification.add(
+                _t("Lỗi khi điền thông tin lên form: ") + updateErr.message,
+                { type: "danger", title: _t("Lỗi điền thông tin") }
             );
         }
     }

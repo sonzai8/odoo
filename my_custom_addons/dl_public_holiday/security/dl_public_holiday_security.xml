@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="module_category_dl_holiday" model="ir.module.category">
+            <field name="name">Nghỉ lễ</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <record id="privilege_dl_holiday" model="res.groups.privilege">
+            <field name="name">Quản lý nghỉ lễ</field>
+            <field name="category_id" ref="module_category_dl_holiday"/>
+        </record>
+
+        <record id="group_dl_holiday_manager" model="res.groups">
+            <field name="name">Quản lý Ngày Nghỉ Lễ</field>
+            <field name="privilege_id" ref="privilege_dl_holiday"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+
+    <data noupdate="1">
+        <!-- Multi-company Rule cho Ngày nghỉ lễ -->
+        <record id="dl_public_holiday_company_rule" model="ir.rule">
+            <field name="name">Ngày nghỉ lễ: Multi-company</field>
+            <field name="model_id" ref="model_dl_public_holiday"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>

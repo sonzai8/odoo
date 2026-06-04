@@ -11,3 +11,6 @@ class ResCompany(models.Model):
     x_inventory_inspector_position = fields.Char(string='Chức danh người kiểm kê')
     x_prep_days = fields.Integer(string='Thời gian chuẩn bị mặc định (ngày)', default=6)
     x_exploitation_capacity = fields.Integer(string='Năng lực khai thác mặc định (m³/ngày)', default=40)
+    
+    # Extension MISA config
+    x_misa_ext_token = fields.Char(string='Token bảo mật tải Extension', copy=False)

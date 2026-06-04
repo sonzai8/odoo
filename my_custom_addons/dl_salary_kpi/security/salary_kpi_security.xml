@@ -87,6 +87,14 @@
             <field name="domain_force">['|', ('month_id.company_id', '=', False), ('month_id.company_id', 'in', company_ids)]</field>
         </record>
 
+        <!-- Record Rule for dl.salary.kpi.health.insurance.arrears -->
+        <record id="dl_salary_kpi_health_insurance_arrears_multi_company_rule" model="ir.rule">
+            <field name="name">Danh sách truy thu BHYT: đa công ty</field>
+            <field name="model_id" ref="model_dl_salary_kpi_health_insurance_arrears"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('month_id.company_id', '=', False), ('month_id.company_id', 'in', company_ids)]</field>
+        </record>
+
         <!-- Record Rule for dl.salary.kpi.bonus.line -->
         <record id="dl_salary_kpi_bonus_line_multi_company_rule" model="ir.rule">
             <field name="name">Chi tiết thưởng năm: đa công ty</field>

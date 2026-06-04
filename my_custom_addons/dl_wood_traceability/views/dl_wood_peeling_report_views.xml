@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Pivot View: Báo cáo Tồn Kho Ván Bóc (Mẫu 01) -->
+    <record id="view_dl_peeling_inventory_report_pivot" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.inventory.report.pivot</field>
+        <field name="model">dl.wood.peeling.bkls.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Báo cáo Tồn Kho Ván Bóc" sample="1" disable_linking="True">
+                <field name="peeling_type_id" type="row"/>
+                <field name="partner_id" type="row"/>
+                <field name="dossier_id" type="row"/>
+                <field name="invoice_id" type="row"/>
+                <field name="qty_initial" type="measure"/>
+                <field name="qty_available" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Tree View: Báo cáo Tồn Kho Ván Bóc (Mẫu 01) -->
+    <record id="view_dl_peeling_inventory_report_tree" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.inventory.report.tree</field>
+        <field name="model">dl.wood.peeling.bkls.line</field>
+        <field name="arch" type="xml">
+            <list string="Chi tiết Tồn Kho Ván Bóc" create="0" edit="0" delete="0" decoration-info="qty_available &gt; 0" decoration-muted="qty_available == 0">
+                <field name="peeling_type_id"/>
+                <field name="partner_id"/>
+                <field name="dossier_id"/>
+                <field name="invoice_id"/>
+                <field name="qty_initial" sum="Tổng ban đầu"/>
+                <field name="qty_available" sum="Tổng tồn khả dụng"/>
+                <field name="state" widget="badge" decoration-success="state == 'available'" decoration-warning="state == 'partial'" decoration-muted="state == 'depleted'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View: Báo cáo Tồn Kho Ván Bóc (Mẫu 01) -->
+    <record id="view_dl_peeling_inventory_report_search" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.inventory.report.search</field>
+        <field name="model">dl.wood.peeling.bkls.line</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Tồn Kho">
+                <field name="peeling_type_id"/>
+                <field name="dossier_id"/>
+                <field name="invoice_id"/>
+                <field name="partner_id"/>
+                <separator/>
+                <filter string="Còn tồn kho" name="filter_available" domain="[('qty_available', '&gt;', 0)]"/>
+                <filter string="Đã dùng hết" name="filter_depleted" domain="[('qty_available', '=', 0)]"/>
+                <filter string="Loại ván bóc" name="group_peeling_type" context="{'group_by':'peeling_type_id'}"/>
+                <filter string="Nhà cung cấp" name="group_partner" context="{'group_by':'partner_id'}"/>
+                <filter string="Hồ sơ ván bóc" name="group_dossier" context="{'group_by':'dossier_id'}"/>
+                <filter string="Số hoá đơn" name="group_invoice" context="{'group_by':'invoice_id'}"/>
+                <searchpanel>
+                    <field name="peeling_type_id" icon="fa-cubes"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_dl_peeling_inventory_report" model="ir.actions.act_window">
+        <field name="name">Báo cáo Tồn Kho Ván Bóc (Mẫu 01)</field>
+        <field name="res_model">dl.wood.peeling.bkls.line</field>
+        <field name="view_mode">pivot,list,graph</field>
+        <field name="search_view_id" ref="view_dl_peeling_inventory_report_search"/>
+        <field name="context">{'search_default_filter_available': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">
+                Không có dữ liệu tồn kho ván bóc.
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -142,20 +142,4 @@
     </record>
 
     <!-- ===================== MENUS ===================== -->
-    <menuitem id="menu_dl_wood_log_root"
-              name="Log Module"
-              parent="menu_dl_wood_traceability_root"
-              sequence="90"/>
-
-    <menuitem id="menu_dl_wood_log_entries"
-              name="Nhật ký hoạt động"
-              parent="menu_dl_wood_log_root"
-              action="action_dl_wood_log"
-              sequence="10"/>
-
-    <menuitem id="menu_dl_wood_log_config"
-              name="Cấu hình Log"
-              parent="menu_dl_wood_log_root"
-              action="action_dl_wood_log_config"
-              sequence="20"/>
 </odoo>

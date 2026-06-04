@@ -56,7 +56,64 @@ class DlWoodSpecies(models.Model):
                 rec.uom_id = uom.id if uom else False
             else:
                 rec.uom_id = False
-
+    def action_init_peeling_types(self):
+        """Khởi tạo danh mục ván bóc từ các loài gỗ hiện tại (Bỏ qua Củi, tự động tạo 1.7 ly và 2.0 ly)"""
+        PeelingType = self.env['dl.wood.peeling.type']
+        PeelingVariant = self.env['dl.wood.peeling.variant']
+        created_count = 0
+        thickness_variants = [
+            ('1.7', '1,7 ly'),
+            ('2.0', '2,0 ly')
+        ]
+        
+        for species in self.filtered(lambda s: s.wood_type == 'wood'):
+            # Check if peeling type already exists for this species
+            ptype = PeelingType.search([
+                ('species_id', '=', species.id)
+            ], limit=1)
+            
+            if not ptype:
+                # Determine code based on species name
+                code = ''
+                lower_name = species.name.lower()
+                if 'keo' in lower_name: code = 'K'
+                elif 'bạch đàn' in lower_name: code = 'BD'
+                elif 'thông' in lower_name: code = 'T'
+                elif 'cao su' in lower_name: code = 'CS'
+                
+                ptype = PeelingType.create({
+                    'name': f"Ván bóc {species.name.lower()}",
+                    'code': code or species.code,
+                    'species_id': species.id,
+                    'company_id': species.company_id.id or self.env.company.id,
+                })
+                created_count += 1
+            
+            for thickness_val, thickness_label in thickness_variants:
+                # Check if variant exists
+                existing_variant = PeelingVariant.search([
+                    ('peeling_type_id', '=', ptype.id),
+                    ('thickness', '=', thickness_val)
+                ], limit=1)
+                
+                if not existing_variant:
+                    PeelingVariant.create({
+                        'peeling_type_id': ptype.id,
+                        'thickness': thickness_val,
+                        'length': 1270.0,
+                        'width': 640.0,
+                    })
+                    
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Khởi tạo thành công',
+                'message': f'Đã khởi tạo {created_count} Loại Ván Bóc mới từ danh mục gỗ.',
+                'sticky': False,
+                'type': 'success',
+            }
+        }
 
 
 class DlWoodSpeciesGrade(models.Model):

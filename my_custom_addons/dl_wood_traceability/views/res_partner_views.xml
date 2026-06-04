@@ -6,7 +6,6 @@
         <field name="arch" type="xml">
             <list string="Chủ rừng" create="1" delete="1">
                 <field name="name"/>
-                <field name="x_short_name"/>
                 <field name="x_cccd"/>
                 <field name="phone"/>
                 <field name="x_full_address" string="Địa chỉ đầy đủ"/>
@@ -33,17 +32,17 @@
             </xpath>
             <xpath expr="//field[@name='company_id']" position="attributes">
                 <attribute name="readonly">1</attribute>
-                <attribute name="invisible">0</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
                 <attribute name="groups"></attribute>
             </xpath>
             <xpath expr="//field[@name='website']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
             </xpath>
             <xpath expr="//field[@name='category_id']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
             </xpath>
             <xpath expr="//field[@name='parent_id']" position="attributes">
-                <attribute name="invisible">x_is_wood_supplier != False</attribute>
+                <attribute name="invisible">x_is_wood_supplier != False or x_is_peeling_supplier or x_is_wood_customer</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -57,11 +56,49 @@
             <xpath expr="//field[@name='email']/parent::div" position="attributes">
                 <attribute name="invisible">not is_company</attribute>
             </xpath>
-            <xpath expr="//field[@name='street2']" position="attributes">
-                <attribute name="invisible">1</attribute>
+            <xpath expr="//field[@name='company_type']" position="attributes">
+                <attribute name="readonly">x_is_wood_supplier == 'owner'</attribute>
             </xpath>
-            <xpath expr="//field[@name='zip']" position="attributes">
-                <attribute name="invisible">1</attribute>
+            <!-- Ẩn tên mặc định nếu là NCC ván bóc hoặc Khách hàng -->
+            <xpath expr="//field[@name='name'][1]" position="attributes">
+                <attribute name="invisible">x_is_peeling_supplier or x_is_wood_customer or not is_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name'][2]" position="attributes">
+                <attribute name="invisible">x_is_peeling_supplier or is_company</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name'][2]" position="after">
+                <div class="d-flex flex-row gap-2" invisible="not x_is_peeling_supplier and not (x_is_wood_customer and is_company)">
+                    <field name="x_company_type_label" placeholder="Loại hình DN..." required="x_is_peeling_supplier or (x_is_wood_customer and is_company)" style="width: 67%;"/>
+                    <field name="x_private_name" placeholder="Tên riêng..." required="x_is_peeling_supplier or (x_is_wood_customer and is_company)" style="width: 33%;"/>
+                </div>
+                <div invisible="not x_is_wood_customer or not x_customer_code" class="mt-1 mb-2">
+                    <span class="badge rounded-pill text-bg-info text-white" style="font-size: 0.85rem; padding: 6px 12px; font-weight: 500;">
+                        <i class="fa fa-id-card-o me-1"/> Mã KH MISA: <field name="x_customer_code" readonly="1" class="oe_inline"/>
+                    </span>
+                </div>
+            </xpath>
+            <xpath expr="//div[hasclass('o_address_format')]" position="replace">
+                <!-- Hiển thị cho chủ rừng: Tỉnh -> Xã -> Địa chỉ chi tiết -->
+                <div class="o_address_format" invisible="x_is_wood_supplier != 'owner'">
+                    <field name="state_id" class="o_address_state" placeholder="Tỉnh / Thành phố" options="{'no_open': True, 'no_quick_create': True}" context="{'country_id': country_id, 'default_country_id': country_id}"/>
+                    <field name="ward_id" placeholder="Xã / Phường" class="o_address_city" options="{'no_create': True, 'no_open': True}" domain="[('state_id', '=', state_id)]"/>
+                    <field name="street" placeholder="Địa chỉ chi tiết (Đường, Số nhà, Thôn...)" class="o_address_street"/>
+                    <div name="partner_address_country" class="d-flex justify-content-between">
+                        <field name="country_id" placeholder="Quốc gia" class="o_address_country" options='{"no_open": True, "no_create": True}' readonly="1"/>
+                    </div>
+                </div>
+                <!-- Hiển thị cho đối tượng khác (giữ nguyên bố cục mặc định) -->
+                <div class="o_address_format" invisible="x_is_wood_supplier == 'owner'">
+                    <field name="street" placeholder="Street..." class="o_address_street" readonly="type == 'contact' and parent_id"/>
+                    <field name="street2" placeholder="Street 2..." class="o_address_street" invisible="1"/>
+                    <field name="city" placeholder="City" class="o_address_city" invisible="1"/>
+                    <field name="ward_id" placeholder="Xã/Phường" class="o_address_city" options="{'no_create': True, 'no_open': True}" domain="[('state_id', '=', state_id)]"/>
+                    <field name="state_id" class="o_address_state" placeholder="State" options="{'no_open': True, 'no_quick_create': True}" context="{'country_id': country_id, 'default_country_id': country_id}"/>
+                    <field name="zip" placeholder="ZIP" class="o_address_zip" invisible="1"/>
+                    <div name="partner_address_country" class="d-flex justify-content-between">
+                        <field name="country_id" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}' readonly="type == 'contact' and parent_id"/>
+                    </div>
+                </div>
             </xpath>
             <xpath expr="//field[@name='phone']/parent::div" position="replace">
                 <div class="d-flex align-items-baseline w-md-50">
@@ -79,9 +116,12 @@
                 <field name="x_prep_days" string="T.gian chuẩn bị" invisible="x_is_wood_supplier != 'owner'"/>
             </xpath>
             <xpath expr="//field[@name='vat']" position="after">
+                <field name="x_customer_code" string="Mã khách hàng MISA" invisible="not x_is_wood_customer"/>
+                <field name="x_misa_group_code" string="Nhóm khách hàng MISA" invisible="not x_is_wood_customer"/>
+                <field name="x_misa_contact_name" string="Người liên hệ MISA" invisible="not x_is_wood_customer"/>
+                <field name="x_is_wood_customer" invisible="1"/>
                 <field name="x_is_wood_supplier" invisible="1"/>
                 <field name="x_is_peeling_supplier" invisible="not is_company"/>
-                <field name="x_short_name" invisible="not is_company"/>
                 <field name="x_cccd" string="Số CCCD" invisible="not x_is_wood_supplier"/>
                 <field name="x_gender" invisible="1"/>
                 <field name="x_cccd_date" string="Ngày cấp" invisible="not x_is_wood_supplier"/>
@@ -99,11 +139,12 @@
                             <field name="name"/>
                             <field name="x_area_ha" string="Diện tích (ha)"/>
                             <field name="street"/>
-                            <field name="city"/>
+                            <field name="ward_id"/>
                             <field name="state_id"/>
                             <field name="dossier_ids" widget="many2many_tags" readonly="1" string="Hồ Sơ Gỗ" context="{'dossier_show_code_only': True}"/>
                             <button name="action_edit_location" type="object" string="Sửa" icon="fa-pencil" class="btn-secondary" title="Sửa địa điểm khai thác"/>
                             <button name="action_create_dossier" type="object" string="Tạo hồ sơ" icon="fa-plus" class="btn-primary" title="Tạo mới Hồ sơ gỗ từ địa điểm này"/>
+                            <button name="action_create_peeling_dossier_from_location" type="object" string="Thêm HS Ván Bóc" icon="fa-plus-square" class="btn-info" title="Tạo mới Hồ sơ ván bóc từ địa điểm này"/>
                             <field name="note"/>
                         </list>
                     </field>
@@ -159,6 +200,22 @@
         </field>
     </record>
 
+    <!-- Kế thừa danh sách mặc định để tùy chỉnh popup tìm kiếm đối tác -->
+    <record id="view_partner_tree_dl_wood_custom" model="ir.ui.view">
+        <field name="name">res.partner.tree.dl.wood.custom</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+            <xpath expr="//field[@name='complete_name']" position="after">
+                <field name="x_private_name" optional="show"/>
+                <field name="x_company_type_label" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_dl_wood_forest_owner" model="ir.actions.act_window">
         <field name="name">Chủ Rừng</field>
         <field name="res_model">res.partner</field>
@@ -189,25 +246,15 @@
         <field name="search_view_id" ref="view_dl_forest_owner_search"/>
     </record>
 
-    <!-- Menu cha gom Chủ Rừng và Nhà Cung Cấp Gỗ -->
-    <menuitem id="menu_dl_wood_partners"
-              name="Đối Tác"
-              parent="menu_dl_wood_input_materials"
-              sequence="30"/>
+    <record id="view_res_partner_filter_dl_wood" model="ir.ui.view">
+        <field name="name">res.partner.select.dl.wood</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="x_customer_code" string="Mã khách hàng MISA" filter_domain="[('x_customer_code', 'ilike', self)]"/>
+            </xpath>
+        </field>
+    </record>
 
-    <menuitem id="menu_dl_wood_forest_owner"
-              name="Chủ Rừng"
-              parent="menu_dl_wood_partners"
-              action="action_dl_wood_forest_owner"
-              sequence="10"/>
-    <menuitem id="menu_dl_wood_supplier"
-              name="NCC Gỗ"
-              parent="menu_dl_wood_partners"
-              action="action_dl_wood_supplier"
-              sequence="20"/>
-    <menuitem id="menu_dl_wood_peeling_supplier"
-              name="NCC Ván Bóc"
-              parent="menu_dl_wood_partners"
-              action="action_dl_wood_peeling_supplier"
-              sequence="30"/>
 </odoo>

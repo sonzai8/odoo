@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 class DlWoodInitDataWizard(models.TransientModel):
     _name = 'dl.wood.init.data.wizard'
@@ -38,18 +39,18 @@ class DlWoodInitDataWizard(models.TransientModel):
         
         for name, name_en, name_sci, wood_type, code, d_min, d_max, height, price, note in data:
             # 1. Tìm hoặc tạo/cập nhật Loài gỗ
-            species = species_obj.search([('name', '=', name), ('company_id', '=', self.env.company.id)], limit=1)
+            species = species_obj.search([('name', '=', name)], limit=1)
             vals = {
                 'name': name,
                 'name_en': name_en,
                 'name_sci': name_sci,
                 'wood_type': wood_type,
                 'code': code,
-                'company_id': self.env.company.id
             }
             if species:
                 species.write(vals)
             else:
+                vals['company_id'] = self.env.company.id
                 species = species_obj.create(vals)
                 
             # 2. Tìm hoặc tạo/cập nhật Phân loại chất lượng loài gỗ
@@ -130,35 +131,19 @@ class DlWoodInitDataWizard(models.TransientModel):
         }
 
     def action_init_peeling_types(self):
-        """Khởi tạo danh sách danh mục ván bóc"""
-        peeling_type_obj = self.env['dl.wood.peeling.type']
-        
-        data = [
-            ('Bạch đàn', 'Eucalyptus', 'Eucalyptus', 'BD'),
-            ('Cao su', 'Rubberwood', 'Hevea brasiliensis', 'CS'),
-            ('Keo', 'Acacia', 'Acacia', 'KEO'),
-            ('Thông', 'Pine', 'Pinus massoniana', 'THONG'),
-        ]
-        
-        for name, name_en, name_sci, code in data:
-            existing = peeling_type_obj.search([('code', '=', code), ('company_id', '=', self.env.company.id)], limit=1)
-            if not existing:
-                peeling_type_obj.create({
-                    'name': name,
-                    'name_en': name_en,
-                    'name_sci': name_sci,
-                    'code': code,
-                    'company_id': self.env.company.id
-                })
-                
+        """Khởi tạo danh sách danh mục ván bóc từ loài gỗ"""
+        species = self.env['dl.wood.species'].search([])
+        if species:
+            return species.action_init_peeling_types()
+            
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Thành công'),
-                'message': _('Đã khởi tạo danh mục Ván bóc thành công.'),
+                'title': _('Chưa có loài gỗ'),
+                'message': _('Vui lòng khởi tạo Danh mục Gỗ trước.'),
                 'sticky': False,
-                'type': 'success',
+                'type': 'warning',
             }
         }
 
@@ -224,3 +209,267 @@ class DlWoodInitDataWizard(models.TransientModel):
                 'type': 'success',
             }
         }
+
+    def action_init_vehicles(self):
+        """Khởi tạo danh sách xe vận chuyển cơ bản"""
+        vehicle_obj = self.env['dl.wood.vehicle']
+        
+        data = [
+            ('Xe 10 khối', 10.0, 98.0, 99.0, True),
+            ('Xe 20 khối', 20.0, 98.0, 99.0, True),
+            ('Xe 30 khối', 30.0, 98.0, 99.0, True),
+        ]
+        
+        for name, capacity, fill_min, fill_max, active in data:
+            existing = vehicle_obj.search([('name', '=', name), ('company_id', '=', self.env.company.id)], limit=1)
+            vals = {
+                'name': name,
+                'capacity': capacity,
+                'fill_rate_min': fill_min,
+                'fill_rate_max': fill_max,
+                'active': active,
+                'company_id': self.env.company.id
+            }
+            if existing:
+                existing.write(vals)
+            else:
+                vehicle_obj.create(vals)
+                
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã khởi tạo danh sách xe vận chuyển thành công.'),
+                'sticky': False,
+                'type': 'success',
+            }
+        }
+
+    def action_init_state_sequence(self):
+        """Khởi tạo thứ tự ưu tiên hiển thị cho các tỉnh thành Việt Nam"""
+        priority_states = [
+            'Bắc Ninh',
+            'Lạng Sơn',
+            'Quảng Ninh',
+            'Thái Nguyên',
+            'Nghệ An',
+            'Tuyên Quang',
+            'Hà Tĩnh',
+            'Bắc Giang'
+        ]
+        state_obj = self.env['res.country.state']
+        
+        # Reset all VN states to 1000 first
+        vn_states = state_obj.search([('country_id.code', '=', 'VN')])
+        vn_states.write({'x_sequence': 1000})
+        
+        seq = 10
+        for state_name in priority_states:
+            # Search to match "Tỉnh Bắc Ninh" or just "Bắc Ninh"
+            states = state_obj.search([
+                ('country_id.code', '=', 'VN'), 
+                '|', ('name', '=ilike', state_name), ('name', 'ilike', '%' + state_name)
+            ])
+            if states:
+                states.write({'x_sequence': seq})
+            seq += 10
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã sắp xếp lại thứ tự ưu tiên Tỉnh/Thành phố thành công.'),
+                'sticky': False,
+                'type': 'success',
+            }
+        }
+
+    def action_init_vietnam_wards(self):
+        import json
+        import os
+        from odoo.modules import get_module_path
+        
+        # Đọc data từ file JSON mẫu đã clone từ trước
+        module_path = get_module_path('dl_wood_traceability')
+        if not module_path:
+            raise UserError(_('Không tìm thấy module dl_wood_traceability!'))
+            
+        file_path = os.path.join(module_path, 'data', 'vietnam_wards.json')
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                ward_data = json.load(f)
+        except Exception as e:
+            raise UserError(_('Không thể đọc file dữ liệu vietnam_wards.json: %s') % str(e))
+        
+        state_obj = self.env['res.country.state']
+        ward_obj = self.env['res.country.ward']
+        partner_obj = self.env['res.partner']
+        location_obj = self.env['dl.wood.exploitation.location']
+        
+        # Tạo mapping để tìm State
+        vn_states = state_obj.search([('country_id.code', '=', 'VN')])
+        state_map = {}
+        for state in vn_states:
+            state_map[state.name.lower()] = state.id
+            name_lower = state.name.lower().replace('tỉnh ', '').replace('thành phố ', '').replace('tp ', '')
+            state_map[name_lower] = state.id
+            
+        created_count = 0
+        mapped_partners = 0
+        mapped_locations = 0
+        
+        for item in ward_data:
+            province_short = item.get('provinceShort', '').lower()
+            province_full = item.get('province', '').lower()
+            ward_name = item.get('ward')
+            
+            if not ward_name:
+                continue
+                
+            state_id = state_map.get(province_short) or state_map.get(province_full)
+            if not state_id:
+                for key, val in state_map.items():
+                    if key in province_short or province_short in key:
+                        state_id = val
+                        break
+                        
+            if state_id:
+                # Kiểm tra tồn tại
+                existing = ward_obj.search([('name', '=', ward_name), ('state_id', '=', state_id)], limit=1)
+                if not existing:
+                    existing = ward_obj.create({
+                        'name': ward_name,
+                        'state_id': state_id
+                    })
+                    created_count += 1
+                
+                # Mapping đối tác cũ (chỉ cần tìm chính xác chuỗi chứa ward_name)
+                # Dùng ilike cho trường city
+                partners = partner_obj.search([
+                    ('state_id', '=', state_id),
+                    ('ward_id', '=', False),
+                    ('city', 'ilike', ward_name)
+                ])
+                if partners:
+                    partners.write({'ward_id': existing.id})
+                    mapped_partners += len(partners)
+                    
+                locations = location_obj.search([
+                    ('state_id', '=', state_id),
+                    ('ward_id', '=', False),
+                    ('city', 'ilike', ward_name)
+                ])
+                if locations:
+                    locations.write({'ward_id': existing.id})
+                    mapped_locations += len(locations)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Hoàn tất!'),
+                'message': _('Đã tạo %s Xã/Phường mới. Map tự động cho %s Đối tác và %s Địa điểm.') % (created_count, mapped_partners, mapped_locations),
+                'sticky': True,
+                'type': 'success',
+            }
+        }
+
+    def action_init_peeling_suppliers(self):
+        """Khởi tạo danh sách Nhà Cung Cấp Ván Bóc mặc định.
+        Kiểm tra trùng theo mã số thuế (vat). Nếu chưa có thì tạo mới, nếu có rồi thì bỏ qua.
+        """
+        import json
+        import os
+        from odoo.modules import get_module_path
+
+        Partner = self.env['res.partner']
+        country_vn = self.env['res.country'].search([('code', '=', 'VN')], limit=1)
+
+        module_path = get_module_path('dl_wood_traceability')
+        if not module_path:
+            raise UserError(_('Không tìm thấy module dl_wood_traceability!'))
+            
+        file_path = os.path.join(module_path, 'data', 'peeling_suppliers.json')
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            raise UserError(_('Không thể đọc file dữ liệu peeling_suppliers.json: %s') % str(e))
+
+        State = self.env['res.country.state']
+        Ward = self.env['res.country.ward']
+        created_count = 0
+        skipped_count = 0
+
+        for item in data:
+            vat = item.get('ma_so_thue')
+            if not vat:
+                skipped_count += 1
+                continue
+
+            # Kiểm tra theo MST và công ty hiện tại
+            existing = Partner.search([
+                ('vat', '=', vat),
+                '|', ('company_id', '=', False), ('company_id', '=', self.env.company.id)
+            ], limit=1)
+            if existing:
+                skipped_count += 1
+                continue
+
+            is_company = item.get('type') == 'company'
+            linh_vuc = (item.get('linh_vuc_hoat_dong') or '').strip()
+            ten_rieng = (item.get('ten_rieng') or '').strip()
+            
+            if is_company and linh_vuc:
+                name = f"{linh_vuc} {ten_rieng}".strip()
+            else:
+                name = ten_rieng
+
+            dia_chi = item.get('dia_chi', {})
+            thon_xom = dia_chi.get('thon_xom')
+            xa_phuong = dia_chi.get('xa_phuong')
+            tinh_thanh = dia_chi.get('tinh_thanh')
+
+            state_id = False
+            if tinh_thanh and country_vn:
+                # Bỏ qua các từ khóa như 'Tỉnh', 'Thành phố' để search chính xác hơn nếu cần, nhưng ilike thường đủ
+                state_record = State.search([('name', 'ilike', tinh_thanh.replace('Tỉnh', '').replace('Thành phố', '').strip()), ('country_id', '=', country_vn.id)], limit=1)
+                if state_record:
+                    state_id = state_record.id
+
+            ward_id = False
+            if xa_phuong and state_id:
+                ward_record = Ward.search([('name', 'ilike', xa_phuong.replace('Xã', '').replace('Phường', '').replace('Thị trấn', '').strip()), ('state_id', '=', state_id)], limit=1)
+                if ward_record:
+                    ward_id = ward_record.id
+
+            # Tạo mới
+            Partner.create({
+                'name': name,
+                'vat': vat,
+                'is_company': is_company,
+                'x_is_peeling_supplier': True,
+                'street': thon_xom,
+                'ward_id': ward_id,
+                'state_id': state_id,
+                'country_id': country_vn.id if country_vn else False,
+                'x_company_type_label': linh_vuc if is_company else False,
+                'x_private_name': ten_rieng if is_company else False,
+                'company_id': self.env.company.id,
+            })
+            created_count += 1
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Hoàn tất!'),
+                'message': _('Đã tạo mới %s NCC Ván Bóc. Bỏ qua %s bản ghi đã tồn tại hoặc không có MST.') % (created_count, skipped_count),
+                'sticky': False,
+                'type': 'success',
+            }
+        }
+
+

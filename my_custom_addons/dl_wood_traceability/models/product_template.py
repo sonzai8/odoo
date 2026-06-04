@@ -4,14 +4,50 @@ from odoo import models, fields, api, _
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    is_wood_product = fields.Boolean(
-        string='Là sản phẩm Gỗ', 
-        help='Nếu chọn, sản phẩm sẽ bắt buộc quản lý theo Lô (Lot).',
-        default=False
+    x_required_species_ids = fields.Many2many(
+        'dl.wood.species', string='Loại gỗ bắt buộc',
+        compute='_compute_x_required_species_ids', store=True,
+        help='Tự động suy ra từ Loại ván bóc.'
     )
-    x_length = fields.Float(default=2440.0)
-    x_width = fields.Float(default=1220.0)
+
+    @api.depends('x_required_peeling_type_ids')
+    def _compute_x_required_species_ids(self):
+        for rec in self:
+            rec.x_required_species_ids = rec.x_required_peeling_type_ids.mapped('species_id')
+            
+    x_required_peeling_type_ids = fields.Many2many(
+        'dl.wood.peeling.type',
+        string='Loại Ván bóc',
+        help='Chỉ cần chọn Loại Ván Bóc gốc (Keo, Bạch Đàn...), không cần quan tâm độ dày.'
+    )
+
+    @api.onchange('x_required_peeling_type_ids')
+    def _onchange_wood_name_and_code_traceability(self):
+        if hasattr(self, '_onchange_wood_name_and_code'):
+            self._onchange_wood_name_and_code()
+
+    def write(self, vals):
+        if self.env.context.get('misa_sync'):
+            return super(ProductTemplate, self).write(vals)
+            
+        # Danh sách các trường không được phép sửa nếu là sản phẩm MISA
+        blocked_fields = {
+            'name', 'default_code', 'list_price', 'standard_price', 'uom_id', 'uom_po_id', 
+            'type', 'categ_id', 'x_is_wood_product', 'x_thickness', 'x_width', 'x_length',
+            'x_required_peeling_type_ids', 'barcode'
+        }
+        
+        if any(f in vals for f in blocked_fields):
+            for rec in self:
+                if rec.x_is_misa_synced:
+                    from odoo.exceptions import UserError
+                    raise UserError("Sản phẩm này được đồng bộ từ MISA. Hệ thống không cho phép sửa đổi các thuộc tính của sản phẩm để đảm bảo tính nhất quán dữ liệu!")
+                    
+        return super(ProductTemplate, self).write(vals)
+
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+    x_is_misa_synced = fields.Boolean(string='Đồng bộ từ MISA', default=False, readonly=True)
+
     x_production_order_count = fields.Integer(
         string='Số lệnh sản xuất',
         compute='_compute_x_production_order_count'
@@ -52,16 +88,16 @@ class ProductTemplate(models.Model):
             }
         }
 
-    @api.onchange('is_wood_product')
-    def _onchange_is_wood_product(self):
+    @api.onchange('x_is_wood_product')
+    def _onchange_x_is_wood_product(self):
         """Tự động thiết lập quản lý theo Lô khi tích chọn là sản phẩm Gỗ"""
-        if self.is_wood_product:
+        if hasattr(self, 'x_is_wood_product') and self.x_is_wood_product:
             self.tracking = 'lot'
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('is_wood_product'):
+            if vals.get('x_is_wood_product'):
                 if 'company_id' not in vals or not vals['company_id']:
                     vals['company_id'] = self.env.company.id
         return super(ProductTemplate, self).create(vals_list)
@@ -70,10 +106,13 @@ class ProductTemplate(models.Model):
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
+    x_required_species_ids = fields.Many2many(related='product_tmpl_id.x_required_species_ids', readonly=True)
+    x_required_peeling_type_ids = fields.Many2many(related='product_tmpl_id.x_required_peeling_type_ids', readonly=True)
+
     def _compute_display_name(self):
         super()._compute_display_name()
         for product in self:
-            is_wood = product.product_tmpl_id.is_wood_product or getattr(product, 'x_is_wood_product', False)
+            is_wood = product.product_tmpl_id.x_is_wood_product or getattr(product, 'x_is_wood_product', False)
             if is_wood and product.default_code:
                 code = product.default_code.strip()
                 if code:
@@ -84,3 +123,20 @@ class ProductProduct(models.Model):
                         product.display_name = f"[{code}] {name} [{spec}]"
                     else:
                         product.display_name = f"[{code}] {name}"
+
+    def write(self, vals):
+        if self.env.context.get('misa_sync'):
+            return super(ProductProduct, self).write(vals)
+            
+        blocked_fields = {
+            'name', 'default_code', 'list_price', 'standard_price', 'uom_id', 'uom_po_id', 
+            'type', 'categ_id', 'barcode'
+        }
+        
+        if any(f in vals for f in blocked_fields):
+            for rec in self:
+                if getattr(rec.product_tmpl_id, 'x_is_misa_synced', False):
+                    from odoo.exceptions import UserError
+                    raise UserError("Biến thể này thuộc sản phẩm được đồng bộ từ MISA. Hệ thống không cho phép sửa đổi các thuộc tính cốt lõi!")
+                    
+        return super(ProductProduct, self).write(vals)

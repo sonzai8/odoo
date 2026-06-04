@@ -10,6 +10,7 @@ from . import sale_order
 from . import dl_contract_template
 from . import res_partner
 from . import dl_woodpro_config
+from . import dl_wood_peeling_type
 from . import product_template
 from . import stock_move_line
 from . import dl_wood_exploitation_location
@@ -19,4 +20,7 @@ from . import res_config_settings
 from . import dl_wood_transport
 from . import dl_vietnam_bank
 from . import dl_wood_dossier_inventory
+from . import res_country_state
+from . import res_country_ward
 from . import dl_wood_peeling
+from . import dl_misa_extension_release

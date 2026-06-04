@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product Template Form Inheritance -->
+    <record id="product_template_form_view_inherit_dl_base" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.dl.base</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <!-- 1. Thêm cờ Sản phẩm Gỗ vào nhóm tuỳ chọn -->
+            <xpath expr="//div[@name='options']" position="inside">
+                <span class="d-inline-block">
+                    <field name="x_is_wood_product"/>
+                    <label for="x_is_wood_product"/>
+                </span>
+            </xpath>
+
+            <!-- 2. Ẩn default_code và list_price ở tab gốc khi là sản phẩm gỗ -->
+            <xpath expr="//field[@name='default_code']" position="attributes">
+                <attribute name="invisible">product_variant_count &gt; 1 or x_is_wood_product</attribute>
+            </xpath>
+            <xpath expr="//group[@name='group_standard_price']" position="attributes">
+                <attribute name="invisible">x_is_wood_product</attribute>
+            </xpath>
+            
+            <!-- Ẩn ảnh sản phẩm để oe_title full width -->
+            <xpath expr="//field[@name='image_1920']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            
+            <!-- Cho tên sản phẩm rộng tối đa và giảm cỡ chữ để không bị xuống dòng -->
+            <xpath expr="//div[hasclass('oe_title')]" position="attributes">
+                <attribute name="style">width: 100% !important; max-width: 100% !important;</attribute>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]/h1" position="attributes">
+                <attribute name="style">font-size: 1.6rem !important;</attribute>
+            </xpath>
+
+            <!-- 3. Thêm Tab Thông tin Gỗ vào đầu notebook và set làm mặc định -->
+            <xpath expr="//notebook/page[1]" position="before">
+                <page string="Thông tin Gỗ" name="wood_info_tab" invisible="not x_is_wood_product">
+                    <!-- Alert gợi ý đặt tên -->
+                    <!-- <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                        <i class="fa fa-magic me-3 fs-3" title="Gợi ý đặt tên"/>
+                        <div>
+                            <b>Quy tắc đặt tên sản phẩm tự động:</b> 
+                            <span class="badge bg-primary ms-1">[Tên] [Độ dày]x[Dài]x[Rộng] [Phim] [Phủ]</span>
+                        </div>
+                    </div> -->
+
+                    <!-- 1. Kích thước (Dimensions) và Giao dịch -->
+                    <div name="wood_dimensions" class="dl_card mb-3 p-3 border rounded bg-white">
+                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Kích thước và Bán hàng</h5>
+                        <div class="row">
+                            <div class="col-4">
+                                <label for="x_thickness" class="fw-bold text-muted small d-block mb-1" string="Độ dày (mm)"/>
+                                <field name="x_thickness" class="w-100 fw-bold o_field_number"/>
+                            </div>
+                            <div class="col-4">
+                                <label for="x_length" class="fw-bold text-muted small d-block mb-1" string="Chiều dài (mm)"/>
+                                <field name="x_length" class="w-100 o_field_number"/>
+                            </div>
+                            <div class="col-4">
+                                <label for="x_width" class="fw-bold text-muted small d-block mb-1" string="Chiều rộng (mm)"/>
+                                <field name="x_width" class="w-100 o_field_number"/>
+                            </div>
+                        </div>
+                        
+                        <!-- Tham chiếu nội bộ và Giá bán được chuyển sang đây -->
+                        <div class="row">
+                            <div class="col-4">
+                                <label for="default_code" class="fw-bold text-muted small d-block mb-1" string="Mã sản phẩm (Tham chiếu nội bộ)"/>
+                                <field name="default_code" class="w-100 fw-bold"/>
+                            </div>
+                            <div class="col-4">
+                                <label for="x_quality" class="fw-bold text-muted small d-block mb-1" string="Chất lượng ván"/>
+                                <field name="x_quality" class="w-100 fw-bold"/>
+                            </div>
+                            <div class="col-4">
+                                <label for="list_price" class="fw-bold text-muted small d-block mb-1" string="Giá bán (VND)"/>
+                                <field name="list_price" class="w-100 fw-bold text-danger o_field_number" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <label for="x_unit" class="fw-bold text-muted small d-block mb-1" string="Đơn vị tính"/>
+                                <field name="x_unit" widget="radio" options="{'horizontal': true}"/>
+                            </div>
+                            <div class="col-6">
+                                <label for="x_sale_state" class="fw-bold text-muted small d-block mb-1" string="Trạng thái kinh doanh"/>
+                                <field name="x_sale_state" widget="radio" options="{'horizontal': true}"/>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. Kết quả tính toán (Quy đổi) -->
+                    <div name="wood_calculations" class="dl_card mb-3 p-3 border rounded bg-white border-primary-light">
+                        <h5 class="fw-bold mb-3 text-pine-green border-bottom pb-2">Kết quả tính toán</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <label for="x_area_m2" class="fw-bold text-muted small d-block mb-1" string="Diện tích"/>
+                                <div class="d-flex align-items-baseline">
+                                    <field name="x_area_m2" readonly="1" class="h4 fw-bold mb-0 text-pine-green"/>
+                                    <span class="ms-1 text-muted">m²</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label for="x_volume_m3" class="fw-bold text-muted small d-block mb-1" string="Khối lượng"/>
+                                <div class="d-flex align-items-baseline">
+                                    <field name="x_volume_m3" readonly="1" class="h4 fw-bold mb-0 text-primary"/>
+                                    <span class="ms-2 text-muted fw-bold">m³</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product Template List Inheritance -->
+    <record id="product_template_tree_view_inherit_dl_base" model="ir.ui.view">
+        <field name="name">product.template.tree.inherit.dl.base</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='default_code']" position="replace"/>
+            <xpath expr="//field[@name='name']" position="before">
+                <!-- Move to front -->
+                <field name="default_code" string="Mã SP (Tham chiếu)" class="dl-col-code fw-bold"/>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="class">dl-col-name text-truncate</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="x_thickness" optional="show" decoration-bf="1"/>
+                <field name="x_length" string="Dài (mm)" optional="show"/>
+                <field name="x_width" string="Rộng (mm)" optional="show"/>
+                <field name="x_structure_summary" optional="show" widget="badge" decoration-info="1"/>
+                <field name="x_sale_state" widget="badge" decoration-success="x_sale_state == 'active'" decoration-danger="x_sale_state == 'inactive'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product Template Search Inheritance -->
+    <record id="product_template_search_view_inherit_dl_base" model="ir.ui.view">
+        <field name="name">product.template.search.inherit.dl.base</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_to_sell']" position="after">
+                <filter string="Sản phẩm gỗ" name="wood_products" domain="[('x_is_wood_product', '=', True)]"/>
+            </xpath>
+            <xpath expr="//search/group" position="inside">
+                <filter string="Độ dày" name="group_by_thickness" context="{'group_by': 'x_thickness'}"/>
+                <filter string="Trạng thái kinh doanh" name="group_by_sale_state" context="{'group_by': 'x_sale_state'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dl_wood_products" model="ir.actions.act_window">
+        <field name="name">Sản phẩm ngành gỗ</field>
+        <field name="res_model" >product.template</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'default_x_is_wood_product': True, 'search_default_wood_products': 1}</field>
+        <field name="domain">[('x_is_wood_product', '=', True)]</field>
+    </record>
+
+    <record id="action_dl_product_attribute" model="ir.actions.act_window">
+        <field name="name">Cấu hình Thuộc tính</field>
+        <field name="res_model">product.attribute</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

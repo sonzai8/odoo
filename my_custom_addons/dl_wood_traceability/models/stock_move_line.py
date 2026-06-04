@@ -9,7 +9,7 @@ class StockMoveLine(models.Model):
     def _check_wood_product_lot(self):
         """Bắt buộc nhập số Lô đối với sản phẩm ngành Gỗ khi hoàn thành"""
         for line in self:
-            if line.state == 'done' and line.product_id.is_wood_product:
+            if line.state == 'done' and line.product_id.x_is_wood_product:
                 if not line.lot_id and not line.lot_name:
                     raise ValidationError(_(
                         "Sản phẩm '%s' được cấu hình là sản phẩm Gỗ. "

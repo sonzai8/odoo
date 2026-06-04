@@ -5,7 +5,7 @@
         <field name="model">hr.employee</field>
         <field name="priority">100</field>
         <field name="arch" type="xml">
-            <list limit="20" string="Quản lý nhân viên thuế" create="false">
+            <list limit="20" string="Quản lý nhân viên thuế">
                 <field name="name" width="150px" class="text-start"/>
                 <field name="dl_first_name" column_invisible="True"/>
                 <field name="identification_id" width="100px"/>

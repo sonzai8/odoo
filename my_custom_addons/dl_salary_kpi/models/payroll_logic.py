@@ -209,14 +209,29 @@ def calculate_deductions(rec, total_actual_income, meal_allowance):
     bhtn_for_tax = round(base_insurance * 0.01, 0)
     insurance_for_tax = bhxh_for_tax + bhyt_for_tax + bhtn_for_tax
 
+    # KIỂM TRA DANH SÁCH TRUY THU BHYT
+    arrears_record = rec.month_id.health_insurance_arrear_ids.filtered(lambda r: r.employee_id.id == rec.employee_id.id)
+    if arrears_record:
+        arrear_type = arrears_record[0].arrear_type
+        if arrear_type == '1': # Chi phí doanh nghiệp
+            bhyt_for_arrear = 0.0
+        else: # Chi phí người lao động (chịu cả 4.5%)
+            bhyt_for_arrear = round(base_insurance * 0.045, 0)
+    else:
+        bhyt_for_arrear = bhyt_for_tax
+
     # Mức bảo hiểm THỰC TRỪ vào lương (Bằng 0 nếu bị cắt)
     if insurance_stopped:
         bhxh = 0.0
         bhyt = 0.0
         bhtn = 0.0
+    elif arrears_record:
+        bhxh = 0.0
+        bhyt = bhyt_for_arrear
+        bhtn = 0.0
     else:
         bhxh = bhxh_for_tax
-        bhyt = bhyt_for_tax
+        bhyt = bhyt_for_arrear
         bhtn = bhtn_for_tax
         
     total_insurance = bhxh + bhyt + bhtn

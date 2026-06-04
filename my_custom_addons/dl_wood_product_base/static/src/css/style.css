@@ -1,0 +1,11 @@
+.dl-col-code {
+    min-width: 300px !important;
+    white-space: nowrap !important;
+}
+
+.dl-col-name {
+    max-width: 250px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}

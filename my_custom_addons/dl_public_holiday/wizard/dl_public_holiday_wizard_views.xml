@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_public_holiday_wizard_form" model="ir.ui.view">
+        <field name="name">dl.public.holiday.wizard.form</field>
+        <field name="model">dl.public.holiday.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập/Xuất Ngày Nghỉ Lễ">
+                <group>
+                    <field name="action_type" widget="radio"/>
+                    
+                    <field name="file_data" filename="file_name" 
+                           invisible="action_type == 'export'" 
+                           required="action_type == 'import'"/>
+                    <field name="file_name" invisible="1"/>
+                    
+                    <field name="file_data" filename="file_name" readonly="1" 
+                           invisible="action_type == 'import' or not file_data" 
+                           string="File Tải Về"/>
+                </group>
+                <div class="text-muted mt-2" invisible="action_type == 'export'">
+                    <p><b>Hướng dẫn Import:</b></p>
+                    <ol>
+                        <li>Chọn hành động "Tải file mẫu (Export)" để lấy file chuẩn.</li>
+                        <li>Mở file, điền danh sách ngày lễ theo đúng định dạng DD/MM/YYYY.</li>
+                        <li>Chọn hành động "Nhập dữ liệu (Import)", đính kèm file vừa điền và bấm "Thực hiện".</li>
+                    </ol>
+                </div>
+                <footer>
+                    <button string="Tải File Mẫu" type="object" name="action_execute" class="btn-primary" 
+                            invisible="action_type == 'import'"/>
+                    <button string="Thực hiện Nhập" type="object" name="action_execute" class="btn-primary" 
+                            invisible="action_type == 'export'"/>
+                    <button string="Huỷ bỏ" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_public_holiday_wizard" model="ir.actions.act_window">
+        <field name="name">Nhập/Xuất Ngày Lễ</field>
+        <field name="res_model">dl.public.holiday.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Thêm Menu con hoặc Action để truy cập -->
+    <menuitem id="menu_dl_public_holiday_wizard"
+              name="Nhập/Xuất Excel"
+              parent="menu_dl_public_holiday_root"
+              action="action_dl_public_holiday_wizard"
+              sequence="20"/>
+</odoo>

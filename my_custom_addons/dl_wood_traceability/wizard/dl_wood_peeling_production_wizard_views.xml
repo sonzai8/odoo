@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Màn hình Wizard Sản xuất Ván Bóc Từng Dòng -->
+    <record id="view_dl_wood_peeling_line_production_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.line.production.wizard.form</field>
+        <field name="model">dl.wood.peeling.line.production.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bóc Ván">
+                <div class="alert alert-info" role="alert">
+                    Cấu hình chuyển đổi gỗ thành ván bóc.
+                </div>
+                <group>
+                    <field name="dossier_line_id" invisible="True"/>
+                    <field name="species_id" readonly="True" force_save="1"/>
+                </group>
+                <group>
+                    <field name="volume_wood" readonly="1" force_save="1"/>
+                    <field name="yield_factor"/>
+                    <field name="peeling_variant_id" domain="[('peeling_type_id.species_id', '=', species_id)]" options="{'no_create': True}"/>
+                    <field name="volume_peeling" readonly="1" force_save="1"/>
+                </group>
+                <footer>
+                    <button string="Xác nhận Bóc" name="action_confirm" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action mở Wizard -->
+    <record id="action_dl_wood_peeling_line_production_wizard" model="ir.actions.act_window">
+        <field name="name">Bóc Ván</field>
+        <field name="res_model">dl.wood.peeling.line.production.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

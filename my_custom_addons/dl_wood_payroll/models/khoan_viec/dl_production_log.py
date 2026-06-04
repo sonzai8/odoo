@@ -137,7 +137,7 @@ class ProductionLogProductLine(models.Model):
         ('2m', 'Phủ 2 mặt (2M)'),
     ], string='Số mặt phủ', default='2m')
     
-    x_quality = fields.Selection(related='product_id.x_quality', string='Chất lượng', readonly=True)
+    x_quality = fields.Char(related='product_id.x_quality', string='Chất lượng', readonly=True)
     layer_info = fields.Char(related='product_id.x_structure_summary', string='Thông số kỹ thuật', readonly=True)
     
     quantity = fields.Float(string='Số lượng', default=1.0, required=True)

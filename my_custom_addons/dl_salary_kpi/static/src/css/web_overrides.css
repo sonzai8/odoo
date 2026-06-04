@@ -1,0 +1,6 @@
+/* CSS overrides chung cho giao diện Odoo */
+
+/* Mở rộng chiều rộng tối đa để hiển thị đầy đủ tên công ty trên thanh menu ngang (topbar) */
+.o_switch_company_menu .oe_topbar_name {
+    max-width: 40rem !important;
+}

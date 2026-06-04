@@ -90,6 +90,10 @@ class SalaryKpiMonth(models.Model):
         related='active_policy_id.productivity_line_ids', 
         string='Mốc Thưởng Năng Suất'
     )
+    policy_revenue_job_titles = fields.Char(
+        related='active_policy_id.revenue_job_titles',
+        string='Chức vụ hưởng Doanh Thu'
+    )
     
     @api.depends('company_id')
     def _compute_active_policy(self):
@@ -104,7 +108,16 @@ class SalaryKpiMonth(models.Model):
 
     insurance_stop_ids = fields.One2many('dl.salary.kpi.insurance.stop', 'month_id', string='Danh sách cắt bảo hiểm')
     x_copy_insurance_month_id = fields.Many2one('dl.salary.kpi.month', string='Copy từ bảng lương')
+    
     x_insurance_stop_count = fields.Integer(string='Số lượng cắt bảo hiểm', compute='_compute_insurance_stop_count')
+
+    # Truy thu BHYT (Tab 8)
+    health_insurance_arrear_ids = fields.One2many('dl.salary.kpi.health.insurance.arrears', 'month_id', string='Danh sách truy thu BHYT')
+    x_health_insurance_arrear_count = fields.Integer(string='Số lượng truy thu BHYT', compute='_compute_health_insurance_arrear_count')
+    
+    # Tài liệu đính kèm
+    document_ids = fields.Many2many('ir.attachment', 'dl_salary_kpi_month_doc_rel', 'month_id', 'attachment_id', string='Tài liệu đính kèm')
+    document_history_ids = fields.One2many('dl.salary.kpi.document.history', 'month_id', string='Lịch sử tài liệu')
 
     # Logic khởi tạo tự động đã được chuyển sang nút bấm thủ công trong Cấu hình để đảm bảo an toàn.
     x_is_recalculated = fields.Boolean(string='Đã tính toán lại toàn bộ', default=False)
@@ -120,6 +133,11 @@ class SalaryKpiMonth(models.Model):
     def _compute_insurance_stop_count(self):
         for rec in self:
             rec.x_insurance_stop_count = len(rec.insurance_stop_ids)
+
+    @api.depends('health_insurance_arrear_ids')
+    def _compute_health_insurance_arrear_count(self):
+        for rec in self:
+            rec.x_health_insurance_arrear_count = len(rec.health_insurance_arrear_ids)
 
     @api.depends('name', 'insurance_stop_ids')
     def _compute_display_name(self):
@@ -389,6 +407,43 @@ class SalaryKpiMonth(models.Model):
             rec._auto_load_employees()
         return records
 
+    def write(self, vals):
+        if 'employee_ids' in vals:
+            self._update_employee_list(vals['employee_ids'])
+        
+        # Xử lý copy tài liệu vào lịch sử
+        if 'document_ids' in vals:
+            for record in self:
+                # Tìm các file mới thêm vào
+                # command (6, 0, ids), (4, id), etc.
+                # Cách dễ nhất: thực hiện write xong rồi xem những thằng nào có trong document_ids mà chưa có trong lịch sử để thêm vào
+                pass # Sẽ xử lý sau khi super().write gọi
+
+        res = super().write(vals)
+        
+        if 'document_ids' in vals:
+            for record in self:
+                # Đồng bộ history: lấy những attachment đang có trong document_ids
+                # Nếu file chưa được copy vào history, ta sẽ tạo bản copy.
+                # Lấy danh sách tên file đã có trong history để tránh lặp (có thể so sánh checksum hoặc id)
+                existing_histories = self.env['dl.salary.kpi.document.history'].search([('month_id', '=', record.id)])
+                existing_att_ids = existing_histories.mapped('attachment_id').ids
+                
+                new_histories = []
+                for att in record.document_ids:
+                    if att.id not in existing_att_ids:
+                        new_histories.append({
+                            'month_id': record.id,
+                            'name': att.name,
+                            'file_name': att.name,
+                            'file': att.datas,
+                            'attachment_id': att.id
+                        })
+                
+                if new_histories:
+                    self.env['dl.salary.kpi.document.history'].sudo().create(new_histories)
+        return res
+
     def _auto_load_employees(self):
         """Logic lấy toàn bộ nhân viên active (chưa nghỉ việc trước tháng này) và chấm công mặc định N (T2-T7)"""
         if self.line_ids:
@@ -563,6 +618,45 @@ class SalaryKpiMonth(models.Model):
             'params': {
                 'title': _('Thành công'),
                 'message': _('Đã copy %s nhân viên từ %s') % (len(new_lines), source_month.name),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_copy_health_insurance_arrears_list(self):
+        """Copy danh sách truy thu BHYT từ bảng lương khác"""
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError(_("Bạn chỉ có thể copy danh sách ở trạng thái Dự thảo!"))
+        
+        if not self.x_copy_insurance_month_id:
+            raise UserError(_("Vui lòng chọn bảng lương nguồn để copy!"))
+            
+        source_month = self.x_copy_insurance_month_id
+        if not source_month.health_insurance_arrear_ids:
+            raise UserError(_("Bảng lương nguồn không có danh sách truy thu BHYT!"))
+
+        # Xóa danh sách cũ
+        self.health_insurance_arrear_ids.unlink()
+        
+        # Copy danh sách mới
+        new_lines = []
+        for line in source_month.health_insurance_arrear_ids:
+            new_lines.append((0, 0, {
+                'employee_id': line.employee_id.id,
+                'arrear_type': line.arrear_type,
+                'note': line.note,
+            }))
+            
+        if new_lines:
+            self.write({'health_insurance_arrear_ids': new_lines})
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã copy %s nhân viên truy thu BHYT từ %s') % (len(new_lines), source_month.name),
                 'type': 'success',
                 'sticky': False,
             }
@@ -907,22 +1001,29 @@ class SalaryKpiMonth(models.Model):
         if active_policy:
             rev_tiers = active_policy.revenue_line_ids.sorted(key=lambda t: t.min_revenue)
             prod_tiers = active_policy.productivity_line_ids
+            rev_job_titles = active_policy.revenue_job_titles or ""
         else:
             rev_tiers = []
             prod_tiers = []
+            rev_job_titles = ""
 
         if not rev_tiers:
             base_rev_formula = "0"
         else:
             lowest_min = rev_tiers[0].min_revenue
-            base_rev_formula = f"IF($G$4<{lowest_min},0,"
-            close_parens = 1
+            if lowest_min > 0:
+                base_rev_formula = f"IF($G$4<{lowest_min},0,"
+                close_parens = 1
+            else:
+                base_rev_formula = ""
+                close_parens = 0
+
             for tier in rev_tiers:
                 if tier.max_revenue:
-                    base_rev_formula += f"IF($G$4<{tier.max_revenue},{tier.bonus_amount},"
+                    base_rev_formula += f"IF($G$4<={tier.max_revenue},{tier.bonus_amount},"
                     close_parens += 1
                 else:
-                    base_rev_formula += f"IF($G$4>={tier.min_revenue},{tier.bonus_amount},0"
+                    base_rev_formula += f"IF($G$4>{tier.min_revenue},{tier.bonus_amount},0"
                     close_parens += 1
                     break
             if rev_tiers[-1].max_revenue:
@@ -1031,7 +1132,19 @@ class SalaryKpiMonth(models.Model):
                 if base_rev_formula == "0":
                     rev_formula = "=0"
                 else:
-                    rev_formula = "=" + base_rev_formula
+                    if rev_job_titles:
+                        titles = [t.strip() for t in rev_job_titles.split(',') if t.strip()]
+                        if titles:
+                            or_conditions = ",".join([f'H{current_row}="{t}"' for t in titles])
+                            if len(titles) > 1:
+                                condition = f"OR({or_conditions})"
+                            else:
+                                condition = f'H{current_row}="{titles[0]}"'
+                            rev_formula = f"=IF({condition},{base_rev_formula},0)"
+                        else:
+                            rev_formula = "=" + base_rev_formula
+                    else:
+                        rev_formula = "=" + base_rev_formula
 
                 if not prod_tier_data:
                     prod_formula = "=0"
@@ -1064,6 +1177,11 @@ class SalaryKpiMonth(models.Model):
                 insurance_stopped = line.employee_id.id in self.insurance_stop_ids.mapped('employee_id').ids
                 if insurance_stopped:
                     self._safe_write(ws, current_row, 116, 0)
+                
+                # BHYT Arrears (Cột ES = 149)
+                arrears_record = self.health_insurance_arrear_ids.filtered(lambda r: r.employee_id.id == line.employee_id.id)
+                arrear_type_val = int(arrears_record[0].arrear_type) if arrears_record else 0
+                self._safe_write(ws, current_row, 149, arrear_type_val)
                 
                 self._safe_write(ws, current_row, 143, line.payroll_internal_salary or 0)
                 self._safe_write(ws, current_row, 144, line.payroll_bank_transfer_amount_rounded or 0)
@@ -1277,3 +1395,25 @@ class InsuranceStop(models.Model):
     dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản', readonly=True)
     
     note = fields.Text(string='Ghi chú (Lý do cắt)')
+
+class HealthInsuranceArrears(models.Model):
+    _name = 'dl.salary.kpi.health.insurance.arrears'
+    _description = 'Danh sách truy thu BHYT'
+
+    month_id = fields.Many2one('dl.salary.kpi.month', string='Tháng lương', ondelete='cascade')
+    currency_id = fields.Many2one(related='month_id.currency_id', string='Tiền tệ', readonly=True)
+    employee_id = fields.Many2one('hr.employee', string='Nhân viên', required=True)
+    
+    arrear_type = fields.Selection([
+        ('1', 'Chi phí doanh nghiệp'),
+        ('2', 'Chi phí người lao động')
+    ], string='Loại truy thu', default='1', required=True)
+
+    # Thông tin liên quan (readonly)
+    identification_id = fields.Char(related='employee_id.identification_id', string='Số CCCD', readonly=True)
+    dl_tax_id = fields.Char(related='employee_id.dl_tax_id', string='Mã số thuế', readonly=True)
+    dl_tax_department_id = fields.Many2one(related='employee_id.dl_tax_department_id', string='Phòng ban', readonly=True)
+    dl_tax_position = fields.Char(related='employee_id.dl_tax_position', string='Chức vụ', readonly=True)
+    dl_tax_base_salary = fields.Float(related='employee_id.dl_tax_base_salary', string='Lương cơ bản', readonly=True)
+    
+    note = fields.Text(string='Ghi chú')

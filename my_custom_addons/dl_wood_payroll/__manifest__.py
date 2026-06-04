@@ -12,7 +12,7 @@
         - Tính năng sao chép bảng giá từ tháng trước.
     """,
     'author': 'Antigravity',
-    'depends': ['hr', 'mrp', 'mail', 'product', 'sale', 'stock', 'account'],
+    'depends': ['hr', 'mrp', 'mail', 'product', 'sale', 'stock', 'account', 'dl_wood_traceability', 'dl_wood_product_base'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',

@@ -37,6 +37,40 @@
 
                         <!-- Cột 2: Các đại diện -->
                         <div class="col-lg-6 col-12">
+                            <block title="Tích hợp MISA (Odoo Bridge)" name="misa_bridge_config">
+                                <setting id="misa_product_code_setting" string="Kiểm tra Mã Vật Tư &amp; Thông số mặc định" help="Cấu hình Rule (Regex) kiểm tra mã sản phẩm và Thông số mặc định tạo Sản phẩm Odoo-MISA">
+                                    <div class="content-group mt-3 w-100" style="min-width: 100%;">
+                                        <div class="w-100 mb-3">
+                                            <span class="d-block mb-1 fw-bold">Tên sản phẩm mặc định:</span>
+                                            <field name="x_misa_default_product_name" class="w-100"/>
+                                        </div>
+                                        <div class="w-100 mb-3">
+                                            <group>
+                                                <field name="default_x_length" class="w-100"/>
+                                                <field name="default_x_width" class="w-100"/>
+                                            </group>
+                                        </div>
+                                        <div class="w-100 mb-3">
+                                            <span class="d-block mb-1 fw-bold">Quy tắc Regex (Mỗi luật 1 dòng):</span>
+                                            <field name="x_misa_product_code_regex" class="w-100" widget="text" rows="3" nolabel="1"/>
+                                        </div>
+                                        <div class="w-100 mb-3">
+                                            <span class="d-block mb-1 fw-bold">Câu báo lỗi (Mỗi câu 1 dòng tương ứng):</span>
+                                            <field name="x_misa_product_code_error_msg" class="w-100" widget="text" rows="5" nolabel="1"/>
+                                        </div>
+                                    </div>
+                                </setting>
+                                <setting id="misa_ext_management_setting" string="Quản lý Extension Odoo Bridge" help="Tải lên và tự động phân phối bản cập nhật Extension cho nhân viên">
+                                    <div class="content-group mt-3 w-100">
+                                        <div class="text-muted mb-2">
+                                            Vui lòng vào menu <strong>Cấu hình &gt; Phiên bản Odoo Bridge</strong> để tải lên các bản cập nhật mới.
+                                        </div>
+                                        <group>
+                                            <field name="x_misa_ext_token" readonly="1" force_save="1" placeholder="Hệ thống tự động cấp phát khi lưu" string="Mã bảo mật chung (Token)"/>
+                                        </group>
+                                    </div>
+                                </setting>
+                            </block>
                             <block title="Đại diện Công ty (Phục vụ In Hợp đồng/Tài liệu)" name="wood_company_representative">
                                 <setting id="wood_representative_setting" string="Thông tin đại diện" help="Người đại diện ký kết các hợp đồng hồ sơ nguồn gốc gỗ">
                                     <group>
@@ -68,10 +102,4 @@
         <field name="target">current</field>
         <field name="context">{'module' : 'dl_wood_traceability'}</field>
     </record>
-
-    <menuitem id="menu_dl_wood_settings"
-              name="Cấu hình chung"
-              parent="menu_dl_wood_config_root"
-              action="action_dl_wood_config_settings"
-              sequence="5"/>
 </odoo>

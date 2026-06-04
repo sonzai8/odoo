@@ -80,9 +80,4 @@
     </record>
 
     <!-- Menu Item cho dl.vietnam.bank -->
-    <menuitem id="menu_dl_vietnam_bank"
-              name="Danh mục ngân hàng"
-              parent="dl_wood_traceability.menu_dl_wood_config_root"
-              action="action_dl_vietnam_bank"
-              sequence="30"/>
 </odoo>

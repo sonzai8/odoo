@@ -98,7 +98,7 @@ class DlWoodDossier(models.Model):
         prefix = self.env.company.x_wood_prefix or "XX"
         # Đếm số lượng hồ sơ hiện có của công ty để cộng thêm 1
         count = self.search_count([('company_id', '=', self.env.company.id)])
-        return f"{prefix}_HS_{(count + 1):04d}"
+        return f"{prefix}_HSG_{(count + 1):04d}"
 
     name = fields.Char(string='Mã Hồ Sơ', required=True, copy=False, readonly=True, default=_get_default_name)
     x_dossier_name = fields.Char(string='Tên Hồ Sơ', help='Tên mô tả ngắn gọn cho bộ hồ sơ')
@@ -273,9 +273,9 @@ class DlWoodDossier(models.Model):
             else:
                 delay = 5
 
-            # Tính ngày bắt đầu thô và kiểm tra xem có trùng Chủ Nhật không
+            # Tính ngày bắt đầu thô và kiểm tra xem có bị dịch chuyển không
             raw_start_date = record.x_end_date + timedelta(days=delay)
-            was_sunday = (raw_start_date.weekday() == 6)
+            was_shifted = (raw_start_date != record.x_delivery_start_date)
 
             # 2. Xác định số chuyến xe
             trips_count = len(record.ticket_ids)
@@ -290,13 +290,17 @@ class DlWoodDossier(models.Model):
                 if trips_count == 0:
                     trips_count = 1
 
-            # 3. Đếm số ngày Chủ Nhật bị loại trừ trong khoảng giao hàng dựa theo chế độ vận chuyển (x_transport_method)
-            # urgent: 2 chuyến/ngày
-            # normal: 1 chuyến/ngày
-            # slow: 2 ngày mới có 1 chuyến (giao vào các ngày làm việc lẻ)
+            # 3. Đếm số ngày nghỉ (Chủ Nhật hoặc Ngày lễ) bị loại trừ
             sundays = []
+            holidays_skipped = []
             current_date = record.x_delivery_start_date
             trips_delivered = 0
+            
+            holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(
+                start_date=record.x_delivery_start_date,
+                end_date=record.x_delivery_start_date + timedelta(days=365),
+                company_id=record.company_id.id
+            )
             
             if record.x_transport_method == 'urgent':
                 trips_delivered = min(2, trips_count)
@@ -308,8 +312,12 @@ class DlWoodDossier(models.Model):
 
             while trips_delivered < trips_count:
                 current_date += timedelta(days=1)
-                if current_date.weekday() == 6:
-                    sundays.append(current_date.strftime('%d/%m/%Y'))
+                is_holiday = current_date in holiday_dates
+                if current_date.weekday() == 6 or is_holiday:
+                    if current_date.weekday() == 6:
+                        sundays.append(current_date.strftime('%d/%m/%Y'))
+                    if is_holiday:
+                        holidays_skipped.append(current_date.strftime('%d/%m/%Y'))
                 else:
                     if record.x_transport_method == 'urgent':
                         trips_delivered += 2
@@ -350,19 +358,23 @@ class DlWoodDossier(models.Model):
                 • Do tổng khối lượng lâm sản là <strong>{volume:,.2f} m³/Ster</strong> (Gỗ: {record.initial_wood_qty:,.2f} m³, Củi: {record.initial_firewood_qty:,.2f} Ster) thuộc khoảng {vol_range_str}, hệ thống tự động áp dụng thời gian trễ là <strong>{delay} ngày</strong>.
             """
             
-            if was_sunday:
+            if was_shifted:
                 raw_start_str = raw_start_date.strftime('%d/%m/%Y')
-                explanation += f" Ngày bắt đầu dự tính là <em>{raw_start_str} (Chủ Nhật)</em> nên tự động lùi 1 ngày sang Thứ Hai ngày <strong>{start_date_str}</strong>.<br/>"
+                explanation += f" Ngày bắt đầu dự tính là <em>{raw_start_str}</em> nhưng trùng vào ngày nghỉ (Chủ Nhật hoặc Lễ) nên tự động lùi sang ngày làm việc tiếp theo: <strong>{start_date_str}</strong>.<br/>"
             else:
                 explanation += f" Ngày bắt đầu giao hàng thực tế là ngày <strong>{start_date_str}</strong>.<br/>"
 
             explanation += f"• Tổng cộng có <strong>{trips_count} chuyến xe</strong> vận chuyển ({freq_str}).<br/>"
             
-            if sundays:
-                sundays_str = ", ".join(sundays)
-                explanation += f"• Hệ thống tự động phát hiện và <strong>loại trừ {len(sundays)} ngày Chủ Nhật</strong> ({sundays_str}) nghỉ làm việc.<br/>"
+            if sundays or holidays_skipped:
+                skipped_msgs = []
+                if sundays:
+                    skipped_msgs.append(f"<strong>{len(sundays)} ngày Chủ Nhật</strong> ({', '.join(sundays)})")
+                if holidays_skipped:
+                    skipped_msgs.append(f"<strong>{len(holidays_skipped)} ngày nghỉ lễ</strong> ({', '.join(holidays_skipped)})")
+                explanation += f"• Hệ thống tự động phát hiện và loại trừ {' và '.join(skipped_msgs)} nghỉ làm việc.<br/>"
             else:
-                explanation += "• Lịch trình giao hàng liên tục không trải qua ngày Chủ Nhật nào.<br/>"
+                explanation += "• Lịch trình giao hàng liên tục không trải qua ngày nghỉ nào.<br/>"
 
             explanation += f"• Vì vậy, ngày kết thúc giao hàng chính xác là <strong>{delivery_end_str}</strong>."
             explanation += "</div>"
@@ -391,8 +403,18 @@ class DlWoodDossier(models.Model):
                 delay = 5
                 
             start_date = record.x_end_date + timedelta(days=delay)
-            if start_date.weekday() == 6:  # Nếu là Chủ Nhật
-                start_date += timedelta(days=1)  # Chuyển sang thứ 2
+            
+            # Lấy danh sách ngày lễ trong 30 ngày tới
+            holiday_dates_for_start = self.env['dl.public.holiday'].get_holiday_dates(
+                start_date=start_date,
+                end_date=start_date + timedelta(days=30),
+                company_id=record.company_id.id
+            )
+            
+            # Bỏ qua Chủ Nhật VÀ các Ngày nghỉ lễ
+            while start_date.weekday() == 6 or start_date in holiday_dates_for_start:
+                start_date += timedelta(days=1)
+                
             record.x_delivery_start_date = start_date
 
             # 2. Tính số chuyến (số tickets hoặc ước lượng)
@@ -415,6 +437,13 @@ class DlWoodDossier(models.Model):
             current_date = start_date
             trips_delivered = 0
             
+            # Lấy danh sách ngày lễ từ ngày bắt đầu đến 1 năm sau
+            holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(
+                start_date=start_date,
+                end_date=start_date + timedelta(days=365),
+                company_id=record.company_id.id
+            )
+            
             if record.x_transport_method == 'urgent':
                 trips_delivered = min(2, trips_count)
             elif record.x_transport_method == 'slow':
@@ -425,7 +454,8 @@ class DlWoodDossier(models.Model):
 
             while trips_delivered < trips_count:
                 current_date += timedelta(days=1)
-                if current_date.weekday() != 6: # Ngày làm việc (khác Chủ Nhật)
+                # Bỏ qua ngày Chủ Nhật VÀ các Ngày nghỉ lễ
+                if current_date.weekday() != 6 and current_date not in holiday_dates:
                     if record.x_transport_method == 'urgent':
                         trips_delivered += 2
                     elif record.x_transport_method == 'slow':
@@ -451,12 +481,25 @@ class DlWoodDossier(models.Model):
                 if not record.x_company_position:
                     record.x_company_position = 'Giám đốc'
 
-    @api.depends('x_end_date')
+    @api.depends('x_end_date', 'company_id')
     def _compute_contract_date_default(self):
         from datetime import timedelta
         for record in self:
             if record.x_end_date:
-                record.x_contract_date = record.x_end_date + timedelta(days=1)
+                contract_date = record.x_end_date + timedelta(days=1)
+                
+                # Lấy ngày lễ trong 30 ngày tới
+                holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(
+                    start_date=contract_date,
+                    end_date=contract_date + timedelta(days=30),
+                    company_id=record.company_id.id
+                )
+                
+                # Bỏ qua Chủ Nhật và Ngày lễ
+                while contract_date.weekday() == 6 or contract_date in holiday_dates:
+                    contract_date += timedelta(days=1)
+                    
+                record.x_contract_date = contract_date
             else:
                 record.x_contract_date = False
 
@@ -579,8 +622,27 @@ class DlWoodDossier(models.Model):
         ('confirmed', 'Xác Nhận')
     ], string='Trạng thái', default='draft', tracking=True)
 
+    peeling_dossier_id = fields.Many2one(
+        'dl.wood.peeling.dossier',
+        string='Hồ sơ Ván bóc',
+        readonly=True,
+        help='Hồ sơ ván bóc được tạo ra từ việc chế biến hồ sơ gỗ này.'
+    )
+
     company_id = fields.Many2one('res.company', string='Công ty', required=True, default=lambda self: self.env.company)
     x_woodpro_id = fields.Char(string='ID WoodPro', index=True)
+
+    species_ids = fields.Many2many(
+        'dl.wood.species',
+        string='Các loài gỗ chứa trong Hồ sơ',
+        compute='_compute_species_ids',
+        store=True
+    )
+
+    @api.depends('line_ids.species_id')
+    def _compute_species_ids(self):
+        for rec in self:
+            rec.species_ids = rec.line_ids.mapped('species_id')
 
     # Sản phẩm đại diện (để map với product_id của ledger)
     product_id = fields.Many2one('product.product', string='Sản phẩm đại diện', help='Dùng để map với Sổ cái (Ledger)')
@@ -602,6 +664,15 @@ class DlWoodDossier(models.Model):
 
     # Danh sách 8 tài liệu hệ thống cố định
     document_ids = fields.One2many('dl.wood.dossier.document', 'dossier_id', string='Tài liệu hệ thống')
+    
+    # Ảnh đính kèm bổ sung (Sổ đỏ, CCCD...)
+    dossier_image_ids = fields.Many2many(
+        'ir.attachment',
+        'dl_wood_dossier_image_rel',
+        'dossier_id',
+        'attachment_id',
+        string='Ảnh Đính Kèm'
+    )
 
     # Thông tin Vận chuyển
     transport_ids = fields.One2many('dl.wood.dossier.transport', 'dossier_id', string='Cấu hình vận chuyển')
@@ -1227,7 +1298,24 @@ class DlWoodDossier(models.Model):
         self.write({'state': 'using'})
 
     def action_summary(self):
-        self.write({'state': 'summary'})
+        self.state = 'summary'
+
+    def action_open_peeling_production(self):
+        """Mở wizard để sản xuất ván bóc."""
+        pass
+        
+    def action_view_peeling_dossier(self):
+        self.ensure_one()
+        if not self.peeling_dossier_id:
+            raise UserError(_('Không tìm thấy Hồ sơ ván bóc nào!'))
+        return {
+            'name': 'Hồ sơ Ván bóc',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.wood.peeling.dossier',
+            'res_id': self.peeling_dossier_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def action_confirm(self):
         for record in self:
@@ -1417,6 +1505,10 @@ class DlWoodDossier(models.Model):
         return super(DlWoodDossier, self).write(vals)
 
     def unlink(self):
+        import traceback
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.error("!!! DL.WOOD.DOSSIER UNLINK TRACEBACK !!!\n" + "".join(traceback.format_stack()))
         for rec in self:
             if rec.state in ('using', 'summary', 'confirmed'):
                 raise UserError(_(
@@ -1488,6 +1580,15 @@ class DlWoodDossierLine(models.Model):
         default=0.0,
         help='Chỉ dùng cho Củi (firewood). Đơn vị: Ster. Người dùng nhập thẳng số ster, không cần đường kính/chiều cao.'
     )
+    volume_planed = fields.Float(
+        string='KL Dự kiến',
+        compute='_compute_volume_planed',
+        store=True,
+        readonly=False,
+        digits=(16, 2),
+        help='Khối lượng dự kiến = Khối lượng (Gỗ/Củi) * ngẫu nhiên từ 1.05 đến 1.15'
+    )
+
     price_unit = fields.Integer(string='Đơn giá')
     price_subtotal = fields.Float(string='Thành tiền', compute='_compute_price_subtotal', store=True, digits=(16, 2))
     
@@ -1502,6 +1603,20 @@ class DlWoodDossierLine(models.Model):
         for line in self:
             qty = line.volume_ster if line.wood_type == 'firewood' else line.volume
             line.price_subtotal = round(qty * line.price_unit, 2)
+
+    @api.depends('volume', 'volume_ster', 'wood_type')
+    def _compute_volume_planed(self):
+        import random
+        import math
+        for line in self:
+            actual_vol = line.volume_ster if line.wood_type == 'firewood' else line.volume
+            if actual_vol:
+                # Ngẫu nhiên tăng từ 10% đến 20%
+                ratio = random.uniform(1.1, 1.20)
+                # Làm tròn lên thành số nguyên theo yêu cầu
+                line.volume_planed = math.ceil(actual_vol * ratio)
+            else:
+                line.volume_planed = 0.0
 
     @api.depends('species_id', 'grade_id', 'volume', 'x_qty_available', 'diameter_min', 'diameter_max', 'height')
     def _compute_display_name(self):
@@ -1656,7 +1771,27 @@ class DlWoodDossierLine(models.Model):
         for line in self:
             line.height_display = f"{line.height:.1f}".replace('.', ',') if line.height else ""
     
-    note = fields.Char(string='Ghi chú')
+    note = fields.Text(string='Ghi chú')
+
+    def action_open_peeling_production(self):
+        """Mở wizard bóc ván cho dòng này."""
+        self.ensure_one()
+        if self.wood_type == 'firewood':
+            raise UserError(_('Củi không thể đem đi bóc ván!'))
+        if self.x_qty_available <= 0:
+            raise UserError(_('Dòng này đã được bóc hoặc sử dụng hết!'))
+        
+        return {
+            'name': 'Bóc Ván',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.wood.peeling.line.production.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_model': 'dl.wood.dossier.line',
+                'active_id': self.id,
+            }
+        }
     x_woodpro_id = fields.Char(string='ID WoodPro')
 
     def write(self, vals):
