@@ -1,0 +1,7 @@
+/* Thiết lập độ rộng cột Số CCCD trong List View để hiển thị đầy đủ số không bị mất */
+.o_list_table th[data-name="identification_id"],
+.o_list_table td[data-name="identification_id"] {
+    min-width: 160px !important;
+    width: 160px !important;
+    white-space: nowrap !important;
+}

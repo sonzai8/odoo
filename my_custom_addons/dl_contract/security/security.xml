@@ -50,5 +50,11 @@
             <field name="model_id" ref="model_dl_contract_template"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
+
+        <record id="dl_employee_scan_doc_company_rule" model="ir.rule">
+            <field name="name">Tài liệu scan: Multi-company</field>
+            <field name="model_id" ref="model_dl_employee_scan_doc"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

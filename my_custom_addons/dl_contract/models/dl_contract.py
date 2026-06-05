@@ -22,7 +22,8 @@ class DlContract(models.Model):
     allowance = fields.Monetary(string='Phụ cấp', tracking=True)
     total_wage = fields.Monetary(string='Tổng thu nhập', compute='_compute_total_wage', store=True)
     
-    job_title = fields.Char(string='Chức danh trong HĐ', tracking=True)
+    job_title_id = fields.Many2one('dl.job.title', string='Chức danh', tracking=True, domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    job_title = fields.Char(string='Chức danh trong HĐ', compute='_compute_job_title_char', store=True, readonly=False, tracking=True)
     department_id = fields.Many2one('hr.department', string='Phòng ban', domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]", tracking=True)
     
     scan_file = fields.Binary(string='File scan PDF hợp đồng', attachment=True)
@@ -45,14 +46,36 @@ class DlContract(models.Model):
     
     x_days_to_expire = fields.Integer(string='Số ngày còn lại', compute='_compute_x_days_to_expire')
     x_is_expiring_soon = fields.Boolean(string='Sắp hết hạn', compute='_compute_x_days_to_expire')
+    x_previous_state = fields.Char(string='Trạng thái trước đó', readonly=True, copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 company_id = vals.get('company_id', self.env.company.id)
-                seq = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
-                vals['name'] = seq
+                contract_type_id = vals.get('contract_type_id')
+                if contract_type_id:
+                    contract_type = self.env['dl.contract.type'].browse(contract_type_id)
+                    code = (contract_type.code or '').strip()
+                    if code:
+                        seq_code = f'dl.contract.{code}'
+                        seq = self.env['ir.sequence'].with_company(company_id).search([('code', '=', seq_code)], limit=1)
+                        if not seq:
+                            seq = self.env['ir.sequence'].sudo().create({
+                                'name': f'Mã Hợp Đồng - {contract_type.name}',
+                                'code': seq_code,
+                                'prefix': f'DL-HD/{code}/%(year)s/',
+                                'padding': 5,
+                                'company_id': company_id,
+                            })
+                        seq_name = seq.with_company(company_id).next_by_id() or _('New')
+                        vals['name'] = seq_name
+                    else:
+                        seq = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
+                        vals['name'] = seq
+                else:
+                    seq = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
+                    vals['name'] = seq
         return super().create(vals_list)
 
     @api.depends('wage', 'allowance')
@@ -71,7 +94,13 @@ class DlContract(models.Model):
             
             delta = (record.date_end - today).days
             record.x_days_to_expire = delta
-            record.x_is_expiring_soon = True if delta <= 30 and record.state == 'active' else False
+            
+            # Tự động chuyển sang hết hạn nếu đã quá hạn kết thúc mà trạng thái vẫn là active
+            if record.state == 'active' and delta < 0:
+                record.state = 'expired'
+            
+            # Chỉ báo sắp hết hạn nếu đang hiệu lực và thời gian còn lại từ 0 đến 30 ngày
+            record.x_is_expiring_soon = True if 0 <= delta <= 30 and record.state == 'active' else False
 
     @api.onchange('contract_type_id', 'date_start')
     def _onchange_contract_type_id(self):
@@ -91,8 +120,21 @@ class DlContract(models.Model):
     @api.onchange('employee_id')
     def _onchange_employee_id(self):
         if self.employee_id:
+            if getattr(self.employee_id, 'x_job_title_id', False):
+                self.job_title_id = self.employee_id.x_job_title_id
             self.job_title = self.employee_id.job_title
             self.department_id = self.employee_id.department_id
+
+    @api.onchange('job_title_id')
+    def _onchange_job_title_id(self):
+        if self.job_title_id and self.job_title_id.department_id:
+            self.department_id = self.job_title_id.department_id
+
+    @api.depends('job_title_id')
+    def _compute_job_title_char(self):
+        for record in self:
+            if record.job_title_id:
+                record.job_title = record.job_title_id.name
 
     def action_confirm(self):
         for record in self:
@@ -140,6 +182,12 @@ class DlContract(models.Model):
         }
 
     def write(self, vals):
+        # Theo dõi thay đổi trạng thái để lưu trạng thái trước đó
+        if 'state' in vals:
+            for record in self:
+                if record.state != vals['state']:
+                    super(DlContract, record).write({'x_previous_state': record.state})
+
         # Theo dõi sự thay đổi lương để ghi vào lịch sử
         if 'wage' in vals:
             for record in self:
@@ -151,7 +199,17 @@ class DlContract(models.Model):
                         'effective_date': fields.Date.today(),
                         'reason': 'Điều chỉnh lương',
                     })
-        return super().write(vals)
+        return super(DlContract, self).write(vals)
+
+    def action_set_to_previous_state(self):
+        for record in self:
+            if record.x_previous_state:
+                prev_state = record.x_previous_state
+                record.write({
+                    'state': prev_state,
+                    'x_previous_state': False
+                })
+
 
     @api.model
     def _cron_check_expired(self):

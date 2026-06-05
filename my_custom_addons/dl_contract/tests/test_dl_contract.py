@@ -409,3 +409,111 @@ class TestDlContract(TransactionCase):
         # Mô phỏng sự kiện onchange khi người dùng chọn loại hợp đồng trên giao diện
         contract._onchange_contract_type_id()
         self.assertEqual(contract.wage, 6100000)
+
+    def test_19_dynamic_contract_sequence(self):
+        """Test sinh số hợp đồng động theo mã loại hợp đồng"""
+        # Tạo loại hợp đồng mới có code là 'CTH'
+        type_cth = self.env['dl.contract.type'].create({
+            'name': 'Hợp đồng có thời hạn CTH',
+            'code': 'CTH',
+            'duration_type': 'fixed',
+            'company_id': self.company_a.id,
+        })
+        # Tạo hợp đồng
+        contract = self.env['dl.contract'].create({
+            'employee_id': self.employee_a.id,
+            'contract_type_id': type_cth.id,
+            'wage': 5000000,
+            'date_start': fields.Date.today(),
+            'company_id': self.company_a.id,
+        })
+        current_year = fields.Date.today().strftime('%Y')
+        expected_prefix = f"DL-HD/CTH/{current_year}/"
+        self.assertTrue(contract.name.startswith(expected_prefix))
+        self.assertEqual(len(contract.name), len(expected_prefix) + 5) # padding = 5
+
+    def test_20_wizard_default_template(self):
+        """Test wizard tự động điền template mặc định từ loại hợp đồng"""
+        # Gán template mặc định cho loại hợp đồng
+        self.contract_type_fixed_a.write({
+            'template_id': self.template_a.id
+        })
+        # Tạo hợp đồng
+        contract = self.env['dl.contract'].create({
+            'employee_id': self.employee_a.id,
+            'contract_type_id': self.contract_type_fixed_a.id,
+            'wage': 5000000,
+            'date_start': fields.Date.today(),
+            'company_id': self.company_a.id,
+        })
+        # Gọi wizard chỉ với default_contract_id
+        wizard = self.env['dl.contract.generate.wizard'].with_context(default_contract_id=contract.id).create({})
+        # Kiểm tra xem template_id có được điền đúng là template_a không
+        self.assertEqual(wizard.template_id.id, self.template_a.id)
+
+    def test_21_contract_rollback_state(self):
+        """Test quay lại trạng thái trước đó của hợp đồng"""
+        contract = self.env['dl.contract'].create({
+            'employee_id': self.employee_a.id,
+            'contract_type_id': self.contract_type_fixed_a.id,
+            'wage': 5000000,
+            'date_start': fields.Date.today(),
+            'company_id': self.company_a.id,
+        })
+        self.assertEqual(contract.state, 'draft')
+        self.assertFalse(contract.x_previous_state)
+
+        # Chuyển sang active
+        contract.action_confirm()
+        self.assertEqual(contract.state, 'active')
+        self.assertEqual(contract.x_previous_state, 'draft')
+
+        # Chuyển sang expired
+        contract.action_expire()
+        self.assertEqual(contract.state, 'expired')
+        self.assertEqual(contract.x_previous_state, 'active')
+
+        # Quay lại trạng thái trước (từ expired về active)
+        contract.action_set_to_previous_state()
+        self.assertEqual(contract.state, 'active')
+        self.assertFalse(contract.x_previous_state) # Đã reset sau khi rollback
+
+    def test_22_active_contract_employee_info(self):
+        """Test trường compute x_active_contract_department_id và x_active_contract_job_title trên employee"""
+        # Tạo phòng ban test
+        dept = self.env['hr.department'].create({
+            'name': 'Phòng Sản Xuất Test',
+            'company_id': self.company_a.id,
+        })
+        # Tạo hợp đồng dạng nháp
+        contract = self.env['dl.contract'].create({
+            'employee_id': self.employee_a.id,
+            'contract_type_id': self.contract_type_fixed_a.id,
+            'wage': 5000000,
+            'date_start': fields.Date.today(),
+            'company_id': self.company_a.id,
+            'department_id': dept.id,
+            'job_title': 'Công nhân tiện CNC',
+        })
+        self.employee_a.invalidate_recordset()
+        # Trạng thái nháp nên 2 trường phải trống
+        self.assertFalse(self.employee_a.x_active_contract_department_id)
+        self.assertFalse(self.employee_a.x_active_contract_job_title)
+
+        # Xác nhận hợp đồng để active
+        contract.action_confirm()
+        self.employee_a.invalidate_recordset()
+        # Đã active nên phải nhận đúng thông tin của hợp đồng này
+        self.assertEqual(self.employee_a.x_active_contract_department_id.id, dept.id)
+        self.assertEqual(self.employee_a.x_active_contract_job_title, 'Công nhân tiện CNC')
+
+        # Chuyển sang expired
+        contract.action_expire()
+        self.employee_a.invalidate_recordset()
+        # Đã hết hiệu lực nên phải quay về trống
+        self.assertFalse(self.employee_a.x_active_contract_department_id)
+        self.assertFalse(self.employee_a.x_active_contract_job_title)
+
+
+
+

@@ -1,5 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Form view của dl.employee.scan.doc dùng để xem trước PDF -->
+    <record id="view_dl_employee_scan_doc_form" model="ir.ui.view">
+        <field name="name">dl.employee.scan.doc.form</field>
+        <field name="model">dl.employee.scan.doc</field>
+        <field name="arch" type="xml">
+            <form string="Xem trước Tài liệu Scan">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="doc_type" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="upload_date" readonly="1"/>
+                            <field name="employee_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <div style="height: 600px; overflow: auto; border: 1px solid #ccc; margin-top: 10px;">
+                        <field name="file_data" widget="pdf_viewer" filename="file_name" readonly="1"/>
+                    </div>
+                    <field name="file_name" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <!-- Mở rộng form view của hr.employee -->
     <record id="view_employee_form_inherit_dl_contract" model="ir.ui.view">
         <field name="name">hr.employee.form.dl.contract</field>
@@ -44,6 +72,51 @@
                         </list>
                     </field>
                 </page>
+
+                <!-- Tab Tài liệu Scan -->
+                <page string="Tài liệu Scan" groups="dl_contract.group_contract_user">
+                    <field name="dl_scan_doc_ids"
+                           context="{'default_employee_id': id}">
+                        <list editable="bottom"
+                              decoration-muted="not file_data">
+                            <field name="name" string="Tên tài liệu" placeholder="Hợp đồng scan tháng..."/>
+                            <field name="doc_type"
+                                   widget="badge"
+                                   decoration-info="doc_type == 'contract'"
+                                   decoration-warning="doc_type == 'id_card'"
+                                   decoration-success="doc_type == 'decision'"
+                                   string="Loại"/>
+                            <field name="upload_date" string="Ngày upload"/>
+                            <field name="note" string="Ghi chú" optional="show"/>
+                            <field name="file_data"
+                                   widget="binary"
+                                   filename="file_name"
+                                   string="File PDF"
+                                   optional="show"/>
+                            <field name="file_name" column_invisible="1"/>
+                            <button name="action_preview_pdf"
+                                    type="object"
+                                    string="Xem trước"
+                                    icon="fa-eye"
+                                    invisible="not file_data"
+                                    title="Xem trước PDF bằng trình duyệt"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+            <xpath expr="//field[@name='identification_id']" position="after">
+                <field name="x_cccd_date"/>
+                <field name="x_cccd_place"/>
+                <field name="x_job_title_id" options="{'no_create': True, 'no_open': True}"/>
+            </xpath>
+            <xpath expr="//page[@name='resume']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='payroll_information']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='hr_settings']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
@@ -54,6 +127,12 @@
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_tree"/>
         <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="identification_id" string="Số CCCD" optional="show" width="150px"/>
+                <field name="sex" string="Giới tính" optional="show"/>
+                <field name="x_active_contract_department_id" string="Phòng ban (HĐ)" optional="show"/>
+                <field name="x_active_contract_job_title" string="Chức danh (HĐ)" optional="show"/>
+            </field>
             <field name="work_email" position="after">
                 <field name="dl_contract_state" widget="badge" optional="show"
                        decoration-info="dl_contract_state == 'no_contract'" 
@@ -61,6 +140,19 @@
                        decoration-warning="dl_contract_state == 'expiring_soon'" 
                        decoration-danger="dl_contract_state == 'expired'"/>
             </field>
+            <!-- Ẩn các cột cũ -->
+            <xpath expr="//field[@name='department_id']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='job_id']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='x_source_group_id']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
         </field>
     </record>
 
@@ -75,6 +167,17 @@
                 <filter string="Sắp hết HĐ" name="expiring_soon_contract" domain="[('dl_contract_state', '=', 'expiring_soon')]"/>
                 <filter string="Đang có HĐ" name="active_contract" domain="[('dl_contract_state', 'in', ['active', 'expiring_soon'])]"/>
                 <separator/>
+                <filter string="Nam" name="gender_male" domain="[('sex', '=', 'male')]"/>
+                <filter string="Nữ" name="gender_female" domain="[('sex', '=', 'female')]"/>
+                <separator/>
+            </xpath>
+            <xpath expr="//searchpanel" position="inside">
+                <field name="dl_contract_state" icon="fa-file-text-o" string="Tình trạng hợp đồng" enable_counters="1"/>
+                <field name="sex" icon="fa-transgender" string="Giới tính" enable_counters="1"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Tình trạng hợp đồng" name="group_by_dl_contract_state" domain="[]" context="{'group_by': 'dl_contract_state'}"/>
+                <filter string="Giới tính" name="group_by_sex" domain="[]" context="{'group_by': 'sex'}"/>
             </xpath>
         </field>
     </record>

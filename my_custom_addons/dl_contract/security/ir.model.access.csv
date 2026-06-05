@@ -9,3 +9,10 @@ access_dl_contract_template_user,dl.contract.template.user,model_dl_contract_tem
 access_dl_contract_template_manager,dl.contract.template.manager,model_dl_contract_template,group_contract_manager,1,1,1,1
 access_dl_contract_init_wizard,dl.contract.init.wizard.manager,model_dl_contract_init_wizard,group_contract_manager,1,1,1,1
 access_dl_contract_generate_wizard,dl.contract.generate.wizard,model_dl_contract_generate_wizard,group_contract_user,1,1,1,1
+access_dl_employee_scan_doc_user,dl.employee.scan.doc.user,model_dl_employee_scan_doc,group_contract_user,1,0,0,0
+access_dl_employee_scan_doc_manager,dl.employee.scan.doc.manager,model_dl_employee_scan_doc,group_contract_manager,1,1,1,1
+access_dl_digitize_contract_wizard,dl.digitize.contract.wizard,model_dl_digitize_contract_wizard,group_contract_manager,1,1,1,1
+access_dl_digitize_contract_wizard_line,dl.digitize.contract.wizard.line,model_dl_digitize_contract_wizard_line,group_contract_manager,1,1,1,1
+access_dl_job_title_user,dl.job.title.user,model_dl_job_title,group_contract_user,1,0,0,0
+access_dl_job_title_manager,dl.job.title.manager,model_dl_job_title,group_contract_manager,1,1,1,1
+

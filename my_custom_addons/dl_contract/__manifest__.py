@@ -18,6 +18,7 @@
         'data/ir_cron_data.xml',
         'wizard/dl_contract_generate_wizard_views.xml',
         'wizard/dl_contract_init_wizard_views.xml',
+        'wizard/dl_digitize_contract_wizard_views.xml',
         'views/menus.xml',
         'views/dl_contract_type_views.xml',
         'views/dl_contract_template_views.xml',
@@ -26,9 +27,15 @@
         'views/hr_employee_views.xml',
     ],
     'external_dependencies': {
-        'python': ['python-docx'],
+        'python': ['python-docx', 'pytesseract', 'pymupdf'],
+        'bin': ['tesseract'],
+    },
+    'assets': {
+        'web.assets_backend': [
+            'dl_contract/static/src/css/dl_contract.css',
+        ],
     },
     'installable': True,
-    'application': False,
+    'application': True,
     'license': 'LGPL-3',
 }

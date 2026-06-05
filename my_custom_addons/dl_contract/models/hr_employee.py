@@ -13,11 +13,36 @@ class HrEmployee(models.Model):
         ('expiring_soon', 'Sắp hết hợp đồng'),
         ('expired', 'Đã hết hạn/Chấm dứt')
     ], string='Tình trạng hợp đồng', compute='_compute_dl_contract_state', store=True)
+    x_active_contract_department_id = fields.Many2one('hr.department', string='Phòng ban (HĐ)', compute='_compute_active_contract_info', store=True)
+    x_active_contract_job_title = fields.Char(string='Chức danh (HĐ)', compute='_compute_active_contract_info', store=True)
+
+    x_cccd_date = fields.Date(string='Ngày cấp CCCD')
+    x_cccd_place = fields.Selection([
+        ('cuc_qlhc', 'CCS QLHC về TTXH'),
+        ('bo_cong_an', 'Bộ công an')
+    ], string='Nơi cấp CCCD', default='cuc_qlhc')
+    x_job_title_id = fields.Many2one('dl.job.title', string='Chức danh', domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+
+    # Tab Tài liệu scan
+    dl_scan_doc_ids = fields.One2many(
+        'dl.employee.scan.doc',
+        'employee_id',
+        string='Tài liệu Scan',
+    )
+    dl_scan_doc_count = fields.Integer(
+        string='Số tài liệu scan',
+        compute='_compute_dl_scan_doc_count',
+    )
 
     @api.depends('dl_contract_ids')
     def _compute_dl_contract_count(self):
         for employee in self:
             employee.dl_contract_count = len(employee.dl_contract_ids)
+
+    @api.depends('dl_scan_doc_ids')
+    def _compute_dl_scan_doc_count(self):
+        for employee in self:
+            employee.dl_scan_doc_count = len(employee.dl_scan_doc_ids)
 
     @api.depends('dl_contract_ids.state', 'dl_contract_ids.date_start')
     def _compute_dl_current_contract_id(self):
@@ -59,3 +84,23 @@ class HrEmployee(models.Model):
             'domain': [('employee_id', '=', self.id)],
             'context': {'default_employee_id': self.id},
         }
+
+    @api.onchange('x_job_title_id')
+    def _onchange_x_job_title_id(self):
+        if self.x_job_title_id:
+            self.job_title = self.x_job_title_id.name
+            if self.x_job_title_id.department_id:
+                self.department_id = self.x_job_title_id.department_id
+
+    @api.depends('dl_contract_ids.state', 'dl_contract_ids.department_id', 'dl_contract_ids.job_title', 'dl_contract_ids.date_start')
+    def _compute_active_contract_info(self):
+        for employee in self:
+            active_contracts = employee.dl_contract_ids.filtered(lambda c: c.state == 'active')
+            if active_contracts:
+                latest_active = active_contracts.sorted('date_start', reverse=True)[0]
+                employee.x_active_contract_department_id = latest_active.department_id
+                employee.x_active_contract_job_title = latest_active.job_title
+            else:
+                employee.x_active_contract_department_id = False
+                employee.x_active_contract_job_title = False
+

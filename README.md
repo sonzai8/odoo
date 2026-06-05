@@ -66,5 +66,5 @@ python odoo-bin -c odoo.conf --dev=all
 
 dl_wood_product_base,dl_wood_payroll,dl_wood_traceability
 
- ./venv/bin/python odoo-bin -c odoo.conf -u dl_wood_product_base,dl_wood_payroll,dl_wood_traceability -d odoo_db_production --stop-after-init
+ ./venv/bin/python odoo-bin -c odoo.conf -u dl_wood_product_base,dl_wood_payroll,dl_wood_traceability, dl_contract -d odoo_db_production --stop-after-init
 ./venv/bin/python odoo-bin -c odoo.conf --dev=all

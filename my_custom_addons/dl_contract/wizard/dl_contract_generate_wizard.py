@@ -25,6 +25,17 @@ class DlContractGenerateWizard(models.TransientModel):
         ('done', 'Đã tạo xong')
     ], default='choose')
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super(DlContractGenerateWizard, self).default_get(fields_list)
+        contract_id = self._context.get('default_contract_id') or res.get('contract_id')
+        if contract_id:
+            contract = self.env['dl.contract'].browse(contract_id)
+            if 'template_id' in fields_list and not res.get('template_id'):
+                if contract.contract_type_id and contract.contract_type_id.template_id:
+                    res['template_id'] = contract.contract_type_id.template_id.id
+        return res
+
     def action_generate(self):
         self.ensure_one()
         if not Document:
@@ -47,14 +58,41 @@ class DlContractGenerateWizard(models.TransientModel):
         employee = contract.employee_id
         company = contract.company_id
         
+        # Tính thời hạn hợp đồng từ loại hợp đồng default_duration_months
+        contract_type = contract.contract_type_id
+        if contract_type.duration_type == 'indefinite':
+            term_str = 'Không xác định thời hạn'
+        else:
+            term_str = f"{contract_type.default_duration_months or 12} tháng"
+
+        # Tính dạng text của ngày ký hợp đồng (ngày bắt đầu hiệu lực)
+        text_contract_date_str = ''
+        if contract.date_start:
+            text_contract_date_str = f"ngày {contract.date_start.strftime('%d')} tháng {contract.date_start.strftime('%m')} năm {contract.date_start.strftime('%Y')}"
+
+        # Lấy nhãn hiển thị của Nơi cấp CCCD (Selection)
+        cccd_place_label = ''
+        if getattr(employee, 'x_cccd_place', False):
+            cccd_place_label = dict(employee._fields['x_cccd_place']._description_selection(self.env)).get(employee.x_cccd_place, '')
+
         replace_dict = {
             '{{employee_name}}': employee.name or '',
             '{{employee_cccd}}': employee.identification_id or '',
+            '{{employee_cccd_date}}': employee.x_cccd_date.strftime('%d/%m/%Y') if getattr(employee, 'x_cccd_date', False) and employee.x_cccd_date else '',
+            '{{employee_cccd_place}}': cccd_place_label,
             '{{employee_birthday}}': employee.birthday.strftime('%d/%m/%Y') if employee.birthday else '',
+            '{{employee_gender}}': 'Nam' if employee.sex == 'male' else 'Nữ' if employee.sex == 'female' else '',
             '{{employee_address}}': employee.private_street or '', # Cần check trường địa chỉ thực tế của hr.employee
             '{{employee_phone}}': employee.private_phone or employee.work_phone or employee.mobile_phone or '',
+            '{{employee_dept}}': contract.department_id.name or employee.department_id.name or '',
+            '{{employee_salary}}': '{:,.0f}'.format(contract.total_wage).replace(',', '.') or '0',
+            '{{employee_job_title}}': contract.job_title or getattr(employee, 'job_title', '') or '',
             '{{contract_number}}': contract.name or '',
-            '{{contract_type}}': contract.contract_type_id.name or '',
+            '{{contract_type}}': contract_type.name or '',
+            '{{contract_term}}': term_str,
+            '{{contract_start_date}}': contract.date_start.strftime('%d/%m/%Y') if contract.date_start else '',
+            '{{contract_end_date}}': contract.date_end.strftime('%d/%m/%Y') if contract.date_end else '...',
+            '{{text_contract_date}}': text_contract_date_str,
             '{{date_start}}': contract.date_start.strftime('%d/%m/%Y') if contract.date_start else '',
             '{{date_end}}': contract.date_end.strftime('%d/%m/%Y') if contract.date_end else '...',
             '{{job_title}}': contract.job_title or '',

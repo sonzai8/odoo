@@ -37,6 +37,14 @@
               action="action_dl_contract"
               sequence="20"/>
 
+    <!-- Số hoá Hợp đồng -->
+    <menuitem id="menu_dl_digitize_contract"
+              name="Số hoá Hợp đồng"
+              parent="menu_dl_contract_root"
+              action="action_dl_digitize_contract_wizard"
+              groups="dl_contract.group_contract_manager"
+              sequence="30"/>
+
     <!-- Cấu hình -->
     <menuitem id="menu_dl_contract_config"
               name="Cấu hình"
@@ -76,5 +84,78 @@
               parent="menu_dl_contract_config"
               action="action_dl_contract_init_wizard"
               sequence="90"/>
+
+    <!-- Quản lý Phòng ban -->
+    <record id="action_dl_department_config" model="ir.actions.act_window">
+        <field name="name">Phòng ban</field>
+        <field name="res_model">hr.department</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo phòng ban đầu tiên
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_dl_department_config"
+              name="Phòng ban"
+              parent="menu_dl_contract_config"
+              action="action_dl_department_config"
+              sequence="30"/>
+
+    <!-- Views cho dl.job.title -->
+    <record id="view_dl_job_title_tree" model="ir.ui.view">
+        <field name="name">dl.job.title.tree</field>
+        <field name="model">dl.job.title</field>
+        <field name="arch" type="xml">
+            <list string="Chức danh công việc" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="department_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dl_job_title_form" model="ir.ui.view">
+        <field name="name">dl.job.title.form</field>
+        <field name="model">dl.job.title</field>
+        <field name="arch" type="xml">
+            <form string="Chức danh công việc">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="department_id"/>
+                            <field name="sequence"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Quản lý Chức danh -->
+    <record id="action_dl_job_title_config" model="ir.actions.act_window">
+        <field name="name">Chức danh</field>
+        <field name="res_model">dl.job.title</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo chức danh đầu tiên
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_dl_job_title_config"
+              name="Chức danh"
+              parent="menu_dl_contract_config"
+              action="action_dl_job_title_config"
+              sequence="40"/>
 
 </odoo>

@@ -33,12 +33,14 @@
                 <header>
                     <button name="action_confirm" type="object" string="Xác nhận hiệu lực" class="oe_highlight" invisible="state != 'draft'" groups="dl_contract.group_contract_manager"/>
                     <button name="action_renew" type="object" string="Gia hạn HĐ" class="oe_highlight" invisible="state not in ('active', 'expired')" groups="dl_contract.group_contract_manager"/>
-                    <button name="%(action_dl_contract_generate_wizard)d" type="action" string="Tạo File HĐ từ Template" class="btn-secondary" invisible="state not in ('draft', 'active')" context="{'default_contract_id': id, 'default_template_id': contract_type_id.template_id}"/>
+                    <button name="%(action_dl_contract_generate_wizard)d" type="action" string="Tạo File HĐ từ Template" class="btn-secondary" invisible="state not in ('draft', 'active')" context="{'default_contract_id': id}"/>
                     <button name="action_terminate" type="object" string="Chấm dứt HĐ" invisible="state != 'active'" groups="dl_contract.group_contract_manager"/>
                     <button name="action_expire" type="object" string="Đánh dấu Hết hạn" invisible="state != 'active'" groups="dl_contract.group_contract_manager" confirm="Bạn có chắc hợp đồng này đã hết hạn?"/>
+                    <button name="action_set_to_previous_state" type="object" string="Quay lại trạng thái trước" class="btn-secondary" invisible="not x_previous_state" groups="dl_contract.group_contract_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,active,expired"/>
                 </header>
                 <sheet>
+                    <field name="x_previous_state" invisible="1"/>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -49,10 +51,14 @@
                         <i class="fa fa-warning"/> Hợp đồng này sắp hết hạn trong <strong><field name="x_days_to_expire" class="oe_inline"/></strong> ngày tới!
                     </div>
 
+                    <div class="alert alert-danger" role="alert" invisible="state != 'expired' or x_days_to_expire &gt;= 0">
+                        <i class="fa fa-exclamation-triangle"/> Hợp đồng này đã hết hạn hiệu lực (Ngày kết thúc: <strong class="oe_inline"><field name="date_end"/></strong>).
+                    </div>
+
                     <group>
                         <group>
                             <field name="employee_id" readonly="state != 'draft'"/>
-                            <field name="job_title"/>
+                            <field name="job_title_id" readonly="state != 'draft'" options="{'no_create': True, 'no_open': True}"/>
                             <field name="department_id"/>
                             <field name="contract_type_id" readonly="state != 'draft'"/>
                             <field name="previous_contract_id" invisible="not previous_contract_id"/>

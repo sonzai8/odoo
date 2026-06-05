@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ACTION: Mở wizard số hoá hợp đồng hàng loạt
+    ═══════════════════════════════════════════════════════ -->
+    <record id="action_dl_digitize_contract_wizard" model="ir.actions.act_window">
+        <field name="name">Số hoá Hợp đồng Hàng loạt</field>
+        <field name="res_model">dl.digitize.contract.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FORM VIEW: Wizard 3 bước hỗ trợ xử lý hàng loạt
+    ═══════════════════════════════════════════════════════ -->
+    <record id="view_dl_digitize_contract_wizard_form" model="ir.ui.view">
+        <field name="name">dl.digitize.contract.wizard.form</field>
+        <field name="model">dl.digitize.contract.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Số hoá Hợp đồng Lao động Hàng loạt">
+
+                <!-- ── Thanh tiến trình bước ── -->
+                <div class="o_statusbar_status" style="margin-bottom: 8px;">
+                    <button type="object"
+                            class="btn btn-secondary btn-sm"
+                            invisible="state != 'upload'"
+                            disabled="1">
+                        1. Upload PDF
+                    </button>
+                    <button type="object"
+                            class="btn btn-primary btn-sm"
+                            invisible="state == 'upload'"
+                            disabled="1">
+                        1. Upload PDF ✓
+                    </button>
+                    <span style="margin: 0 6px; color: #aaa;">→</span>
+                    
+                    <button type="object"
+                            class="btn btn-secondary btn-sm"
+                            invisible="state == 'upload' or state == 'done'"
+                            disabled="1">
+                        2. Kiểm tra thông tin
+                    </button>
+                    <button type="object"
+                            class="btn btn-primary btn-sm"
+                            invisible="state != 'review'"
+                            disabled="1">
+                        2. Kiểm tra thông tin
+                    </button>
+                    <button type="object"
+                            class="btn btn-primary btn-sm"
+                            invisible="state != 'done'"
+                            disabled="1">
+                        2. Kiểm tra thông tin ✓
+                    </button>
+                    <span style="margin: 0 6px; color: #aaa;">→</span>
+
+                    <button type="object"
+                            class="btn btn-secondary btn-sm"
+                            invisible="state == 'done'"
+                            disabled="1">
+                        3. Hoàn thành
+                    </button>
+                    <button type="object"
+                            class="btn btn-success btn-sm"
+                            invisible="state != 'done'"
+                            disabled="1">
+                        3. Hoàn thành ✓
+                    </button>
+                </div>
+
+                <sheet>
+                    <!-- ══════════════════════════════════════
+                         BƯỚC 1: UPLOAD NHIỀU FILE PDF
+                    ══════════════════════════════════════ -->
+                    <div invisible="state != 'upload'">
+                        <div class="oe_title">
+                            <h2>
+                                <span class="text-primary">📄</span>
+                                Bước 1: Chọn hoặc kéo thả các file PDF (Tối đa 20 file)
+                            </h2>
+                            <p class="text-muted">
+                                Chọn nhiều file PDF hợp đồng scan của nhân viên. Hệ thống sẽ chạy OCR đồng thời
+                                và phân tích thông tin của từng người.
+                            </p>
+                        </div>
+
+                        <group>
+                            <field name="attachment_ids"
+                                   widget="many2many_binary"
+                                   string="Các file PDF Hợp đồng"
+                                   required="state == 'upload'"
+                                   options="{'accepted_file_extensions': '.pdf'}"/>
+                        </group>
+
+                        <group string="Cấu hình tài liệu lưu">
+                            <group>
+                                <field name="doc_type" string="Loại tài liệu"/>
+                            </group>
+                            <group>
+                                <field name="doc_note" string="Ghi chú chung"/>
+                            </group>
+                        </group>
+
+                        <div class="alert alert-info mt-3" role="alert">
+                            <strong>💡 Lưu ý:</strong>
+                            <ul>
+                                <li>Số lượng file tối đa cho mỗi lượt xử lý là <strong>20 file PDF</strong>.</li>
+                                <li>Hệ thống bóc tách <strong>5 trang đầu</strong> của mỗi file.</li>
+                                <li>Quá trình OCR có thể mất từ <strong>30 giây đến 2 phút</strong> tùy số lượng file.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- ══════════════════════════════════════
+                         BƯỚC 2: REVIEW KẾT QUẢ OCR DẠNG BẢNG
+                    ══════════════════════════════════════ -->
+                    <div invisible="state != 'review'">
+                        <div class="oe_title">
+                            <h2>
+                                <span class="text-warning">🔍</span>
+                                Bước 2: Kiểm tra &amp; xác nhận thông tin hàng loạt
+                            </h2>
+                            <p class="text-muted">
+                                Kiểm tra và chỉnh sửa nhanh thông tin nhận dạng bị sai lệch trên bảng bên dưới
+                                trước khi bấm Lưu vào hồ sơ nhân viên.
+                            </p>
+                        </div>
+
+                        <field name="line_ids">
+                            <list editable="bottom" create="false" delete="true">
+                                <field name="pdf_filename" string="Tên file" readonly="1" force_save="1"/>
+                                <field name="extracted_name" string="Họ và tên" placeholder="Nhập họ tên..."/>
+                                <field name="extracted_cccd" string="Số CCCD" placeholder="Nhập CCCD..."/>
+                                <field name="extracted_dob" string="Ngày sinh"/>
+                                <field name="ocr_confidence"
+                                       widget="badge"
+                                       string="Độ tin cậy OCR"
+                                       decoration-success="ocr_confidence == 'high'"
+                                       decoration-warning="ocr_confidence == 'medium'"
+                                       decoration-danger="ocr_confidence == 'low'"
+                                       readonly="1"/>
+                                <field name="action_type"
+                                       widget="badge"
+                                       string="Dự kiến"
+                                       decoration-success="action_type == 'link'"
+                                       decoration-warning="action_type == 'create'"
+                                       readonly="1"
+                                       force_save="1"/>
+                                <field name="matched_employee_id"
+                                       string="Nhân viên khớp"
+                                       options="{'no_create': True}"/>
+                                <field name="status" column_invisible="1"/>
+                            </list>
+                        </field>
+
+                        <div class="alert alert-warning mt-2" role="alert">
+                            <strong>⚠️ Lưu ý về Tạo mới nhân viên:</strong>
+                            Các dòng có trạng thái <strong>Tạo hồ sơ mới</strong> (Chưa tìm thấy trong hệ thống) sẽ tự động được tạo hồ sơ nhân viên mới với Họ tên, CCCD và Ngày sinh ở trên. Vui lòng kiểm tra kỹ dấu tiếng Việt.
+                        </div>
+                    </div>
+
+                    <!-- ══════════════════════════════════════
+                         BƯỚC 3: HOÀN THÀNH VÀ BÁO CÁO KẾT QUẢ
+                    ══════════════════════════════════════ -->
+                    <div invisible="state != 'done'">
+                        <div class="oe_title text-center" style="padding: 15px 0;">
+                            <h2 class="text-success">🎉 Số hoá hàng loạt hoàn tất!</h2>
+                        </div>
+
+                        <div class="alert alert-success" style="white-space: pre-line; font-size: 14px;">
+                            <field name="result_message" readonly="1" nolabel="1"/>
+                        </div>
+
+                        <separator string="Báo cáo chi tiết kết quả từng file"/>
+                        <field name="line_ids" readonly="1">
+                            <list create="false" delete="false">
+                                <field name="pdf_filename" string="Tên file"/>
+                                <field name="extracted_name" string="Nhân viên"/>
+                                <field name="extracted_cccd" string="Số CCCD"/>
+                                <field name="status"
+                                       widget="badge"
+                                       string="Trạng thái"
+                                       decoration-success="status == 'success'"
+                                       decoration-danger="status == 'failed'"/>
+                                <field name="message" string="Chi tiết kết quả / Lỗi"/>
+                                <button name="action_open_employee"
+                                        type="object"
+                                        string="Mở hồ sơ"
+                                        icon="fa-external-link"
+                                        invisible="status != 'success' or not matched_employee_id"
+                                        title="Mở hồ sơ nhân viên trong tab mới"/>
+                            </list>
+                        </field>
+                    </div>
+
+                </sheet>
+
+                <!-- ══════════════════════════════════════
+                     FOOTER: Nút điều hướng theo từng bước
+                ══════════════════════════════════════ -->
+                <footer>
+                    <!-- Bước 1: Upload -->
+                    <button name="action_process_ocr"
+                            string="🔍 Xử lý OCR hàng loạt"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'upload'"/>
+
+                    <!-- Bước 2: Review -->
+                    <button name="action_confirm_save"
+                            string="💾 Xác nhận &amp; Lưu hàng loạt"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'review'"/>
+                    <button name="action_back_to_upload"
+                            string="← Quay lại"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state != 'review'"/>
+
+                    <!-- Bước 3: Done -->
+                    <button name="action_back_to_upload"
+                            string="📄 Tiếp tục số hoá các file khác"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'done'"/>
+
+                    <!-- Đóng -->
+                    <button string="Đóng"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+
+            </form>
+        </field>
+    </record>
+
+</odoo>
