@@ -45,6 +45,14 @@
               groups="dl_contract.group_contract_manager"
               sequence="30"/>
 
+    <!-- Tài liệu đã Số hoá -->
+    <menuitem id="menu_dl_employee_scan_doc"
+              name="Tài liệu đã Số hoá"
+              parent="menu_dl_contract_root"
+              action="action_dl_employee_scan_doc"
+              groups="dl_contract.group_contract_manager"
+              sequence="35"/>
+
     <!-- Cấu hình -->
     <menuitem id="menu_dl_contract_config"
               name="Cấu hình"

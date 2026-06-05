@@ -15,4 +15,6 @@ access_dl_digitize_contract_wizard,dl.digitize.contract.wizard,model_dl_digitize
 access_dl_digitize_contract_wizard_line,dl.digitize.contract.wizard.line,model_dl_digitize_contract_wizard_line,group_contract_manager,1,1,1,1
 access_dl_job_title_user,dl.job.title.user,model_dl_job_title,group_contract_user,1,0,0,0
 access_dl_job_title_manager,dl.job.title.manager,model_dl_job_title,group_contract_manager,1,1,1,1
+access_dl_scan_doc_zip_wizard_user,dl.scan.doc.zip.wizard.user,model_dl_scan_doc_zip_wizard,group_contract_user,1,1,1,1
+access_dl_scan_doc_zip_wizard_manager,dl.scan.doc.zip.wizard.manager,model_dl_scan_doc_zip_wizard,group_contract_manager,1,1,1,1
 

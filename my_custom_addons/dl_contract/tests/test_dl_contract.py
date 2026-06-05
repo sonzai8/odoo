@@ -15,9 +15,13 @@ class TestDlContract(TransactionCase):
         
         # 1. Công ty mặc định
         cls.company_a = cls.env.company
+        cls.company_a.x_wood_prefix = 'DL'
 
         # 2. Tạo công ty B để test Multi-company
-        cls.company_b = cls.env['res.company'].create({'name': 'Company B'})
+        cls.company_b = cls.env['res.company'].create({
+            'name': 'Company B',
+            'x_wood_prefix': 'DL',
+        })
 
         # 3. Tạo User A thuộc Company A
         cls.user_a = cls.env['res.users'].create({
@@ -143,6 +147,7 @@ class TestDlContract(TransactionCase):
         })
         self.env['dl.contract']._cron_check_expired()
         self.assertEqual(contract.state, 'expired')
+        self.assertEqual(contract.x_days_to_expire, 0)
 
     def test_05_contract_renew(self):
         today = fields.Date.today()
@@ -513,6 +518,166 @@ class TestDlContract(TransactionCase):
         # Đã hết hiệu lực nên phải quay về trống
         self.assertFalse(self.employee_a.x_active_contract_department_id)
         self.assertFalse(self.employee_a.x_active_contract_job_title)
+
+    def test_23_scan_doc_zip_download(self):
+        """Test chức năng tải về zip nhiều tài liệu scan cùng lúc"""
+        # 1. Tạo các tài liệu scan mẫu cho nhân viên (đặt x_is_digitized = True)
+        doc1 = self.env['dl.employee.scan.doc'].create({
+            'name': 'CCCD Nguyễn Văn A',
+            'employee_id': self.employee_a.id,
+            'file_data': base64.b64encode(b"Dummy PDF Content 1"),
+            'file_name': 'cccd_a.pdf',
+            'doc_type': 'id_card',
+            'x_is_digitized': True,
+        })
+        doc2 = self.env['dl.employee.scan.doc'].create({
+            'name': 'Hợp đồng lao động Nguyễn Văn A',
+            'employee_id': self.employee_a.id,
+            'file_data': base64.b64encode(b"Dummy PDF Content 2"),
+            'file_name': 'hdld_a.pdf',
+            'doc_type': 'contract',
+            'x_is_digitized': True,
+        })
+        
+        # 2. Test gọi wizard với active_ids của doc1 và doc2
+        wizard = self.env['dl.scan.doc.zip.wizard'].with_context(
+            active_ids=[doc1.id, doc2.id],
+            active_model='dl.employee.scan.doc'
+        ).create({})
+        
+        self.assertEqual(wizard.count, 2)
+        self.assertTrue(wizard.file_data)
+        self.assertTrue(wizard.file_name.startswith("Tai_lieu_scan_"))
+        self.assertTrue(wizard.file_name.endswith(".zip"))
+        
+        # Thử giải nén kiểm tra nội dung
+        zip_data = base64.b64decode(wizard.file_data)
+        import io, zipfile
+        with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_file:
+            filenames = zip_file.namelist()
+            self.assertEqual(len(filenames), 2)
+            
+            # Tên file mong đợi theo format {employee_name}_{file_name}
+            expected_name1 = f"{self.employee_a.name.replace(' ', '_')}_cccd_a.pdf"
+            expected_name2 = f"{self.employee_a.name.replace(' ', '_')}_hdld_a.pdf"
+            self.assertIn(expected_name1, filenames)
+            self.assertIn(expected_name2, filenames)
+            
+            # Kiểm tra nội dung
+            self.assertEqual(zip_file.read(expected_name1), b"Dummy PDF Content 1")
+            self.assertEqual(zip_file.read(expected_name2), b"Dummy PDF Content 2")
+            
+        # 3. Test trường hợp gọi wizard không truyền active_ids
+        with self.assertRaises(UserError):
+            self.env['dl.scan.doc.zip.wizard'].with_context(active_ids=[]).create({})
+
+    def test_24_scan_doc_digitized_filtering(self):
+        """Test phân lọc tài liệu được số hoá và tài liệu tải lên thủ công"""
+        self.employee_a.identification_id = '123456789012'
+        
+        # 1. Tạo tài liệu thủ công từ tab (mặc định x_is_digitized = False)
+        doc_manual = self.env['dl.employee.scan.doc'].create({
+            'name': 'Tài liệu thủ công',
+            'employee_id': self.employee_a.id,
+            'file_data': base64.b64encode(b"Dummy manual PDF"),
+            'file_name': 'manual.pdf',
+            'doc_type': 'other',
+        })
+        self.assertFalse(doc_manual.x_is_digitized)
+        
+        # 2. Tạo tài liệu qua wizard số hoá
+        attach = self.env['ir.attachment'].create({
+            'name': 'ocr_test.pdf',
+            'datas': base64.b64encode(b"Dummy OCR PDF"),
+            'res_model': 'dl.digitize.contract.wizard',
+        })
+        
+        wizard = self.env['dl.digitize.contract.wizard'].create({
+            'attachment_ids': [(6, 0, [attach.id])],
+            'doc_type': 'contract',
+            'doc_note': 'Test số hoá',
+        })
+        
+        # Thiết lập dòng line
+        wizard.line_ids = [(0, 0, {
+            'attachment_id': attach.id,
+            'extracted_cccd': '123456789012',
+            'extracted_name': self.employee_a.name,
+            'ocr_confidence': 'high',
+            'matched_employee_id': self.employee_a.id,
+            'action_type': 'link',
+            'status': 'pending',
+        })]
+        wizard.state = 'review'
+        
+        # Thực hiện lưu
+        wizard.action_confirm_save()
+        
+        # Tìm xem tài liệu đã tạo có x_is_digitized = True
+        doc_digitized = self.env['dl.employee.scan.doc'].search([
+            ('employee_id', '=', self.employee_a.id),
+            ('x_is_digitized', '=', True)
+        ])
+        self.assertTrue(doc_digitized)
+        self.assertEqual(len(doc_digitized), 1)
+        self.assertEqual(doc_digitized.note, 'Test số hoá')
+        
+        # 3. Test câu lệnh SQL update dữ liệu cũ trong init()
+        doc_old = self.env['dl.employee.scan.doc'].create({
+            'name': 'HĐ scan - Nguyễn Văn A - 01/01/2026',
+            'employee_id': self.employee_a.id,
+            'file_data': base64.b64encode(b"Old PDF"),
+            'file_name': 'old.pdf',
+        })
+        # Bắt buộc x_is_digitized thành False bằng SQL (để bỏ qua default value của create)
+        self.env.cr.execute("UPDATE dl_employee_scan_doc SET x_is_digitized = FALSE WHERE id = %s", [doc_old.id])
+        doc_old.invalidate_recordset()
+        self.assertFalse(doc_old.x_is_digitized)
+        
+        # Chạy hàm init để update
+        self.env['dl.employee.scan.doc'].init()
+        doc_old.invalidate_recordset()
+        self.assertTrue(doc_old.x_is_digitized)
+
+    def test_25_company_prefix_sequence(self):
+        """Test sinh số hợp đồng khi thay đổi mã cấu hình công ty x_wood_prefix"""
+        # 1. Đổi prefix của công ty thành 'QTP'
+        self.company_a.x_wood_prefix = 'QTP'
+        
+        # 2. Tạo loại hợp đồng mới có code là 'CTH'
+        type_cth = self.env['dl.contract.type'].create({
+            'name': 'Hợp đồng CTH QTP',
+            'code': 'CTH',
+            'duration_type': 'fixed',
+            'company_id': self.company_a.id,
+        })
+        
+        # 3. Tạo hợp đồng
+        contract = self.env['dl.contract'].create({
+            'employee_id': self.employee_a.id,
+            'contract_type_id': type_cth.id,
+            'wage': 5000000,
+            'date_start': fields.Date.today(),
+            'company_id': self.company_a.id,
+        })
+        
+        current_year = fields.Date.today().strftime('%Y')
+        expected_prefix = f"QTP-HD/CTH/{current_year}/"
+        self.assertTrue(contract.name.startswith(expected_prefix))
+        
+        # 4. Thay đổi mã công ty một lần nữa thành 'VIP'
+        self.company_a.x_wood_prefix = 'VIP'
+        
+        # Tạo hợp đồng tiếp theo, mã mới phải thay đổi prefix theo 'VIP'
+        contract_vip = self.env['dl.contract'].create({
+            'employee_id': self.employee_a.id,
+            'contract_type_id': type_cth.id,
+            'wage': 6000000,
+            'date_start': fields.Date.today(),
+            'company_id': self.company_a.id,
+        })
+        expected_prefix_vip = f"VIP-HD/CTH/{current_year}/"
+        self.assertTrue(contract_vip.name.startswith(expected_prefix_vip))
 
 
 

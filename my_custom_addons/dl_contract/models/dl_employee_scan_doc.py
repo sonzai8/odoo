@@ -47,6 +47,21 @@ class DlEmployeeScanDoc(models.Model):
         store=True,
         index=True,
     )
+    x_is_digitized = fields.Boolean(
+        string='Được số hoá từ OCR',
+        default=False,
+        index=True,
+    )
+
+    def init(self):
+        super(DlEmployeeScanDoc, self).init()
+        # Tự động cập nhật các tài liệu scan cũ được tạo từ wizard số hoá trước đây
+        self.env.cr.execute("""
+            UPDATE dl_employee_scan_doc
+            SET x_is_digitized = TRUE
+            WHERE x_is_digitized IS NOT TRUE
+              AND name LIKE 'HĐ/ scan - %' OR name LIKE 'HĐ scan - %';
+        """)
 
     def action_preview_pdf(self):
         self.ensure_one()

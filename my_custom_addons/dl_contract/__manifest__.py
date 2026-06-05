@@ -10,7 +10,7 @@
         Hỗ trợ đa công ty (Multi-Company).
     """,
     'author': 'Antigravity',
-    'depends': ['hr', 'dl_wood_payroll'],
+    'depends': ['hr', 'dl_wood_payroll', 'hr_homeworking'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -19,6 +19,8 @@
         'wizard/dl_contract_generate_wizard_views.xml',
         'wizard/dl_contract_init_wizard_views.xml',
         'wizard/dl_digitize_contract_wizard_views.xml',
+        'wizard/dl_scan_doc_zip_wizard_views.xml',
+        'views/dl_employee_scan_doc_views.xml',
         'views/menus.xml',
         'views/dl_contract_type_views.xml',
         'views/dl_contract_template_views.xml',

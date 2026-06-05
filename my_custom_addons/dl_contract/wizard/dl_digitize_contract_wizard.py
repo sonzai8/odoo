@@ -343,6 +343,7 @@ class DlDigitizeContractWizard(models.TransientModel):
                     'doc_type': self.doc_type,
                     'upload_date': fields.Date.today(),
                     'note': self.doc_note or '',
+                    'x_is_digitized': True,
                 })
 
                 line.write({

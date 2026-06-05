@@ -80,12 +80,7 @@
                         <list editable="bottom"
                               decoration-muted="not file_data">
                             <field name="name" string="Tên tài liệu" placeholder="Hợp đồng scan tháng..."/>
-                            <field name="doc_type"
-                                   widget="badge"
-                                   decoration-info="doc_type == 'contract'"
-                                   decoration-warning="doc_type == 'id_card'"
-                                   decoration-success="doc_type == 'decision'"
-                                   string="Loại"/>
+                            <field name="doc_type" string="Loại"/>
                             <field name="upload_date" string="Ngày upload"/>
                             <field name="note" string="Ghi chú" optional="show"/>
                             <field name="file_data"
@@ -116,6 +111,27 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//page[@name='hr_settings']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='work_location_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='birthday_public_display']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//label[@for='birthday_public_display']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='monday_location_id']/.." position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='work_email']/.." position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='work_phone']/.." position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='category_ids']/.." position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
         </field>
@@ -153,6 +169,12 @@
             <xpath expr="//field[@name='x_source_group_id']" position="attributes">
                 <attribute name="column_invisible">1</attribute>
             </xpath>
+            <xpath expr="//field[@name='work_phone']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='work_phone']" position="after">
+                <field name="mobile_phone" string="Điện thoại di động" optional="show"/>
+            </xpath>
         </field>
     </record>
 
@@ -162,6 +184,18 @@
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_filter"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='department_id']" position="attributes">
+                <attribute name="name">x_active_contract_department_id</attribute>
+                <attribute name="string">Phòng ban (HĐ)</attribute>
+            </xpath>
+            <xpath expr="//searchpanel/field[@name='department_id']" position="attributes">
+                <attribute name="name">x_active_contract_department_id</attribute>
+                <attribute name="string">Phòng ban (HĐ)</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='group_department']" position="attributes">
+                <attribute name="context">{'group_by': 'x_active_contract_department_id'}</attribute>
+                <attribute name="string">Phòng ban (HĐ)</attribute>
+            </xpath>
             <xpath expr="//filter[@name='message_needaction']" position="before">
                 <filter string="Chưa có HĐ" name="no_contract" domain="[('dl_contract_state', '=', 'no_contract')]"/>
                 <filter string="Sắp hết HĐ" name="expiring_soon_contract" domain="[('dl_contract_state', '=', 'expiring_soon')]"/>

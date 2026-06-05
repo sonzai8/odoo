@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- TREE VIEW -->
+    <record id="view_dl_employee_scan_doc_tree" model="ir.ui.view">
+        <field name="name">dl.employee.scan.doc.tree</field>
+        <field name="model">dl.employee.scan.doc</field>
+        <field name="arch" type="xml">
+            <list string="Tài liệu đã Số hoá">
+                <field name="upload_date"/>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="doc_type" widget="badge" 
+                       decoration-info="doc_type == 'contract'" 
+                       decoration-success="doc_type == 'decision'" 
+                       decoration-warning="doc_type == 'id_card'"/>
+                <field name="file_name"/>
+                <field name="note"/>
+                <button name="action_preview_pdf" string="Xem trước" type="object" icon="fa-eye"/>
+                <field name="file_data" filename="file_name" widget="binary" string="Tải về"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_dl_employee_scan_doc_form" model="ir.ui.view">
+        <field name="name">dl.employee.scan.doc.form</field>
+        <field name="model">dl.employee.scan.doc</field>
+        <field name="arch" type="xml">
+            <form string="Tài liệu Scan">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Hợp đồng lao động - Nguyễn Văn A"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" options="{'no_create': True}"/>
+                            <field name="doc_type"/>
+                        </group>
+                        <group>
+                            <field name="upload_date"/>
+                            <field name="file_name" invisible="1"/>
+                            <field name="note"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Xem trước tài liệu" name="preview_pdf">
+                            <field name="file_data" widget="pdf_viewer" filename="file_name" nolabel="1" style="height: 600px; width: 100%;"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_dl_employee_scan_doc_search" model="ir.ui.view">
+        <field name="name">dl.employee.scan.doc.search</field>
+        <field name="model">dl.employee.scan.doc</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm tài liệu">
+                <field name="name" string="Tên tài liệu"/>
+                <field name="file_name" string="Tên file"/>
+                <field name="employee_id" string="Nhân viên" filter_domain="[('employee_id.name', 'ilike', self)]"/>
+                
+                <separator/>
+                <filter string="Hợp đồng lao động" name="contract" domain="[('doc_type', '=', 'contract')]"/>
+                <filter string="CCCD / CMND" name="id_card" domain="[('doc_type', '=', 'id_card')]"/>
+                <filter string="Quyết định" name="decision" domain="[('doc_type', '=', 'decision')]"/>
+                
+                <group name="group_by">
+                    <filter string="Nhân viên" name="group_employee" domain="[]" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Loại tài liệu" name="group_doc_type" domain="[]" context="{'group_by': 'doc_type'}"/>
+                    <filter string="Ngày upload" name="group_upload_date" domain="[]" context="{'group_by': 'upload_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- WINDOW ACTION -->
+    <record id="action_dl_employee_scan_doc" model="ir.actions.act_window">
+        <field name="name">Tài liệu đã Số hoá</field>
+        <field name="res_model">dl.employee.scan.doc</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('x_is_digitized', '=', True)]</field>
+        <field name="search_view_id" ref="view_dl_employee_scan_doc_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có tài liệu số hoá nào.
+            </p>
+            <p>
+                Sử dụng chức năng "Số hoá hợp đồng" để upload và bóc tách tài liệu từ file PDF.
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -114,8 +114,8 @@
         <field name="model">dl.contract</field>
         <field name="arch" type="xml">
             <search string="Tìm kiếm Hợp đồng">
-                <field name="name"/>
-                <field name="employee_id"/>
+                <field name="name" string="Hợp đồng hoặc Nhân viên" filter_domain="['|', ('name', 'ilike', self), ('employee_id.name', 'ilike', self)]"/>
+                <field name="employee_id" string="Nhân viên" filter_domain="[('employee_id.name', 'ilike', self)]"/>
                 <field name="contract_type_id"/>
                 <field name="department_id"/>
                 <filter string="Dự thảo" name="draft" domain="[('state', '=', 'draft')]"/>

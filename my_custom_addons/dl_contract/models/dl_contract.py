@@ -53,6 +53,9 @@ class DlContract(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 company_id = vals.get('company_id', self.env.company.id)
+                company = self.env['res.company'].browse(company_id)
+                comp_code = (company.x_wood_prefix or 'DL').strip()
+                
                 contract_type_id = vals.get('contract_type_id')
                 if contract_type_id:
                     contract_type = self.env['dl.contract.type'].browse(contract_type_id)
@@ -60,22 +63,39 @@ class DlContract(models.Model):
                     if code:
                         seq_code = f'dl.contract.{code}'
                         seq = self.env['ir.sequence'].with_company(company_id).search([('code', '=', seq_code)], limit=1)
+                        expected_prefix = f'{comp_code}-HD/{code}/%(year)s/'
                         if not seq:
                             seq = self.env['ir.sequence'].sudo().create({
                                 'name': f'Mã Hợp Đồng - {contract_type.name}',
                                 'code': seq_code,
-                                'prefix': f'DL-HD/{code}/%(year)s/',
+                                'prefix': expected_prefix,
                                 'padding': 5,
                                 'company_id': company_id,
                             })
+                        else:
+                            if seq.prefix != expected_prefix:
+                                seq.sudo().write({'prefix': expected_prefix})
+                        
                         seq_name = seq.with_company(company_id).next_by_id() or _('New')
                         vals['name'] = seq_name
                     else:
-                        seq = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
-                        vals['name'] = seq
+                        seq = self.env['ir.sequence'].with_company(company_id).search([('code', '=', 'dl.contract')], limit=1)
+                        expected_prefix = f'{comp_code}-HD/%(year)s/'
+                        if seq:
+                            if seq.prefix != expected_prefix:
+                                seq.sudo().write({'prefix': expected_prefix})
+                            vals['name'] = seq.with_company(company_id).next_by_id() or _('New')
+                        else:
+                            vals['name'] = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
                 else:
-                    seq = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
-                    vals['name'] = seq
+                    seq = self.env['ir.sequence'].with_company(company_id).search([('code', '=', 'dl.contract')], limit=1)
+                    expected_prefix = f'{comp_code}-HD/%(year)s/'
+                    if seq:
+                        if seq.prefix != expected_prefix:
+                            seq.sudo().write({'prefix': expected_prefix})
+                        vals['name'] = seq.with_company(company_id).next_by_id() or _('New')
+                    else:
+                        vals['name'] = self.env['ir.sequence'].with_company(company_id).next_by_code('dl.contract') or _('New')
         return super().create(vals_list)
 
     @api.depends('wage', 'allowance')
@@ -93,11 +113,12 @@ class DlContract(models.Model):
                 continue
             
             delta = (record.date_end - today).days
-            record.x_days_to_expire = delta
             
             # Tự động chuyển sang hết hạn nếu đã quá hạn kết thúc mà trạng thái vẫn là active
             if record.state == 'active' and delta < 0:
                 record.state = 'expired'
+                
+            record.x_days_to_expire = max(0, delta)
             
             # Chỉ báo sắp hết hạn nếu đang hiệu lực và thời gian còn lại từ 0 đến 30 ngày
             record.x_is_expiring_soon = True if 0 <= delta <= 30 and record.state == 'active' else False
