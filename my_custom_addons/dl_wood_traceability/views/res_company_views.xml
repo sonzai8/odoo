@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_inherit_dl_wood" model="ir.ui.view">
+        <field name="name">res.company.form.dl.wood</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Lâm nghiệp &amp; Chuỗi cung ứng" name="wood_traceability_config">
+                    <group>
+                        <group string="Đại diện Công ty (Phục vụ In HĐ/Tài liệu)">
+                            <field name="x_representative" placeholder="Ví dụ: Ngô Đức Hòa"/>
+                            <field name="x_representative_position" placeholder="Ví dụ: Giám đốc"/>
+                        </group>
+                        <group string="Đại diện Kiểm kê (Phục vụ Phiếu Kiểm kê)">
+                            <field name="x_inventory_inspector" placeholder="Ví dụ: Hoàng Thị Nguyệt"/>
+                            <field name="x_inventory_inspector_position" placeholder="Ví dụ: Thủ kho"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -170,7 +170,7 @@
                             <h2 class="text-success">🎉 Số hoá hàng loạt hoàn tất!</h2>
                         </div>
 
-                        <div class="alert alert-success" style="white-space: pre-line; font-size: 14px;">
+                        <div class="alert alert-success" role="alert" style="white-space: pre-line; font-size: 14px;">
                             <field name="result_message" readonly="1" nolabel="1"/>
                         </div>
 

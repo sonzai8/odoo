@@ -13,6 +13,7 @@ class HrEmployee(models.Model):
         ('expiring_soon', 'Sắp hết hợp đồng'),
         ('expired', 'Đã hết hạn/Chấm dứt')
     ], string='Tình trạng hợp đồng', compute='_compute_dl_contract_state', store=True)
+    x_active_contract_type_id = fields.Many2one('dl.contract.type', string='Loại hợp đồng', compute='_compute_active_contract_info', store=True)
     x_active_contract_department_id = fields.Many2one('hr.department', string='Phòng ban (HĐ)', compute='_compute_active_contract_info', store=True)
     x_active_contract_job_title = fields.Char(string='Chức danh (HĐ)', compute='_compute_active_contract_info', store=True)
 
@@ -22,6 +23,36 @@ class HrEmployee(models.Model):
         ('bo_cong_an', 'Bộ công an')
     ], string='Nơi cấp CCCD', default='cuc_qlhc')
     x_job_title_id = fields.Many2one('dl.job.title', string='Chức danh', domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+
+    # Bảo hiểm & Hộ gia đình
+    x_kcb_state_id = fields.Many2one(
+        'res.country.state', 
+        string='Tỉnh đăng ký KCB ban đầu', 
+        domain="[('country_id.code', '=', 'VN')]",
+        compute='_compute_x_kcb_state_id',
+        store=True,
+        readonly=False
+    )
+    x_kcb_hospital = fields.Char(
+        string='Bệnh viện đăng ký KCB ban đầu',
+        compute='_compute_x_kcb_hospital',
+        store=True,
+        readonly=False
+    )
+    x_household_code = fields.Char(string='Mã số hộ gia đình')
+
+    # Thông tin khai sinh / nơi sinh
+    x_birth_state_id = fields.Many2one(
+        'res.country.state', 
+        string='Tỉnh khai sinh', 
+        domain="[('country_id.code', '=', 'VN')]"
+    )
+    x_birth_ward_id = fields.Many2one(
+        'res.country.ward', 
+        string='Xã/Phường khai sinh', 
+        domain="[('state_id', '=', x_birth_state_id)]"
+    )
+    x_birth_address = fields.Char(string='Nơi sinh (chi tiết)')
 
     # Tab Tài liệu scan
     dl_scan_doc_ids = fields.One2many(
@@ -38,6 +69,18 @@ class HrEmployee(models.Model):
         'employee_id',
         string='Thành viên Gia đình'
     )
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super(HrEmployee, self).default_get(fields_list)
+        company_id = res.get('company_id') or self.env.company.id
+        if company_id:
+            company = self.env['res.company'].browse(company_id)
+            if 'x_kcb_state_id' in fields_list and not res.get('x_kcb_state_id'):
+                res['x_kcb_state_id'] = company.x_kcb_state_id.id
+            if 'x_kcb_hospital' in fields_list and not res.get('x_kcb_hospital'):
+                res['x_kcb_hospital'] = company.x_kcb_hospital
+        return res
 
     @api.depends('dl_contract_ids')
     def _compute_dl_contract_count(self):
@@ -97,7 +140,7 @@ class HrEmployee(models.Model):
             if self.x_job_title_id.department_id:
                 self.department_id = self.x_job_title_id.department_id
 
-    @api.depends('dl_contract_ids.state', 'dl_contract_ids.department_id', 'dl_contract_ids.job_title', 'dl_contract_ids.date_start')
+    @api.depends('dl_contract_ids.state', 'dl_contract_ids.department_id', 'dl_contract_ids.job_title', 'dl_contract_ids.contract_type_id', 'dl_contract_ids.date_start')
     def _compute_active_contract_info(self):
         for employee in self:
             active_contracts = employee.dl_contract_ids.filtered(lambda c: c.state == 'active')
@@ -105,7 +148,43 @@ class HrEmployee(models.Model):
                 latest_active = active_contracts.sorted('date_start', reverse=True)[0]
                 employee.x_active_contract_department_id = latest_active.department_id
                 employee.x_active_contract_job_title = latest_active.job_title
+                employee.x_active_contract_type_id = latest_active.contract_type_id.id
             else:
                 employee.x_active_contract_department_id = False
                 employee.x_active_contract_job_title = False
+                employee.x_active_contract_type_id = False
+
+    @api.depends('company_id')
+    def _compute_x_kcb_state_id(self):
+        for rec in self:
+            if rec.company_id and not rec.x_kcb_state_id:
+                rec.x_kcb_state_id = rec.company_id.x_kcb_state_id
+            elif not rec.company_id:
+                rec.x_kcb_state_id = False
+
+    @api.depends('company_id')
+    def _compute_x_kcb_hospital(self):
+        for rec in self:
+            if rec.company_id and not rec.x_kcb_hospital:
+                rec.x_kcb_hospital = rec.company_id.x_kcb_hospital
+            elif not rec.company_id:
+                rec.x_kcb_hospital = False
+
+    @api.onchange('company_id')
+    def _onchange_company_id_kcb(self):
+        if self.company_id:
+            self.x_kcb_state_id = self.company_id.x_kcb_state_id
+            self.x_kcb_hospital = self.company_id.x_kcb_hospital
+        else:
+            self.x_kcb_state_id = False
+            self.x_kcb_hospital = False
+
+    @api.onchange('x_birth_state_id')
+    def _onchange_x_birth_state_id(self):
+        if self.x_birth_state_id:
+            if self.x_birth_ward_id and self.x_birth_ward_id.state_id != self.x_birth_state_id:
+                self.x_birth_ward_id = False
+        else:
+            self.x_birth_ward_id = False
+
 

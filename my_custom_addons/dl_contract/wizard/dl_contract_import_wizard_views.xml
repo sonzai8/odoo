@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_contract_import_wizard_form" model="ir.ui.view">
+        <field name="name">dl.contract.import.wizard.form</field>
+        <field name="model">dl.contract.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập/Xuất Hợp đồng hàng loạt">
+                <field name="state" invisible="1"/>
+                <field name="excel_filename" invisible="1"/>
+                
+                <!-- Giao diện khi ở trạng thái chọn tham số và nhập liệu -->
+                <div invisible="state != 'choose'">
+                    <p class="alert alert-info" role="alert" style="margin-bottom: 15px;">
+                        <strong>Hướng dẫn:</strong><br/>
+                        1. Nhấp <strong>"Tải Template Excel"</strong> để xuất danh sách nhân viên hiện hành chưa có hợp đồng.<br/>
+                        2. Điền thông tin hợp đồng vào file Excel đã tải (sử dụng danh sách xổ xuống tại cột Loại HĐ, Phòng ban, Chức danh).<br/>
+                        3. Tải file Excel đã điền lên phần <strong>"Nhập dữ liệu Hợp đồng"</strong> bên dưới và nhấp <strong>"Nhập Hợp đồng"</strong>.
+                    </p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 border-end">
+                            <h4 class="mb-3 text-primary" style="font-weight: 600;">1. Xuất Template Excel</h4>
+                            <group>
+                                <field name="company_id" options="{'no_open': True, 'no_create': True}"/>
+                                <field name="only_no_contract"/>
+                            </group>
+                            <div class="mt-3 text-center">
+                                <button name="action_export_template" 
+                                        string="Tải Template Excel" 
+                                        type="object" 
+                                        class="btn-primary btn-lg" 
+                                        icon="fa-download" 
+                                        style="width: 80%; max-width: 300px; padding: 10px;"/>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h4 class="mb-3 text-success" style="font-weight: 600;">2. Nhập dữ liệu Hợp đồng</h4>
+                            <group>
+                                <field name="excel_file" filename="excel_filename" string="File Excel đã nhập" widget="binary"/>
+                                <field name="auto_confirm"/>
+                            </group>
+                            <div class="mt-3 text-center">
+                                <button name="action_import_data" 
+                                        string="Nhập Hợp đồng" 
+                                        type="object" 
+                                        class="btn-success btn-lg" 
+                                        icon="fa-upload" 
+                                        style="width: 80%; max-width: 300px; padding: 10px;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Giao diện khi ở trạng thái hoàn thành -->
+                <div invisible="state != 'done'">
+                    <div invisible="excel_file == False">
+                        <div class="alert alert-success d-flex align-items-center" role="alert" style="margin-bottom: 20px;">
+                            <i class="fa fa-check-circle fa-2x me-3"></i>
+                            <div>
+                                <strong>Xuất bản mẫu thành công!</strong> Vui lòng tải file Excel mẫu bên dưới về máy tính của bạn.
+                            </div>
+                        </div>
+                        <group string="Tải file mẫu về">
+                            <field name="excel_file" filename="excel_filename" readonly="1" string="Tải xuống Template" widget="binary"/>
+                        </group>
+                    </div>
+
+                    <div invisible="excel_file != False">
+                        <div class="alert alert-info d-flex align-items-center" role="alert" style="margin-bottom: 20px;">
+                            <i class="fa fa-info-circle fa-2x me-3"></i>
+                            <div>
+                                <strong>Xử lý hoàn tất!</strong> Kết quả nhập dữ liệu đã được tổng hợp chi tiết bên dưới.
+                            </div>
+                        </div>
+                    </div>
+
+                    <group string="Chi tiết Kết quả xử lý">
+                        <field name="result_msg" nolabel="1" placeholder="Kết quả xử lý chi tiết sẽ được hiển thị tại đây..." style="font-family: monospace; font-size: 13px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;" rows="12"/>
+                    </group>
+                </div>
+
+                <footer>
+                    <button name="action_back_to_choose" string="Quay lại" type="object" class="btn-primary" invisible="state != 'done'" icon="fa-arrow-left" data-hotkey="b"/>
+                    <button special="cancel" string="Hủy" class="btn-secondary" invisible="state != 'choose'" data-hotkey="z"/>
+                    <button special="cancel" string="Đóng" class="btn-secondary" invisible="state != 'done'" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action cho wizard -->
+    <record id="action_dl_contract_import_wizard" model="ir.actions.act_window">
+        <field name="name">Nhập/Xuất Hợp đồng hàng loạt</field>
+        <field name="res_model">dl.contract.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menu item cho wizard -->
+    <menuitem id="menu_dl_contract_import_wizard"
+              name="Nhập hợp đồng hàng loạt"
+              parent="menu_dl_contract_main"
+              action="action_dl_contract_import_wizard"
+              groups="dl_contract.group_contract_user"
+              sequence="30"/>
+
+</odoo>

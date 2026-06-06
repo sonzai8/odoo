@@ -34,16 +34,21 @@
     <menuitem id="menu_dl_contract_main"
               name="Hợp đồng Lao động"
               parent="menu_dl_contract_root"
-              action="action_dl_contract"
               sequence="20"/>
+
+    <menuitem id="menu_dl_contract_list"
+              name="Danh sách Hợp đồng"
+              parent="menu_dl_contract_main"
+              action="action_dl_contract"
+              sequence="10"/>
 
     <!-- Số hoá Hợp đồng -->
     <menuitem id="menu_dl_digitize_contract"
               name="Số hoá Hợp đồng"
-              parent="menu_dl_contract_root"
+              parent="menu_dl_contract_main"
               action="action_dl_digitize_contract_wizard"
               groups="dl_contract.group_contract_manager"
-              sequence="30"/>
+              sequence="20"/>
 
     <!-- Tài liệu đã Số hoá -->
     <menuitem id="menu_dl_employee_scan_doc"
@@ -52,6 +57,15 @@
               action="action_dl_employee_scan_doc"
               groups="dl_contract.group_contract_manager"
               sequence="35"/>
+
+    <!-- Báo cáo Báo tăng BHXH (D02-LT) -->
+    <menuitem id="menu_dl_bhxh_d02_wizard"
+              name="Báo cáo Báo tăng BHXH (D02-LT)"
+              parent="menu_dl_contract_main"
+              action="action_dl_bhxh_d02_wizard"
+              groups="dl_contract.group_contract_user"
+              sequence="40"/>
+
 
     <!-- Cấu hình -->
     <menuitem id="menu_dl_contract_config"

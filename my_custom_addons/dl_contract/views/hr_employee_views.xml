@@ -43,16 +43,23 @@
                     <field name="dl_contract_count" widget="statinfo" string="Hợp đồng"/>
                 </button>
             </div>
-            
             <xpath expr="//notebook" position="inside">
                 <page string="Hợp đồng Lao động" groups="dl_contract.group_contract_user">
                     <group>
-                        <field name="dl_contract_state" widget="badge" 
-                               decoration-info="dl_contract_state == 'no_contract'" 
-                               decoration-success="dl_contract_state == 'active'" 
-                               decoration-warning="dl_contract_state == 'expiring_soon'" 
-                               decoration-danger="dl_contract_state == 'expired'"/>
-                        <field name="dl_current_contract_id" readonly="1" invisible="not dl_current_contract_id"/>
+                        <group string="Tình trạng Hợp đồng">
+                            <field name="dl_contract_state" widget="badge" 
+                                   decoration-info="dl_contract_state == 'no_contract'" 
+                                   decoration-success="dl_contract_state == 'active'" 
+                                   decoration-warning="dl_contract_state == 'expiring_soon'" 
+                                   decoration-danger="dl_contract_state == 'expired'"/>
+                            <field name="x_active_contract_type_id" readonly="1" invisible="not x_active_contract_type_id"/>
+                            <field name="dl_current_contract_id" readonly="1" invisible="not dl_current_contract_id"/>
+                        </group>
+                        <group string="Bảo hiểm &amp; Hộ gia đình">
+                            <field name="x_household_code" invisible="1"/>
+                            <field name="x_kcb_state_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="x_kcb_hospital"/>
+                        </group>
                     </group>
                     <separator string="Tất cả Hợp đồng"/>
                     <field name="dl_contract_ids" context="{'default_employee_id': id}">
@@ -77,9 +84,8 @@
                 <page string="Tài liệu Scan" groups="dl_contract.group_contract_user">
                     <field name="dl_scan_doc_ids"
                            context="{'default_employee_id': id}">
-                        <list editable="bottom"
-                              decoration-muted="not file_data">
-                            <field name="name" string="Tên tài liệu" placeholder="Hợp đồng scan tháng..."/>
+                        <list decoration-muted="not file_data">
+                            <field name="name" string="Tên tài liệu"/>
                             <field name="doc_type" string="Loại"/>
                             <field name="upload_date" string="Ngày upload"/>
                             <field name="note" string="Ghi chú" optional="show"/>
@@ -108,8 +114,10 @@
                             <field name="dl_gender" string="Giới tính"/>
                             <field name="dl_ethnic_name" string="Tên dân tộc"/>
                             <field name="dl_cccd" string="Số CCCD"/>
-                            <field name="dl_birth_province" string="Tỉnh khai sinh"/>
-                            <field name="dl_birth_ward" string="Phường khai sinh"/>
+                            <field name="dl_ssnid" string="Mã số BHXH"/>
+                            <field name="dl_phone" string="Điện thoại"/>
+                            <field name="dl_birth_state_id" string="Tỉnh khai sinh" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="dl_birth_ward_id" string="Xã/Phường khai sinh" options="{'no_create': True, 'no_open': True}"/>
                             <field name="dl_birth_address" string="Địa chỉ khai sinh"/>
                             <field name="dl_relation" string="Quan hệ với chủ hộ"/>
                         </list>
@@ -120,6 +128,17 @@
                 <field name="x_cccd_date"/>
                 <field name="x_cccd_place"/>
                 <field name="x_job_title_id" options="{'no_create': True, 'no_open': True}"/>
+            </xpath>
+            <xpath expr="//label[@for='place_of_birth']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[@name='birth_location']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[@name='birth_location']" position="after">
+                <field name="x_birth_state_id" options="{'no_create': True, 'no_open': True}"/>
+                <field name="x_birth_ward_id" options="{'no_create': True, 'no_open': True}"/>
+                <field name="x_birth_address" placeholder="Ví dụ: Số 12, Thôn Trung..."/>
             </xpath>
             <xpath expr="//page[@name='resume']" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -163,6 +182,7 @@
             <field name="name" position="after">
                 <field name="identification_id" string="Số CCCD" optional="show" width="150px"/>
                 <field name="sex" string="Giới tính" optional="show"/>
+                <field name="x_active_contract_type_id" string="Loại hợp đồng" optional="show"/>
                 <field name="x_active_contract_department_id" string="Phòng ban (HĐ)" optional="show"/>
                 <field name="x_active_contract_job_title" string="Chức danh (HĐ)" optional="show"/>
             </field>
@@ -223,10 +243,12 @@
                 <separator/>
             </xpath>
             <xpath expr="//searchpanel" position="inside">
+                <field name="x_active_contract_type_id" icon="fa-file-text-o" string="Loại hợp đồng" enable_counters="1"/>
                 <field name="dl_contract_state" icon="fa-file-text-o" string="Tình trạng hợp đồng" enable_counters="1"/>
                 <field name="sex" icon="fa-transgender" string="Giới tính" enable_counters="1"/>
             </xpath>
             <xpath expr="//group" position="inside">
+                <filter string="Loại hợp đồng" name="group_by_active_contract_type" domain="[]" context="{'group_by': 'x_active_contract_type_id'}"/>
                 <filter string="Tình trạng hợp đồng" name="group_by_dl_contract_state" domain="[]" context="{'group_by': 'dl_contract_state'}"/>
                 <filter string="Giới tính" name="group_by_sex" domain="[]" context="{'group_by': 'sex'}"/>
             </xpath>

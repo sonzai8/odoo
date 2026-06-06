@@ -15,6 +15,7 @@
                 <footer>
                     <button name="action_init_data" string="Khởi tạo Dữ liệu mẫu" type="object" class="btn-primary" data-hotkey="q"/>
                     <button name="action_init_vietnam_wards" string="Khởi tạo Tỉnh / Xã (GSO)" type="object" class="btn-info" data-hotkey="w"/>
+                    <button name="action_standardize_kcb" string="Chuẩn hóa KCB" type="object" class="btn-warning" data-hotkey="k"/>
                     <button string="Hủy" class="btn-secondary" special="cancel" data-hotkey="z"/>
                 </footer>
             </form>

@@ -21,4 +21,9 @@ access_dl_employee_family_member_user,dl.employee.family.member.user,model_dl_em
 access_dl_employee_family_member_manager,dl.employee.family.member.manager,model_dl_employee_family_member,group_contract_manager,1,1,1,1
 access_res_country_ward_user,res.country.ward.user,model_res_country_ward,group_contract_user,1,1,1,1
 access_res_country_ward_manager,res.country.ward.manager,model_res_country_ward,group_contract_manager,1,1,1,1
+access_dl_bhxh_d02_wizard_user,dl.bhxh.d02.wizard.user,model_dl_bhxh_d02_wizard,group_contract_user,1,1,1,1
+access_dl_bhxh_d02_wizard_manager,dl.bhxh.d02.wizard.manager,model_dl_bhxh_d02_wizard,group_contract_manager,1,1,1,1
+access_dl_contract_import_wizard_user,dl.contract.import.wizard.user,model_dl_contract_import_wizard,group_contract_user,1,1,1,1
+access_dl_contract_import_wizard_manager,dl.contract.import.wizard.manager,model_dl_contract_import_wizard,group_contract_manager,1,1,1,1
+
 

@@ -26,6 +26,7 @@
         'views/mrp_production_views.xml',
         'views/stock_picking_views.xml',
         'views/res_config_settings_views.xml',
+        'views/res_company_views.xml',
         'views/res_country_state_views.xml',
         'views/res_country_ward_views.xml',
         'views/dl_vietnam_bank_views.xml',

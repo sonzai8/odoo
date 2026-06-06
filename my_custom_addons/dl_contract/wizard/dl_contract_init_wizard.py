@@ -190,3 +190,43 @@ class DlContractInitWizard(models.TransientModel):
                 'type': 'success',
             }
         }
+
+    def action_standardize_kcb(self):
+        from odoo.exceptions import UserError
+        company = self.env.company
+        kcb_state = company.x_kcb_state_id
+        kcb_hospital = company.x_kcb_hospital
+
+        if not kcb_state and not kcb_hospital:
+            raise UserError(_("Vui lòng cấu hình Tỉnh và Bệnh viện KCB mặc định cho Công ty %s trước khi thực hiện chuẩn hóa.") % company.name)
+
+        employees = self.env['hr.employee'].search([
+            ('company_id', '=', company.id),
+            '|',
+            ('x_kcb_state_id', '=', False),
+            ('x_kcb_hospital', '=', False)
+        ])
+
+        updated_count = 0
+        for emp in employees:
+            vals = {}
+            if not emp.x_kcb_state_id and kcb_state:
+                vals['x_kcb_state_id'] = kcb_state.id
+            if not emp.x_kcb_hospital and kcb_hospital:
+                vals['x_kcb_hospital'] = kcb_hospital
+            
+            if vals:
+                emp.write(vals)
+                updated_count += 1
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("Thành công"),
+                'message': _("Đã chuẩn hóa thông tin KCB cho %s nhân viên của công ty %s.") % (updated_count, company.name),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+

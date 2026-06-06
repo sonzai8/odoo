@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dl_bhxh_d02_wizard_form" model="ir.ui.view">
+        <field name="name">dl.bhxh.d02.wizard.form</field>
+        <field name="model">dl.bhxh.d02.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Báo cáo Báo tăng BHXH (D02-LT)">
+                <field name="state" invisible="1"/>
+                
+                <div class="alert alert-info text-center" role="alert" invisible="state != 'choose'">
+                    <i class="fa fa-info-circle mr-1" title="Lưu ý"/> Chỉ trích xuất danh sách nhân viên ký hợp đồng lao động trong khoảng thời gian đã chọn và <strong>đã đính kèm bản scan hợp đồng PDF</strong>.
+                </div>
+
+                <group invisible="state != 'choose'">
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="company_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                </group>
+
+                <div class="text-center" invisible="state != 'done'">
+                    <h3><i class="fa fa-check-circle text-success" style="font-size: 48px;" title="Thành công"/></h3>
+                    <p class="mt-2" style="font-size: 16px; font-weight: bold;">Đã trích xuất báo cáo báo tăng BHXH thành công!</p>
+                    <p class="text-muted">Vui lòng click vào liên kết bên dưới để tải file Excel về máy tính.</p>
+                    <div class="mt-3">
+                        <field name="file_data" filename="file_name" widget="binary" string="Tải file kết quả"/>
+                        <field name="file_name" invisible="1"/>
+                    </div>
+                </div>
+
+                <footer>
+                    <button name="action_export_excel" string="Xuất Excel" type="object" class="btn-primary" invisible="state != 'choose'"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dl_bhxh_d02_wizard" model="ir.actions.act_window">
+        <field name="name">Báo cáo Báo tăng BHXH (D02-LT)</field>
+        <field name="res_model">dl.bhxh.d02.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -73,22 +73,6 @@
                                     </div>
                                 </setting>
                             </block>
-                            <block title="Đại diện Công ty (Phục vụ In Hợp đồng/Tài liệu)" name="wood_company_representative">
-                                <setting id="wood_representative_setting" string="Thông tin đại diện" help="Người đại diện ký kết các hợp đồng hồ sơ nguồn gốc gỗ">
-                                    <group>
-                                        <field name="x_representative" placeholder="Ví dụ: Nguyễn Văn A" class="w-100"/>
-                                        <field name="x_representative_position" placeholder="Ví dụ: Giám đốc" class="w-100"/>
-                                    </group>
-                                </setting>
-                            </block>
-                            <block title="Đại diện Kiểm kê (Phục vụ Phiếu Kiểm kê)" name="wood_inventory_inspector">
-                                <setting id="wood_inventory_inspector_setting" string="Thông tin người kiểm kê" help="Người thực hiện kiểm kê thực tế tại xưởng (thủ kho, quản đốc...)">
-                                    <group>
-                                        <field name="x_inventory_inspector" placeholder="Ví dụ: Nguyễn Văn B" class="w-100"/>
-                                        <field name="x_inventory_inspector_position" placeholder="Ví dụ: Quản đốc" class="w-100"/>
-                                    </group>
-                                </setting>
-                            </block>
                         </div>
                     </div>
                 </app>

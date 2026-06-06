@@ -70,6 +70,15 @@ class DlContractGenerateWizard(models.TransientModel):
         if contract.date_start:
             text_contract_date_str = f"ngày {contract.date_start.strftime('%d')} tháng {contract.date_start.strftime('%m')} năm {contract.date_start.strftime('%Y')}"
 
+        # Tính ngày ký hợp đồng = ngày bắt đầu - 2 ngày
+        sign_date_str = ''
+        text_sign_date_str = ''
+        if contract.date_start:
+            from datetime import timedelta
+            sign_date = contract.date_start - timedelta(days=2)
+            sign_date_str = sign_date.strftime('%d/%m/%Y')
+            text_sign_date_str = f"ngày {sign_date.strftime('%d')} tháng {sign_date.strftime('%m')} năm {sign_date.strftime('%Y')}"
+
         # Lấy nhãn hiển thị của Nơi cấp CCCD (Selection)
         cccd_place_label = ''
         if getattr(employee, 'x_cccd_place', False):
@@ -93,6 +102,8 @@ class DlContractGenerateWizard(models.TransientModel):
             '{{contract_start_date}}': contract.date_start.strftime('%d/%m/%Y') if contract.date_start else '',
             '{{contract_end_date}}': contract.date_end.strftime('%d/%m/%Y') if contract.date_end else '...',
             '{{text_contract_date}}': text_contract_date_str,
+            '{{sign_date}}': sign_date_str,
+            '{{text_sign_date}}': text_sign_date_str,
             '{{date_start}}': contract.date_start.strftime('%d/%m/%Y') if contract.date_start else '',
             '{{date_end}}': contract.date_end.strftime('%d/%m/%Y') if contract.date_end else '...',
             '{{job_title}}': contract.job_title or '',

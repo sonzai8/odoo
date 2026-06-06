@@ -8,3 +8,4 @@ from . import hr_employee
 from . import dl_employee_family_member
 from . import res_country_state
 from . import res_country_ward
+from . import res_company

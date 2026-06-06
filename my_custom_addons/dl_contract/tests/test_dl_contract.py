@@ -106,6 +106,9 @@ class TestDlContract(TransactionCase):
         })
         contract.action_confirm()
         self.assertEqual(contract.state, 'active')
+        self.employee_a.invalidate_recordset()
+        self.assertEqual(self.employee_a.dl_contract_state, 'active')
+        self.assertEqual(self.employee_a.x_active_contract_type_id.id, self.contract_type_fixed_a.id)
 
         history = self.env['dl.salary.history'].search([('contract_id', '=', contract.id)])
         self.assertEqual(len(history), 1)
@@ -707,6 +710,108 @@ class TestDlContract(TransactionCase):
         self.employee_a.unlink()
         member_exists = self.env['dl.employee.family.member'].search([('id', '=', member.id)])
         self.assertFalse(member_exists)
+
+    def test_27_import_export_wizard(self):
+        """Test quy trình xuất template Excel và nhập dữ liệu hợp đồng hàng loạt từ Excel + ZIP"""
+        import io
+        import zipfile
+        import openpyxl
+
+        # 1. Tạo nhân viên chưa có hợp đồng để kiểm thử xuất template
+        employee_vals = {
+            'name': 'Nguyễn Văn Import Test',
+            'company_id': self.company_a.id,
+            'identification_id': '098765432109',
+        }
+        if 'dl_tax_base_salary' in self.env['hr.employee']._fields:
+            employee_vals['dl_tax_base_salary'] = 5800000.0
+
+        employee_test = self.env['hr.employee'].create(employee_vals)
+        self.assertEqual(employee_test.dl_contract_state, 'no_contract')
+
+        # 2. Test Xuất Template
+        wizard = self.env['dl.contract.import.wizard'].create({
+            'company_id': self.company_a.id,
+            'only_no_contract': True,
+        })
+        
+        wizard.action_export_template()
+        self.assertEqual(wizard.state, 'done')
+        self.assertTrue(wizard.excel_file)
+        self.assertTrue(wizard.excel_filename)
+        self.assertIn("Template_Nhap_HD_", wizard.excel_filename)
+        self.assertIn("Đã xuất thành công template nhập hợp đồng", wizard.result_msg)
+
+        # Kiểm chứng file Excel xuất ra có chứa lương 5800000.0 nếu trường tồn tại
+        excel_bytes = base64.b64decode(wizard.excel_file)
+        wb_test = openpyxl.load_workbook(io.BytesIO(excel_bytes), data_only=True)
+        ws_test = wb_test.active
+        if 'dl_tax_base_salary' in self.env['hr.employee']._fields:
+            self.assertEqual(ws_test.cell(row=2, column=5).value, 5800000.0)
+        else:
+            self.assertFalse(ws_test.cell(row=2, column=5).value)
+
+
+
+        # 3. Test Quay lại trạng thái choose
+        wizard.action_back_to_choose()
+        self.assertEqual(wizard.state, 'choose')
+        self.assertFalse(wizard.excel_file)
+
+        # 4. Giả lập tạo file Excel nhập liệu
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "DanhSachNhanVien"
+        
+        headers = [
+            "ID Nhân viên", "Họ và tên", "Số CCCD", "Loại hợp đồng", 
+            "Lương cơ bản", "Ngày bắt đầu (dd/mm/yyyy)", 
+            "Ngày kết thúc (dd/mm/yyyy)", "Phòng ban", "Chức danh"
+        ]
+        ws.append(headers)
+        
+        # Thêm thông tin hợp đồng cho employee_test
+        ws.append([
+            employee_test.id,
+            employee_test.name,
+            "098765432109",
+            self.contract_type_fixed_a.name,
+            6500000.0,
+            "01/06/2026",
+            "01/06/2027",
+            "",
+            ""
+        ])
+        
+        fp = io.BytesIO()
+        wb.save(fp)
+        excel_data = base64.b64encode(fp.getvalue())
+
+        # 5. Test Nhập Dữ Liệu
+        wizard.write({
+            'excel_file': excel_data,
+            'excel_filename': 'import_test.xlsx',
+            'auto_confirm': True,
+        })
+        
+        wizard.action_import_data()
+        self.assertEqual(wizard.state, 'done')
+        self.assertIn("Tạo hợp đồng thành công: 1 nhân viên", wizard.result_msg)
+
+        # 6. Kiểm chứng dữ liệu hợp đồng được tạo ra trong hệ thống
+        employee_test.invalidate_recordset()
+        self.assertEqual(employee_test.dl_contract_state, 'active')
+        
+        contract = self.env['dl.contract'].search([
+            ('employee_id', '=', employee_test.id),
+            ('company_id', '=', self.company_a.id)
+        ])
+        self.assertTrue(contract)
+        self.assertEqual(contract.wage, 6500000.0)
+        self.assertEqual(contract.allowance, 0.0)
+        self.assertEqual(contract.state, 'active')
+
+
 
 
 
