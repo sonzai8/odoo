@@ -9,8 +9,8 @@
     'data': [
         'security/dl_public_holiday_security.xml',
         'security/ir.model.access.csv',
-        'wizard/dl_public_holiday_wizard_views.xml',
-        'views/dl_public_holiday_views.xml',
+        'views/dl_public_holiday_views.xml',          # Menu cha định nghĩa ở đây
+        'wizard/dl_public_holiday_wizard_views.xml',  # Tham chiếu menu cha → phải load SAU
     ],
     'installable': True,
     'application': True,
