@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_res_country_ward_tree" model="ir.ui.view">
-        <field name="name">res.country.ward.tree</field>
+    <record id="view_res_country_ward_tree_contract" model="ir.ui.view">
+        <field name="name">res.country.ward.tree.contract</field>
         <field name="model">res.country.ward</field>
         <field name="arch" type="xml">
             <list string="Xã/Phường" editable="bottom">
@@ -14,8 +14,8 @@
         </field>
     </record>
 
-    <record id="view_res_country_ward_search" model="ir.ui.view">
-        <field name="name">res.country.ward.search</field>
+    <record id="view_res_country_ward_search_contract" model="ir.ui.view">
+        <field name="name">res.country.ward.search.contract</field>
         <field name="model">res.country.ward</field>
         <field name="arch" type="xml">
             <search string="Tìm kiếm Xã/Phường">
@@ -31,12 +31,11 @@
         </field>
     </record>
 
-    <record id="action_res_country_ward" model="ir.actions.act_window">
+    <record id="action_res_country_ward_contract" model="ir.actions.act_window">
         <field name="name">Xã / Phường (Việt Nam)</field>
         <field name="res_model">res.country.ward</field>
         <field name="view_mode">list</field>
-        <field name="search_view_id" ref="view_res_country_ward_search"/>
-        <!-- Nhóm mặc định theo tỉnh thành khi mở lên -->
+        <field name="search_view_id" ref="view_res_country_ward_search_contract"/>
         <field name="context">{'search_default_group_by_state': 1}</field>
     </record>
 </odoo>

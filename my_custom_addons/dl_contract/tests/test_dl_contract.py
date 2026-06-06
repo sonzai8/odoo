@@ -679,6 +679,35 @@ class TestDlContract(TransactionCase):
         expected_prefix_vip = f"VIP-HD/CTH/{current_year}/"
         self.assertTrue(contract_vip.name.startswith(expected_prefix_vip))
 
+    def test_26_employee_family_members(self):
+        """Test tính năng quản lý thành viên gia đình nhân viên"""
+        # 1. Tạo mới thành viên gia đình liên kết với employee_a
+        member = self.env['dl.employee.family.member'].create({
+            'employee_id': self.employee_a.id,
+            'dl_name': 'Nguyễn Văn B',
+            'dl_birthday': '1995-05-15',
+            'dl_gender': 'male',
+            'dl_ethnic_name': '1',
+            'dl_cccd': '012345678901',
+            'dl_birth_province': 'Hà Nội',
+            'dl_birth_ward': 'Dịch Vọng',
+            'dl_birth_address': '123 Cầu Giấy',
+            'dl_relation': '01',  # Vợ
+        })
+        self.assertEqual(member.dl_name, 'Nguyễn Văn B')
+        self.assertEqual(member.dl_relation, '01')
+        self.assertEqual(member.dl_ethnic_name, '1')
+        
+        # 2. Kiểm tra mối liên kết One2many trên employee_a
+        self.employee_a.invalidate_recordset()
+        self.assertEqual(len(self.employee_a.dl_family_member_ids), 1)
+        self.assertEqual(self.employee_a.dl_family_member_ids[0].id, member.id)
+
+        # 3. Test cascade delete (xóa nhân viên thì xóa luôn thành viên gia đình)
+        self.employee_a.unlink()
+        member_exists = self.env['dl.employee.family.member'].search([('id', '=', member.id)])
+        self.assertFalse(member_exists)
+
 
 
 

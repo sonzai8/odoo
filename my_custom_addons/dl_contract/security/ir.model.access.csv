@@ -17,4 +17,8 @@ access_dl_job_title_user,dl.job.title.user,model_dl_job_title,group_contract_use
 access_dl_job_title_manager,dl.job.title.manager,model_dl_job_title,group_contract_manager,1,1,1,1
 access_dl_scan_doc_zip_wizard_user,dl.scan.doc.zip.wizard.user,model_dl_scan_doc_zip_wizard,group_contract_user,1,1,1,1
 access_dl_scan_doc_zip_wizard_manager,dl.scan.doc.zip.wizard.manager,model_dl_scan_doc_zip_wizard,group_contract_manager,1,1,1,1
+access_dl_employee_family_member_user,dl.employee.family.member.user,model_dl_employee_family_member,group_contract_user,1,1,1,1
+access_dl_employee_family_member_manager,dl.employee.family.member.manager,model_dl_employee_family_member,group_contract_manager,1,1,1,1
+access_res_country_ward_user,res.country.ward.user,model_res_country_ward,group_contract_user,1,1,1,1
+access_res_country_ward_manager,res.country.ward.manager,model_res_country_ward,group_contract_manager,1,1,1,1
 

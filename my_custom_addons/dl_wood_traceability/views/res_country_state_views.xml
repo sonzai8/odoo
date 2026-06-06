@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View của Tỉnh/Thành phố -->
+    <record id="view_res_country_state_vietnam_tree" model="ir.ui.view">
+        <field name="name">res.country.state.vietnam.tree</field>
+        <field name="model">res.country.state</field>
+        <field name="arch" type="xml">
+            <list string="Tỉnh / Thành Phố (Việt Nam)" create="false" edit="false" delete="false">
+                <field name="x_gso_code" string="Mã GSO"/>
+                <field name="x_gso_name" string="Mã - Tên Tỉnh"/>
+                <field name="name" string="Tên Tỉnh/Thành Phố"/>
+                <field name="x_ward_count" string="Số lượng xã"/>
+                <field name="create_date" string="Ngày tạo" optional="show"/>
+                <field name="write_date" string="Ngày cập nhật" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View của Tỉnh/Thành phố -->
+    <record id="view_res_country_state_vietnam_search" model="ir.ui.view">
+        <field name="name">res.country.state.vietnam.search</field>
+        <field name="model">res.country.state</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Tỉnh/Thành phố">
+                <field name="name" string="Tên Tỉnh" filter_domain="['|', ('name', 'ilike', self), ('x_gso_name', 'ilike', self)]"/>
+                <field name="x_gso_code" string="Mã GSO"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action hiển thị Tỉnh của Việt Nam -->
+    <record id="action_res_country_state_vietnam" model="ir.actions.act_window">
+        <field name="name">Tỉnh / Thành Phố (Việt Nam)</field>
+        <field name="res_model">res.country.state</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('country_id.code', '=', 'VN')]</field>
+        <field name="search_view_id" ref="view_res_country_state_vietnam_search"/>
+        <field name="view_id" ref="view_res_country_state_vietnam_tree"/>
+    </record>
+</odoo>

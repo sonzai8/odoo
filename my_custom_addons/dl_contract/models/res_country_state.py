@@ -4,16 +4,12 @@ from odoo import models, fields, api
 class ResCountryState(models.Model):
     _inherit = 'res.country.state'
     
-    # Trường tùy chỉnh để ưu tiên hiển thị
     x_sequence = fields.Integer(string='Thứ tự hiển thị', default=1000)
-    
     x_gso_code = fields.Char(string='Mã GSO')
     x_gso_name = fields.Char(string='Mã - Tên Tỉnh', compute='_compute_x_gso_name', store=True)
-    
     x_ward_ids = fields.One2many('res.country.ward', 'state_id', string='Xã/Phường')
     x_ward_count = fields.Integer(string='Số lượng xã', compute='_compute_x_ward_count', store=True)
 
-    # Ghi đè luật sắp xếp mặc định
     _order = 'x_sequence ASC, code ASC, name ASC'
 
     @api.depends('x_gso_code', 'name')

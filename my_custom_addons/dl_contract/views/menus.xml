@@ -86,6 +86,18 @@
               action="action_dl_contract_template"
               sequence="20"/>
 
+    <menuitem id="menu_dl_contract_states"
+              name="Tỉnh / Thành Phố (Việt Nam)"
+              parent="menu_dl_contract_config"
+              action="action_res_country_state_vietnam_contract"
+              sequence="50"/>
+
+    <menuitem id="menu_dl_contract_wards"
+              name="Xã / Phường (Việt Nam)"
+              parent="menu_dl_contract_config"
+              action="action_res_country_ward_contract"
+              sequence="60"/>
+
     <!-- Khởi tạo dữ liệu -->
     <menuitem id="menu_dl_contract_init_data"
               name="Khởi tạo Dữ liệu mẫu"

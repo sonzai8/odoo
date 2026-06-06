@@ -5,3 +5,6 @@ from . import dl_salary_history
 from . import dl_employee_scan_doc
 from . import dl_job_title
 from . import hr_employee
+from . import dl_employee_family_member
+from . import res_country_state
+from . import res_country_ward

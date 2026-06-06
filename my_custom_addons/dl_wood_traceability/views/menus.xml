@@ -204,6 +204,12 @@
               action="action_dl_vietnam_bank"
               sequence="30"/>
 
+    <menuitem id="menu_dl_wood_states"
+              name="Tỉnh / Thành Phố (Việt Nam)"
+              parent="menu_dl_wood_config_root"
+              action="action_res_country_state_vietnam"
+              sequence="35"/>
+
     <menuitem id="menu_dl_wood_wards"
               name="Xã / Phường (Việt Nam)"
               parent="menu_dl_wood_config_root"

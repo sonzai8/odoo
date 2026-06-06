@@ -98,6 +98,23 @@
                         </list>
                     </field>
                 </page>
+
+                <!-- Tab Thành viên Gia đình -->
+                <page string="Thành viên Gia đình" groups="dl_contract.group_contract_user">
+                    <field name="dl_family_member_ids" context="{'default_employee_id': id}">
+                        <list editable="bottom">
+                            <field name="dl_name" string="Họ tên"/>
+                            <field name="dl_birthday" string="Ngày sinh"/>
+                            <field name="dl_gender" string="Giới tính"/>
+                            <field name="dl_ethnic_name" string="Tên dân tộc"/>
+                            <field name="dl_cccd" string="Số CCCD"/>
+                            <field name="dl_birth_province" string="Tỉnh khai sinh"/>
+                            <field name="dl_birth_ward" string="Phường khai sinh"/>
+                            <field name="dl_birth_address" string="Địa chỉ khai sinh"/>
+                            <field name="dl_relation" string="Quan hệ với chủ hộ"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
             <xpath expr="//field[@name='identification_id']" position="after">
                 <field name="x_cccd_date"/>

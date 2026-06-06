@@ -33,6 +33,11 @@ class HrEmployee(models.Model):
         string='Số tài liệu scan',
         compute='_compute_dl_scan_doc_count',
     )
+    dl_family_member_ids = fields.One2many(
+        'dl.employee.family.member',
+        'employee_id',
+        string='Thành viên Gia đình'
+    )
 
     @api.depends('dl_contract_ids')
     def _compute_dl_contract_count(self):
