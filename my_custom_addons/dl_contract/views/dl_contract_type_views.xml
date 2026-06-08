@@ -43,6 +43,25 @@
                             <field name="active" invisible="1"/>
                         </group>
                     </group>
+
+                    <!-- Banner xem trước: chỉ hiển thị khi đã chọn template và record đã lưu -->
+                    <div class="mt-3" invisible="not template_id or not id">
+                        <div class="alert alert-info d-flex align-items-center gap-3" role="alert">
+                            <i class="fa fa-file-word-o fa-2x text-primary"/>
+                            <div class="flex-grow-1">
+                                <strong>Template mặc định:</strong>
+                                <field name="template_id" readonly="1" nolabel="1" class="ms-1"/>
+                            </div>
+                            <button
+                                type="object"
+                                name="action_preview_template"
+                                string="🔍 Xem Trước Template"
+                                class="btn btn-primary"
+                                title="Mở xem trước file Word template trong tab mới"
+                            />
+                        </div>
+                    </div>
+
                     <notebook>
                         <page string="Mô tả">
                             <field name="description" placeholder="Ghi chú thêm về loại hợp đồng này..."/>

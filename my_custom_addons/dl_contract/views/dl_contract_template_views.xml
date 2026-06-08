@@ -38,6 +38,30 @@
                             <field name="active" invisible="1"/>
                         </group>
                     </group>
+
+                    <!-- Khu vực xem trước: chỉ hiển thị khi đã có file và record đã được lưu -->
+                    <div class="mt-3" invisible="not template_file or not id">
+                        <div class="alert alert-info d-flex align-items-center gap-3" role="alert">
+                            <i class="fa fa-file-word-o fa-2x text-primary"/>
+                            <div class="flex-grow-1">
+                                <strong>File template hiện tại:</strong>
+                                <span class="ms-1 text-muted">
+                                    <field name="template_filename" readonly="1" nolabel="1"/>
+                                </span>
+                                <div class="text-muted small mt-1">
+                                    File sẽ được chuyển đổi sang PDF để xem trước. Yêu cầu LibreOffice trên server.
+                                </div>
+                            </div>
+                            <button
+                                type="object"
+                                name="action_preview_template"
+                                string="🔍 Xem Trước Template"
+                                class="btn btn-primary"
+                                title="Chuyển đổi file .docx sang PDF và mở xem trước trong tab mới"
+                            />
+                        </div>
+                    </div>
+
                     <notebook>
                         <page string="Mô tả &amp; Hướng dẫn">
                             <field name="description" placeholder="Mô tả về template này..."/>
@@ -52,6 +76,8 @@
                                     <li><code>{{contract_number}}</code>: Mã hợp đồng</li>
                                     <li><code>{{date_start}}</code>: Ngày bắt đầu</li>
                                     <li><code>{{date_end}}</code>: Ngày kết thúc</li>
+                                    <li><code>{{sign_date}}</code>: Ngày ký hợp đồng</li>
+                                    <li><code>{{text_sign_date}}</code>: Ngày ký dạng chữ</li>
                                     <li><code>{{job_title}}</code>: Chức danh</li>
                                     <li><code>{{department}}</code>: Phòng ban</li>
                                     <li><code>{{wage}}</code>: Lương cơ bản</li>
@@ -69,3 +95,4 @@
     </record>
 
 </odoo>
+

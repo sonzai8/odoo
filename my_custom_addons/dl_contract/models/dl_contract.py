@@ -103,25 +103,25 @@ class DlContract(models.Model):
         for record in self:
             record.total_wage = record.wage + record.allowance
 
-    @api.depends('date_end', 'state')
+    @api.depends('date_end')
     def _compute_x_days_to_expire(self):
+        """Tính số ngày còn lại đến khi hết hạn hợp đồng.
+        
+        Lưu ý: Chỉ TÍNH TOÁN, không thay đổi state ở đây.
+        Việc chuyển state → 'expired' do cron job _cron_check_expired đảm nhiệm (mỗi ngày 1 lần).
+        """
         today = fields.Date.today()
         for record in self:
             if not record.date_end:
                 record.x_days_to_expire = 99999
                 record.x_is_expiring_soon = False
                 continue
-            
+
             delta = (record.date_end - today).days
-            
-            # Tự động chuyển sang hết hạn nếu đã quá hạn kết thúc mà trạng thái vẫn là active
-            if record.state == 'active' and delta < 0:
-                record.state = 'expired'
-                
             record.x_days_to_expire = max(0, delta)
-            
-            # Chỉ báo sắp hết hạn nếu đang hiệu lực và thời gian còn lại từ 0 đến 30 ngày
-            record.x_is_expiring_soon = True if 0 <= delta <= 30 and record.state == 'active' else False
+
+            # Chỉ báo sắp hết hạn nếu đang hiệu lực và còn từ 0-30 ngày
+            record.x_is_expiring_soon = (0 <= delta <= 30 and record.state == 'active')
 
     @api.onchange('contract_type_id', 'date_start')
     def _onchange_contract_type_id(self):

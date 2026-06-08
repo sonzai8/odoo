@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 class DlContractType(models.Model):
     _name = 'dl.contract.type'
@@ -25,3 +26,20 @@ class DlContractType(models.Model):
         'UNIQUE (code, company_id)', 
         'Mã loại hợp đồng phải là duy nhất trong cùng một công ty!'
     )
+
+    def action_preview_template(self):
+        """Mở xem trước template mặc định của loại hợp đồng này.
+        
+        Tái sử dụng controller preview đã có của dl.contract.template.
+        """
+        self.ensure_one()
+        if not self.template_id:
+            raise UserError(_("Loại hợp đồng này chưa được gán Template mặc định!"))
+        if not self.template_id.template_file:
+            raise UserError(_("Template '%s' chưa có file đính kèm. Vui lòng upload file .docx trước!") % self.template_id.name)
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/dl_contract/preview_template/{self.template_id.id}',
+            'target': 'new',
+        }
