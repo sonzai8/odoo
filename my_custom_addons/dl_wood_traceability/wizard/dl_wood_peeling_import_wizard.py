@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import base64
-import xlrd
+import io
+import openpyxl
+import logging
+from datetime import datetime, date
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 class DlWoodPeelingDossierImportWizard(models.TransientModel):
     _name = 'dl.wood.peeling.dossier.import.wizard'
@@ -18,9 +23,10 @@ class DlWoodPeelingDossierImportWizard(models.TransientModel):
             
         file_data = base64.b64decode(self.file)
         try:
-            workbook = xlrd.open_workbook(file_contents=file_data)
-            sheet = workbook.sheet_by_index(0)
+            workbook = openpyxl.load_workbook(io.BytesIO(file_data), data_only=True)
+            sheet = workbook.active
         except Exception as e:
+            _logger.exception("Lỗi khi đọc file Excel (Hồ sơ ván bóc):")
             raise UserError(_("File không đúng định dạng Excel. Chi tiết lỗi: %s") % str(e))
 
         dossier_env = self.env['dl.wood.peeling.dossier']
@@ -30,9 +36,8 @@ class DlWoodPeelingDossierImportWizard(models.TransientModel):
         error_rows = []
 
         # Bắt đầu đọc từ dòng thứ 2 (bỏ qua header)
-        for row_idx in range(1, sheet.nrows):
+        for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), 2):
             try:
-                row = sheet.row_values(row_idx)
                 if not row or not any(row):
                     continue
 
@@ -46,22 +51,22 @@ class DlWoodPeelingDossierImportWizard(models.TransientModel):
                 # 6: Địa danh khai thác
                 # 7: Diện tích (ha)
                 
-                partner_name = str(row[0]).strip() if len(row) > 0 else ''
+                partner_name = str(row[0]).strip() if len(row) > 0 and row[0] else ''
                 if not partner_name:
-                    error_rows.append(f"Dòng {row_idx + 1}: Thiếu tên Nhà Cung Cấp.")
+                    error_rows.append(f"Dòng {row_idx}: Thiếu tên Nhà Cung Cấp.")
                     continue
                     
                 # Tìm NCC
                 partner = partner_env.search([('name', '=', partner_name), ('x_is_peeling_supplier', '=', True)], limit=1)
                 if not partner:
-                    error_rows.append(f"Dòng {row_idx + 1}: Không tìm thấy NCC '{partner_name}'.")
+                    error_rows.append(f"Dòng {row_idx}: Không tìm thấy NCC '{partner_name}'.")
                     continue
 
-                dossier_name = str(row[1]).strip() if len(row) > 1 else ''
-                expl_addr = str(row[2]).strip() if len(row) > 2 else ''
+                dossier_name = str(row[1]).strip() if len(row) > 1 and row[1] else ''
+                expl_addr = str(row[2]).strip() if len(row) > 2 and row[2] else ''
                 
                 # Diện tích
-                area_val = row[3] if len(row) > 3 else 0.0
+                area_val = row[3] if len(row) > 3 and row[3] else 0.0
                 try:
                     area = float(area_val) if area_val else 0.0
                 except ValueError:
@@ -78,7 +83,8 @@ class DlWoodPeelingDossierImportWizard(models.TransientModel):
                 imported_count += 1
                 
             except Exception as e:
-                error_rows.append(f"Dòng {row_idx + 1}: Lỗi không xác định - {str(e)}")
+                _logger.exception("Lỗi không xác định tại dòng %s (Hồ sơ ván bóc):", row_idx)
+                error_rows.append(f"Dòng {row_idx}: Lỗi không xác định - {str(e)}")
 
         msg = f"Đã import thành công {imported_count} hồ sơ."
         if error_rows:
@@ -217,9 +223,10 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
             
         file_data = base64.b64decode(self.file)
         try:
-            workbook = xlrd.open_workbook(file_contents=file_data)
-            sheet = workbook.sheet_by_index(0)
+            workbook = openpyxl.load_workbook(io.BytesIO(file_data), data_only=True)
+            sheet = workbook.active
         except Exception as e:
+            _logger.exception("Lỗi khi đọc file Excel (Hoá đơn ván bóc):")
             raise UserError(_("File không đúng định dạng Excel. Chi tiết lỗi: %s") % str(e))
 
         dossier_env = self.env['dl.wood.peeling.dossier']
@@ -228,9 +235,8 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
         self.preview_line_ids.unlink()
         
         preview_vals = []
-        for row_idx in range(1, sheet.nrows):
+        for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), 2):
             try:
-                row = sheet.row_values(row_idx)
                 if not row or not any(row):
                     continue
 
@@ -241,7 +247,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                     dossier = self.dossier_id
                     dossier_name = self.dossier_id.name
                 else:
-                    dossier_name = str(row[0]).strip() if len(row) > 0 else ''
+                    dossier_name = str(row[0]).strip() if len(row) > 0 and row[0] else ''
                     if not dossier_name:
                         error_msgs.append("Thiếu Mã Hồ Sơ VB")
                         is_valid = False
@@ -255,7 +261,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                     error_msgs.append(f"Không được import hoá đơn vào Hồ sơ '{dossier_name}' (Vì được tạo từ Hồ sơ gỗ)")
                     is_valid = False
 
-                inv_num_raw = row[1] if len(row) > 1 else ''
+                inv_num_raw = row[1] if len(row) > 1 and row[1] else ''
                 if isinstance(inv_num_raw, float):
                     inv_num = str(int(inv_num_raw))
                 else:
@@ -265,16 +271,11 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                     error_msgs.append("Thiếu Số Hoá Đơn")
                     is_valid = False
                     
-                inv_date_val = row[2] if len(row) > 2 else ''
+                inv_date_val = row[2] if len(row) > 2 and row[2] else ''
                 inv_date = False
                 if inv_date_val:
-                    if isinstance(inv_date_val, float):
-                        try:
-                            dt_tuple = xlrd.xldate_as_tuple(inv_date_val, workbook.datemode)
-                            inv_date = f"{dt_tuple[0]:04d}-{dt_tuple[1]:02d}-{dt_tuple[2]:02d}"
-                        except:
-                            error_msgs.append("Ngày hoá đơn lỗi định dạng")
-                            is_valid = False
+                    if isinstance(inv_date_val, (datetime, date)):
+                        inv_date = inv_date_val.strftime('%Y-%m-%d')
                     else:
                         try:
                             parts = str(inv_date_val).strip().split('/')
@@ -287,7 +288,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                 if not inv_date:
                     inv_date = fields.Date.context_today(self)
 
-                peeling_type_name = str(row[3]).strip() if len(row) > 3 else ''
+                peeling_type_name = str(row[3]).strip() if len(row) > 3 and row[3] else ''
                 if not peeling_type_name:
                     error_msgs.append("Thiếu Loại Ván Bóc")
                     is_valid = False
@@ -297,22 +298,17 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                         error_msgs.append(f"Loại Ván Bóc '{peeling_type_name}' không tồn tại trong hệ thống")
                         is_valid = False
 
-                bkls_num_raw = row[4] if len(row) > 4 else ''
+                bkls_num_raw = row[4] if len(row) > 4 and row[4] else ''
                 if isinstance(bkls_num_raw, float):
                     bkls_num = str(int(bkls_num_raw))
                 else:
                     bkls_num = str(bkls_num_raw).strip()
 
-                bkls_date_val = row[5] if len(row) > 5 else ''
+                bkls_date_val = row[5] if len(row) > 5 and row[5] else ''
                 bkls_date = False
                 if bkls_date_val:
-                    if isinstance(bkls_date_val, float):
-                        try:
-                            dt_tuple = xlrd.xldate_as_tuple(bkls_date_val, workbook.datemode)
-                            bkls_date = f"{dt_tuple[0]:04d}-{dt_tuple[1]:02d}-{dt_tuple[2]:02d}"
-                        except:
-                            error_msgs.append("Ngày BKLS lỗi định dạng")
-                            is_valid = False
+                    if isinstance(bkls_date_val, (datetime, date)):
+                        bkls_date = bkls_date_val.strftime('%Y-%m-%d')
                     else:
                         try:
                             parts = str(bkls_date_val).strip().split('/')
@@ -322,7 +318,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                             error_msgs.append("Ngày BKLS lỗi định dạng")
                             is_valid = False
 
-                qty_val = row[6] if len(row) > 6 else 0.0
+                qty_val = row[6] if len(row) > 6 and row[6] else 0.0
                 try:
                     qty = float(qty_val) if qty_val else 0.0
                 except ValueError:
@@ -334,7 +330,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                     error_msgs.append("Khối lượng phải > 0")
                     is_valid = False
 
-                price_val = row[7] if len(row) > 7 else 0.0
+                price_val = row[7] if len(row) > 7 and row[7] else 0.0
                 try:
                     price = float(price_val) if price_val else 0.0
                 except ValueError:
@@ -343,7 +339,7 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                 partner_name = dossier.partner_id.name if dossier and dossier.partner_id else ''
 
                 preview_vals.append((0, 0, {
-                    'row_number': row_idx + 1,
+                    'row_number': row_idx,
                     'dossier_name': dossier_name,
                     'partner_name': partner_name,
                     'invoice_number': inv_num,
@@ -359,8 +355,9 @@ class DlWoodPeelingInvoiceImportWizard(models.TransientModel):
                 }))
                 
             except Exception as e:
+                _logger.exception("Lỗi không xác định tại dòng %s (Hoá đơn ván bóc):", row_idx)
                 preview_vals.append((0, 0, {
-                    'row_number': row_idx + 1,
+                    'row_number': row_idx,
                     'error_message': f"Lỗi không xác định: {str(e)}",
                     'is_valid': False
                 }))
