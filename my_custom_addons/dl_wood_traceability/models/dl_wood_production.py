@@ -1253,11 +1253,16 @@ class DlWoodProductionOrder(models.Model):
                     vol_remaining -= avail
             
             if not force and vol_remaining > 0.05:
+                invoice_info = p_line.peeling_invoice_id.invoice_number or 'Chưa chọn'
+                bkls_info = p_line.peeling_bkls_id.bkls_number or 'Chưa chọn'
                 raise ValidationError(_(
                     'Không đủ tồn kho Ván Bóc để trừ lùi!\n'
-                    'Hồ sơ: %s\nThiếu: %.2f m³\n'
+                    'Hồ sơ: %s\n'
+                    'Hoá đơn: %s\n'
+                    'BKLS: %s\n'
+                    'Thiếu: %.2f m³\n'
                     '(Dòng hoá đơn đã chọn có thể đã bị lệnh khác trừ hết tồn)'
-                ) % (p_line.peeling_dossier_id.name, vol_remaining))
+                ) % (p_line.peeling_dossier_id.name, invoice_info, bkls_info, vol_remaining))
 
     def write(self, vals):
         for rec in self:

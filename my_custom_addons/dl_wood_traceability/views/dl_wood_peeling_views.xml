@@ -153,6 +153,7 @@
                 <field name="name"/>
                 <field name="x_dossier_name"/>
                 <field name="partner_id"/>
+                <field name="x_forest_owner_id" optional="show"/>
                 <field name="date_received"/>
                 <field name="invoice_count"/>
                 <field name="qty_initial" sum="Tổng KL ban đầu"/>
@@ -344,6 +345,7 @@
                 <field name="name"/>
                 <field name="x_dossier_name"/>
                 <field name="partner_id"/>
+                <field name="x_forest_owner_id" filter_domain="[('x_forest_owner_id', 'ilike', self)]"/>
 
                 
                 <filter string="Dự thảo" name="filter_draft" domain="[('state', '=', 'draft')]"/>
