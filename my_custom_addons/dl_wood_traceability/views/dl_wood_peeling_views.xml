@@ -223,7 +223,7 @@
                     <notebook>
                         <page string="Hoá Đơn" name="page_invoices">
                             <button name="action_open_import_invoice_wizard" type="object" string="Nhập từ Excel" icon="fa-upload" class="btn-secondary mb-2" invisible="state not in ('draft', 'using') or wood_dossier_id != False"/>
-                            <field name="invoice_ids" readonly="state not in ('draft', 'using') or wood_dossier_id != False" context="{'default_dossier_id': False}">
+                            <field name="invoice_ids" readonly="state not in ('draft', 'using') or wood_dossier_id != False">
                                 <list decoration-success="state == 'available'" decoration-warning="state == 'partial'" decoration-muted="state == 'depleted'">
                                     <field name="invoice_date"/>
                                     <field name="invoice_number"/>

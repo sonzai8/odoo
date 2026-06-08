@@ -253,11 +253,11 @@ class DlWoodProductionOrder(models.Model):
         related='product_id.default_code',
         string='Mã SP', readonly=True
     )
-    qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 2), default=1.0)
-    qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 2), default=1.0)
-    x_co_yield = fields.Float(string='Khai CO mặc định', digits=(16, 2), default=1.3)
-    x_co_yield_wood = fields.Float(string='Khai CO mặc định gỗ', digits=(16, 2), default=1.3)
-    x_co_yield_peeling = fields.Float(string='Khai CO mặc định ván bóc', digits=(16, 2), default=1.1)
+    qty_planned = fields.Float(string='Số lượng kế hoạch', digits=(16, 3), default=1.0)
+    qty_done = fields.Float(string='Số lượng thực tế', digits=(16, 3), default=1.0)
+    x_co_yield = fields.Float(string='Khai CO mặc định', digits=(16, 3), default=1.3)
+    x_co_yield_wood = fields.Float(string='Khai CO mặc định gỗ', digits=(16, 3), default=1.3)
+    x_co_yield_peeling = fields.Float(string='Khai CO mặc định ván bóc', digits=(16, 3), default=1.1)
     uom_id = fields.Many2one(
         'uom.uom', related='product_id.uom_id', string='Đơn vị tính Odoo', readonly=True
     )
@@ -295,46 +295,46 @@ class DlWoodProductionOrder(models.Model):
             rec.x_selected_peeling_bkls_line_ids = rec.peeling_line_ids.mapped('peeling_bkls_line_id')
             rec.x_selected_dossier_line_ids = rec.line_ids.mapped('x_dossier_line_id')
     total_volume_planned = fields.Float(
-        string='Tổng KL kế hoạch (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Tổng KL kế hoạch (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     total_volume_actual = fields.Float(
-        string='Tổng KL thực tế (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Tổng KL thực tế (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_total_ratio = fields.Float(
-        string='Tổng định mức (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Tổng định mức (%)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_wood_ratio = fields.Float(
-        string='Định mức gỗ (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Định mức gỗ (%)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_wood_remaining_ratio = fields.Float(
-        string='Định mức gỗ còn thiếu (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Định mức gỗ còn thiếu (%)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_peeling_ratio = fields.Float(
-        string='Định mức ván bóc (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Định mức ván bóc (%)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_peeling_remaining_ratio = fields.Float(
-        string='Định mức ván bóc còn thiếu (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Định mức ván bóc còn thiếu (%)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_remaining_ratio = fields.Float(
-        string='Định mức còn thiếu (%)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='Định mức còn thiếu (%)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_remaining_volume_planned = fields.Float(
-        string='KL kế hoạch còn thiếu (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='KL kế hoạch còn thiếu (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_remaining_volume_actual = fields.Float(
-        string='KL thực tế còn thiếu (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='KL thực tế còn thiếu (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_wood_volume_planned = fields.Float(
-        string='KL kế hoạch gỗ (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='KL kế hoạch gỗ (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_wood_volume_actual = fields.Float(
-        string='KL thực tế gỗ (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='KL thực tế gỗ (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_peeling_volume_planned = fields.Float(
-        string='KL kế hoạch ván bóc (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='KL kế hoạch ván bóc (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     x_peeling_volume_actual = fields.Float(
-        string='KL thực tế ván bóc (m³)', compute='_compute_total_volume', digits=(16, 2), store=True
+        string='KL thực tế ván bóc (m³)', compute='_compute_total_volume', digits=(16, 3), store=True
     )
     state = fields.Selection([
         ('draft', 'Dự thảo'),
@@ -378,14 +378,14 @@ class DlWoodProductionOrder(models.Model):
         string='Số lượng kế hoạch (m³)',
         compute='_compute_x_volume_conversion',
         store=False,
-        digits=(16, 2),
+        digits=(16, 3),
         help='Quy đổi số lượng kế hoạch sang m³ dựa trên x_volume_m3 của sản phẩm.'
     )
     x_qty_done_m3 = fields.Float(
         string='Số lượng thực tế (m³)',
         compute='_compute_x_volume_conversion',
         store=False,
-        digits=(16, 2),
+        digits=(16, 3),
         help='Quy đổi số lượng thực tế sang m³ dựa trên x_volume_m3 của sản phẩm.'
     )
 
@@ -462,8 +462,8 @@ class DlWoodProductionOrder(models.Model):
             rec.x_uom_is_piece = 'tấm' in uom_name or 'tam' in uom_name or x_unit_val == 'sheet'
 
             vol_per_unit = rec._get_vol_per_unit()
-            rec.x_qty_planned_m3 = round(rec.qty_planned * vol_per_unit, 2)
-            rec.x_qty_done_m3    = round(rec.qty_done    * vol_per_unit, 2)
+            rec.x_qty_planned_m3 = round(rec.qty_planned * vol_per_unit, 3)
+            rec.x_qty_done_m3    = round(rec.qty_done    * vol_per_unit, 3)
 
     @api.depends('line_ids.x_subtotal_cost', 'line_ids.volume_planned', 'line_ids.volume_actual', 'line_ids.x_price_unit', 
                  'peeling_line_ids.x_subtotal_cost', 'peeling_line_ids.volume_planned', 'peeling_line_ids.volume_actual', 'peeling_line_ids.x_price_unit',
@@ -606,30 +606,30 @@ class DlWoodProductionOrder(models.Model):
             peeling_vol_plan = sum(rec.peeling_line_ids.mapped('volume_planned'))
             peeling_vol_act = sum(rec.peeling_line_ids.mapped('volume_actual'))
 
-            rec.x_wood_volume_planned = round(wood_vol_plan, 2)
-            rec.x_wood_volume_actual = round(wood_vol_act, 2)
-            rec.x_peeling_volume_planned = round(peeling_vol_plan, 2)
-            rec.x_peeling_volume_actual = round(peeling_vol_act, 2)
-            rec.total_volume_planned = round(wood_vol_plan + peeling_vol_plan, 2)
-            rec.total_volume_actual = round(wood_vol_act + peeling_vol_act, 2)
+            rec.x_wood_volume_planned = round(wood_vol_plan, 3)
+            rec.x_wood_volume_actual = round(wood_vol_act, 3)
+            rec.x_peeling_volume_planned = round(peeling_vol_plan, 3)
+            rec.x_peeling_volume_actual = round(peeling_vol_act, 3)
+            rec.total_volume_planned = round(wood_vol_plan + peeling_vol_plan, 3)
+            rec.total_volume_actual = round(wood_vol_act + peeling_vol_act, 3)
 
             wood_ratio = sum(rec.line_ids.mapped('x_ratio'))
             peeling_ratio = sum(rec.peeling_line_ids.mapped('x_ratio'))
 
-            rec.x_wood_ratio = round(wood_ratio, 2)
-            rec.x_peeling_ratio = round(peeling_ratio, 2)
+            rec.x_wood_ratio = round(wood_ratio, 3)
+            rec.x_peeling_ratio = round(peeling_ratio, 3)
 
             # Tổng định mức bằng tổng trực tiếp của cả gỗ và ván bóc
-            rec.x_total_ratio = round(wood_ratio + peeling_ratio, 2)
-            rec.x_remaining_ratio = round(100.0 - rec.x_total_ratio, 2)
+            rec.x_total_ratio = round(wood_ratio + peeling_ratio, 3)
+            rec.x_remaining_ratio = round(100.0 - rec.x_total_ratio, 3)
 
             # Định mức còn thiếu (chung): hiển thị cả hai bảng đều thấy
             remaining_ratio_shared = max(0.0, rec.x_remaining_ratio)
 
             # x_wood_remaining_ratio / x_peeling_remaining_ratio chỉ để hiển thị
             # trên hàng tương ứng trong bảng — đều bằng remaining chung
-            rec.x_wood_remaining_ratio = round(remaining_ratio_shared, 2) if rec.line_ids else 0.0
-            rec.x_peeling_remaining_ratio = round(remaining_ratio_shared, 2) if rec.peeling_line_ids else 0.0
+            rec.x_wood_remaining_ratio = round(remaining_ratio_shared, 3) if rec.line_ids else 0.0
+            rec.x_peeling_remaining_ratio = round(remaining_ratio_shared, 3) if rec.peeling_line_ids else 0.0
 
             vol_per_unit = rec._get_vol_per_unit()
 
@@ -671,8 +671,8 @@ class DlWoodProductionOrder(models.Model):
             vol_per_unit = rec._get_vol_per_unit()
             for line in rec.line_ids:
                 if line.x_ratio:
-                    vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                    vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
                     if line.dossier_id:
                         avail_qty = 0.0
                         if line.x_dossier_line_id:
@@ -685,9 +685,9 @@ class DlWoodProductionOrder(models.Model):
                         if vol_planned > avail_qty:
                             total_needed = (rec.qty_planned * vol_per_unit) * line.x_co_yield
                             if total_needed > 0:
-                                line.x_ratio = round((avail_qty / total_needed) * 100.0, 2)
-                                vol_planned = round(total_needed * (line.x_ratio / 100.0), 2)
-                                vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                                line.x_ratio = round((avail_qty / total_needed) * 100.0, 3)
+                                vol_planned = round(total_needed * (line.x_ratio / 100.0), 3)
+                                vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
                         
                         vol_planned = min(vol_planned, avail_qty)
                         vol_actual = min(vol_actual, avail_qty)
@@ -696,8 +696,8 @@ class DlWoodProductionOrder(models.Model):
 
             for p_line in rec.peeling_line_ids:
                 if p_line.x_ratio:
-                    vol_planned = round(((rec.qty_planned * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
-                    vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 3)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 3)
                     if p_line.peeling_dossier_id:
                         if p_line.peeling_bkls_line_id:
                             avail_qty = p_line.peeling_bkls_line_id.qty_available
@@ -707,9 +707,9 @@ class DlWoodProductionOrder(models.Model):
                         if vol_planned > avail_qty:
                             total_needed = (rec.qty_planned * vol_per_unit) * p_line.x_co_yield
                             if total_needed > 0:
-                                p_line.x_ratio = round((avail_qty / total_needed) * 100.0, 2)
-                                vol_planned = round(total_needed * (p_line.x_ratio / 100.0), 2)
-                                vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                                p_line.x_ratio = round((avail_qty / total_needed) * 100.0, 3)
+                                vol_planned = round(total_needed * (p_line.x_ratio / 100.0), 3)
+                                vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 3)
                         
                         vol_planned = min(vol_planned, avail_qty)
                         vol_actual = min(vol_actual, avail_qty)
@@ -735,7 +735,7 @@ class DlWoodProductionOrder(models.Model):
             vol_needed = (qty_planned * vol_per_unit) * line.x_co_yield if qty_planned > 0 and vol_per_unit > 0 else 0.0
             if vol_needed > 0:
                 avail = line.x_qty_available
-                max_ratio = round((avail / vol_needed) * 100.0, 2)
+                max_ratio = round((avail / vol_needed) * 100.0, 3)
             else:
                 max_ratio = 100.0
             max_ratio = max(0.0, max_ratio)
@@ -787,7 +787,7 @@ class DlWoodProductionOrder(models.Model):
                     remaining_diff += new_ratio
                     new_ratio = 0.0
                     
-                l.x_ratio = round(new_ratio, 2)
+                l.x_ratio = round(new_ratio, 3)
 
     @api.onchange('x_co_yield_wood')
     def _onchange_x_co_yield_wood(self):
@@ -799,8 +799,8 @@ class DlWoodProductionOrder(models.Model):
                 if not line.x_co_yield or abs(line.x_co_yield - old_co) < 0.001:
                     line.x_co_yield = rec.x_co_yield_wood
                 if line.x_ratio:
-                    vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                    vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
                     if line.dossier_id:
                         avail_qty = 0.0
                         if line.x_dossier_line_id:
@@ -824,8 +824,8 @@ class DlWoodProductionOrder(models.Model):
                 if not p_line.x_co_yield or abs(p_line.x_co_yield - old_co) < 0.001:
                     p_line.x_co_yield = rec.x_co_yield_peeling
                 if p_line.x_ratio:
-                    vol_planned = round(((rec.qty_planned * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
-                    vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+                    vol_planned = round(((rec.qty_planned * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 3)
+                    vol_actual = round(((rec.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 3)
                     if p_line.peeling_dossier_id:
                         if p_line.peeling_bkls_line_id:
                             avail_qty = p_line.peeling_bkls_line_id.qty_available
@@ -842,8 +842,8 @@ class DlWoodProductionOrder(models.Model):
         # Cập nhật khối lượng cho tất cả các dòng gỗ dựa trên x_ratio được người dùng chỉnh sửa thủ công
         for line in self.line_ids:
             if line.x_ratio:
-                vol_planned = round(((self.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                vol_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_planned = round(((self.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                vol_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
                 if line.dossier_id:
                     avail_qty = 0.0
                     if line.x_dossier_line_id:
@@ -863,8 +863,8 @@ class DlWoodProductionOrder(models.Model):
         # Cập nhật khối lượng cho tất cả các dòng ván bóc dựa trên x_ratio được người dùng chỉnh sửa thủ công
         for line in self.peeling_line_ids:
             if line.x_ratio:
-                vol_planned = round(((self.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                vol_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_planned = round(((self.qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                vol_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
                 if line.peeling_dossier_id:
                     if line.peeling_bkls_line_id:
                         avail_qty = line.peeling_bkls_line_id.qty_available
@@ -1078,12 +1078,12 @@ class DlWoodProductionOrder(models.Model):
         # Tính toán lại KL thực tế (volume_actual) theo qty_done mới nhất để trừ lùi cho chính xác
         vol_per_unit = self._get_vol_per_unit()
         for line in self.line_ids:
-            if line.x_ratio:
-                line.volume_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+            if line.x_ratio and line.volume_actual <= 0:
+                line.volume_actual = round(((self.qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
         
         for p_line in self.peeling_line_ids:
-            if p_line.x_ratio:
-                p_line.volume_actual = round(((self.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 2)
+            if p_line.x_ratio and p_line.volume_actual <= 0:
+                p_line.volume_actual = round(((self.qty_done * vol_per_unit) * p_line.x_co_yield) * (p_line.x_ratio / 100.0), 3)
 
         self._action_deduct_materials()
         self._action_deduct_peeling_materials()
@@ -1235,7 +1235,13 @@ class DlWoodProductionOrder(models.Model):
             if p_line.peeling_bkls_line_id:
                 invoices = p_line.peeling_bkls_line_id
             else:
-                invoices = p_line.peeling_dossier_id.invoice_ids.mapped('line_ids').filtered(lambda inv: inv.state in ('available', 'partial')).sorted('bkls_date')
+                domain = [('dossier_id', '=', p_line.peeling_dossier_id.id), ('qty_available', '>', 0)]
+                if p_line.peeling_invoice_id:
+                    domain.append(('invoice_id', '=', p_line.peeling_invoice_id.id))
+                if p_line.peeling_bkls_id:
+                    domain.append(('bkls_id', '=', p_line.peeling_bkls_id.id))
+                
+                invoices = self.env['dl.wood.peeling.bkls.line'].search(domain).sorted(key=lambda l: (l.bkls_id.bkls_date or fields.Date.today(), l.id))
             
             vol_remaining = vol_needed
             for inv in invoices:
@@ -1393,10 +1399,10 @@ class DlWoodProductionLine(models.Model):
         string='Chi tiết phân bổ tiêu hao',
         compute='_compute_x_allocation_info'
     )
-    x_ratio = fields.Float(string='Định mức %', digits=(16, 2), default=0.0)
-    x_co_yield = fields.Float(string='Khai CO', digits=(16, 2), default=1.3, help='Hệ số hao hụt nguyên vật liệu/thành phẩm của bộ hồ sơ này.')
-    volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
-    volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
+    x_ratio = fields.Float(string='Định mức %', digits=(16, 3), default=0.0)
+    x_co_yield = fields.Float(string='Khai CO', digits=(16, 3), default=1.3, help='Hệ số hao hụt nguyên vật liệu/thành phẩm của bộ hồ sơ này.')
+    volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 3))
+    volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 3))
     note = fields.Char(string='Ghi chú')
     x_price_unit = fields.Float(
         string='Đơn giá gỗ (VND/m³)',
@@ -1413,7 +1419,7 @@ class DlWoodProductionLine(models.Model):
     x_qty_available = fields.Float(
         string='Khối lượng khả dụng (m³)',
         compute='_compute_x_qty_available',
-        digits=(16, 2)
+        digits=(16, 3)
     )
 
     @api.depends('dossier_id', 'species_id')
@@ -1616,14 +1622,14 @@ class DlWoodProductionLine(models.Model):
                         dossier_qty_avail = max(0.0, avail_qty)
 
                         if dossier_qty_avail >= raw_volume_needed:
-                            line.x_ratio = round(remaining_ratio_needed, 2)
+                            line.x_ratio = round(remaining_ratio_needed, 3)
                         else:
                             allocated_ratio = (dossier_qty_avail / total_volume_needed) * 100.0
-                            line.x_ratio = round(allocated_ratio, 2)
+                            line.x_ratio = round(allocated_ratio, 3)
 
                         # Tính toán KL planned/actual của dòng
-                        vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                        vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                        vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                        vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
 
                         vol_plan = min(vol_plan, dossier_qty_avail)
                         vol_act = min(vol_act, dossier_qty_avail)
@@ -1685,8 +1691,8 @@ class DlWoodProductionLine(models.Model):
                 vol_per_unit = line._get_vol_per_unit()
                 qty_planned = line.x_qty_planned or order.qty_planned
                 qty_done = line.x_qty_done or order.qty_done
-                vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
+                vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
                 if line.dossier_id:
                     if line.x_dossier_line_id:
                         avail_qty = line.x_dossier_line_id.x_qty_available
@@ -1805,10 +1811,10 @@ class DlWoodPeelingProductionLine(models.Model):
     x_qty_available = fields.Float(
         string='Tồn KD (m³)', compute='_compute_x_qty_available'
     )
-    x_ratio = fields.Float(string='Định mức %', digits=(16, 2), default=0.0)
-    x_co_yield = fields.Float(string='Khai CO', digits=(16, 2), default=1.1)
-    volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 2))
-    volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 2))
+    x_ratio = fields.Float(string='Định mức %', digits=(16, 3), default=0.0)
+    x_co_yield = fields.Float(string='Khai CO', digits=(16, 3), default=1.1)
+    volume_planned = fields.Float(string='KL kế hoạch (m³)', digits=(16, 3))
+    volume_actual = fields.Float(string='KL thực tế (m³)', digits=(16, 3))
     x_price_unit = fields.Float(string='Đơn giá', compute='_compute_x_price_unit')
     x_subtotal_cost = fields.Float(string='Thành tiền', compute='_compute_x_subtotal_cost')
     note = fields.Char(string='Ghi chú')
@@ -1816,15 +1822,18 @@ class DlWoodPeelingProductionLine(models.Model):
     # ── Compute methods ───────────────────────────────────────────────────────
 
     @api.depends('peeling_bkls_line_id', 'peeling_bkls_line_id.qty_available',
-                 'peeling_dossier_id')
+                 'peeling_dossier_id', 'peeling_invoice_id', 'peeling_bkls_id')
     def _compute_x_qty_available(self):
         for line in self:
             if line.peeling_bkls_line_id:
                 line.x_qty_available = line.peeling_bkls_line_id.qty_available
             elif line.peeling_dossier_id:
-                avail_lines = line.peeling_dossier_id.invoice_ids.mapped('bkls_ids.line_ids').filtered(
-                    lambda l: l.state in ('available', 'partial')
-                )
+                domain = [('dossier_id', '=', line.peeling_dossier_id.id), ('qty_available', '>', 0)]
+                if line.peeling_invoice_id:
+                    domain.append(('invoice_id', '=', line.peeling_invoice_id.id))
+                if line.peeling_bkls_id:
+                    domain.append(('bkls_id', '=', line.peeling_bkls_id.id))
+                avail_lines = self.env['dl.wood.peeling.bkls.line'].search(domain)
                 line.x_qty_available = sum(avail_lines.mapped('qty_available'))
             else:
                 line.x_qty_available = 0.0
@@ -1912,16 +1921,21 @@ class DlWoodPeelingProductionLine(models.Model):
 
                     raw_volume_needed = total_volume_needed * (remaining_ratio / 100.0)
                     if avail_qty >= raw_volume_needed:
-                        line.x_ratio = round(remaining_ratio, 2)
+                        line.x_ratio = round(remaining_ratio, 3)
+                        vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                        vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 3)
+                        line.volume_planned = min(vol_plan, avail_qty)
+                        line.volume_actual = min(vol_act, avail_qty)
                     else:
                         allocated_ratio = (avail_qty / total_volume_needed) * 100.0
-                        line.x_ratio = round(allocated_ratio, 2)
-
-                    vol_plan = round(((qty_planned * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-                    vol_act = round(((qty_done * vol_per_unit) * line.x_co_yield) * (line.x_ratio / 100.0), 2)
-
-                    line.volume_planned = min(vol_plan, avail_qty)
-                    line.volume_actual = min(vol_act, avail_qty)
+                        line.x_ratio = round(allocated_ratio, 3)
+                        # Fix: Do không bị thất thoát do làm tròn x_ratio xuống 2 chữ số,
+                        # nên ta gán trực tiếp KL bằng avail_qty
+                        line.volume_planned = avail_qty
+                        if qty_planned > 0:
+                            line.volume_actual = min(avail_qty, round(avail_qty * (qty_done / qty_planned), 3))
+                        else:
+                            line.volume_actual = 0.0
 
     @api.onchange('peeling_dossier_id')
     def _onchange_peeling_dossier_id(self):
@@ -2007,8 +2021,8 @@ class DlWoodPeelingProductionLine(models.Model):
             vol_per_unit = self._get_vol_per_unit()
             qty_planned = order.qty_planned
             qty_done = order.qty_done
-            vol_plan = round(((qty_planned * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
-            vol_act = round(((qty_done * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 2)
+            vol_plan = round(((qty_planned * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 3)
+            vol_act = round(((qty_done * vol_per_unit) * self.x_co_yield) * (self.x_ratio / 100.0), 3)
             
             avail_qty = 0.0
             if self.peeling_bkls_line_id:

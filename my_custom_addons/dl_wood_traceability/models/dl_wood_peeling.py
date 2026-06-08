@@ -132,11 +132,13 @@ class DlWoodPeelingDossier(models.Model):
     )
     inventory_wood_ids = fields.One2many(
         'dl.wood.peeling.inventory.wood.summary', 'dossier_id',
-        string='Tồn kho theo loài gỗ', readonly=True
+        string='Tồn kho theo loài gỗ', readonly=True,
+        compute='_compute_inventory_summaries', store=True
     )
     inventory_variant_ids = fields.One2many(
         'dl.wood.peeling.inventory.variant.summary', 'dossier_id',
-        string='Tồn kho theo loại ván bóc', readonly=True
+        string='Tồn kho theo loại ván bóc', readonly=True,
+        compute='_compute_inventory_summaries', store=True
     )
     invoice_count = fields.Integer(
         string='Số hoá đơn',
@@ -151,15 +153,15 @@ class DlWoodPeelingDossier(models.Model):
     # ── Tổng hợp khối lượng (compute từ hoá đơn) ─────────────────────────────
     qty_initial = fields.Float(
         string='Tổng KL ban đầu (m³)',
-        compute='_compute_qty_totals', store=True, digits=(16, 2)
+        compute='_compute_qty_totals', store=True, digits=(16, 3)
     )
     qty_used = fields.Float(
         string='Tổng KL đã dùng (m³)',
-        compute='_compute_qty_totals', store=True, digits=(16, 2)
+        compute='_compute_qty_totals', store=True, digits=(16, 3)
     )
     qty_available = fields.Float(
         string='Tổng tồn khả dụng (m³)',
-        compute='_compute_qty_totals', store=True, digits=(16, 2)
+        compute='_compute_qty_totals', store=True, digits=(16, 3)
     )
     x_total_cost = fields.Float(
         string='Tổng giá trị (VND)',
@@ -175,10 +177,9 @@ class DlWoodPeelingDossier(models.Model):
             rec.qty_available = sum(rec.invoice_ids.mapped('qty_available'))
             rec.x_total_cost = sum(rec.invoice_ids.mapped('x_subtotal'))
 
-            # Tự động cập nhật bảng thống kê tồn kho (Xoá cũ, tạo mới)
-            rec.inventory_wood_ids.unlink()
-            rec.inventory_variant_ids.unlink()
-            
+    @api.depends('invoice_ids.qty_initial', 'invoice_ids.qty_used', 'invoice_ids.qty_available')
+    def _compute_inventory_summaries(self):
+        for rec in self:
             wood_summary = {}
             variant_summary = {}
             
@@ -203,21 +204,32 @@ class DlWoodPeelingDossier(models.Model):
                 wood_summary[species_id]['qty_available'] += bkls_line.qty_available
                 wood_summary[species_id]['qty_used'] += bkls_line.qty_used
 
-            if wood_summary:
-                rec.inventory_wood_ids = [(0, 0, {
-                    'species_id': sp_id,
-                    'qty_initial': vals['qty_initial'],
-                    'qty_available': vals['qty_available'],
-                    'qty_used': vals['qty_used'],
-                }) for sp_id, vals in wood_summary.items()]
-                
-            if variant_summary:
-                rec.inventory_variant_ids = [(0, 0, {
-                    'variant_id': var_id,
-                    'qty_initial': vals['qty_initial'],
-                    'qty_available': vals['qty_available'],
-                    'qty_used': vals['qty_used'],
-                }) for var_id, vals in variant_summary.items()]
+            # Cập nhật thông minh (thêm mới, cập nhật, xoá) thay vì (5, 0, 0) để tránh KeyError
+            wood_commands = []
+            existing_woods = {w.species_id.id if w.species_id else False: w for w in rec.inventory_wood_ids}
+            for sp_id, vals in wood_summary.items():
+                if sp_id in existing_woods:
+                    wood_commands.append((1, existing_woods[sp_id].id, vals))
+                    del existing_woods[sp_id]
+                else:
+                    vals['species_id'] = sp_id
+                    wood_commands.append((0, 0, vals))
+            for old_w in existing_woods.values():
+                wood_commands.append((2, old_w.id, 0))
+            rec.inventory_wood_ids = wood_commands
+
+            variant_commands = []
+            existing_variants = {v.variant_id.id if v.variant_id else False: v for v in rec.inventory_variant_ids}
+            for var_id, vals in variant_summary.items():
+                if var_id in existing_variants:
+                    variant_commands.append((1, existing_variants[var_id].id, vals))
+                    del existing_variants[var_id]
+                else:
+                    vals['variant_id'] = var_id
+                    variant_commands.append((0, 0, vals))
+            for old_v in existing_variants.values():
+                variant_commands.append((2, old_v.id, 0))
+            rec.inventory_variant_ids = variant_commands
 
     # ── Tài liệu PDF ─────────────────────────────────────────────────────────
     x_contract_attachment_ids = fields.Many2many(
@@ -370,15 +382,15 @@ class DlWoodPeelingInvoice(models.Model):
         string='Bảng kê lâm sản'
     )
     qty_initial = fields.Float(
-        string='Khối lượng (m³)', compute='_compute_totals', store=True, digits=(16, 2),
-        help='Tổng khối lượng ván bóc ghi trên hoá đơn.'
+        string='Khối lượng (m³)', compute='_compute_totals', store=True, digits=(16, 3),
+        help='Cộng dồn từ các dòng (m3)'
     )
     qty_used = fields.Float(
-        string='Đã dùng (m³)', compute='_compute_totals', store=True, digits=(16, 2),
-        help='Tổng khối lượng đã tiêu hao trong sản xuất.'
+        string='Đã dùng (m³)', compute='_compute_totals', store=True, digits=(16, 3),
+        help='Cộng dồn từ các dòng (m3)'
     )
     qty_available = fields.Float(
-        string='Tồn khả dụng (m³)', compute='_compute_totals', store=True, digits=(16, 2)
+        string='Tồn khả dụng (m³)', compute='_compute_totals', store=True, digits=(16, 3)
     )
     x_subtotal = fields.Float(
         string='Thành tiền (VND)', compute='_compute_totals', store=True, digits=(16, 2)
@@ -413,9 +425,10 @@ class DlWoodPeelingInvoice(models.Model):
     @api.depends('qty_initial', 'qty_used')
     def _compute_state(self):
         for rec in self:
+            avail = max(0.0, rec.qty_initial - rec.qty_used)
             if rec.qty_used <= 0:
                 rec.state = 'available'
-            elif rec.qty_used >= rec.qty_initial:
+            elif avail <= 0.1:
                 rec.state = 'depleted'
             else:
                 rec.state = 'partial'
@@ -475,13 +488,13 @@ class DlWoodPeelingBkls(models.Model):
 
     # ── Khối lượng & giá ─────────────────────────────────────────────────────
     qty_initial = fields.Float(
-        string='Khối lượng (m³)', compute='_compute_totals', store=True, digits=(16, 2)
+        string='Khối lượng (m³)', compute='_compute_totals', store=True, digits=(16, 3)
     )
     qty_used = fields.Float(
-        string='Đã dùng (m³)', compute='_compute_totals', store=True, digits=(16, 2)
+        string='Đã dùng (m³)', compute='_compute_totals', store=True, digits=(16, 3)
     )
     qty_available = fields.Float(
-        string='Tồn (m³)', compute='_compute_totals', store=True, digits=(16, 2)
+        string='Tồn (m³)', compute='_compute_totals', store=True, digits=(16, 3)
     )
     x_subtotal = fields.Float(
         string='Thành tiền', compute='_compute_totals', store=True, digits=(16, 2)
@@ -504,9 +517,10 @@ class DlWoodPeelingBkls(models.Model):
     @api.depends('qty_initial', 'qty_used')
     def _compute_state(self):
         for rec in self:
+            avail = max(0.0, rec.qty_initial - rec.qty_used)
             if rec.qty_used <= 0:
                 rec.state = 'available'
-            elif rec.qty_used >= rec.qty_initial:
+            elif avail <= 0.1:
                 rec.state = 'depleted'
             else:
                 rec.state = 'partial'
@@ -556,13 +570,13 @@ class DlWoodPeelingBklsLine(models.Model):
     
     # ── Khối lượng & giá ─────────────────────────────────────────────────────
     qty_initial = fields.Float(
-        string='Khối lượng (m³)', digits=(16, 2), required=True, default=0.0
+        string='Khối lượng (m³)', digits=(16, 3), required=True, default=0.0
     )
     qty_used = fields.Float(
-        string='Đã dùng (m³)', digits=(16, 2), default=0.0
+        string='Đã dùng (m³)', digits=(16, 3), default=0.0
     )
     qty_available = fields.Float(
-        string='Tồn (m³)', compute='_compute_qty_available', store=True, digits=(16, 2)
+        string='Tồn (m³)', compute='_compute_qty_available', store=True, digits=(16, 3)
     )
     price_unit = fields.Float(
         string='Đơn giá (VND/m³)', digits=(16, 2)
@@ -580,7 +594,8 @@ class DlWoodPeelingBklsLine(models.Model):
     @api.depends('qty_initial', 'qty_used')
     def _compute_qty_available(self):
         for rec in self:
-            rec.qty_available = max(0.0, rec.qty_initial - rec.qty_used)
+            avail = max(0.0, rec.qty_initial - rec.qty_used)
+            rec.qty_available = avail
 
     @api.depends('qty_initial', 'price_unit')
     def _compute_x_subtotal(self):
@@ -590,9 +605,10 @@ class DlWoodPeelingBklsLine(models.Model):
     @api.depends('qty_initial', 'qty_used')
     def _compute_state(self):
         for rec in self:
+            avail = max(0.0, rec.qty_initial - rec.qty_used)
             if rec.qty_used <= 0:
                 rec.state = 'available'
-            elif rec.qty_used >= rec.qty_initial:
+            elif avail <= 0.1:
                 rec.state = 'depleted'
             else:
                 rec.state = 'partial'
@@ -608,9 +624,9 @@ class DlWoodPeelingInventoryWoodSummary(models.Model):
 
     dossier_id = fields.Many2one('dl.wood.peeling.dossier', string='Hồ sơ', required=True, ondelete='cascade')
     species_id = fields.Many2one('dl.wood.species', string='Loài gỗ')
-    qty_initial = fields.Float(string='Tổng Khối lượng (m³)', digits=(16, 2))
-    qty_used = fields.Float(string='Đã sử dụng (m³)', digits=(16, 2))
-    qty_available = fields.Float(string='Tồn khả dụng (m³)', digits=(16, 2))
+    qty_initial = fields.Float(string='Tổng Khối lượng (m³)', digits=(16, 3))
+    qty_used = fields.Float(string='Đã sử dụng (m³)', digits=(16, 3))
+    qty_available = fields.Float(string='Tồn khả dụng (m³)', digits=(16, 3))
 
 class DlWoodPeelingInventoryVariantSummary(models.Model):
     _name = 'dl.wood.peeling.inventory.variant.summary'
@@ -619,7 +635,7 @@ class DlWoodPeelingInventoryVariantSummary(models.Model):
 
     dossier_id = fields.Many2one('dl.wood.peeling.dossier', string='Hồ sơ', required=True, ondelete='cascade')
     variant_id = fields.Many2one('dl.wood.peeling.variant', string='Loại ván bóc')
-    qty_initial = fields.Float(string='Tổng Khối lượng (m³)', digits=(16, 2))
-    qty_used = fields.Float(string='Đã sử dụng (m³)', digits=(16, 2))
-    qty_available = fields.Float(string='Tồn khả dụng (m³)', digits=(16, 2))
+    qty_initial = fields.Float(string='Tổng Khối lượng (m³)', digits=(16, 3))
+    qty_used = fields.Float(string='Đã sử dụng (m³)', digits=(16, 3))
+    qty_available = fields.Float(string='Tồn khả dụng (m³)', digits=(16, 3))
 

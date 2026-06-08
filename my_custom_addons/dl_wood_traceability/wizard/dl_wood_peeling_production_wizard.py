@@ -12,12 +12,12 @@ class DlWoodPeelingLineProductionWizard(models.TransientModel):
     dossier_line_id = fields.Many2one('dl.wood.dossier.line', string='Dòng hồ sơ gỗ', required=True, ondelete='cascade', readonly=True)
     species_id = fields.Many2one('dl.wood.species', string='Loài gỗ', readonly=True)
     
-    volume_wood = fields.Float('Khối lượng đem bóc (m³)', digits=(16, 2), required=True)
-    yield_factor = fields.Float('Định mức tiêu hao', digits=(16, 2), default=1.4, required=True, help="Ví dụ: 1.4 m3 gỗ tròn bóc ra được 1 m3 ván bóc.")
+    volume_wood = fields.Float('Khối lượng đem bóc (m³)', digits=(16, 3), required=True)
+    yield_factor = fields.Float('Định mức tiêu hao', digits=(16, 3), default=1.4, required=True, help="Ví dụ: 1.4 m3 gỗ tròn bóc ra được 1 m3 ván bóc.")
     
     peeling_variant_id = fields.Many2one('dl.wood.peeling.variant', string='Kích thước ván bóc', required=True)
     
-    volume_peeling = fields.Float('Khối lượng ván bóc (m³)', compute='_compute_volume_peeling', store=True, digits=(16, 2))
+    volume_peeling = fields.Float('Khối lượng ván bóc (m³)', compute='_compute_volume_peeling', store=True, digits=(16, 3))
 
     @api.depends('volume_wood', 'yield_factor')
     def _compute_volume_peeling(self):
