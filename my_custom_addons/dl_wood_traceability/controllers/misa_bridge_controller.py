@@ -384,28 +384,58 @@ class MisaBridgeController(http.Controller):
                 continue
                 
             prod_tmpl = Product.search([('default_code', '=', code)], limit=1)
-            if not prod_tmpl:
-                # Phân tích kích thước từ tên (VD: ... 15mm x 1250mm x 2500mm ...)
-                thickness, width, length = 0.0, 1220.0, 2440.0
-                if name:
-                    match = re.search(r'(\d+(?:\.\d+)?)\s*mm\s*[xX]\s*(\d+(?:\.\d+)?)\s*mm\s*[xX]\s*(\d+(?:\.\d+)?)\s*mm', name)
-                    if match:
-                        thickness = float(match.group(1))
-                        width = float(match.group(2))
-                        length = float(match.group(3))
-                
-                # Nếu không tìm thấy thickness trong tên, parse thử từ mã (VD: TPEPK_T15.0...)
-                if thickness <= 0 and code:
-                    match_code = re.search(r'_T(\d+(?:\.\d+)?)', code)
-                    if match_code:
-                        thickness = float(match_code.group(1))
-                
-                # Đảm bảo thickness > 0 để thoả mãn Odoo constrains
-                if thickness <= 0:
-                    thickness = 1.0
+            
+            # Phân tích kích thước từ tên (VD: ... 15mm x 1250mm x 2500mm ...)
+            thickness, width, length = 0.0, 1220.0, 2440.0
+            if name:
+                match = re.search(r'(\d+(?:\.\d+)?)\s*mm\s*[xX]\s*(\d+(?:\.\d+)?)\s*mm\s*[xX]\s*(\d+(?:\.\d+)?)\s*mm', name)
+                if match:
+                    thickness = float(match.group(1))
+                    width = float(match.group(2))
+                    length = float(match.group(3))
+            
+            # Nếu không tìm thấy thickness trong tên, parse thử từ mã (VD: TPEPK_T15.0... hoặc TPP_M11.5...)
+            unit_val = 'sheet'
+            if code:
+                match_code_t = re.search(r'_T(\d+(?:\.\d+)?)', code)
+                match_code_m = re.search(r'_M(\d+(?:\.\d+)?)', code)
+                if match_code_t and thickness <= 0:
+                    thickness = float(match_code_t.group(1))
+                elif match_code_m:
+                    unit_val = 'm3'
+                    if thickness <= 0:
+                        thickness = float(match_code_m.group(1))
+            
+            # Đảm bảo thickness > 0 để thoả mãn Odoo constrains
+            if thickness <= 0:
+                thickness = 1.0
 
+            # Map loại ván bóc (peeling type) từ tên
+            peeling_ids = []
+            if name:
+                name_lower = name.lower()
+                if 'keo' in name_lower:
+                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'keo')], limit=1)
+                    if peeling: peeling_ids.append(peeling.id)
+                if 'thông' in name_lower or 'thong' in name_lower:
+                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'thông')], limit=1)
+                    if peeling: peeling_ids.append(peeling.id)
+                if 'bạch đàn' in name_lower or 'bach dan' in name_lower:
+                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'bạch đàn')], limit=1)
+                    if peeling: peeling_ids.append(peeling.id)
+            
+            uom_m3 = request.env['uom.uom'].sudo().search([('name', 'in', ['m³', 'm3', 'Mét khối'])], limit=1)
+            uom_sheet = request.env['uom.uom'].sudo().search([('name', 'ilike', 'tấm')], limit=1)
+            
+            uom_id = False
+            if unit_val == 'm3' and uom_m3:
+                uom_id = uom_m3.id
+            elif unit_val == 'sheet' and uom_sheet:
+                uom_id = uom_sheet.id
+
+            if not prod_tmpl:
                 # Nếu chưa có thì tạo mới sản phẩm cơ bản
-                prod_tmpl = Product.with_context(misa_sync=True).create({
+                create_vals = {
                     'name': name or code,
                     'default_code': code,
                     'x_is_wood_product': True,
@@ -413,16 +443,33 @@ class MisaBridgeController(http.Controller):
                     'x_thickness': thickness,
                     'x_width': width,
                     'x_length': length,
+                    'x_unit': unit_val,
                     'list_price': price,
                     'x_is_misa_synced': True
-                })
+                }
+                if uom_id:
+                    create_vals['uom_id'] = uom_id
+                    create_vals['uom_po_id'] = uom_id
+                if peeling_ids:
+                    create_vals['x_required_peeling_type_ids'] = [(6, 0, peeling_ids)]
+                    
+                prod_tmpl = Product.with_context(misa_sync=True).create(create_vals)
             else:
                 # Nếu đã có, cập nhật lại tên và giá từ MISA (vì MISA là master)
-                prod_tmpl.with_context(misa_sync=True).write({
+                update_vals = {
                     'name': name or code,
                     'list_price': price,
                     'x_is_misa_synced': True
-                })
+                }
+                if not prod_tmpl.x_unit:
+                    update_vals['x_unit'] = unit_val
+                if not prod_tmpl.x_required_peeling_type_ids and peeling_ids:
+                    update_vals['x_required_peeling_type_ids'] = [(6, 0, peeling_ids)]
+                if uom_id and prod_tmpl.uom_id.id == 1 and uom_id != 1:
+                    update_vals['uom_id'] = uom_id
+                    update_vals['uom_po_id'] = uom_id
+                    
+                prod_tmpl.with_context(misa_sync=True).write(update_vals)
                 
             # Lấy bản ghi variant product.product tương ứng
             prod = ProductProduct.search([('product_tmpl_id', '=', prod_tmpl.id)], limit=1)

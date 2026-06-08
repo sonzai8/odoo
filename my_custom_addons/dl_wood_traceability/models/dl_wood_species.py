@@ -68,7 +68,7 @@ class DlWoodSpecies(models.Model):
         
         for species in self.filtered(lambda s: s.wood_type == 'wood'):
             # Check if peeling type already exists for this species
-            ptype = PeelingType.search([
+            ptype = PeelingType.with_context(active_test=False).search([
                 ('species_id', '=', species.id)
             ], limit=1)
             
@@ -91,7 +91,7 @@ class DlWoodSpecies(models.Model):
             
             for thickness_val, thickness_label in thickness_variants:
                 # Check if variant exists
-                existing_variant = PeelingVariant.search([
+                existing_variant = PeelingVariant.with_context(active_test=False).search([
                     ('peeling_type_id', '=', ptype.id),
                     ('thickness', '=', thickness_val)
                 ], limit=1)

@@ -185,5 +185,16 @@
             <field name="model_id" ref="model_dl_wood_peeling_production_line"/>
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         </record>
+        <record id="dl_wood_peeling_type_comp_rule" model="ir.rule">
+            <field name="name">Loại ván bóc đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_peeling_type"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="dl_wood_peeling_variant_comp_rule" model="ir.rule">
+            <field name="name">Biến thể ván bóc đa công ty (Strict)</field>
+            <field name="model_id" ref="model_dl_wood_peeling_variant"/>
+            <field name="domain_force">[('peeling_type_id.company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

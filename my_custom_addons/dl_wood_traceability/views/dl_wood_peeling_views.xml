@@ -24,7 +24,7 @@
                        decoration-success="state == 'available'" 
                        decoration-warning="state == 'partial'" 
                        decoration-muted="state == 'depleted'"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="company_id" optional="show"/>
             </list>
         </field>
     </record>
@@ -161,7 +161,7 @@
                        decoration-info="state == 'draft'" 
                        decoration-success="state == 'using'" 
                        decoration-muted="state == 'done'"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="company_id" optional="show"/>
             </list>
         </field>
     </record>

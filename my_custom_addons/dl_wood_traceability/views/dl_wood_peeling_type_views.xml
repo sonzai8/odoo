@@ -13,7 +13,7 @@
                 <field name="name_sci" optional="show"/>
                 <field name="note" optional="show"/>
                 <field name="active" widget="boolean_toggle"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="company_id" optional="show"/>
             </list>
         </field>
     </record>
