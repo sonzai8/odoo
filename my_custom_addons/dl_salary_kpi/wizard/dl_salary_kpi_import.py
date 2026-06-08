@@ -19,6 +19,14 @@ class SalaryKpiImportWizard(models.TransientModel):
     file_data = fields.Binary(string='File Excel', required=False)
     file_name = fields.Char(string='Tên file')
 
+    state = fields.Selection([
+        ('upload', 'Tải file'),
+        ('preview', 'Xem trước')
+    ], string='Trạng thái', default='upload')
+    preview_valid_html = fields.Html(string='Dữ liệu hợp lệ', readonly=True)
+    preview_anomaly_html = fields.Html(string='Dữ liệu bất thường', readonly=True)
+    has_anomalies = fields.Boolean(default=False)
+
     def action_export(self):
         self.ensure_one()
         if self.wizard_type == 'overtime':
@@ -27,9 +35,10 @@ class SalaryKpiImportWizard(models.TransientModel):
             return self.month_id.action_export_internal_salary_excel()
         return self.month_id.action_export_excel()
 
-    def action_import(self):
+    def _parse_excel_data(self):
+        """Hàm dùng chung để đọc file Excel, trả về dữ liệu hợp lệ và cảnh báo"""
         if not self.file_data:
-            return
+            return [], [], 0, self.env['dl.salary.kpi.line']
         
         file_content = base64.b64decode(self.file_data)
         wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
@@ -38,9 +47,6 @@ class SalaryKpiImportWizard(models.TransientModel):
         else:
             ws = wb.active # Fallback
 
-        if self.wizard_type == 'internal_salary':
-            return self._import_internal_salary(ws)
-
         # Lấy bản đồ mã công -> ID
         att_types = self.env['dl.salary.kpi.attendance.type'].search([])
         att_type_map = {t.code: t.id for t in att_types}
@@ -48,12 +54,14 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         errors = []
         import_data = [] # List of (line_record, values_to_write)
+        imported_line_ids = set()
 
         # Duyệt từ dòng 4 (skip headers)
         count_skipped_departure = 0
         from datetime import date
 
         for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=True), 4):
+            row_errors = []
 
             tax_id_excel = str(row[1]).strip() if row[1] else ""
             if tax_id_excel.endswith('.0'):
@@ -63,7 +71,6 @@ class SalaryKpiImportWizard(models.TransientModel):
             
             if not emp_name_excel:
                 continue
-
 
             # Tìm line tương ứng trong tháng dựa trên Tên và MST
             line = self.month_id.line_ids.filtered(
@@ -139,7 +146,7 @@ class SalaryKpiImportWizard(models.TransientModel):
 
                 if code:
                     if code not in att_type_map:
-                        errors.append(f"Dòng {row_idx}: Mã công '{code}' ngày {day:02d} không hợp lệ.")
+                        row_errors.append(f"Dòng {row_idx}: Mã công '{code}' ngày {day:02d} không hợp lệ.")
                     else:
                         # Kiểm tra xem mã công có phải là mã làm thêm không (nếu đang import OT)
                         if self.wizard_type == 'overtime':
@@ -149,7 +156,7 @@ class SalaryKpiImportWizard(models.TransientModel):
                             # Vì số lượng dòng ít, search lại hoặc dùng env cache
                             att_type = self.env['dl.salary.kpi.attendance.type'].browse(att_type_id)
                             if att_type.apply_to == 'normal':
-                                errors.append(f"Dòng {row_idx}: Mã '{code}' ngày {day:02d} không phải là mã chấm công làm thêm.")
+                                row_errors.append(f"Dòng {row_idx}: Mã '{code}' ngày {day:02d} không phải là mã chấm công làm thêm.")
                             else:
                                 vals[field_name] = att_type_id
                                 row_codes[day] = code
@@ -169,19 +176,144 @@ class SalaryKpiImportWizard(models.TransientModel):
                     cur = row_codes.get(i)
                     nxt = row_codes.get(i+1)
                     if cur == 'Đ' and nxt == 'N':
-                        errors.append(f"Dòng {row_idx} ({emp_name_excel}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
+                        row_errors.append(f"Dòng {row_idx} ({emp_name_excel}): Lỗi đổi ca Đ sang N tại ngày {i:02d}-{i+1:02d} (Thiếu ĐC).")
 
-            if vals and not errors:
+            if vals and not row_errors:
                 import_data.append((line, vals))
+                imported_line_ids.add(line.id)
+            if row_errors:
+                errors.extend(row_errors)
 
-        if errors:
-            # Chỉ hiển thị tối đa 10 lỗi đầu tiên
-            display_errors = errors[:10]
-            if len(errors) > 10:
-                display_errors.append(f"... và còn {len(errors) - 10} lỗi khác nữa.")
-            raise UserError("\n".join(display_errors))
+        # Kiểm tra nhân viên có trong DB nhưng không có trong Excel
+        missing_in_excel = self.month_id.line_ids.filtered(lambda l: l.id not in imported_line_ids)
+        if missing_in_excel:
+            for l in missing_in_excel:
+                errors.append(f"Không có trong file Excel: Nhân viên '{l.employee_id.name}' (MST: {l.employee_id.dl_tax_id or ''})")
 
-        # Nếu không có lỗi nào thì mới tiến hành lưu
+        return import_data, errors, count_skipped_departure, missing_in_excel
+
+    def action_analyze(self):
+        """Chuyển sang bước Preview, hiển thị dữ liệu đã đọc"""
+        if not self.file_data:
+            return
+            
+        if self.wizard_type == 'internal_salary':
+            # Lương nội bộ: Chưa áp dụng preview, gọi import luôn
+            return self.action_import()
+
+        import_data, errors, count_skipped_departure, missing_in_excel = self._parse_excel_data()
+
+        # Generate HTML cho tab Dữ liệu hợp lệ
+        valid_html = f'''
+            <div class="alert alert-success mt-2 mb-3">
+                <i class="fa fa-check-circle"></i> Sẵn sàng upload dữ liệu cho <strong>{len(import_data)}</strong> nhân viên.
+            </div>
+            <table class="table table-sm table-bordered table-striped">
+                <thead class="table-light">
+                    <tr><th class="text-center" width="5%">STT</th><th width="15%">Mã NV</th><th width="40%">Họ Tên</th><th width="20%">MST</th><th class="text-center" width="20%">Trạng thái</th></tr>
+                </thead>
+                <tbody>
+        '''
+        
+        if len(import_data) <= 20:
+            display_data = import_data
+        else:
+            display_data = import_data[:10] + [None] + import_data[-10:]
+            
+        stt = 1
+        for row in display_data:
+            if row is None:
+                valid_html += "<tr><td colspan='5' class='text-center text-muted'><em>... (Lược bớt các dòng giữa) ...</em></td></tr>"
+                # Ước tính stt cho phần cuối
+                stt = len(import_data) - 9
+                continue
+                
+            line = row[0]
+            emp_code = getattr(line.employee_id, 'dl_employee_code', getattr(line.employee_id, 'x_employee_code', getattr(line.employee_id, 'barcode', '')))
+            valid_html += f'''
+                <tr>
+                    <td class="text-center">{stt}</td>
+                    <td>{emp_code}</td>
+                    <td>{line.employee_id.name or ''}</td>
+                    <td>{line.employee_id.dl_tax_id or ''}</td>
+                    <td class="text-center text-success"><i class="fa fa-check"></i> Hợp lệ</td>
+                </tr>
+            '''
+            stt += 1
+            
+        valid_html += "</tbody></table>"
+
+        # Generate HTML cho tab Bất thường
+        anomaly_html = ""
+        has_anomalies = False
+        
+        if errors or count_skipped_departure > 0:
+            has_anomalies = True
+            anomaly_html += '''
+                <div class="alert alert-warning mt-2 mb-3">
+                    <i class="fa fa-exclamation-triangle"></i> 
+                    <strong>Có dữ liệu bất thường!</strong> Bạn có thể kiểm tra danh sách bên dưới. 
+                    Khi bấm "Xác nhận Upload", hệ thống sẽ bỏ qua các dòng bị lỗi và chỉ ghi nhận các dòng hợp lệ.
+                </div>
+                <ul class="list-group">
+            '''
+            for err in errors:
+                anomaly_html += f'<li class="list-group-item text-danger"><i class="fa fa-times-circle"></i> {err}</li>'
+                
+            if count_skipped_departure > 0:
+                anomaly_html += f'<li class="list-group-item text-warning"><i class="fa fa-info-circle"></i> Bỏ qua chấm công của {count_skipped_departure} nhân viên ở những ngày sau ngày nghỉ việc.</li>'
+                
+            anomaly_html += "</ul>"
+        else:
+            anomaly_html = '''
+                <div class="alert alert-success mt-2 mb-3">
+                    <i class="fa fa-check-circle"></i> Tuyệt vời! Không phát hiện dữ liệu bất thường nào trong file Excel.
+                </div>
+            '''
+
+        self.write({
+            'preview_valid_html': valid_html,
+            'preview_anomaly_html': anomaly_html,
+            'has_anomalies': has_anomalies,
+            'state': 'preview'
+        })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_back(self):
+        """Quay lại bước chọn file"""
+        self.write({'state': 'upload'})
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_import(self):
+        """Thực hiện lưu dữ liệu (Xác nhận sau preview)"""
+        if not self.file_data:
+            return
+            
+        if self.wizard_type == 'internal_salary':
+            file_content = base64.b64decode(self.file_data)
+            wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
+            if 'Bang Cham Cong' in wb.sheetnames:
+                ws = wb['Bang Cham Cong']
+            else:
+                ws = wb.active
+            return self._import_internal_salary(ws)
+
+        import_data, errors, count_skipped_departure, missing_in_excel = self._parse_excel_data()
+
+        # Tiến hành lưu (những dòng hợp lệ)
         for line, vals in import_data:
             line.write(vals)
         
@@ -192,14 +324,21 @@ class SalaryKpiImportWizard(models.TransientModel):
         if count_skipped_departure > 0:
             msg += _('\nLưu ý: Có %s nhân viên bị bỏ qua các ngày sau ngày nghỉ việc.') % count_skipped_departure
 
+        if errors:
+            msg += _('\n\n--- CÁC CẢNH BÁO ---\n')
+            display_errors = errors[:15]
+            if len(errors) > 15:
+                display_errors.append(f"... và còn {len(errors) - 15} cảnh báo khác nữa.")
+            msg += "\n".join(display_errors)
+
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Thành công'),
+                'title': _('Hoàn tất (Có cảnh báo)') if errors else _('Thành công'),
                 'message': msg,
-                'type': 'success',
-                'sticky': True if count_skipped_departure > 0 else False,
+                'type': 'warning' if errors else 'success',
+                'sticky': True,
             }
         }
 
