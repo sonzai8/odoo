@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import math
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 
@@ -61,6 +62,12 @@ class DlWoodSaleOrder(models.Model):
     production_count = fields.Integer(
         string='Số lệnh SX', compute='_compute_production_count'
     )
+    x_total_production_volume_m3 = fields.Float(
+        string='Tổng KL (m³)', compute='_compute_total_production_volume_m3'
+    )
+    x_total_production_volume_sheet = fields.Integer(
+        string='Tổng KL (Tấm)', compute='_compute_total_production_volume_sheet'
+    )
     shipment_ids = fields.One2many(
         'dl.wood.sale.order.shipment', 'sale_order_id',
         string='Chuyến xe vận chuyển'
@@ -76,6 +83,44 @@ class DlWoodSaleOrder(models.Model):
     def _compute_production_count(self):
         for rec in self:
             rec.production_count = len(rec.production_order_ids)
+
+    @api.depends('production_order_ids.x_qty_planned_m3', 'production_order_ids.state')
+    def _compute_total_production_volume_m3(self):
+        for rec in self:
+            valid_orders = rec.production_order_ids.filtered(lambda o: o.state != 'cancelled')
+            rec.x_total_production_volume_m3 = sum(valid_orders.mapped('x_qty_planned_m3'))
+
+    @api.depends('production_order_ids.qty_planned', 'production_order_ids.product_id', 'production_order_ids.state')
+    def _compute_total_production_volume_sheet(self):
+        for rec in self:
+            total_sheets = 0
+            valid_orders = rec.production_order_ids.filtered(lambda o: o.state != 'cancelled')
+            for order in valid_orders:
+                product = order.product_id
+                if not product:
+                    continue
+                
+                uom_name = (product.uom_id.name or '').strip().lower()
+                x_unit_val = getattr(product, 'x_unit', '')
+                is_piece = 'tấm' in uom_name or 'tam' in uom_name or x_unit_val == 'sheet'
+                
+                if is_piece:
+                    total_sheets += math.ceil(order.qty_planned)
+                else:
+                    # Đơn vị là m3, cần tính ngược ra số tấm (làm tròn lên)
+                    vol_per_piece = product.x_volume_m3
+                    if not vol_per_piece:
+                        if product.x_length and product.x_width and product.x_thickness:
+                            area = (product.x_length * product.x_width) / 1_000_000.0
+                            vol_per_piece = (area * product.x_thickness) / 1_000.0
+                    
+                    if vol_per_piece and vol_per_piece > 0:
+                        total_sheets += math.ceil(order.qty_planned / vol_per_piece)
+                    else:
+                        # Không tính được kích thước 1 tấm, mặc định dùng qty_planned
+                        total_sheets += math.ceil(order.qty_planned)
+            
+            rec.x_total_production_volume_sheet = total_sheets
 
     @api.model_create_multi
     def create(self, vals_list):

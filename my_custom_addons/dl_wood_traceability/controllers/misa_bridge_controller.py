@@ -415,13 +415,13 @@ class MisaBridgeController(http.Controller):
             if name:
                 name_lower = name.lower()
                 if 'keo' in name_lower:
-                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'keo')], limit=1)
+                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'keo'), '|', ('company_id', '=', False), ('company_id', '=', request.env.company.id)], limit=1)
                     if peeling: peeling_ids.append(peeling.id)
                 if 'thông' in name_lower or 'thong' in name_lower:
-                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'thông')], limit=1)
+                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'thông'), '|', ('company_id', '=', False), ('company_id', '=', request.env.company.id)], limit=1)
                     if peeling: peeling_ids.append(peeling.id)
                 if 'bạch đàn' in name_lower or 'bach dan' in name_lower:
-                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'bạch đàn')], limit=1)
+                    peeling = request.env['dl.wood.peeling.type'].sudo().search([('name', 'ilike', 'bạch đàn'), '|', ('company_id', '=', False), ('company_id', '=', request.env.company.id)], limit=1)
                     if peeling: peeling_ids.append(peeling.id)
             
             uom_m3 = request.env['uom.uom'].sudo().search([('name', 'in', ['m³', 'm3', 'Mét khối'])], limit=1)

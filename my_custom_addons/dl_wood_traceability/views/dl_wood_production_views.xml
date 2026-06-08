@@ -156,8 +156,10 @@
                 <field name="partner_id"/>
                 <field name="date_order"/>
                 <field name="production_count" string="Lệnh SX"/>
+                <field name="x_total_production_volume_m3" sum="Tổng m³"/>
+                <field name="x_total_production_volume_sheet" sum="Tổng tấm"/>
                 <field name="state" widget="badge"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="company_id"/>
             </list>
         </field>
     </record>
@@ -505,7 +507,7 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="sale_order_id"/>
-                <field name="product_id"/>
+                <field name="product_id" width="500px"/>
                 <field name="qty_planned"/>
                 <field name="qty_done"/>
                 <field name="total_volume_actual" string="KL NVL (m³)"/>
@@ -513,7 +515,7 @@
                 <field name="x_avg_production_price" widget="monetary" options="{'currency_field': 'currency_id'}" string="Giá SX TB (/m³)"/>
                 <field name="date_planned"/>
                 <field name="state" widget="badge"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="company_id"/>
             </list>
         </field>
     </record>
