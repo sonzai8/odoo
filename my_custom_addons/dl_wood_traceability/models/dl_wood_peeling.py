@@ -263,6 +263,12 @@ class DlWoodPeelingDossier(models.Model):
         for rec in self:
             rec.state = 'draft'
 
+    def unlink(self):
+        for rec in self:
+            if rec.production_line_ids:
+                raise UserError(_("Không thể xóa Hồ sơ ván bóc '%s' vì hồ sơ này đã được sử dụng để xuất tiêu hao trong Lệnh sản xuất. Vui lòng gỡ liên kết hoặc xóa lịch sử tiêu hao trước khi thực hiện!") % rec.name)
+        return super().unlink()
+
     def action_open_import_invoice_wizard(self):
         self.ensure_one()
         return {
@@ -451,6 +457,12 @@ class DlWoodPeelingInvoice(models.Model):
                 count = self.search_count([('company_id', '=', company_id)])
                 vals['name'] = f"{prefix}_PB_HD_{(count + 1):04d}"
         return super().create(vals_list)
+
+    def unlink(self):
+        for rec in self:
+            if self.env['dl.wood.peeling.production.line'].search_count([('peeling_invoice_id', '=', rec.id)]):
+                raise UserError(_("Không thể xóa Hóa đơn ván bóc '%s' vì hóa đơn này đã được sử dụng trong Lệnh sản xuất. Bạn phải xóa chi tiết tiêu hao của hóa đơn này trước!") % (rec.invoice_number or rec.name))
+        return super().unlink()
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║  BẢNG KÊ LÂM SẢN VÁN BÓC (Nhóm các dòng chi tiết)                            ║
