@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Giao diện Form Wizard Xuất Báo Cáo Excel Hoá Đơn Ván Bóc -->
+    <record id="view_dl_wood_peeling_invoice_export_wizard_form" model="ir.ui.view">
+        <field name="name">dl.wood.peeling.invoice.export.wizard.form</field>
+        <field name="model">dl.wood.peeling.invoice.export.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Xuất Báo Cáo Hoá Đơn Ván Bóc">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="state" widget="radio"/>
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        <i>* Nếu để trống ngày tháng, hệ thống sẽ xuất toàn bộ dữ liệu.</i>
+                    </p>
+                </sheet>
+                <footer>
+                    <button name="action_export" string="Xuất Excel" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Hủy bỏ" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action mở Wizard -->
+    <record id="action_dl_wood_peeling_invoice_export_wizard" model="ir.actions.act_window">
+        <field name="name">Xuất Excel Hoá Đơn</field>
+        <field name="res_model">dl.wood.peeling.invoice.export.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Gắn Action vào Menu "Hành động" (Action dropdown) trên List View của Hoá đơn ván bóc -->
+    <record id="action_server_export_peeling_invoice" model="ir.actions.server">
+        <field name="name">Xuất Excel</field>
+        <field name="model_id" ref="model_dl_wood_peeling_invoice"/>
+        <field name="binding_model_id" ref="model_dl_wood_peeling_invoice"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+                'name': 'Xuất Báo Cáo Hoá Đơn Ván Bóc',
+                'type': 'ir.actions.act_window',
+                'res_model': 'dl.wood.peeling.invoice.export.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+            }
+        </field>
+    </record>
+</odoo>

@@ -34,6 +34,7 @@
         'wizard/dl_customer_import_wizard_views.xml',
         'wizard/dl_wood_init_data_wizard_views.xml',
         'wizard/dl_wood_dossier_consumption_wizard_views.xml',
+        'wizard/dl_wood_peeling_invoice_export_wizard_views.xml',
         'views/dl_wood_peeling_report_views.xml',
         'views/menus.xml',
         'views/dl_misa_extension_release_views.xml',

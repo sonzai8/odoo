@@ -4,6 +4,7 @@ dl.wood.dossier - Hồ Sơ Gỗ (Master Data)
 """
 from odoo import models, fields, api, _, tools
 from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_round
 import logging
 import io
 import base64
@@ -715,10 +716,10 @@ class DlWoodDossier(models.Model):
             done_lines = dossier.ledger_ids.filtered(lambda l: l.state == 'done')
             draft_lines = dossier.ledger_ids.filtered(lambda l: l.state == 'draft')
             # Chỉ tính tồn kho GỖ (m³). Củi không có tồn kho trong hệ thống.
-            dossier.remaining_qty = round(dossier.initial_wood_qty + sum(done_lines.mapped('actual_qty')), 2)
-            dossier.qty_reserved = round(abs(sum(draft_lines.mapped('actual_qty'))), 2)
-            dossier.qty_available = round(dossier.remaining_qty - dossier.qty_reserved, 2)
-            dossier.qty_consumed = round(max(0.0, dossier.initial_wood_qty - dossier.remaining_qty), 2)
+            dossier.remaining_qty = float_round(dossier.initial_wood_qty + sum(done_lines.mapped('actual_qty')), precision_digits=2)
+            dossier.qty_reserved = float_round(abs(sum(draft_lines.mapped('actual_qty'))), precision_digits=2)
+            dossier.qty_available = float_round(dossier.remaining_qty - dossier.qty_reserved, precision_digits=2)
+            dossier.qty_consumed = float_round(max(0.0, dossier.initial_wood_qty - dossier.remaining_qty), precision_digits=2)
 
     @api.depends('ledger_ids.production_id')
     def _compute_x_production_ids(self):
@@ -1277,12 +1278,12 @@ class DlWoodDossier(models.Model):
     def _compute_initial_qty(self):
         for record in self:
             # Tổng gỗ tính theo m³ (volume)
-            record.initial_wood_qty = round(
-                sum(record.line_ids.filtered(lambda l: l.wood_type == 'wood').mapped('volume')), 2
+            record.initial_wood_qty = float_round(
+                sum(record.line_ids.filtered(lambda l: l.wood_type == 'wood').mapped('volume')), precision_digits=2
             )
             # Tổng củi tính theo Ster (volume_ster) — khác đơn vị, không cộng chung
-            record.initial_firewood_qty = round(
-                sum(record.line_ids.filtered(lambda l: l.wood_type == 'firewood').mapped('volume_ster')), 2
+            record.initial_firewood_qty = float_round(
+                sum(record.line_ids.filtered(lambda l: l.wood_type == 'firewood').mapped('volume_ster')), precision_digits=2
             )
             # initial_qty CHỈ là gỗ (m³) — dùng cho tồn kho và vận chuyển gỗ
             record.initial_qty = record.initial_wood_qty
@@ -1573,7 +1574,7 @@ class DlWoodDossierLine(models.Model):
     x_species_group = fields.Selection(related='species_id.x_species_group', string='Nhóm loài', readonly=True)
     
     quantity = fields.Integer(string='Số lượng (Cây)')
-    volume = fields.Integer(string='Khối lượng (m³)')
+    volume = fields.Float(string='Khối lượng (m³)', digits=(16, 2))
     volume_ster = fields.Float(
         string='Khối lượng Củi (Ster)',
         digits=(16, 2),
@@ -1602,7 +1603,7 @@ class DlWoodDossierLine(models.Model):
         """Thành tiền: Củi tính theo volume_ster (Ster), Gỗ tính theo volume (m³)."""
         for line in self:
             qty = line.volume_ster if line.wood_type == 'firewood' else line.volume
-            line.price_subtotal = round(qty * line.price_unit, 2)
+            line.price_subtotal = float_round(qty * line.price_unit, precision_digits=2)
 
     @api.depends('volume', 'volume_ster', 'wood_type')
     def _compute_volume_planed(self):
@@ -1681,10 +1682,10 @@ class DlWoodDossierLine(models.Model):
             draft_global = sum(global_ledgers.filtered(lambda l: l.state == 'draft').mapped('actual_qty'))
 
             # Tồn thực tế và giữ hàng
-            line.x_remaining_qty = round(line.volume + done_precise + (done_global * ratio), 2)
-            line.x_qty_reserved = round(abs(draft_precise + (draft_global * ratio)), 2)
-            line.x_qty_available = round(line.x_remaining_qty - line.x_qty_reserved, 2)
-            line.x_qty_consumed = round(max(0.0, line.volume - line.x_remaining_qty), 2)
+            line.x_remaining_qty = float_round(line.volume + done_precise + (done_global * ratio), precision_digits=2)
+            line.x_qty_reserved = float_round(abs(draft_precise + (draft_global * ratio)), precision_digits=2)
+            line.x_qty_available = float_round(line.x_remaining_qty - line.x_qty_reserved, precision_digits=2)
+            line.x_qty_consumed = float_round(max(0.0, line.volume - line.x_remaining_qty), precision_digits=2)
 
     @api.onchange('species_id')
     def _onchange_species_id(self):
