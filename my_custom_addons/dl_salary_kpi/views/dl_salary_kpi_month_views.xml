@@ -39,6 +39,7 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="action_recompute_all_data" string="Tính toán lại" type="object" class="oe_stat_button" icon="fa-refresh" groups="base.group_user" invisible="state == 'confirmed'"/>
                         <button name="action_import_excel" string="Nhập Công" type="object" class="oe_stat_button" icon="fa-exchange" invisible="state != 'draft'"/>
+                        <button name="action_normalize_attendance_excel" string="Chuẩn hoá công" type="object" class="oe_stat_button" icon="fa-magic" invisible="state != 'draft'"/>
                         <button name="action_import_ot_excel" string="Nhập công LT" type="object" class="oe_stat_button" icon="fa-clock-o" invisible="state != 'lock_normal'"/>
                         <button name="action_import_internal_salary" string="Nhập Lương" type="object" class="oe_stat_button" icon="fa-upload" invisible="state != 'lock_regime'"/>
                         <button name="action_generate_all_kpi" string="Tạo KPI" type="object" class="oe_stat_button" icon="fa-magic" invisible="state != 'lock_regime'"/>

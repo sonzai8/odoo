@@ -756,6 +756,17 @@ class SalaryKpiMonth(models.Model):
             'context': {'default_month_id': self.id, 'default_wizard_type': 'normal'}
         }
 
+    def action_normalize_attendance_excel(self):
+        self.ensure_one()
+        return {
+            'name': 'Chuẩn hoá công (Từ file nhà máy)',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dl.salary.kpi.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_month_id': self.id, 'default_wizard_type': 'normalize'}
+        }
+
     def action_import_ot_excel(self):
         self.ensure_one()
         return {

@@ -14,10 +14,14 @@ class SalaryKpiImportWizard(models.TransientModel):
     wizard_type = fields.Selection([
         ('normal', 'Công Thường'),
         ('overtime', 'Làm Thêm'),
-        ('internal_salary', 'Lương nội bộ (KPI Target)')
+        ('internal_salary', 'Lương nội bộ (KPI Target)'),
+        ('normalize', 'Chuẩn hoá công (Từ file nhà máy)')
     ], string='Loại xử lý', default='normal')
     file_data = fields.Binary(string='File Excel', required=False)
     file_name = fields.Char(string='Tên file')
+
+    normalized_file_data = fields.Binary(string='File chuẩn hoá', readonly=True)
+    normalized_file_name = fields.Char(string='Tên file chuẩn hoá', readonly=True)
 
     state = fields.Selection([
         ('upload', 'Tải file'),
@@ -29,6 +33,21 @@ class SalaryKpiImportWizard(models.TransientModel):
 
     def action_export(self):
         self.ensure_one()
+        if self.wizard_type == 'normalize':
+            if not self.normalized_file_data:
+                raise UserError(_("Không có dữ liệu chuẩn hoá. Vui lòng bấm Xem trước lại."))
+            attachment = self.env['ir.attachment'].create({
+                'name': self.normalized_file_name,
+                'type': 'binary',
+                'datas': self.normalized_file_data,
+                'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            })
+            return {
+                'type': 'ir.actions.act_url',
+                'url': f'/web/content/{attachment.id}?download=true',
+                'target': 'new',
+            }
+
         if self.wizard_type == 'overtime':
             return self.month_id.action_export_ot_excel()
         if self.wizard_type == 'internal_salary':
@@ -192,6 +211,193 @@ class SalaryKpiImportWizard(models.TransientModel):
 
         return import_data, errors, count_skipped_departure, missing_in_excel
 
+    def _process_normalize(self):
+        """Xử lý chuẩn hoá file, trả về (valid_html, anomaly_html, has_anomalies)"""
+        if not self.file_data:
+            return "", "", False
+
+        file_content = base64.b64decode(self.file_data)
+        wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=False)
+        if 'Bang Cham Cong' in wb.sheetnames:
+            ws = wb['Bang Cham Cong']
+        else:
+            ws = wb.active
+
+        month_date = self.month_id.date_month
+        year, month = month_date.year, month_date.month
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+
+        # Lấy ngày nghỉ lễ
+        start_date = month_date.replace(day=1)
+        end_date = month_date.replace(day=last_day)
+        holiday_dates = self.env['dl.public.holiday'].get_holiday_dates(start_date, end_date)
+
+        # Lấy danh sách nhân viên cân đối
+        balance_employees = self.month_id.line_ids.mapped('employee_id')
+
+        removed_employees = []
+        kept_employees_info = []
+
+        rows_to_delete = []
+        col_offset = 7 # Cột đầu tiên (Ngày 1) ở index 7 (Cột H trong file nhà máy)
+
+        # Duyệt từ dòng 4
+        for row_idx, row in enumerate(ws.iter_rows(min_row=4, values_only=False), 4):
+            mst = str(row[1].value).strip() if row[1].value else ""
+            if mst.endswith('.0'):
+                mst = mst[:-2]
+            emp_name = str(row[2].value).strip() if row[2].value else ""
+
+            if not emp_name:
+                continue
+                
+            if not mst:
+                removed_employees.append(f"{emp_name} (Không có MST)")
+                rows_to_delete.append(row_idx)
+                continue
+
+            # Kiểm tra xem có trong danh sách cân đối không (theo Tên + MST)
+            matched_emp = balance_employees.filtered(
+                lambda e: (e.name or '').strip().lower() == emp_name.lower() and 
+                          (e.dl_tax_id or '').strip() == mst
+            )
+
+            if not matched_emp:
+                removed_employees.append(f"{emp_name} (MST: {mst})")
+                rows_to_delete.append(row_idx)
+                continue
+
+            # Nhân viên được giữ lại -> Xử lý PL và ĐC
+            kept_employees_info.append(matched_emp[0])
+            
+            # Đọc mã công của 31 ngày
+            daily_codes = {}
+            for day in range(1, 32):
+                if day > last_day:
+                    continue
+                cell = row[col_offset + day - 1]
+                val = cell.value
+                code = str(val).strip().upper() if val else ""
+                daily_codes[day] = code
+
+            from datetime import date
+            inserted_dc_count = 0
+            inserted_pl_count = 0
+
+            # Bước 1: Duyệt gán PL và thu thập danh sách làm việc
+            for day in range(1, last_day + 1):
+                d = date(year, month, day)
+                cell = row[col_offset + day - 1]
+
+                # Nếu là ngày lễ, ưu tiên mã PL
+                if d in holiday_dates:
+                    if daily_codes[day] != 'PL':
+                        cell.value = 'PL'
+                        daily_codes[day] = 'PL'
+                        inserted_pl_count += 1
+                    continue
+
+            # Bước 2: Xử lý Đổi ca (ĐC)
+            # Theo quy tắc: Nếu N -> Đ hoặc Đ -> N mà không có Chủ Nhật ở giữa, thay thế ngày mới bằng ĐC
+            last_shift = None
+            last_shift_day = None
+
+            for day in range(1, last_day + 1):
+                d = date(year, month, day)
+                code = daily_codes[day]
+                cell = row[col_offset + day - 1]
+
+                # Bỏ qua những ngày nghỉ (Không phải N hay Đ)
+                if code not in ['N', 'Đ', 'ĐC']:
+                    # Nếu có ĐC thì cập nhật last_shift (chặn ĐC tự sinh sau đó)
+                    if code == 'ĐC':
+                        last_shift = 'ĐC'
+                    continue
+
+                if code == 'ĐC':
+                    last_shift = 'ĐC'
+                    continue
+
+                # Xác định ca hiện tại
+                current_shift = code
+
+                if last_shift and last_shift in ['N', 'Đ'] and current_shift != last_shift:
+                    # Chuyển ca: Kiểm tra xem từ last_shift_day đến day có ngày Chủ Nhật nào không?
+                    has_sunday = False
+                    for check_day in range(last_shift_day + 1, day):
+                        check_d = date(year, month, check_day)
+                        if check_d.weekday() == 6: # Chủ Nhật
+                            has_sunday = True
+                            break
+                    
+                    if d.weekday() == 6:
+                        has_sunday = True
+
+                    if not has_sunday:
+                        # Thay thế mã của ngày hôm nay thành ĐC
+                        cell.value = 'ĐC'
+                        daily_codes[day] = 'ĐC'
+                        inserted_dc_count += 1
+                        current_shift = 'ĐC' # Cập nhật để tránh chèn ĐC liên tục
+
+                last_shift = current_shift
+                last_shift_day = day
+
+        # Xoá các dòng không hợp lệ từ dưới lên
+        for r in reversed(rows_to_delete):
+            ws.delete_rows(r)
+
+        # Lưu file chuẩn hoá vào RAM
+        output = io.BytesIO()
+        wb.save(output)
+        self.normalized_file_data = base64.b64encode(output.getvalue())
+        self.normalized_file_name = f"Chuan_Hoa_Cong_{month_date.strftime('%m_%Y')}.xlsx"
+        output.close()
+
+        # Generate HTML
+        valid_html = f'''
+            <div class="alert alert-success mt-2 mb-3">
+                <i class="fa fa-check-circle"></i> Đã chuẩn hoá thành công dữ liệu cho <strong>{len(kept_employees_info)}</strong> nhân viên.
+            </div>
+        '''
+        
+        missing_employees = balance_employees - self.env['hr.employee'].concat(*kept_employees_info)
+        
+        anomaly_html = ""
+        has_anomalies = False
+        
+        if removed_employees or missing_employees:
+            has_anomalies = True
+            
+            if removed_employees:
+                anomaly_html += f'''
+                    <div class="alert alert-warning mt-2 mb-3">
+                        <i class="fa fa-exclamation-triangle"></i> <strong>Đã loại bỏ {len(removed_employees)} người</strong> trong file vì không nằm trong danh sách cân đối (hoặc không có MST):
+                    </div>
+                    <ul class="list-group mb-3">
+                '''
+                for emp in removed_employees[:10]:
+                    anomaly_html += f'<li class="list-group-item text-danger"><i class="fa fa-user-times"></i> {emp}</li>'
+                if len(removed_employees) > 10:
+                    anomaly_html += f'<li class="list-group-item text-muted">... và {len(removed_employees) - 10} người khác.</li>'
+                anomaly_html += "</ul>"
+                
+            if missing_employees:
+                anomaly_html += f'''
+                    <div class="alert alert-info mt-2 mb-3">
+                        <i class="fa fa-info-circle"></i> <strong>Thiếu {len(missing_employees)} nhân viên</strong> cần cân đối nhưng không có mặt trong file Excel tải lên:
+                    </div>
+                    <ul class="list-group mb-3">
+                '''
+                for emp in missing_employees[:10]:
+                    anomaly_html += f'<li class="list-group-item text-warning"><i class="fa fa-question-circle"></i> {emp.name} (MST: {emp.dl_tax_id or "Trống"})</li>'
+                if len(missing_employees) > 10:
+                    anomaly_html += f'<li class="list-group-item text-muted">... và {len(missing_employees) - 10} người khác.</li>'
+                anomaly_html += "</ul>"
+            
+        return valid_html, anomaly_html, has_anomalies
+
     def action_analyze(self):
         """Chuyển sang bước Preview, hiển thị dữ liệu đã đọc"""
         if not self.file_data:
@@ -200,6 +406,22 @@ class SalaryKpiImportWizard(models.TransientModel):
         if self.wizard_type == 'internal_salary':
             # Lương nội bộ: Chưa áp dụng preview, gọi import luôn
             return self.action_import()
+
+        if self.wizard_type == 'normalize':
+            valid_html, anomaly_html, has_anomalies = self._process_normalize()
+            self.write({
+                'preview_valid_html': valid_html,
+                'preview_anomaly_html': anomaly_html,
+                'has_anomalies': has_anomalies,
+                'state': 'preview'
+            })
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': self._name,
+                'res_id': self.id,
+                'view_mode': 'form',
+                'target': 'new',
+            }
 
         import_data, errors, count_skipped_departure, missing_in_excel = self._parse_excel_data()
 
@@ -299,6 +521,9 @@ class SalaryKpiImportWizard(models.TransientModel):
 
     def action_import(self):
         """Thực hiện lưu dữ liệu (Xác nhận sau preview)"""
+        if self.wizard_type == 'normalize':
+            return self.action_export()
+            
         if not self.file_data:
             return
             

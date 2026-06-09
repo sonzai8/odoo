@@ -42,8 +42,10 @@
                     <button name="action_analyze" string="🔍 Phân tích dữ liệu" type="object" class="btn-primary" invisible="not file_data or state != 'upload'"/>
                     
                     <button name="action_import" string="✅ Xác nhận Upload" type="object" class="btn-primary" 
-                            invisible="state != 'preview'" 
+                            invisible="state != 'preview' or wizard_type == 'normalize'" 
                             confirm="Bạn chắc chắn muốn lưu các dữ liệu hợp lệ và ghi đè vào bảng công hiện tại?"/>
+                    <button name="action_import" string="📥 Tải file Chuẩn hoá" type="object" class="btn-success" 
+                            invisible="state != 'preview' or wizard_type != 'normalize'"/>
                     <button name="action_back" string="⬅️ Quay lại" type="object" class="btn-secondary" invisible="state != 'preview'"/>
                     
                     <button string="Đóng" class="btn-secondary" special="cancel"/>
